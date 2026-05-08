@@ -1,0 +1,29 @@
+{
+  "name": "@pi-deck/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/main/index.js",
+  "scripts": {
+    "type-check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.main.json --noEmit",
+    "lint": "biome lint .",
+    "test": "bun test",
+    "dev": "tsc -p tsconfig.main.json && concurrently -k -n vite,tsc,electron -c blue,yellow,green \"vite\" \"tsc -p tsconfig.main.json --watch --preserveWatchOutput\" \"electronmon --no-stdin .\"",
+    "build:renderer": "vite build",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build": "bun run build:renderer && bun run build:main",
+    "start": "electron .",
+    "dist": "bun run build && electron-builder --config electron-builder.yml"
+  },
+  "dependencies": {
+    "@pi-deck/core": "workspace:*",
+    "@pi-deck/ui": "workspace:*",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "electron": "^42.0.1",
+    "electron-builder": "^25.0.0"
+  }
+}

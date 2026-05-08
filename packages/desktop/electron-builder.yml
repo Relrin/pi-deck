@@ -1,0 +1,33 @@
+appId: dev.pi-deck
+productName: pi-deck
+copyright: Copyright © 2026 pi-deck
+asar: true
+directories:
+  output: out
+  buildResources: build
+files:
+  - dist/main/**
+  - dist/preload/**
+  - dist/renderer/**
+  - package.json
+mac:
+  category: public.app-category.developer-tools
+  hardenedRuntime: false
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: zip
+      arch: [x64]
+linux:
+  category: Development
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]

@@ -1,0 +1,47 @@
+{
+  "name": "pi-deck",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Friendly desktop and web client for the pi coding agent.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "bun@1.3.13",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "check": "bun run lint && bun run format:check && bun run type-check",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "type-check": "tsc -p tsconfig.json --noEmit && tsc -p packages/desktop/tsconfig.main.json --noEmit",
+    "test": "bun test",
+    "desktop:dev": "bun run --filter @pi-deck/desktop dev",
+    "desktop:build": "bun run --filter @pi-deck/desktop build",
+    "dist": "bun run --filter @pi-deck/desktop dist",
+    "version": "bun scripts/version.ts",
+    "release-notes": "bun scripts/release-notes.ts",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/node": "^24.0.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.0.0",
+    "electronmon": "^2.0.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^6.0.3",
+    "vite": "^7.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md}": [
+      "biome check --write --no-errors-on-unmatched"
+    ]
+  }
+}

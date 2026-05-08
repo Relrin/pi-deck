@@ -1,0 +1,124 @@
+import { useState } from "react";
+import { usePanelState } from "./use-panel-state";
+
+type TabId = "git" | "files" | "context";
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: "git", label: "Git" },
+  { id: "files", label: "Files" },
+  { id: "context", label: "Context" },
+];
+
+export function ContextSidebar() {
+  const collapsed = usePanelState((s) => s.right.collapsed);
+  const toggle = usePanelState((s) => s.toggleRight);
+  const [active, setActive] = useState<TabId>("git");
+
+  if (collapsed) {
+    return (
+      <aside
+        aria-label="Context (collapsed)"
+        style={{
+          background: "var(--color-panel)",
+          borderLeft: "1px solid var(--color-border)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          paddingTop: "var(--space-3)",
+        }}
+      >
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label="Expand context sidebar"
+          title="Expand context"
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: "var(--radius-sm)",
+            color: "var(--color-text-muted)",
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          {"‹"}
+        </button>
+      </aside>
+    );
+  }
+
+  return (
+    <aside
+      aria-label="Context"
+      style={{
+        background: "var(--color-panel)",
+        borderLeft: "1px solid var(--color-border)",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "var(--space-2) var(--space-3)",
+          borderBottom: "1px solid var(--color-border)",
+        }}
+      >
+        <div role="tablist" aria-label="Context panels" style={{ display: "flex", gap: 2 }}>
+          {TABS.map((tab) => {
+            const isActive = active === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActive(tab.id)}
+                style={{
+                  padding: "4px 10px",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  borderRadius: "var(--radius-sm)",
+                  color: isActive ? "var(--color-text)" : "var(--color-text-muted)",
+                  background: isActive ? "var(--color-panel-2)" : "transparent",
+                }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label="Collapse context sidebar"
+          title="Collapse"
+          style={{
+            color: "var(--color-text-subtle)",
+            padding: "2px 6px",
+            borderRadius: "var(--radius-sm)",
+          }}
+        >
+          {"›"}
+        </button>
+      </header>
+      <div
+        role="tabpanel"
+        style={{
+          flex: 1,
+          padding: "var(--space-4)",
+          color: "var(--color-text-subtle)",
+          fontSize: 13,
+          overflow: "auto",
+        }}
+      >
+        {active === "git" && "Git status will appear here."}
+        {active === "files" && "Project files will appear here."}
+        {active === "context" && "Active context will appear here."}
+      </div>
+    </aside>
+  );
+}
