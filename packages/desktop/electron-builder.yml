@@ -1,0 +1,6 @@
+# A placeholder for electron-builder config
+# Until then, `bun run --filter @pi-deck/desktop dist` runs scripts/dist-stub.ts,
+# which emits a .txt artefact into out/ so the release workflow can be exercised
+# end-to-end before real binaries exist.
+appId: dev.pi-deck.placeholder
+productName: pi-deck (placeholder)

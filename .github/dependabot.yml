@@ -1,0 +1,43 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-*"
+          - "@types/react"
+          - "@types/react-*"
+      electron:
+        patterns:
+          - "electron"
+          - "electron-*"
+          - "@electron/*"
+      typescript:
+        patterns:
+          - "typescript"
+          - "@types/*"
+        exclude-patterns:
+          - "@types/react"
+          - "@types/react-*"
+      tooling:
+        patterns:
+          - "@biomejs/*"
+          - "husky"
+          - "lint-staged"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns:
+          - "*"

@@ -10,7 +10,8 @@
   "scripts": {
     "type-check": "tsc -p tsconfig.json --noEmit",
     "lint": "biome lint .",
-    "test": "bun test"
+    "test": "bun test",
+    "dist": "bun scripts/dist-stub.ts"
   },
   "dependencies": {
     "@pi-deck/core": "workspace:*",

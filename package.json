@@ -19,6 +19,9 @@
     "format:check": "biome format .",
     "type-check": "tsc -p tsconfig.json --noEmit",
     "test": "bun test",
+    "dist": "bun run --filter @pi-deck/desktop dist",
+    "version": "bun scripts/version.ts",
+    "release-notes": "bun scripts/release-notes.ts",
     "prepare": "husky"
   },
   "devDependencies": {

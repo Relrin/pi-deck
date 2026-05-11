@@ -83,6 +83,7 @@ bun run build         # Production build
 This list is populated as plans complete. When you finish a plan, add its key entry points here.
 
 - **Workspace & tooling** — `package.json`, `tsconfig.base.json`, `biome.json`, `bunfig.toml`. All commands flow through Bun. Pre-commit hook is `.husky/pre-commit`.
+- **CI/CD** — `.github/workflows/ci.yml` (PR gate), `.github/workflows/release.yml` (tag-triggered builds). Release versioning via `scripts/version.ts`. Electron packaging config lives at `packages/desktop/electron-builder.yml`.
 
 ## Acceptance gate for every change
 
