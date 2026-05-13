@@ -86,6 +86,20 @@ This list is populated as plans complete. When you finish a plan, add its key en
 - **CI/CD** — `.github/workflows/ci.yml` (PR gate), `.github/workflows/release.yml` (tag-triggered builds). Release versioning via `scripts/version.ts`. Electron packaging config lives at `packages/desktop/electron-builder.yml`.
 - **Electron shell** — main process at `packages/desktop/src/main/`, preload at `packages/desktop/src/preload/`. Renderer is the React app from `packages/ui`. Dev: `bun run desktop:dev`. Build: `bun run --filter @pi-deck/desktop dist`. Window bounds persist to `userData/window-state.json`.
 - **Layout shell** — `packages/ui/src/layout/AppShell.tsx` owns the three-pane grid. Panel state is a Zustand store at `packages/ui/src/layout/use-panel-state.ts`.
+- **Protocol** — `packages/core/src/protocol/`. `Frame`, `Command`, event topic types and zod schemas. Protocol version constant in `version.ts`. Any new command or event must update this folder.
+- **Host (Electron main side)** — `packages/core/src/host/`. Owns the WebSocket server, session manager, and metadata store. Entry: `startHost()`. Auth token is generated per app launch and passed via the preload bridge (`window.bridge.connect()` returns `{ url, token }`).
+- **Session worker** — `packages/core/src/worker/`. One Node subprocess per active session, hosting pi's `AgentSession`. Communicates with the host via LF-delimited JSONL on stdio. Bundled to `packages/desktop/dist/worker.js`; spawned in production via `process.execPath` with `ELECTRON_RUN_AS_NODE=1`.
+- **Transport client** — `packages/ui/src/lib/transport/`. WS client + typed protocol client. All renderer-side calls to the host go through here.
+- **User data** — `~/.config/pi-deck/projects/<id>/metadata.json` is pi-deck's thin metadata layer (Electron's `userData` path). pi's own sessions stay at `~/.pi/agent/sessions/`. Never write to pi's directories directly.
+
+## Protocol stability
+
+The renderer↔host protocol is versioned (`packages/core/src/protocol/version.ts`). When you change a command or event payload shape:
+
+1. Bump the protocol version.
+2. Update the schema in `protocol/frames.ts` or sibling files.
+3. The renderer sends the version on connect; the host rejects mismatches with a clear error. This means renderer with host must always ship together (no skew across an auto-update).
+4. The host <-> worker stdio protocol is internal and unversioned - workers are spawned from the same binary so they're always in sync.
 
 ## Security model
 

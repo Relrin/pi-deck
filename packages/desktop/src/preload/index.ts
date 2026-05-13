@@ -1,8 +1,13 @@
-import { contextBridge } from "electron";
+import { contextBridge, ipcRenderer } from "electron";
 
 export type PlatformInfo = {
   os: NodeJS.Platform;
   arch: string;
+};
+
+export type BridgeConnectInfo = {
+  url: string;
+  token: string;
 };
 
 const platform: PlatformInfo = {
@@ -14,4 +19,6 @@ const appVersion: string = process.env.npm_package_version ?? "dev";
 
 contextBridge.exposeInMainWorld("platform", platform);
 contextBridge.exposeInMainWorld("appVersion", appVersion);
-contextBridge.exposeInMainWorld("bridge", {});
+contextBridge.exposeInMainWorld("bridge", {
+  connect: (): Promise<BridgeConnectInfo | undefined> => ipcRenderer.invoke("bridge:connect"),
+});

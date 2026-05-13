@@ -1,0 +1,73 @@
+import { createJsonlReader, encodeJsonl } from "../host/jsonl.js";
+import { type AgentBridge, initBridge } from "./agent-bridge.js";
+import { installLifecycleHandlers } from "./lifecycle.js";
+
+type IncomingFrame =
+  | { kind: "request"; id: string; cmd: string; payload: unknown }
+  | { kind: "notify"; cmd: string; payload: unknown };
+
+let bridge: AgentBridge | undefined;
+
+installLifecycleHandlers(() => bridge);
+
+function emitEvent(topic: string, payload: unknown): void {
+  process.stdout.write(encodeJsonl({ kind: "event", topic, payload }));
+}
+
+function sendOk(id: string, result: unknown): void {
+  process.stdout.write(encodeJsonl({ kind: "response", id, ok: true, result }));
+}
+
+function sendErr(id: string, code: string, message: string): void {
+  process.stdout.write(encodeJsonl({ kind: "response", id, ok: false, error: { code, message } }));
+}
+
+async function handleRequest(frame: { id: string; cmd: string; payload: unknown }): Promise<void> {
+  try {
+    switch (frame.cmd) {
+      case "init": {
+        const params = frame.payload as { projectPath: string; sessionFile?: string };
+        bridge = await initBridge(params, emitEvent);
+        sendOk(frame.id, { sessionId: bridge.sessionId, sessionFile: bridge.sessionFile });
+        return;
+      }
+      case "prompt": {
+        if (!bridge) throw new Error("Worker not initialized");
+        const params = frame.payload as { text: string };
+        const result = await bridge.prompt(params.text);
+        sendOk(frame.id, result);
+        return;
+      }
+      case "cancel": {
+        if (!bridge) throw new Error("Worker not initialized");
+        await bridge.cancel();
+        sendOk(frame.id, { ok: true });
+        return;
+      }
+      default:
+        sendErr(frame.id, "unknown_command", `Unknown worker command: ${frame.cmd}`);
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    sendErr(frame.id, "handler_error", message);
+  }
+}
+
+createJsonlReader(process.stdin, (line) => {
+  let parsed: IncomingFrame;
+  try {
+    parsed = JSON.parse(line) as IncomingFrame;
+  } catch (err) {
+    process.stderr.write(`[worker] invalid JSON: ${(err as Error).message}\n`);
+    return;
+  }
+  if (parsed.kind === "request") {
+    void handleRequest(parsed);
+  }
+});
+
+process.stdin.on("end", () => {
+  // Host closed stdin: shut down gracefully.
+  bridge?.dispose();
+  process.exit(0);
+});

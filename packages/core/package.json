@@ -11,5 +11,14 @@
     "type-check": "tsc -p tsconfig.json --noEmit",
     "lint": "biome lint .",
     "test": "bun test"
+  },
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "0.74.0",
+    "ws": "^8.18.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/ws": "^8.5.13"
   }
 }

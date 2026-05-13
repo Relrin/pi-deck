@@ -6,14 +6,19 @@
     "ignoreDeprecations": "6.0",
     "target": "ES2022",
     "outDir": "./dist",
-    "rootDir": "./src",
-    "noEmit": false,
+    "rootDir": "../..",
+    "noEmit": true,
     "verbatimModuleSyntax": false,
     "isolatedModules": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "types": ["node"],
-    "lib": ["ES2022", "DOM"]
+    "lib": ["ES2022", "DOM"],
+    "baseUrl": "../..",
+    "paths": {
+      "@pi-deck/core": ["./packages/core/src/index.ts"],
+      "@pi-deck/core/*": ["./packages/core/src/*"]
+    }
   },
-  "include": ["src/main/**/*.ts", "src/preload/**/*.ts"]
+  "include": ["src/main/**/*.ts", "src/preload/**/*.ts", "../core/src/**/*.ts"]
 }
