@@ -48,7 +48,7 @@ describe("MessageInput", () => {
     expect(send).not.toBeDisabled();
   });
 
-  test("Ctrl+Enter submits the input", async () => {
+  test("plain Enter submits the input", async () => {
     let sent: string | undefined;
     useSessionsStore.setState({
       sendPrompt: (async (text: string) => {
@@ -59,11 +59,11 @@ describe("MessageInput", () => {
     render(<MessageInput sessionId={SID} />);
     const textarea = screen.getByLabelText("Message");
     await user.type(textarea, "ship it");
-    await user.keyboard("{Control>}{Enter}{/Control}");
+    await user.keyboard("{Enter}");
     expect(sent).toBe("ship it");
   });
 
-  test("Cmd+Enter submits the input (macOS)", async () => {
+  test("Shift+Enter inserts a newline and does NOT submit", async () => {
     let sent: string | undefined;
     useSessionsStore.setState({
       sendPrompt: (async (text: string) => {
@@ -72,13 +72,15 @@ describe("MessageInput", () => {
     });
     const user = userEvent.setup();
     render(<MessageInput sessionId={SID} />);
-    const textarea = screen.getByLabelText("Message");
-    await user.type(textarea, "mac send");
-    await user.keyboard("{Meta>}{Enter}{/Meta}");
-    expect(sent).toBe("mac send");
+    const textarea = screen.getByLabelText("Message") as HTMLTextAreaElement;
+    await user.type(textarea, "line 1");
+    await user.keyboard("{Shift>}{Enter}{/Shift}");
+    await user.type(textarea, "line 2");
+    expect(sent).toBeUndefined();
+    expect(textarea.value).toBe("line 1\nline 2");
   });
 
-  test("plain Enter does NOT submit", async () => {
+  test("Ctrl+Enter inserts a newline and does NOT submit", async () => {
     let sent: string | undefined;
     useSessionsStore.setState({
       sendPrompt: (async (text: string) => {
@@ -89,11 +91,11 @@ describe("MessageInput", () => {
     render(<MessageInput sessionId={SID} />);
     const textarea = screen.getByLabelText("Message");
     await user.type(textarea, "wait");
-    await user.keyboard("{Enter}");
+    await user.keyboard("{Control>}{Enter}{/Control}");
     expect(sent).toBeUndefined();
   });
 
-  test("Shift+Enter does NOT submit", async () => {
+  test("Cmd+Enter inserts a newline and does NOT submit (macOS)", async () => {
     let sent: string | undefined;
     useSessionsStore.setState({
       sendPrompt: (async (text: string) => {
@@ -104,7 +106,7 @@ describe("MessageInput", () => {
     render(<MessageInput sessionId={SID} />);
     const textarea = screen.getByLabelText("Message");
     await user.type(textarea, "wait");
-    await user.keyboard("{Shift>}{Enter}{/Shift}");
+    await user.keyboard("{Meta>}{Enter}{/Meta}");
     expect(sent).toBeUndefined();
   });
 

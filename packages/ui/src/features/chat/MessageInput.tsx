@@ -12,7 +12,7 @@ import { selectTurnInFlight, useMessagesStore } from "./useMessagesStore.js";
 
 const MAX_ROWS = 12;
 const LINE_HEIGHT_PX = 20;
-const PLACEHOLDER = "Send a message...";
+const PLACEHOLDER = "Send a message…  (Enter to send, Shift/Ctrl+Enter for newline)";
 
 export function MessageInput({ sessionId }: { sessionId: string }) {
   const [text, setText] = useState("");
@@ -53,12 +53,11 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key !== "Enter") return;
-    // Cmd/Ctrl+Enter sends; Shift+Enter inserts a newline; Enter alone inserts a newline.
-    // Plain Enter intentionally does *not* submit — too easy to mis-fire mid-thought.
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      submit();
-    }
+    // Plain Enter sends; Shift+Enter and Ctrl/Cmd+Enter fall through to the browser's
+    // default newline behavior.
+    if (e.shiftKey || e.ctrlKey || e.metaKey) return;
+    e.preventDefault();
+    submit();
   };
 
   const isEmpty = text.trim().length === 0;
@@ -89,7 +88,7 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
           onKeyDown={onKeyDown}
           placeholder={PLACEHOLDER}
           aria-label="Message"
-          aria-keyshortcuts="Control+Enter Meta+Enter"
+          aria-keyshortcuts="Enter"
           rows={2}
           className="resize-none border-0 bg-transparent px-1 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-subtle)] focus:outline-none font-sans leading-5"
         />
@@ -127,7 +126,7 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
                 disabled={isEmpty}
                 size="sm"
                 aria-label="Send message"
-                title="Ctrl/Cmd+Enter"
+                title="Enter"
               >
                 <Send size={12} />
                 Send
