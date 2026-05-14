@@ -1,4 +1,4 @@
-import { Spinner } from "../../../components/ui/Spinner.js";
+import { RandomSpinner } from "../../../components/ui/RandomSpinner.js";
 import { getSummarizer } from "../tools/ToolRendererRegistry.js";
 import type { ToolCallEntry } from "../types.js";
 
@@ -37,7 +37,7 @@ export function StreamingStatus({ toolCalls, toolCallIds, hasText }: StreamingSt
   if (!hasText) {
     return (
       <Row>
-        <span className="text-[var(--color-text-muted)]">Thinking…</span>
+        <span className="text-[var(--color-text-muted)]">Thinking...</span>
       </Row>
     );
   }
@@ -47,8 +47,8 @@ export function StreamingStatus({ toolCalls, toolCallIds, hasText }: StreamingSt
 
 function Row({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 my-1 text-xs">
-      <Spinner size={12} className="text-[var(--color-accent)]" />
+    <div className="flex items-center gap-2 my-1 text-xs text-[var(--color-accent)]">
+      <RandomSpinner />
       {children}
     </div>
   );
