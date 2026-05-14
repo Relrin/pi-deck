@@ -21,5 +21,5 @@ export const screen: Screen = new Proxy({} as Screen, {
 import userEventDefault from "@testing-library/user-event";
 
 export * from "@testing-library/react";
-export { fireEvent } from "@testing-library/react";
+export { act, fireEvent } from "@testing-library/react";
 export const userEvent = userEventDefault;

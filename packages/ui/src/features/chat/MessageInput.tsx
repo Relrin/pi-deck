@@ -52,17 +52,24 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
     // Plain Enter intentionally does *not* submit — too easy to mis-fire mid-thought.
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
-      void submit();
+      submit();
     }
     // Shift+Enter and plain Enter fall through to the browser's default newline.
   };
 
   const isEmpty = text.trim().length === 0;
 
-  const submit = async () => {
+  // Synchronous handler so the optimistic `setText("")` runs inside the React event flow
+  // (React 19's act() warns when a state update happens inside an async function body, even
+  // before its first await). The async network call is delegated to a fire-and-forget helper.
+  const submit = () => {
     const trimmed = text.trim();
     if (!trimmed || isInFlight) return;
     setText("");
+    void dispatchPrompt(trimmed);
+  };
+
+  const dispatchPrompt = async (trimmed: string) => {
     try {
       await sendPrompt(trimmed);
     } catch {

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { render, screen, userEvent } from "../../../test/utils";
 import { useSessionsStore } from "../sessions/useSessionsStore";
 import { MessageInput } from "./MessageInput";
@@ -23,20 +23,15 @@ beforeEach(() => {
   });
 });
 
-afterEach(() => {
+// Restore once at the very end so we don't leak mocks into sibling test files. Restoring
+// in afterEach would fire a Zustand notification on the still-mounted MessageInput and
+// trip React 19's "update not wrapped in act" warning after the test has finished.
+afterAll(() => {
   useSessionsStore.setState({
     sendPrompt: ORIGINAL_SEND,
     cancelPrompt: ORIGINAL_CANCEL,
   });
 });
-
-function setSendPrompt(impl: (text: string) => Promise<void>) {
-  useSessionsStore.setState({ sendPrompt: impl as never });
-}
-
-function setCancelPrompt(impl: () => Promise<void>) {
-  useSessionsStore.setState({ cancelPrompt: impl as never });
-}
 
 describe("MessageInput", () => {
   test("Send button is disabled when the input is empty or whitespace", async () => {
@@ -55,8 +50,10 @@ describe("MessageInput", () => {
 
   test("Ctrl+Enter submits the input", async () => {
     let sent: string | undefined;
-    setSendPrompt(async (text) => {
-      sent = text;
+    useSessionsStore.setState({
+      sendPrompt: (async (text: string) => {
+        sent = text;
+      }) as never,
     });
     const user = userEvent.setup();
     render(<MessageInput sessionId={SID} />);
@@ -68,8 +65,10 @@ describe("MessageInput", () => {
 
   test("Cmd+Enter submits the input (macOS)", async () => {
     let sent: string | undefined;
-    setSendPrompt(async (text) => {
-      sent = text;
+    useSessionsStore.setState({
+      sendPrompt: (async (text: string) => {
+        sent = text;
+      }) as never,
     });
     const user = userEvent.setup();
     render(<MessageInput sessionId={SID} />);
@@ -81,8 +80,10 @@ describe("MessageInput", () => {
 
   test("plain Enter does NOT submit", async () => {
     let sent: string | undefined;
-    setSendPrompt(async (text) => {
-      sent = text;
+    useSessionsStore.setState({
+      sendPrompt: (async (text: string) => {
+        sent = text;
+      }) as never,
     });
     const user = userEvent.setup();
     render(<MessageInput sessionId={SID} />);
@@ -94,8 +95,10 @@ describe("MessageInput", () => {
 
   test("Shift+Enter does NOT submit", async () => {
     let sent: string | undefined;
-    setSendPrompt(async (text) => {
-      sent = text;
+    useSessionsStore.setState({
+      sendPrompt: (async (text: string) => {
+        sent = text;
+      }) as never,
     });
     const user = userEvent.setup();
     render(<MessageInput sessionId={SID} />);
@@ -112,8 +115,10 @@ describe("MessageInput", () => {
       },
     });
     let cancelled = false;
-    setCancelPrompt(async () => {
-      cancelled = true;
+    useSessionsStore.setState({
+      cancelPrompt: (async () => {
+        cancelled = true;
+      }) as never,
     });
     const user = userEvent.setup();
     render(<MessageInput sessionId={SID} />);
