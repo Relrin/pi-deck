@@ -1,58 +1,35 @@
-import type { Project, ProjectSummary } from "@pi-deck/core/domain/project.js";
 import type { SessionSummary } from "@pi-deck/core/domain/session.js";
 import { create } from "zustand";
+import { routeEvent } from "../../lib/transport/event-router.js";
 import { ProtocolClient } from "../../lib/transport/protocol-client.js";
 import { type ConnectionStatus, WsClient } from "../../lib/transport/ws-client.js";
-
-const MAX_EVENT_LOG = 500;
-
-interface EventLogEntry {
-  ts: number;
-  topic: string;
-  payload: unknown;
-}
+import { useMessagesStore } from "../chat/useMessagesStore.js";
+import { useProjectsStore } from "./useProjectsStore.js";
 
 export interface SessionsStoreState {
   status: ConnectionStatus;
   client: ProtocolClient | undefined;
-  projects: ProjectSummary[];
-  activeProject: Project | undefined;
   sessions: SessionSummary[];
   activeSessionId: string | undefined;
-  eventLog: EventLogEntry[];
   hostVersion: string | undefined;
   protocolVersion: number | undefined;
   initError: string | undefined;
 
   initialize: () => Promise<void>;
-  pingHost: () => Promise<{ pong: true; hostVersion: string; protocolVersion: number }>;
-  openProject: (path: string) => Promise<void>;
-  refreshProjects: () => Promise<void>;
-  createSession: () => Promise<void>;
+  refreshSessions: (projectId: string) => Promise<void>;
+  createSession: (projectId: string) => Promise<void>;
   activateSession: (id: string) => Promise<void>;
   deactivateSession: (id: string) => Promise<void>;
   sendPrompt: (text: string) => Promise<void>;
   cancelPrompt: () => Promise<void>;
   setActiveSessionId: (id: string | undefined) => void;
-  clearEventLog: () => void;
-}
-
-declare global {
-  interface Window {
-    bridge?: {
-      connect?: () => Promise<{ url: string; token: string } | undefined>;
-    };
-  }
 }
 
 export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
   status: "idle",
   client: undefined,
-  projects: [],
-  activeProject: undefined,
   sessions: [],
   activeSessionId: undefined,
-  eventLog: [],
   hostVersion: undefined,
   protocolVersion: undefined,
   initError: undefined,
@@ -73,47 +50,41 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       url: info.url,
       token: info.token,
       onStatusChange: (status) => set({ status }),
-      onEvent: (topic, payload) => {
-        set((state) => {
-          const next = [...state.eventLog, { ts: Date.now(), topic, payload }];
-          if (next.length > MAX_EVENT_LOG) next.splice(0, next.length - MAX_EVENT_LOG);
-          return { eventLog: next };
-        });
-      },
+      onEvent: routeEvent,
     });
     const client = new ProtocolClient(ws);
     set({ client });
     ws.connect();
+
+    // After connect, do a ping to populate version, then hydrate projects.
+    try {
+      const result = await client.ping();
+      set({ hostVersion: result.hostVersion, protocolVersion: result.protocolVersion });
+    } catch {
+      // ignore — will retry on reconnect
+    }
+    try {
+      await useProjectsStore.getState().hydrateActive(client);
+      const activeProjectId = useProjectsStore.getState().activeProjectId;
+      if (activeProjectId) {
+        await get().refreshSessions(activeProjectId);
+      }
+    } catch {
+      // Surface via toasts only if needed.
+    }
   },
 
-  pingHost: async () => {
-    const client = get().client;
-    if (!client) throw new Error("Client not initialized");
-    const result = await client.ping();
-    set({ hostVersion: result.hostVersion, protocolVersion: result.protocolVersion });
-    return result;
-  },
-
-  openProject: async (path) => {
-    const client = get().client;
-    if (!client) throw new Error("Client not initialized");
-    const { project } = await client.call("project.open", { path });
-    set({ activeProject: project });
-    await get().refreshProjects();
-  },
-
-  refreshProjects: async () => {
+  refreshSessions: async (projectId) => {
     const client = get().client;
     if (!client) return;
-    const { projects } = await client.call("project.list", {});
-    set({ projects });
+    const { sessions } = await client.call("session.list", { projectId });
+    set({ sessions });
   },
 
-  createSession: async () => {
+  createSession: async (projectId) => {
     const client = get().client;
-    const project = get().activeProject;
-    if (!client || !project) throw new Error("No active project");
-    const { session } = await client.call("session.create", { projectId: project.id });
+    if (!client) throw new Error("Client not initialized");
+    const { session } = await client.call("session.create", { projectId });
     set((state) => ({
       sessions: [...state.sessions, session],
       activeSessionId: session.id,
@@ -137,7 +108,20 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     const client = get().client;
     const id = get().activeSessionId;
     if (!client || !id) throw new Error("No active session");
-    await client.call("session.prompt", { sessionId: id, text });
+    useMessagesStore.getState().markTurnInFlight(id, true);
+    try {
+      await client.call("session.prompt", { sessionId: id, text });
+      // Optimistically append the user message immediately on ack. The bridge will later
+      // emit its own `user.message` event; the store dedups by text + time-window.
+      useMessagesStore.getState().appendUserMessage(id, {
+        messageId: `u-local-${Date.now()}`,
+        text,
+        createdAt: Date.now(),
+      });
+    } catch (err) {
+      useMessagesStore.getState().markTurnInFlight(id, false);
+      throw err;
+    }
   },
 
   cancelPrompt: async () => {
@@ -148,5 +132,4 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
   },
 
   setActiveSessionId: (id) => set({ activeSessionId: id }),
-  clearEventLog: () => set({ eventLog: [] }),
 }));

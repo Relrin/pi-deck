@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const EVENT_SESSION_MESSAGE_DELTA = "session.message.delta" as const;
+export const EVENT_SESSION_USER_MESSAGE = "session.user.message" as const;
 export const EVENT_SESSION_TOOL_CALL_START = "session.tool.call.start" as const;
 export const EVENT_SESSION_TOOL_CALL_UPDATE = "session.tool.call.update" as const;
 export const EVENT_SESSION_TOOL_CALL_END = "session.tool.call.end" as const;
@@ -16,6 +17,13 @@ export const SessionMessageDeltaPayload = z.object({
   event: z.unknown(),
   /** Full assistant message snapshot, for convenience. */
   message: z.unknown(),
+});
+
+export const SessionUserMessagePayload = z.object({
+  sessionId: z.string(),
+  messageId: z.string(),
+  text: z.string(),
+  createdAt: z.number(),
 });
 
 export const SessionToolCallStartPayload = z.object({
@@ -71,6 +79,7 @@ export const HostReadyPayload = z.object({
 
 export const EventSchemas = {
   [EVENT_SESSION_MESSAGE_DELTA]: SessionMessageDeltaPayload,
+  [EVENT_SESSION_USER_MESSAGE]: SessionUserMessagePayload,
   [EVENT_SESSION_TOOL_CALL_START]: SessionToolCallStartPayload,
   [EVENT_SESSION_TOOL_CALL_UPDATE]: SessionToolCallUpdatePayload,
   [EVENT_SESSION_TOOL_CALL_END]: SessionToolCallEndPayload,

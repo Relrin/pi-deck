@@ -32,22 +32,14 @@ export const EventFrameSchema = z.object({
   payload: z.unknown(),
 });
 
-export const FrameSchema = z.discriminatedUnion("kind", [
+// z.discriminatedUnion would be tidier but it rejects schemas where two variants share a
+// discriminator literal (here: both ResponseOk and ResponseErr use kind="response"). Use a
+// plain union and let zod try each variant.
+export const FrameSchema = z.union([
   RequestFrameSchema,
+  ResponseOkFrameSchema,
+  ResponseErrFrameSchema,
   EventFrameSchema,
-  // discriminated union needs flat variants; we accept either response shape
-  z.object({
-    kind: z.literal("response"),
-    id: z.string().min(1),
-    ok: z.literal(true),
-    result: z.unknown(),
-  }),
-  z.object({
-    kind: z.literal("response"),
-    id: z.string().min(1),
-    ok: z.literal(false),
-    error: ErrorSchema,
-  }),
 ]);
 
 export type RequestFrame = z.infer<typeof RequestFrameSchema>;

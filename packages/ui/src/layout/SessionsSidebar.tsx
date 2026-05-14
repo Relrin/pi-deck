@@ -1,3 +1,4 @@
+import { SessionsList } from "../features/sessions/SessionsList";
 import { usePanelState } from "./use-panel-state";
 
 export function SessionsSidebar() {
@@ -48,52 +49,22 @@ export function SessionsSidebar() {
         overflow: "hidden",
       }}
     >
-      <header
+      <SessionsList />
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label="Collapse sessions sidebar"
+        title="Collapse"
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "var(--space-3) var(--space-4)",
-          borderBottom: "1px solid var(--color-border)",
-        }}
-      >
-        <span
-          style={{
-            fontSize: 12,
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            color: "var(--color-text-muted)",
-            fontWeight: 600,
-          }}
-        >
-          Sessions
-        </span>
-        <button
-          type="button"
-          onClick={toggle}
-          aria-label="Collapse sessions sidebar"
-          title="Collapse"
-          style={{
-            color: "var(--color-text-subtle)",
-            padding: "2px 6px",
-            borderRadius: "var(--radius-sm)",
-          }}
-        >
-          {"‹"}
-        </button>
-      </header>
-      <div
-        style={{
-          flex: 1,
-          display: "grid",
-          placeItems: "center",
-          padding: "var(--space-5)",
+          alignSelf: "flex-end",
           color: "var(--color-text-subtle)",
-          fontSize: 13,
+          padding: "4px 8px",
+          fontSize: 12,
+          borderTop: "1px solid var(--color-border)",
         }}
       >
-        No project open
-      </div>
+        {"‹ collapse"}
+      </button>
     </aside>
   );
 }

@@ -7,6 +7,7 @@ import {
   EVENT_SESSION_TOOL_CALL_START,
   EVENT_SESSION_TOOL_CALL_UPDATE,
   EVENT_SESSION_TURN_END,
+  EVENT_SESSION_USER_MESSAGE,
   EVENT_SESSION_WORKER_EXIT,
   type EventTopic,
 } from "../protocol/events.js";
@@ -34,6 +35,7 @@ export type SessionManagerEvents = {
 
 const WORKER_TOPIC_MAP: Record<string, EventTopic> = {
   "message.delta": EVENT_SESSION_MESSAGE_DELTA,
+  "user.message": EVENT_SESSION_USER_MESSAGE,
   "tool.call.start": EVENT_SESSION_TOOL_CALL_START,
   "tool.call.update": EVENT_SESSION_TOOL_CALL_UPDATE,
   "tool.call.end": EVENT_SESSION_TOOL_CALL_END,

@@ -30,7 +30,9 @@ export function createWindow(): BrowserWindow {
     title: "pi-deck",
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     webPreferences: {
-      preload: join(__dirname, "../preload/index.js"),
+      // app.getAppPath() rather than __dirname: Bun inlines __dirname to the source
+      // directory at build time, so we have to root paths from the Electron app root.
+      preload: join(app.getAppPath(), "dist", "preload", "index.js"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -70,7 +72,7 @@ export function createWindow(): BrowserWindow {
     win.loadURL(devUrl);
     win.webContents.openDevTools({ mode: "detach" });
   } else {
-    win.loadFile(join(__dirname, "../renderer/index.html"));
+    win.loadFile(join(app.getAppPath(), "dist", "renderer", "index.html"));
   }
 
   return win;

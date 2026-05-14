@@ -1,4 +1,4 @@
-import { ipcMain } from "electron";
+import { BrowserWindow, dialog, ipcMain } from "electron";
 
 export interface BridgeInfo {
   url: string;
@@ -13,4 +13,12 @@ export function registerBridgeIpc(info: BridgeInfo): void {
   if (registered) return;
   registered = true;
   ipcMain.handle("bridge:connect", () => bridgeInfo);
+  ipcMain.handle("bridge:openDirectory", async () => {
+    const focused = BrowserWindow.getFocusedWindow();
+    const result = focused
+      ? await dialog.showOpenDialog(focused, { properties: ["openDirectory"] })
+      : await dialog.showOpenDialog({ properties: ["openDirectory"] });
+    if (result.canceled || result.filePaths.length === 0) return undefined;
+    return result.filePaths[0];
+  });
 }

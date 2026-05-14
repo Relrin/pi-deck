@@ -10,7 +10,10 @@ export interface BackendHandle {
 
 export async function startBackend(app: App): Promise<BackendHandle> {
   const userDataDir = app.getPath("userData");
-  const workerEntry = join(__dirname, "..", "worker.js");
+  // Use app.getAppPath() because Bun's bundler inlines __dirname to the source
+  // directory at build time, which would point at packages/desktop/src/main rather
+  // than the runtime dist/main location.
+  const workerEntry = join(app.getAppPath(), "dist", "worker.mjs");
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     ELECTRON_RUN_AS_NODE: "1",

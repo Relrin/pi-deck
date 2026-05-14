@@ -68,6 +68,9 @@ bun run build         # Production build
 - **State:** Zustand for global stores. `useState`/`useReducer` for local. No Redux.
 - **Styling:** Tailwind v4 utility classes. Custom CSS only for things Tailwind can't express (animations, complex grid). Never hardcode colours — always reference CSS variables defined in `packages/ui/src/theme/tokens.css`.
 - **File names:** kebab-case for files, PascalCase for React components (`SessionsList.tsx`), camelCase for hooks (`useSessions.ts`).
+- **Stores:** one Zustand store per domain (`useXStore`). Stores expose actions and selectors; UI uses selectors only. Never mutate store state from outside the store's actions.
+- **Markdown:** route all assistant text through the chat `Markdown` component (`packages/ui/src/features/chat/messages/Markdown.tsx`). It owns Shiki highlighting, autolinking, and the GFM dialect. Don't render raw markdown ad-hoc.
+- **Icons:** import from `packages/ui/src/components/icons` only. This is the swap point if we change icon libraries.
 
 ## Do not
 
@@ -91,6 +94,10 @@ This list is populated as plans complete. When you finish a plan, add its key en
 - **Session worker** — `packages/core/src/worker/`. One Node subprocess per active session, hosting pi's `AgentSession`. Communicates with the host via LF-delimited JSONL on stdio. Bundled to `packages/desktop/dist/worker.js`; spawned in production via `process.execPath` with `ELECTRON_RUN_AS_NODE=1`.
 - **Transport client** — `packages/ui/src/lib/transport/`. WS client + typed protocol client. All renderer-side calls to the host go through here.
 - **User data** — `~/.config/pi-deck/projects/<id>/metadata.json` is pi-deck's thin metadata layer (Electron's `userData` path). pi's own sessions stay at `~/.pi/agent/sessions/`. Never write to pi's directories directly.
+- **Chat UI** — `packages/ui/src/features/chat/`. `ChatView` is the root, owns `MessageList` + `MessageInput`. Messages live in `useMessagesStore` keyed by session id.
+- **Tool call rendering** — `packages/ui/src/features/chat/tools/`. Renderers register into `ToolRendererRegistry`. Built-in renderers cover all pi default tools. To add a renderer for a new tool, create a component and call `registerToolRenderer(name, component)`. Extensions plug into the same registry (plan 009).
+- **UI primitives** — `packages/ui/src/components/ui/`. Built on Radix. Always prefer extending these over importing Radix directly in feature code.
+- **Sessions / projects state** — `useProjectsStore`, `useSessionsStore`, `useMessagesStore` in `packages/ui/src/features/sessions/` and `packages/ui/src/features/chat/`. A single `routeEvent` function in `packages/ui/src/lib/transport/event-router.ts` is the only event subscriber; it dispatches into the stores.
 
 ## Protocol stability
 

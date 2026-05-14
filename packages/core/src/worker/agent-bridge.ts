@@ -59,6 +59,17 @@ function forwardEvent(event: AgentSessionEvent, emit: EventEmitter): void {
 
   // Normalize the most-used events into stable topic shapes.
   switch (event.type) {
+    case "message_start": {
+      const msg = event.message as { role?: string; content?: unknown; timestamp?: number };
+      if (msg.role === "user") {
+        emit("user.message", {
+          messageId: randomUUID(),
+          text: extractUserText(msg.content),
+          createdAt: msg.timestamp ?? Date.now(),
+        });
+      }
+      return;
+    }
     case "message_update":
       emit("message.delta", { event: event.assistantMessageEvent, message: event.message });
       return;
@@ -90,4 +101,19 @@ function forwardEvent(event: AgentSessionEvent, emit: EventEmitter): void {
     default:
       return;
   }
+}
+
+function extractUserText(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return "";
+  return content
+    .filter(
+      (block): block is { type: string; text: string } =>
+        typeof block === "object" &&
+        block !== null &&
+        (block as { type?: unknown }).type === "text" &&
+        typeof (block as { text?: unknown }).text === "string",
+    )
+    .map((block) => block.text)
+    .join("");
 }

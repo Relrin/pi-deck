@@ -21,4 +21,5 @@ contextBridge.exposeInMainWorld("platform", platform);
 contextBridge.exposeInMainWorld("appVersion", appVersion);
 contextBridge.exposeInMainWorld("bridge", {
   connect: (): Promise<BridgeConnectInfo | undefined> => ipcRenderer.invoke("bridge:connect"),
+  openDirectory: (): Promise<string | undefined> => ipcRenderer.invoke("bridge:openDirectory"),
 });
