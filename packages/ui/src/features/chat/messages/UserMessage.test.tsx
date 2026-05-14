@@ -76,6 +76,51 @@ describe("UserMessage — context menu", () => {
     expect(writeText).toHaveBeenCalledWith("bold and code");
   });
 
+  test("'Copy text' ignores any global selection and only copies this message", () => {
+    const { container } = render(<UserMessage message={userMsg("just this")} />);
+    // Simulate the user having selected unrelated text elsewhere on the page.
+    const stray = document.createElement("div");
+    stray.textContent = "stray selection from another message";
+    document.body.appendChild(stray);
+    const range = document.createRange();
+    range.selectNodeContents(stray);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+
+    act(() => {
+      fireEvent.contextMenu(container.querySelector("[data-selectable-message]") as Element);
+    });
+    act(() => {
+      fireEvent.click(screen.getByText("Copy text"));
+    });
+    expect(writeText).toHaveBeenCalledWith("just this");
+    sel?.removeAllRanges();
+    stray.remove();
+  });
+
+  test("'Copy as Markdown' ignores any global selection and only copies this message", () => {
+    const { container } = render(<UserMessage message={userMsg("**only me**")} />);
+    const stray = document.createElement("div");
+    stray.textContent = "stray selection from another message";
+    document.body.appendChild(stray);
+    const range = document.createRange();
+    range.selectNodeContents(stray);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+
+    act(() => {
+      fireEvent.contextMenu(container.querySelector("[data-selectable-message]") as Element);
+    });
+    act(() => {
+      fireEvent.click(screen.getByText("Copy as Markdown"));
+    });
+    expect(writeText).toHaveBeenCalledWith("**only me**");
+    sel?.removeAllRanges();
+    stray.remove();
+  });
+
   test("'Attach selection to next prompt' is disabled when no selection is present", () => {
     const { container } = render(<UserMessage message={userMsg("hello")} />);
     act(() => {

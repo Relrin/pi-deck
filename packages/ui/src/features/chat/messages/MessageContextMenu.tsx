@@ -22,11 +22,14 @@ interface MessageContextMenuProps {
  * Right-click menu over a chat message bubble. Replaces the legacy `SelectionToolbar` —
  * delegates positioning, focus, and dismissal to Radix.
  *
- * - "Copy text" copies the current text selection if it's non-empty, else the full
- *   message with markdown stripped.
- * - "Copy as Markdown" always copies the raw markdown body.
- * - "Attach selection to next prompt" routes the selection into the composer draft;
- *   disabled when there's no non-empty selection at the moment the menu opens.
+ * Both copy actions always copy only the right-clicked message — the global text
+ * selection is intentionally ignored so an unrelated highlight elsewhere on the page
+ * can't leak into the clipboard.
+ *
+ * - "Copy text" copies the message body with markdown stripped.
+ * - "Copy as Markdown" copies the raw markdown body.
+ * - "Attach selection to next prompt" is the only action that consumes the selection;
+ *   it's disabled when no selection exists at the moment the menu opens.
  */
 export function MessageContextMenu({ rawText, children }: MessageContextMenuProps) {
   const [selectionAtOpen, setSelectionAtOpen] = useState("");
@@ -36,8 +39,7 @@ export function MessageContextMenu({ rawText, children }: MessageContextMenuProp
   const hasSelection = selectionAtOpen.trim().length > 0;
 
   const onCopyText = () => {
-    const text = hasSelection ? selectionAtOpen : stripMarkdown(rawText);
-    writeClipboard(text).catch(() => push("Failed to copy", "error"));
+    writeClipboard(stripMarkdown(rawText)).catch(() => push("Failed to copy", "error"));
   };
 
   const onCopyAsMarkdown = () => {
