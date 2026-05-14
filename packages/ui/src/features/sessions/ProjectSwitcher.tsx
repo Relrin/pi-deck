@@ -1,5 +1,7 @@
 import { ChevronDown, Folder, FolderOpen } from "../../components/icons/index.js";
 import { type DropdownItem, DropdownMenu } from "../../components/ui/DropdownMenu.js";
+import { humanizeError } from "../../lib/format/humanize-error.js";
+import { useToastStore } from "../_status/useToastStore.js";
 import { useProjectsStore } from "./useProjectsStore.js";
 import { useSessionsStore } from "./useSessionsStore.js";
 
@@ -9,10 +11,18 @@ export function ProjectSwitcher() {
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const openFromDialog = useProjectsStore((s) => s.openProjectFromDialog);
   const openByPath = useProjectsStore((s) => s.openProjectByPath);
-  const refreshSessions = useSessionsStore((s) => s.refreshSessions);
-  const setActiveSessionId = useSessionsStore((s) => s.setActiveSessionId);
 
   const activeProject = projects.find((p) => p.id === activeProjectId);
+
+  const onProjectSwitched = async (projectId: string) => {
+    const sessionsStore = useSessionsStore.getState();
+    const remembered = useProjectsStore.getState().lastActiveSessionByProject[projectId];
+    sessionsStore.setActiveSessionId(undefined);
+    await sessionsStore.refreshSessions(projectId);
+    if (remembered && sessionsStore.sessions.some((s) => s.id === remembered)) {
+      await sessionsStore.activateSession(remembered);
+    }
+  };
 
   const items: DropdownItem[] = [
     ...projects.map(
@@ -27,11 +37,12 @@ export function ProjectSwitcher() {
         onSelect: () => {
           if (!client) return;
           openByPath(client, project.path)
-            .then(() => {
-              setActiveSessionId(undefined);
-              return refreshSessions(project.id);
-            })
-            .catch(() => {});
+            .then(() => onProjectSwitched(project.id))
+            .catch((err) => {
+              useToastStore
+                .getState()
+                .push(humanizeError(err, "Failed to switch project"), "error");
+            });
         },
       }),
     ),
@@ -47,12 +58,11 @@ export function ProjectSwitcher() {
         if (!client) return;
         openFromDialog(client)
           .then((project) => {
-            if (project) {
-              setActiveSessionId(undefined);
-              return refreshSessions(project.id);
-            }
+            if (project) return onProjectSwitched(project.id);
           })
-          .catch(() => {});
+          .catch((err) => {
+            useToastStore.getState().push(humanizeError(err, "Failed to open folder"), "error");
+          });
       },
       separatorBefore: projects.length > 0,
     },
@@ -64,7 +74,8 @@ export function ProjectSwitcher() {
       trigger={
         <button
           type="button"
-          className="flex items-center gap-2 w-full min-w-0 rounded-[var(--radius-sm)] px-2 py-1.5 text-sm text-[var(--color-text)] hover:bg-[var(--color-panel-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          className="flex items-center gap-2 w-full min-w-0 rounded-[var(--radius-sm)] px-2 py-1.5 text-sm text-[var(--color-text)] hover:bg-[var(--color-panel-hover)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          title={activeProject?.path}
         >
           <Folder size={14} className="shrink-0 text-[var(--color-text-muted)]" />
           <span className="truncate flex-1 text-left">

@@ -11,6 +11,8 @@ import {
 } from "@pi-deck/core/protocol/events.js";
 import { useToastStore } from "../../features/_status/useToastStore.js";
 import { useMessagesStore } from "../../features/chat/useMessagesStore.js";
+import { useProjectsStore } from "../../features/sessions/useProjectsStore.js";
+import { useSessionsStore } from "../../features/sessions/useSessionsStore.js";
 
 type Payload = Record<string, unknown>;
 
@@ -61,6 +63,10 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
     }
     case EVENT_SESSION_TURN_END: {
       useMessagesStore.getState().endTurn(sessionId, Boolean(payload.cancelled));
+      // pi may have generated a title for this session on its first turn. Refresh from the
+      // backend so the sidebar reflects it without a manual reload. Cheap call; sessions
+      // store dedups its own loading state.
+      scheduleSidebarRefresh();
       return;
     }
     case EVENT_SESSION_WORKER_EXIT: {
@@ -85,4 +91,17 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
     default:
       return;
   }
+}
+
+// Debounce so a rapid sequence of turn.end events (multiple sessions, fast retries) collapses
+// into a single session.list round trip. Avoids hammering the host on cascade events.
+let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+function scheduleSidebarRefresh(): void {
+  if (refreshTimer) clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => {
+    refreshTimer = undefined;
+    const projectId = useProjectsStore.getState().activeProjectId;
+    if (!projectId) return;
+    void useSessionsStore.getState().refreshSessions(projectId);
+  }, 200);
 }

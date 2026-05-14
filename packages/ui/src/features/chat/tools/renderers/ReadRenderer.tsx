@@ -1,3 +1,4 @@
+import { truncateMiddle } from "../../../../lib/format/truncate.js";
 import type { ToolRendererProps, ToolSummarizer } from "../types.js";
 import { Chip, CodeBlock, extractTextContent } from "./common.js";
 
@@ -9,20 +10,21 @@ interface ReadInput {
 
 export function ReadRenderer({ call }: ToolRendererProps) {
   const input = (call.input ?? {}) as ReadInput;
-  const text = extractTextContent(call.result);
+  const text = extractTextContent(call.result) || extractTextContent(call.partialResult);
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2 text-[var(--color-text-muted)]">
-        <Chip>{input.path ?? "(no path)"}</Chip>
+      <div className="flex flex-wrap items-center gap-2 text-[var(--color-text-muted)] text-xs">
+        <Chip title={input.path}>{input.path ?? "(no path)"}</Chip>
         {input.offset !== undefined && <span>offset {input.offset}</span>}
         {input.limit !== undefined && <span>limit {input.limit}</span>}
       </div>
-      {text && <CodeBlock text={text} />}
+      {text && <CodeBlock text={text} ariaLabel="File contents" />}
     </div>
   );
 }
 
 export const readSummary: ToolSummarizer = (input) => {
   const path = (input as ReadInput | null)?.path;
-  return { text: path };
+  if (!path) return {};
+  return { text: truncateMiddle(path), title: path };
 };

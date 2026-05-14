@@ -9,10 +9,14 @@ export function NewSessionButton() {
 
   return (
     <IconButton
-      label="New session"
+      label={activeProjectId ? "New session" : "Open a project first"}
       disabled={!activeProjectId}
       onClick={() => {
-        if (activeProjectId) createSession(activeProjectId).catch(() => {});
+        if (activeProjectId) {
+          // Errors surface via the store's toast push; swallow the rejection so it doesn't
+          // bubble to an unhandled promise.
+          createSession(activeProjectId).catch(() => {});
+        }
       }}
     >
       <Plus size={16} />

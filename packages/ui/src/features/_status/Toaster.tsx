@@ -1,9 +1,8 @@
 import { useEffect } from "react";
 import { X } from "../../components/icons/index.js";
 import { cn } from "../../lib/cn.js";
+import { TOAST_DISMISS_MS } from "../../lib/ui-constants.js";
 import { useToastStore } from "./useToastStore.js";
-
-const DISMISS_MS = 8_000;
 
 export function Toaster() {
   const toasts = useToastStore((s) => s.toasts);
@@ -12,7 +11,7 @@ export function Toaster() {
   useEffect(() => {
     if (toasts.length === 0) return;
     const timers = toasts.map((t) =>
-      setTimeout(() => dismiss(t.id), DISMISS_MS - (Date.now() - t.createdAt)),
+      setTimeout(() => dismiss(t.id), TOAST_DISMISS_MS - (Date.now() - t.createdAt)),
     );
     return () => {
       for (const timer of timers) clearTimeout(timer);

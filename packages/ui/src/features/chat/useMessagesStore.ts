@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { USER_MESSAGE_DEDUP_WINDOW_MS } from "../../lib/ui-constants.js";
 import type {
   AssistantMessageEntry,
   MessageEntry,
@@ -98,13 +99,13 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
       // Dedup by id (replay), and by same-text within a short window — the renderer appends
       // optimistically on `session.prompt` ack, and the bridge later emits its own
       // `user.message` event from pi's message_start. We don't want both to render.
-      const DEDUP_WINDOW_MS = 10_000;
       if (
         session.messages.some(
           (m) =>
             m.kind === "user" &&
             (m.id === messageId ||
-              (m.text === text && Math.abs(m.createdAt - createdAt) < DEDUP_WINDOW_MS)),
+              (m.text === text &&
+                Math.abs(m.createdAt - createdAt) < USER_MESSAGE_DEDUP_WINDOW_MS)),
         )
       ) {
         return state;

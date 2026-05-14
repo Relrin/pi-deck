@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { EmptyState as Frame } from "../../components/EmptyState.js";
 import { FolderOpen, Plus } from "../../components/icons/index.js";
 import { Button } from "../../components/ui/Button.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
@@ -22,22 +23,27 @@ export function EmptyState() {
 
   return (
     <main className="flex h-full w-full items-center justify-center bg-[var(--color-bg)] text-[var(--color-text)]">
-      <div className="flex flex-col items-center gap-3 text-center max-w-md">
-        <h2 className="text-base font-medium">No session selected</h2>
-        {activeProject ? (
-          <>
-            <p className="text-sm text-[var(--color-text-muted)]">{activeProject.displayName}</p>
+      {activeProject ? (
+        <Frame
+          icon={<Plus size={28} />}
+          title="No session selected"
+          description={activeProject.displayName}
+          action={
             <Button
               variant="primary"
-              onClick={() => activeProjectId && createSession(activeProjectId)}
+              onClick={() => activeProjectId && createSession(activeProjectId).catch(() => {})}
             >
               <Plus size={14} />
               New session
             </Button>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-[var(--color-text-muted)]">Open a folder to get started.</p>
+          }
+        />
+      ) : (
+        <Frame
+          icon={<FolderOpen size={28} />}
+          title="No project open"
+          description="Open a folder to get started."
+          action={
             <Button
               variant="primary"
               onClick={() => {
@@ -48,9 +54,9 @@ export function EmptyState() {
               <FolderOpen size={14} />
               Open folder…
             </Button>
-          </>
-        )}
-      </div>
+          }
+        />
+      )}
     </main>
   );
 }

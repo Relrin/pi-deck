@@ -9,12 +9,17 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "context", label: "Context" },
 ];
 
-export function ContextSidebar() {
+interface ContextSidebarProps {
+  onCloseDrawer?: () => void;
+}
+
+export function ContextSidebar({ onCloseDrawer }: ContextSidebarProps = {}) {
   const collapsed = usePanelState((s) => s.right.collapsed);
   const toggle = usePanelState((s) => s.toggleRight);
   const [active, setActive] = useState<TabId>("git");
+  const inDrawer = onCloseDrawer !== undefined;
 
-  if (collapsed) {
+  if (collapsed && !inDrawer) {
     return (
       <aside
         aria-label="Context (collapsed)"
@@ -39,6 +44,7 @@ export function ContextSidebar() {
             color: "var(--color-text-muted)",
             display: "grid",
             placeItems: "center",
+            transition: "background-color 150ms ease",
           }}
         >
           {"‹"}
@@ -52,10 +58,11 @@ export function ContextSidebar() {
       aria-label="Context"
       style={{
         background: "var(--color-panel)",
-        borderLeft: "1px solid var(--color-border)",
+        borderLeft: inDrawer ? "none" : "1px solid var(--color-border)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        height: "100%",
       }}
     >
       <header
@@ -84,6 +91,7 @@ export function ContextSidebar() {
                   borderRadius: "var(--radius-sm)",
                   color: isActive ? "var(--color-text)" : "var(--color-text-muted)",
                   background: isActive ? "var(--color-panel-2)" : "transparent",
+                  transition: "background-color 150ms ease, color 150ms ease",
                 }}
               >
                 {tab.label}
@@ -93,16 +101,17 @@ export function ContextSidebar() {
         </div>
         <button
           type="button"
-          onClick={toggle}
-          aria-label="Collapse context sidebar"
-          title="Collapse"
+          onClick={inDrawer ? onCloseDrawer : toggle}
+          aria-label={inDrawer ? "Close context drawer" : "Collapse context sidebar"}
+          title={inDrawer ? "Close" : "Collapse"}
           style={{
             color: "var(--color-text-subtle)",
             padding: "2px 6px",
             borderRadius: "var(--radius-sm)",
+            transition: "color 150ms ease",
           }}
         >
-          {"›"}
+          {inDrawer ? "Close" : "›"}
         </button>
       </header>
       <div

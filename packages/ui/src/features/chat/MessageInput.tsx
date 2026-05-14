@@ -6,6 +6,8 @@ import { useDraftStore } from "./useDraftStore.js";
 import { selectTurnInFlight, useMessagesStore } from "./useMessagesStore.js";
 
 const MAX_ROWS = 12;
+const LINE_HEIGHT_PX = 20;
+const PLACEHOLDER = "Send a message…  (Ctrl/Cmd+Enter to send, Enter or Shift+Enter for newline)";
 
 export function MessageInput({ sessionId }: { sessionId: string }) {
   const [text, setText] = useState("");
@@ -40,17 +42,22 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
     const el = ref.current;
     if (!el) return;
     el.style.height = "auto";
-    const lineHeight = 20;
-    const maxHeight = lineHeight * MAX_ROWS;
+    const maxHeight = LINE_HEIGHT_PX * MAX_ROWS;
     el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`;
   }, [text]);
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    if (e.key !== "Enter") return;
+    // Cmd/Ctrl+Enter sends; Shift+Enter inserts a newline; Enter alone inserts a newline.
+    // Plain Enter intentionally does *not* submit — too easy to mis-fire mid-thought.
+    if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
-      submit();
+      void submit();
     }
+    // Shift+Enter and plain Enter fall through to the browser's default newline.
   };
+
+  const isEmpty = text.trim().length === 0;
 
   const submit = async () => {
     const trimmed = text.trim();
@@ -72,17 +79,31 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Send a message…  (Ctrl/Cmd+Enter to send, Shift+Enter or Enter for newline)"
+          placeholder={PLACEHOLDER}
+          aria-label="Message"
+          aria-keyshortcuts="Control+Enter Meta+Enter"
           rows={2}
-          className="flex-1 resize-none rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-subtle)] focus:outline-none focus:border-[var(--color-accent)] font-sans leading-5"
+          className="flex-1 resize-none rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-subtle)] transition-colors focus:outline-none focus:border-[var(--color-accent)] font-sans leading-5"
         />
         {isInFlight ? (
-          <Button variant="danger" onClick={cancelPrompt} size="md">
+          <Button
+            variant="danger"
+            onClick={() => void cancelPrompt()}
+            size="md"
+            aria-label="Stop generating"
+          >
             <Square size={14} />
             Stop
           </Button>
         ) : (
-          <Button variant="primary" onClick={submit} disabled={!text.trim()} size="md">
+          <Button
+            variant="primary"
+            onClick={() => void submit()}
+            disabled={isEmpty}
+            size="md"
+            aria-label="Send message"
+            title="Ctrl/Cmd+Enter"
+          >
             <Send size={14} />
             Send
           </Button>

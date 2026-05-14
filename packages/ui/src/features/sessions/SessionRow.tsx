@@ -22,11 +22,16 @@ export function SessionRow({ session, active }: SessionRowProps) {
     >
       <button
         type="button"
-        onClick={() => activateSession(session.id).catch(() => {})}
+        onClick={() => {
+          // Errors surface via the store's toast push; nothing useful to do here.
+          activateSession(session.id).catch(() => {});
+        }}
+        aria-current={active ? "true" : undefined}
+        title={session.title}
         className={cn(
-          "w-full text-left px-3 py-2 text-sm flex flex-col gap-0.5 border-l-2 transition-colors",
+          "w-full text-left px-3 py-2 text-sm flex flex-col gap-0.5 border-l-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-inset",
           active
-            ? "bg-[var(--color-panel-hover)] border-[var(--color-accent)] text-[var(--color-text)]"
+            ? "bg-[color-mix(in_oklab,var(--color-accent)_14%,var(--color-panel-hover))] border-[var(--color-accent)] text-[var(--color-text)]"
             : "border-transparent text-[var(--color-text)] hover:bg-[var(--color-panel-hover)]",
         )}
       >

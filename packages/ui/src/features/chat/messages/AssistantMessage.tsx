@@ -16,16 +16,18 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
   return (
     <MessageSurface align="left">
       <div className="select-text" data-selectable-message data-message-raw={message.text}>
-        {message.text &&
-          (message.isComplete ? (
-            <Markdown text={message.text} isComplete />
-          ) : (
-            // Streaming path: skip the full markdown re-parse on every delta. Once
-            // `isComplete` flips we swap to the styled <Markdown> with Shiki highlighting.
-            <pre className="whitespace-pre-wrap break-words font-sans m-0 leading-relaxed">
-              {message.text}
-            </pre>
-          ))}
+        {message.text && (
+          // The same `<Markdown>` path runs whether streaming or complete; this kills the
+          // pre→markdown reflow on completion. While `isComplete` is false, fenced code
+          // renders as plain `<pre>` (no Shiki); the flag flips after `turn.end`.
+          <div
+            role="status"
+            aria-live={message.isComplete ? undefined : "polite"}
+            aria-atomic="false"
+          >
+            <Markdown text={message.text} isComplete={message.isComplete} />
+          </div>
+        )}
         {message.toolCallIds.map((callId) => {
           const call = toolCalls?.[callId];
           if (!call) return null;
