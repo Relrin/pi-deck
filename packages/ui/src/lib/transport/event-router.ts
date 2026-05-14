@@ -1,4 +1,5 @@
 import {
+  ContextUsage,
   EVENT_HOST_ERROR,
   EVENT_SESSION_AGENT_EVENT,
   EVENT_SESSION_MESSAGE_DELTA,
@@ -8,9 +9,11 @@ import {
   EVENT_SESSION_TURN_END,
   EVENT_SESSION_USER_MESSAGE,
   EVENT_SESSION_WORKER_EXIT,
+  TokenUsage,
 } from "@pi-deck/core/protocol/events.js";
 import { useToastStore } from "../../features/_status/useToastStore.js";
 import { useMessagesStore } from "../../features/chat/useMessagesStore.js";
+import { useUsageStore } from "../../features/chat/useUsageStore.js";
 import { useProjectsStore } from "../../features/sessions/useProjectsStore.js";
 import { useSessionsStore } from "../../features/sessions/useSessionsStore.js";
 
@@ -63,6 +66,13 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
     }
     case EVENT_SESSION_TURN_END: {
       useMessagesStore.getState().endTurn(sessionId, Boolean(payload.cancelled));
+      const usage = TokenUsage.safeParse(payload.usage);
+      if (usage.success) {
+        const ctx = ContextUsage.safeParse(payload.contextUsage);
+        useUsageStore
+          .getState()
+          .setTurnUsage(sessionId, usage.data, ctx.success ? ctx.data : undefined);
+      }
       // pi may have generated a title for this session on its first turn. Refresh from the
       // backend so the sidebar reflects it without a manual reload. Cheap call; sessions
       // store dedups its own loading state.

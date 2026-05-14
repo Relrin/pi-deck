@@ -1,13 +1,18 @@
 import { type KeyboardEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Send, Square } from "../../components/icons/index.js";
+import { Mic, Paperclip, Send, Square } from "../../components/icons/index.js";
 import { Button } from "../../components/ui/Button.js";
+import { IconButton } from "../../components/ui/IconButton.js";
+import { Tooltip } from "../../components/ui/Tooltip.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
+import { ContextUsageIndicator } from "./composer/ContextUsageIndicator.js";
+import { ExecutionModeMenu } from "./composer/ExecutionModeMenu.js";
+import { ModelMenu } from "./composer/ModelMenu.js";
 import { useDraftStore } from "./useDraftStore.js";
 import { selectTurnInFlight, useMessagesStore } from "./useMessagesStore.js";
 
 const MAX_ROWS = 12;
 const LINE_HEIGHT_PX = 20;
-const PLACEHOLDER = "Send a message…  (Ctrl/Cmd+Enter to send, Enter or Shift+Enter for newline)";
+const PLACEHOLDER = "Send a message...";
 
 export function MessageInput({ sessionId }: { sessionId: string }) {
   const [text, setText] = useState("");
@@ -18,7 +23,7 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   const consumePendingInsert = useDraftStore((s) => s.consumePendingInsert);
   const ref = useRef<HTMLTextAreaElement | null>(null);
 
-  // "Attach selection to context" pushes through useDraftStore; consume it into the
+  // "Attach selection to next prompt" pushes through useDraftStore; consume it into the
   // local textarea state so the user can edit before sending.
   useEffect(() => {
     if (pendingInsert === undefined) return;
@@ -54,14 +59,10 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
       e.preventDefault();
       submit();
     }
-    // Shift+Enter and plain Enter fall through to the browser's default newline.
   };
 
   const isEmpty = text.trim().length === 0;
 
-  // Synchronous handler so the optimistic `setText("")` runs inside the React event flow
-  // (React 19's act() warns when a state update happens inside an async function body, even
-  // before its first await). The async network call is delegated to a fire-and-forget helper.
   const submit = () => {
     const trimmed = text.trim();
     if (!trimmed || isInFlight) return;
@@ -79,8 +80,8 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   };
 
   return (
-    <div className="border-t border-[var(--color-border)] bg-[var(--color-panel)] p-3">
-      <div className="flex gap-2 items-end">
+    <div className="p-3">
+      <div className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-2 focus-within:border-[var(--color-accent)] transition-colors">
         <textarea
           ref={ref}
           value={text}
@@ -90,31 +91,50 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
           aria-label="Message"
           aria-keyshortcuts="Control+Enter Meta+Enter"
           rows={2}
-          className="flex-1 resize-none rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-subtle)] transition-colors focus:outline-none focus:border-[var(--color-accent)] font-sans leading-5"
+          className="resize-none border-0 bg-transparent px-1 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-subtle)] focus:outline-none font-sans leading-5"
         />
-        {isInFlight ? (
-          <Button
-            variant="danger"
-            onClick={() => void cancelPrompt()}
-            size="md"
-            aria-label="Stop generating"
-          >
-            <Square size={14} />
-            Stop
-          </Button>
-        ) : (
-          <Button
-            variant="primary"
-            onClick={() => void submit()}
-            disabled={isEmpty}
-            size="md"
-            aria-label="Send message"
-            title="Ctrl/Cmd+Enter"
-          >
-            <Send size={14} />
-            Send
-          </Button>
-        )}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1">
+            <ExecutionModeMenu />
+            <Tooltip content="Attach files" side="top">
+              <IconButton label="Attach files" disabled>
+                <Paperclip size={14} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip content="Voice input" side="top">
+              <IconButton label="Voice input" disabled>
+                <Mic size={14} />
+              </IconButton>
+            </Tooltip>
+          </div>
+          <div className="flex items-center gap-1">
+            <ModelMenu />
+            <ContextUsageIndicator sessionId={sessionId} />
+            {isInFlight ? (
+              <Button
+                variant="danger"
+                onClick={() => void cancelPrompt()}
+                size="sm"
+                aria-label="Stop generating"
+              >
+                <Square size={12} />
+                Stop
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                onClick={() => void submit()}
+                disabled={isEmpty}
+                size="sm"
+                aria-label="Send message"
+                title="Ctrl/Cmd+Enter"
+              >
+                <Send size={12} />
+                Send
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

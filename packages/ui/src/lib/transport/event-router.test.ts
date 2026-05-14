@@ -12,6 +12,7 @@ import {
 } from "@pi-deck/core/protocol/events.js";
 import { useToastStore } from "../../features/_status/useToastStore";
 import { useMessagesStore } from "../../features/chat/useMessagesStore";
+import { useUsageStore } from "../../features/chat/useUsageStore";
 import { routeEvent } from "./event-router";
 
 const SID = "session-x";
@@ -19,6 +20,7 @@ const SID = "session-x";
 beforeEach(() => {
   useMessagesStore.setState({ bySession: {} });
   useToastStore.setState({ toasts: [] });
+  useUsageStore.setState({ bySession: {} });
 });
 
 describe("routeEvent — routing", () => {
@@ -95,6 +97,25 @@ describe("routeEvent — routing", () => {
     expect(useToastStore.getState().toasts.length).toBe(1);
     expect(useToastStore.getState().toasts[0]?.kind).toBe("error");
     expect(useMessagesStore.getState().bySession[SID]?.isTurnInFlight).toBe(false);
+  });
+
+  test("turn.end with usage + contextUsage populates useUsageStore", () => {
+    routeEvent(EVENT_SESSION_TURN_END, {
+      sessionId: SID,
+      cancelled: false,
+      usage: { input: 100, output: 50, cacheRead: 10, cacheWrite: 5, total: 165 },
+      contextUsage: { tokens: 1234, contextWindow: 200_000, percent: 0.617 },
+    });
+    const u = useUsageStore.getState().bySession[SID];
+    expect(u?.lastTurn.input).toBe(100);
+    expect(u?.lastTurn.total).toBe(165);
+    expect(u?.context?.tokens).toBe(1234);
+    expect(u?.context?.contextWindow).toBe(200_000);
+  });
+
+  test("turn.end without usage leaves useUsageStore untouched", () => {
+    routeEvent(EVENT_SESSION_TURN_END, { sessionId: SID, cancelled: false });
+    expect(useUsageStore.getState().bySession[SID]).toBeUndefined();
   });
 
   test("host error surfaces a toast", () => {

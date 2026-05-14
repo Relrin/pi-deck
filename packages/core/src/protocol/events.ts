@@ -48,11 +48,34 @@ export const SessionToolCallEndPayload = z.object({
   isError: z.boolean(),
 });
 
+/** Token counts reported by the AI provider for the just-finished assistant turn. */
+export const TokenUsage = z.object({
+  input: z.number(),
+  output: z.number(),
+  cacheRead: z.number(),
+  cacheWrite: z.number(),
+  total: z.number(),
+});
+export type TokenUsage = z.infer<typeof TokenUsage>;
+
+/** Session-level context window state pulled from `AgentSession.getSessionStats()`. */
+export const ContextUsage = z.object({
+  /** Estimated context tokens; `null` right after compaction before the next LLM response. */
+  tokens: z.number().nullable(),
+  contextWindow: z.number(),
+  percent: z.number().nullable(),
+});
+export type ContextUsage = z.infer<typeof ContextUsage>;
+
 export const SessionTurnEndPayload = z.object({
   sessionId: z.string(),
   message: z.unknown(),
   toolResults: z.array(z.unknown()).optional(),
   cancelled: z.boolean().optional(),
+  /** Per-turn token usage extracted from `message.usage`. */
+  usage: TokenUsage.optional(),
+  /** Cumulative context window usage at the end of this turn. */
+  contextUsage: ContextUsage.optional(),
 });
 
 export const SessionWorkerExitPayload = z.object({

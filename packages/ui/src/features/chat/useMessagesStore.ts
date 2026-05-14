@@ -79,6 +79,19 @@ function lastIncompleteAssistantIdx(messages: MessageEntry[]): number {
   return -1;
 }
 
+// Late deltas (replay, network re-order) can arrive after `endTurn` has flipped every
+// in-flight assistant to complete. The "last incomplete" fallback misses, so we first try
+// to match by pi's stable `remoteTimestamp` — that ties a delta to its existing bubble
+// even after it's been marked complete.
+function findAssistantByTimestamp(messages: MessageEntry[], ts: number | undefined): number {
+  if (ts === undefined) return -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m && m.kind === "assistant" && m.remoteTimestamp === ts) return i;
+  }
+  return -1;
+}
+
 function newAssistant(now: number): AssistantMessageEntry {
   return {
     kind: "assistant",
@@ -129,6 +142,24 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
       const messages = [...session.messages];
       const remoteTimestamp = extractAssistantTimestamp(snapshot);
       const snapshotText = extractAssistantSnapshotText(snapshot);
+
+      // First: try to match by stable timestamp — survives `endTurn`, so a late delta
+      // arriving after the turn ended still updates its existing bubble instead of
+      // pushing a duplicate.
+      const tsIdx = findAssistantByTimestamp(messages, remoteTimestamp);
+      if (tsIdx >= 0) {
+        const matched = messages[tsIdx] as AssistantMessageEntry;
+        messages[tsIdx] = {
+          ...matched,
+          text: snapshotText || matched.text,
+        };
+        return {
+          bySession: {
+            ...state.bySession,
+            [sessionId]: { ...session, messages, isTurnInFlight: session.isTurnInFlight },
+          },
+        };
+      }
 
       // Find the in-progress assistant. If one exists with a *different* remote timestamp,
       // pi has rolled to a new attempt (auto-retry) — drop the stale one so we don't end up

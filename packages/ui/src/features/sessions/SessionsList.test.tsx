@@ -66,4 +66,11 @@ describe("SessionsList", () => {
     render(<SessionsList />);
     expect(screen.getByLabelText("Refreshing sessions")).toBeInTheDocument();
   });
+
+  test("header shows the Sessions title and the search + filter buttons", () => {
+    render(<SessionsList />);
+    expect(screen.getByText("Sessions")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Search sessions" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Filter sessions" })).toBeInTheDocument();
+  });
 });

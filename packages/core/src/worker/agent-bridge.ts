@@ -28,7 +28,7 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
   const { session } = await createAgentSession({ cwd: params.projectPath });
 
   const unsubscribe = session.subscribe((event: AgentSessionEvent) => {
-    forwardEvent(event, emit);
+    forwardEvent(event, emit, session);
   });
 
   return {
@@ -53,7 +53,7 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
   };
 }
 
-function forwardEvent(event: AgentSessionEvent, emit: EventEmitter): void {
+function forwardEvent(event: AgentSessionEvent, emit: EventEmitter, session: AgentSession): void {
   // Always forward the raw event for debugging and plan-004 renderer use.
   emit("agent.event", event);
 
@@ -96,11 +96,58 @@ function forwardEvent(event: AgentSessionEvent, emit: EventEmitter): void {
       });
       return;
     case "turn_end":
-      emit("turn.end", { message: event.message, toolResults: event.toolResults });
+      emit("turn.end", {
+        message: event.message,
+        toolResults: event.toolResults,
+        usage: extractMessageUsage(event.message),
+        contextUsage: session.getContextUsage(),
+      });
       return;
     default:
       return;
   }
+}
+
+interface TokenUsageShape {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+  total: number;
+}
+
+/**
+ * Pulls the per-turn token counts off pi's assistant message. The full pi-ai `Usage` type
+ * carries `totalTokens` + a `cost` breakdown we don't need over the wire; we forward only
+ * the integer counts to keep the payload small.
+ */
+function extractMessageUsage(message: unknown): TokenUsageShape | undefined {
+  if (typeof message !== "object" || message === null) return undefined;
+  const usage = (message as { usage?: unknown }).usage;
+  if (typeof usage !== "object" || usage === null) return undefined;
+  const u = usage as {
+    input?: unknown;
+    output?: unknown;
+    cacheRead?: unknown;
+    cacheWrite?: unknown;
+    totalTokens?: unknown;
+  };
+  if (
+    typeof u.input !== "number" ||
+    typeof u.output !== "number" ||
+    typeof u.cacheRead !== "number" ||
+    typeof u.cacheWrite !== "number" ||
+    typeof u.totalTokens !== "number"
+  ) {
+    return undefined;
+  }
+  return {
+    input: u.input,
+    output: u.output,
+    cacheRead: u.cacheRead,
+    cacheWrite: u.cacheWrite,
+    total: u.totalTokens,
+  };
 }
 
 function extractUserText(content: unknown): string {

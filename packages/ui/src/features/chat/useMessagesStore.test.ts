@@ -99,6 +99,33 @@ describe("useMessagesStore — assistant deltas", () => {
     expect(msgs[0].isComplete).toBe(true);
     expect(useMessagesStore.getState().bySession[SID]?.isTurnInFlight).toBe(false);
   });
+
+  test("a late delta after endTurn updates the existing bubble (no duplicate)", () => {
+    useMessagesStore.getState().appendAssistantDelta(SID, {}, delta("partial", 100));
+    useMessagesStore.getState().endTurn(SID, false);
+    // Late delta — same remoteTimestamp, full final text.
+    useMessagesStore.getState().appendAssistantDelta(SID, {}, delta("partial final", 100));
+    const msgs = useMessagesStore.getState().bySession[SID]?.messages ?? [];
+    const assistants = msgs.filter((m) => m.kind === "assistant");
+    expect(assistants).toHaveLength(1);
+    if (assistants[0]?.kind !== "assistant") throw new Error("not assistant");
+    expect(assistants[0].text).toBe("partial final");
+    expect(assistants[0].isComplete).toBe(true);
+    // The turn has already ended — a late delta must not re-arm "in flight".
+    expect(useMessagesStore.getState().bySession[SID]?.isTurnInFlight).toBe(false);
+  });
+
+  test("a delta after endTurn with a NEW remoteTimestamp creates a second assistant", () => {
+    useMessagesStore.getState().appendAssistantDelta(SID, {}, delta("first turn", 100));
+    useMessagesStore.getState().endTurn(SID, false);
+    useMessagesStore.getState().appendAssistantDelta(SID, {}, delta("second turn", 200));
+    const assistants = (useMessagesStore.getState().bySession[SID]?.messages ?? []).filter(
+      (m) => m.kind === "assistant",
+    );
+    expect(assistants).toHaveLength(2);
+    if (assistants[1]?.kind !== "assistant") throw new Error("not assistant");
+    expect(assistants[1].text).toBe("second turn");
+  });
 });
 
 describe("useMessagesStore — tool calls", () => {
