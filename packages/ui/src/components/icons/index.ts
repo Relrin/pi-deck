@@ -1,5 +1,6 @@
 export {
   Bot,
+  Box,
   Check,
   ChevronDown,
   ChevronRight,
@@ -8,6 +9,7 @@ export {
   Filter,
   Folder,
   FolderOpen,
+  GitBranch,
   List,
   Loader2,
   Mic,

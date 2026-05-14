@@ -1,12 +1,16 @@
+import type { ComponentType } from "react";
 import { useState } from "react";
+import { Box, Folder, GitBranch } from "../components/icons/index.js";
 import { usePanelState } from "./use-panel-state";
 
 type TabId = "git" | "files" | "context";
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: "git", label: "Git" },
-  { id: "files", label: "Files" },
-  { id: "context", label: "Context" },
+type TabIcon = ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
+
+const TABS: { id: TabId; label: string; Icon: TabIcon }[] = [
+  { id: "git", label: "Git", Icon: GitBranch },
+  { id: "files", label: "Files", Icon: Folder },
+  { id: "context", label: "Context", Icon: Box },
 ];
 
 interface ContextSidebarProps {
@@ -77,6 +81,7 @@ export function ContextSidebar({ onCloseDrawer }: ContextSidebarProps = {}) {
         <div role="tablist" aria-label="Context panels" style={{ display: "flex", gap: 2 }}>
           {TABS.map((tab) => {
             const isActive = active === tab.id;
+            const Icon = tab.Icon;
             return (
               <button
                 key={tab.id}
@@ -85,6 +90,9 @@ export function ContextSidebar({ onCloseDrawer }: ContextSidebarProps = {}) {
                 aria-selected={isActive}
                 onClick={() => setActive(tab.id)}
                 style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
                   padding: "4px 10px",
                   fontSize: 12,
                   fontWeight: 500,
@@ -94,6 +102,7 @@ export function ContextSidebar({ onCloseDrawer }: ContextSidebarProps = {}) {
                   transition: "background-color 150ms ease, color 150ms ease",
                 }}
               >
+                <Icon size={12} aria-hidden />
                 {tab.label}
               </button>
             );
