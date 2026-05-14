@@ -6,7 +6,7 @@ interface ChatHeaderProps {
 
 export function ChatHeader({ session }: ChatHeaderProps) {
   return (
-    <header className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-panel)]">
+    <header className="flex h-10 items-center justify-between px-4 border-b border-[var(--color-border)] bg-[var(--color-panel)]">
       <div className="min-w-0 flex-1">
         <h2 className="text-sm font-medium text-[var(--color-text)] truncate">{session.title}</h2>
       </div>

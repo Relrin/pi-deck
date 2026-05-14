@@ -74,7 +74,8 @@ export function ContextSidebar({ onCloseDrawer }: ContextSidebarProps = {}) {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "var(--space-2) var(--space-3)",
+          height: 40,
+          padding: "0 var(--space-3)",
           borderBottom: "1px solid var(--color-border)",
         }}
       >
