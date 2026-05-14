@@ -1,7 +1,8 @@
-import { type KeyboardEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Send, Square } from "../../components/icons/index.js";
 import { Button } from "../../components/ui/Button.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
+import { useDraftStore } from "./useDraftStore.js";
 import { selectTurnInFlight, useMessagesStore } from "./useMessagesStore.js";
 
 const MAX_ROWS = 12;
@@ -11,7 +12,28 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   const isInFlight = useMessagesStore(useMemo(() => selectTurnInFlight(sessionId), [sessionId]));
   const sendPrompt = useSessionsStore((s) => s.sendPrompt);
   const cancelPrompt = useSessionsStore((s) => s.cancelPrompt);
+  const pendingInsert = useDraftStore((s) => s.pendingInsert);
+  const consumePendingInsert = useDraftStore((s) => s.consumePendingInsert);
   const ref = useRef<HTMLTextAreaElement | null>(null);
+
+  // "Attach selection to context" pushes through useDraftStore; consume it into the
+  // local textarea state so the user can edit before sending.
+  useEffect(() => {
+    if (pendingInsert === undefined) return;
+    const value = consumePendingInsert();
+    if (value === undefined) return;
+    setText((prev) => {
+      if (!prev) return value;
+      const separator = prev.endsWith("\n") ? "" : "\n";
+      return `${prev}${separator}${value}`;
+    });
+    requestAnimationFrame(() => {
+      const el = ref.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    });
+  }, [pendingInsert, consumePendingInsert]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure height when the typed text changes
   useLayoutEffect(() => {

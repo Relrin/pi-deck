@@ -48,13 +48,6 @@ function getOrInit(
   return emptySession();
 }
 
-function extractDeltaText(deltaEvent: unknown): string {
-  if (typeof deltaEvent !== "object" || deltaEvent === null) return "";
-  const e = deltaEvent as { type?: string; delta?: unknown };
-  if (e.type === "text_delta" && typeof e.delta === "string") return e.delta;
-  return "";
-}
-
 function extractAssistantSnapshotText(snapshot: unknown): string {
   if (typeof snapshot !== "object" || snapshot === null) return "";
   const s = snapshot as { content?: unknown };
@@ -71,12 +64,18 @@ function extractAssistantSnapshotText(snapshot: unknown): string {
     .join("");
 }
 
-function lastAssistant(messages: MessageEntry[]): AssistantMessageEntry | undefined {
+function extractAssistantTimestamp(snapshot: unknown): number | undefined {
+  if (typeof snapshot !== "object" || snapshot === null) return undefined;
+  const s = snapshot as { timestamp?: unknown };
+  return typeof s.timestamp === "number" ? s.timestamp : undefined;
+}
+
+function lastIncompleteAssistantIdx(messages: MessageEntry[]): number {
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i];
-    if (m && m.kind === "assistant" && !m.isComplete) return m;
+    if (m && m.kind === "assistant" && !m.isComplete) return i;
   }
-  return undefined;
+  return -1;
 }
 
 function newAssistant(now: number): AssistantMessageEntry {
@@ -116,27 +115,50 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
           [sessionId]: {
             ...session,
             messages: [...session.messages, { kind: "user", id: messageId, text, createdAt }],
-            isTurnInFlight: true,
+            // Leave isTurnInFlight as-is: by the time the bridge echo arrives the turn may
+            // already be complete, and we don't want to flip "Stop" back on.
           },
         },
       };
     }),
 
-  appendAssistantDelta: (sessionId, deltaEvent, snapshot) =>
+  appendAssistantDelta: (sessionId, _deltaEvent, snapshot) =>
     set((state) => {
       const session = getOrInit(state.bySession, sessionId);
       const messages = [...session.messages];
-      let current = lastAssistant(messages);
-      if (!current) {
-        current = newAssistant(Date.now());
-        messages.push(current);
+      const remoteTimestamp = extractAssistantTimestamp(snapshot);
+      const snapshotText = extractAssistantSnapshotText(snapshot);
+
+      // Find the in-progress assistant. If one exists with a *different* remote timestamp,
+      // pi has rolled to a new attempt (auto-retry) — drop the stale one so we don't end up
+      // with two bubbles for the same logical response.
+      const idx = lastIncompleteAssistantIdx(messages);
+      const current = idx >= 0 ? (messages[idx] as AssistantMessageEntry) : undefined;
+      const isRetry =
+        current?.remoteTimestamp !== undefined &&
+        remoteTimestamp !== undefined &&
+        current.remoteTimestamp !== remoteTimestamp;
+      if (current && isRetry) {
+        // Replace the stale bubble with the fresh stream.
+        messages[idx] = {
+          ...current,
+          remoteTimestamp,
+          text: snapshotText,
+        };
+      } else if (current) {
+        messages[idx] = {
+          ...current,
+          // Lock in the first timestamp we see so a later delta with the same id still matches.
+          remoteTimestamp: current.remoteTimestamp ?? remoteTimestamp,
+          // Snapshot-as-truth: avoids accumulating duplicate deltas if pi/provider replays them.
+          text: snapshotText || current.text,
+        };
+      } else {
+        const fresh = newAssistant(Date.now());
+        fresh.remoteTimestamp = remoteTimestamp;
+        fresh.text = snapshotText;
+        messages.push(fresh);
       }
-      const delta = extractDeltaText(deltaEvent);
-      const updated: AssistantMessageEntry =
-        delta.length > 0
-          ? { ...current, text: current.text + delta }
-          : { ...current, text: extractAssistantSnapshotText(snapshot) || current.text };
-      messages[messages.length - 1] = updated;
       return {
         bySession: {
           ...state.bySession,
@@ -149,17 +171,21 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
     set((state) => {
       const session = getOrInit(state.bySession, sessionId);
       const messages = [...session.messages];
-      let current = lastAssistant(messages);
-      if (!current) {
+      let idx = lastIncompleteAssistantIdx(messages);
+      let current: AssistantMessageEntry;
+      if (idx === -1) {
         current = newAssistant(Date.now());
         messages.push(current);
+        idx = messages.length - 1;
+      } else {
+        current = messages[idx] as AssistantMessageEntry;
       }
       if (!current.toolCallIds.includes(callId)) {
         const updated: AssistantMessageEntry = {
           ...current,
           toolCallIds: [...current.toolCallIds, callId],
         };
-        messages[messages.length - 1] = updated;
+        messages[idx] = updated;
       }
       const entry: ToolCallEntry = {
         id: callId,

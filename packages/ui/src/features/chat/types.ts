@@ -22,6 +22,8 @@ export interface UserMessageEntry {
 export interface AssistantMessageEntry {
   kind: "assistant";
   id: string;
+  /** Pi's stable timestamp for this assistant message — used to dedup retries. */
+  remoteTimestamp?: number;
   text: string;
   isComplete: boolean;
   toolCallIds: string[];
