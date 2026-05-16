@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ProjectSchema, ProjectSummarySchema } from "../domain/project.js";
 import { SessionSummarySchema } from "../domain/session.js";
+import { themeListingSchema } from "./theme.js";
 
 export const PingRequest = z.object({}).strict();
 export const PingResponse = z.object({
@@ -43,6 +44,19 @@ export const SessionPromptResponse = z.object({
 export const SessionCancelRequest = z.object({ sessionId: z.string().min(1) });
 export const SessionCancelResponse = z.object({ ok: z.literal(true) });
 
+export const ThemeListRequest = z.object({}).strict();
+export const ThemeListResponse = z.object({
+  activeName: z.string(),
+  themes: z.array(themeListingSchema),
+});
+
+export const ThemeGetRequest = z.object({ name: z.string().min(1) });
+/** The theme payload is round-tripped as-is; the renderer revalidates via `themeSpecSchema`. */
+export const ThemeGetResponse = z.object({ theme: z.unknown() });
+
+export const ThemeSetActiveRequest = z.object({ name: z.string().min(1) });
+export const ThemeSetActiveResponse = z.object({ ok: z.literal(true) });
+
 export const CommandSchemas = {
   ping: { request: PingRequest, response: PingResponse },
   "project.list": { request: ProjectListRequest, response: ProjectListResponse },
@@ -53,6 +67,9 @@ export const CommandSchemas = {
   "session.deactivate": { request: SessionDeactivateRequest, response: SessionDeactivateResponse },
   "session.prompt": { request: SessionPromptRequest, response: SessionPromptResponse },
   "session.cancel": { request: SessionCancelRequest, response: SessionCancelResponse },
+  "theme.list": { request: ThemeListRequest, response: ThemeListResponse },
+  "theme.get": { request: ThemeGetRequest, response: ThemeGetResponse },
+  "theme.setActive": { request: ThemeSetActiveRequest, response: ThemeSetActiveResponse },
 } as const;
 
 export type CommandName = keyof typeof CommandSchemas;

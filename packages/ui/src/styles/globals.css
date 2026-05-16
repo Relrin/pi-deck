@@ -1,3 +1,4 @@
+@import "./fonts.css";
 @import "../theme/tokens.css";
 @import "./reset.css";
 @import "tailwindcss";
@@ -5,3 +6,10 @@
 /* Tailwind v4 auto-detects content via Vite's module graph, but `@pi-deck/ui` is reached
    through a path alias from packages/desktop; the explicit @source guarantees scanning. */
 @source "../**/*.{ts,tsx}";
+
+body {
+  font-family: var(--font-ui);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

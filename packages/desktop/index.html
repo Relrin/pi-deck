@@ -4,6 +4,40 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>pi-deck</title>
+    <script>
+      // Pre-mount hydration. Sets data-* attributes so the first paint matches the user's stored
+      // theme/density/fonts without flashing the default palette. The full per-token JSON is
+      // applied later by ThemeProvider once the WS client is connected.
+      (() => {
+        var root = document.documentElement;
+        var raw = null;
+        var prefs = {};
+        var themeName = null;
+        var mql = null;
+        try {
+          raw = localStorage.getItem("pi-deck:prefs");
+          if (raw) {
+            try {
+              prefs = JSON.parse(raw).state || {};
+            } catch {
+              prefs = {};
+            }
+          }
+          themeName = localStorage.getItem("pi-deck:active-theme");
+          if (!themeName) {
+            mql = window.matchMedia?.("(prefers-color-scheme: light)");
+            themeName = mql?.matches ? "default-light" : "default-dark";
+          }
+          if (themeName.indexOf("-light") !== -1) root.setAttribute("data-theme", "light");
+          if (themeName.indexOf("phosphor") === 0) root.setAttribute("data-accent", "phosphor");
+          else if (themeName.indexOf("nightshade") === 0) root.setAttribute("data-accent", "nightshade");
+          if (prefs.density === "cozy") root.setAttribute("data-density", "cozy");
+          if (prefs.fonts && prefs.fonts !== "default") root.setAttribute("data-fonts", prefs.fonts);
+        } catch {
+          // ignore — fall back to CSS defaults
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

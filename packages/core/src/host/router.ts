@@ -1,10 +1,12 @@
 import { type CommandName, CommandSchemas } from "../protocol/commands.js";
 import type { MetadataStore } from "./metadata-store.js";
 import type { SessionManager } from "./session-manager.js";
+import type { ThemeManager } from "./themes/index.js";
 
 export interface RouterContext {
   metadataStore: MetadataStore;
   sessionManager: SessionManager;
+  themeManager: ThemeManager;
   hostVersion: string;
   protocolVersion: number;
 }
@@ -81,6 +83,21 @@ const handlers: { [C in CommandName]: CommandHandler } = {
   "session.cancel": async (ctx, payload) => {
     const parsed = CommandSchemas["session.cancel"].request.parse(payload);
     await ctx.sessionManager.cancel(parsed.sessionId);
+    return { ok: true as const };
+  },
+  "theme.list": async (ctx) => ({
+    activeName: ctx.themeManager.getActiveName(),
+    themes: ctx.themeManager.list(),
+  }),
+  "theme.get": async (ctx, payload) => {
+    const parsed = CommandSchemas["theme.get"].request.parse(payload);
+    const theme = ctx.themeManager.get(parsed.name);
+    if (!theme) throw new RouterError("not_found", `Unknown theme: ${parsed.name}`);
+    return { theme };
+  },
+  "theme.setActive": async (ctx, payload) => {
+    const parsed = CommandSchemas["theme.setActive"].request.parse(payload);
+    await ctx.themeManager.setActive(parsed.name);
     return { ok: true as const };
   },
 };

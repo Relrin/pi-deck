@@ -3,6 +3,7 @@ import { generateToken } from "./auth.js";
 import { MetadataStore } from "./metadata-store.js";
 import type { RouterContext } from "./router.js";
 import { SessionManager } from "./session-manager.js";
+import { ThemeManager } from "./themes/index.js";
 import { WorkerHandle, type WorkerSpawnOptions } from "./worker-handle.js";
 import { startWsServer, type WsServerHandle } from "./ws-server.js";
 
@@ -45,9 +46,16 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     wsHandle?.broadcast(topic, payload);
   });
 
+  const themeManager = new ThemeManager(opts.userDataDir);
+  await themeManager.init();
+  themeManager.on("event", (topic, payload) => {
+    wsHandle?.broadcast(topic, payload);
+  });
+
   const router: RouterContext = {
     metadataStore,
     sessionManager,
+    themeManager,
     hostVersion: opts.hostVersion,
     protocolVersion: PROTOCOL_VERSION,
   };
@@ -59,6 +67,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     token,
     close: async () => {
       sessionManager.shutdown();
+      await themeManager.shutdown();
       await wsHandle?.close();
     },
   };

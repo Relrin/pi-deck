@@ -1,3 +1,4 @@
+import type { ThemeListing, ThemeSpec } from "@pi-deck/core";
 import {
   ContextUsage,
   EVENT_HOST_ERROR,
@@ -9,13 +10,16 @@ import {
   EVENT_SESSION_TURN_END,
   EVENT_SESSION_USER_MESSAGE,
   EVENT_SESSION_WORKER_EXIT,
+  EVENT_THEME_CHANGED,
   TokenUsage,
 } from "@pi-deck/core/protocol/events.js";
 import { useToastStore } from "../../features/_status/useToastStore.js";
+import { resetHighlighter } from "../../features/chat/messages/code-highlight.js";
 import { useMessagesStore } from "../../features/chat/useMessagesStore.js";
 import { useUsageStore } from "../../features/chat/useUsageStore.js";
 import { useProjectsStore } from "../../features/sessions/useProjectsStore.js";
 import { useSessionsStore } from "../../features/sessions/useSessionsStore.js";
+import { useThemeStore } from "../../theme/useThemeStore.js";
 
 type Payload = Record<string, unknown>;
 
@@ -25,6 +29,12 @@ function asPayload(p: unknown): Payload {
 
 export function routeEvent(topic: string, rawPayload: unknown): void {
   const payload = asPayload(rawPayload);
+
+  if (topic === EVENT_THEME_CHANGED) {
+    void handleThemeChanged(payload);
+    return;
+  }
+
   const sessionId = typeof payload.sessionId === "string" ? payload.sessionId : "";
   if (!sessionId && topic !== EVENT_HOST_ERROR) return;
 
@@ -101,6 +111,26 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
     default:
       return;
   }
+}
+
+async function handleThemeChanged(payload: Payload): Promise<void> {
+  const activeName = typeof payload.activeName === "string" ? payload.activeName : "";
+  if (!activeName) return;
+  const themes = Array.isArray(payload.themes) ? (payload.themes as ThemeListing[]) : [];
+
+  let spec: ThemeSpec | undefined = payload.spec as ThemeSpec | undefined;
+  if (!spec) {
+    const client = useSessionsStore.getState().client;
+    if (client) {
+      try {
+        spec = await client.themes.get(activeName);
+      } catch {
+        spec = undefined;
+      }
+    }
+  }
+  useThemeStore.getState().applySpec(activeName, spec, themes);
+  resetHighlighter();
 }
 
 // Debounce so a rapid sequence of turn.end events (multiple sessions, fast retries) collapses

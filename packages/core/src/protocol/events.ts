@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { themeListingSchema } from "./theme.js";
 
 export const EVENT_SESSION_MESSAGE_DELTA = "session.message.delta" as const;
 export const EVENT_SESSION_USER_MESSAGE = "session.user.message" as const;
@@ -10,6 +11,7 @@ export const EVENT_SESSION_WORKER_EXIT = "session.worker.exit" as const;
 export const EVENT_SESSION_AGENT_EVENT = "session.agent.event" as const;
 export const EVENT_HOST_ERROR = "host.error" as const;
 export const EVENT_HOST_READY = "host.ready" as const;
+export const EVENT_THEME_CHANGED = "theme.changed" as const;
 
 export const SessionMessageDeltaPayload = z.object({
   sessionId: z.string(),
@@ -100,6 +102,13 @@ export const HostReadyPayload = z.object({
   protocolVersion: z.number().int(),
 });
 
+export const ThemeChangedPayload = z.object({
+  activeName: z.string(),
+  themes: z.array(themeListingSchema),
+  /** Present when the active theme spec itself changed (live edit on disk). */
+  spec: z.unknown().optional(),
+});
+
 export const EventSchemas = {
   [EVENT_SESSION_MESSAGE_DELTA]: SessionMessageDeltaPayload,
   [EVENT_SESSION_USER_MESSAGE]: SessionUserMessagePayload,
@@ -111,6 +120,7 @@ export const EventSchemas = {
   [EVENT_SESSION_AGENT_EVENT]: SessionAgentEventPayload,
   [EVENT_HOST_ERROR]: HostErrorPayload,
   [EVENT_HOST_READY]: HostReadyPayload,
+  [EVENT_THEME_CHANGED]: ThemeChangedPayload,
 } as const;
 
 export type EventTopic = keyof typeof EventSchemas;

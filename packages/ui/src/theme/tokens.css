@@ -1,39 +1,221 @@
+/* ============================================================
+   pi-deck — Theme tokens
+   OKLCH vocabulary ported from plans/design-mockup/html-css-mockup/theme.css.
+   Active theme JSON overrides these at runtime via document.documentElement.style.
+   ============================================================ */
+
+/* ---------- Base tokens (DARK / PLASMA by default) ---------- */
 :root {
   color-scheme: dark;
 
-  --color-bg: #0e0f12;
-  --color-panel: #16181d;
-  --color-panel-2: #1d2027;
-  --color-panel-hover: #232730;
-  --color-border: #2a2d35;
-  --color-border-strong: #3a3e48;
+  /* type stacks */
+  --font-display: "Instrument Serif", "Times New Roman", serif;
+  --font-ui: "Geist Variable", "Geist", -apple-system, "Helvetica Neue", sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", "SF Mono", ui-monospace, monospace;
 
-  --color-text: #e7e9ee;
-  --color-text-muted: #9aa0aa;
-  --color-text-subtle: #6b7280;
+  /* density */
+  --u: 4px;
+  --row-h: 28px;
+  --topbar-h: 44px;
+  --footer-h: 26px;
+  --rail-w: 264px;
+  --rightpane-w: 360px;
+  --radius: 4px;
+  --radius-lg: 8px;
 
-  --color-accent: #6aa1ff;
-  --color-accent-hover: #87b3ff;
-  --color-accent-muted: #2e4a7a;
+  /* type sizes */
+  --t-12: 11px;
+  --t-13: 12px;
+  --t-14: 13px;
+  --t-16: 15px;
+  --t-20: 19px;
+  --t-display: 28px;
+  --t-display-lg: 48px;
 
-  --color-danger: #f47174;
-  --color-success: #6fcf97;
-  --color-warning: #f2c94c;
+  /* DARK BASE — warm near-black */
+  --bg-0: oklch(0.16 0.008 60);
+  --bg-1: oklch(0.19 0.008 60);
+  --bg-2: oklch(0.22 0.01 60);
+  --bg-3: oklch(0.26 0.012 60);
+  --bg-inset: oklch(0.13 0.008 60);
 
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
+  --line: oklch(0.3 0.01 60 / 0.6);
+  --line-strong: oklch(0.4 0.012 60 / 0.8);
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
+  --ink-0: oklch(0.96 0.005 60);
+  --ink-1: oklch(0.78 0.008 60);
+  --ink-2: oklch(0.58 0.01 60);
+  --ink-3: oklch(0.45 0.01 60);
 
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+  /* ACCENT — Plasma (orange) default */
+  --accent: oklch(0.74 0.17 50);
+  --accent-soft: oklch(0.74 0.17 50 / 0.14);
+  --accent-line: oklch(0.74 0.17 50 / 0.35);
+  --accent-ink: oklch(0.2 0.06 50);
 
-  --shadow-panel: 0 1px 0 rgba(0, 0, 0, 0.4) inset, 0 0 0 1px var(--color-border);
+  /* semantic */
+  --add: oklch(0.78 0.16 145);
+  --del: oklch(0.7 0.18 25);
+  --mod: oklch(0.78 0.14 85);
+  --info: oklch(0.74 0.12 230);
+  --warn: oklch(0.8 0.15 80);
+
+  --add-soft: oklch(0.78 0.16 145 / 0.12);
+  --del-soft: oklch(0.7 0.18 25 / 0.12);
+  --mod-soft: oklch(0.78 0.14 85 / 0.12);
+
+  /* diff / syntax bridge — alias onto semantic + ink + bg-inset */
+  --diff-add-bg: var(--add-soft);
+  --diff-add-fg: var(--add);
+  --diff-add-marker: var(--add);
+  --diff-del-bg: var(--del-soft);
+  --diff-del-fg: var(--del);
+  --diff-del-marker: var(--del);
+  --diff-context-fg: var(--ink-1);
+  --diff-line-number: var(--ink-3);
+  --code-bg: var(--bg-inset);
+
+  /* effects */
+  --shadow-pop: 0 18px 60px -12px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.2);
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* ---------- Accent variants ---------- */
+[data-accent="phosphor"] {
+  --accent: oklch(0.88 0.21 145);
+  --accent-soft: oklch(0.88 0.21 145 / 0.12);
+  --accent-line: oklch(0.88 0.21 145 / 0.32);
+  --accent-ink: oklch(0.18 0.08 145);
+}
+[data-accent="nightshade"] {
+  --accent: oklch(0.72 0.18 295);
+  --accent-soft: oklch(0.72 0.18 295 / 0.14);
+  --accent-line: oklch(0.72 0.18 295 / 0.35);
+  --accent-ink: oklch(0.22 0.08 295);
+}
+
+/* ---------- Light theme ---------- */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-0: oklch(0.985 0.004 75);
+  --bg-1: oklch(0.965 0.005 75);
+  --bg-2: oklch(0.945 0.006 75);
+  --bg-3: oklch(0.92 0.008 75);
+  --bg-inset: oklch(0.99 0.003 75);
+
+  --line: oklch(0.85 0.008 75 / 0.9);
+  --line-strong: oklch(0.72 0.01 75 / 0.9);
+
+  --ink-0: oklch(0.18 0.01 60);
+  --ink-1: oklch(0.36 0.01 60);
+  --ink-2: oklch(0.52 0.01 60);
+  --ink-3: oklch(0.66 0.01 60);
+
+  --accent: oklch(0.58 0.18 50);
+  --accent-soft: oklch(0.58 0.18 50 / 0.1);
+  --accent-line: oklch(0.58 0.18 50 / 0.35);
+  --accent-ink: oklch(0.98 0.02 50);
+
+  --add: oklch(0.55 0.16 145);
+  --del: oklch(0.55 0.2 25);
+  --mod: oklch(0.58 0.15 85);
+  --info: oklch(0.5 0.14 230);
+
+  --add-soft: oklch(0.55 0.16 145 / 0.1);
+  --del-soft: oklch(0.55 0.2 25 / 0.1);
+  --mod-soft: oklch(0.58 0.15 85 / 0.1);
+
+  --shadow-pop: 0 18px 60px -16px rgba(40, 20, 0, 0.18), 0 2px 6px rgba(40, 20, 0, 0.06);
+}
+[data-theme="light"][data-accent="phosphor"] {
+  --accent: oklch(0.55 0.2 145);
+}
+[data-theme="light"][data-accent="nightshade"] {
+  --accent: oklch(0.5 0.2 295);
+}
+
+/* ---------- Density ---------- */
+[data-density="cozy"] {
+  --row-h: 32px;
+  --topbar-h: 48px;
+  --footer-h: 28px;
+  --t-13: 13px;
+  --t-14: 14px;
+  --t-16: 16px;
+}
+
+/* ---------- Font pairing ---------- */
+[data-fonts="sans-only"] {
+  --font-display: var(--font-ui);
+}
+[data-fonts="mono-only"] {
+  --font-display: var(--font-mono);
+  --font-ui: var(--font-mono);
+}
+
+/* ---------- Compat aliases ----------
+   Legacy --color-* / --radius-sm,md / --font-sans / --shadow-panel names used by
+   layout/feature components from plans 000–004. Each alias is removed as the
+   referencing file migrates to the new vocabulary (plans 005b, 006, 007, 008, 012).
+*/
+:root {
+  --color-bg: var(--bg-0);
+  --color-panel: var(--bg-1);
+  --color-panel-2: var(--bg-2);
+  --color-panel-hover: var(--bg-3);
+  --color-border: var(--line);
+  --color-border-strong: var(--line-strong);
+  --color-text: var(--ink-0);
+  --color-text-muted: var(--ink-1);
+  --color-text-subtle: var(--ink-2);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent);
+  --color-accent-muted: var(--accent-soft);
+  --color-danger: var(--del);
+  --color-success: var(--add);
+  --color-warning: var(--warn);
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --font-sans: var(--font-ui);
+  --shadow-panel: var(--shadow-pop);
+}
+
+/* ---------- Tailwind v4 @theme bridge ----------
+   Exposes theme tokens as utility classes (bg-bg-0, text-ink-1, border-line,
+   text-accent, font-mono, font-display, etc.). Tailwind v4 reads --color-*,
+   --font-*, --text-* directly from any @theme block.
+*/
+@theme {
+  --color-bg-0: var(--bg-0);
+  --color-bg-1: var(--bg-1);
+  --color-bg-2: var(--bg-2);
+  --color-bg-3: var(--bg-3);
+  --color-bg-inset: var(--bg-inset);
+
+  --color-ink-0: var(--ink-0);
+  --color-ink-1: var(--ink-1);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
+  --color-accent-ink: var(--accent-ink);
+
+  --color-add: var(--add);
+  --color-add-soft: var(--add-soft);
+  --color-del: var(--del);
+  --color-del-soft: var(--del-soft);
+  --color-mod: var(--mod);
+  --color-mod-soft: var(--mod-soft);
+  --color-info: var(--info);
+  --color-warn: var(--warn);
+
+  --font-display: var(--font-display);
+  --font-ui: var(--font-ui);
+  --font-mono: var(--font-mono);
 }

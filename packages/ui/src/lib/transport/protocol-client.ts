@@ -3,6 +3,7 @@ import type {
   CommandRequest,
   CommandResponse,
 } from "@pi-deck/core/protocol/commands.js";
+import type { ThemeListing, ThemeSpec } from "@pi-deck/core/protocol/theme.js";
 import type { WsClient } from "./ws-client.js";
 
 export class ProtocolClient {
@@ -15,4 +16,17 @@ export class ProtocolClient {
   ping(): Promise<CommandResponse<"ping">> {
     return this.call("ping", {});
   }
+
+  themes = {
+    list: async (): Promise<{ activeName: string; themes: ThemeListing[] }> => {
+      return this.call("theme.list", {});
+    },
+    get: async (name: string): Promise<ThemeSpec> => {
+      const res = await this.call("theme.get", { name });
+      return res.theme as ThemeSpec;
+    },
+    setActive: async (name: string): Promise<void> => {
+      await this.call("theme.setActive", { name });
+    },
+  };
 }

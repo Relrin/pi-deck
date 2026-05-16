@@ -13,6 +13,9 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "^5.2.8",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@fontsource/instrument-serif": "^5.2.8",
     "@pi-deck/core": "workspace:*",
     "@radix-ui/react-context-menu": "2.2.16",
     "@radix-ui/react-dialog": "1.1.15",

@@ -101,6 +101,18 @@ This list is populated as plans complete. When you finish a plan, add its key en
 - **Message context menu** — `packages/ui/src/features/chat/messages/MessageContextMenu.tsx` wraps each user/assistant message in a Radix `ContextMenu`. Actions: Copy text, Copy as Markdown, Attach selection to next prompt (routes via `useDraftStore`). Tool-call cards are intentionally not selectable.
 - **Composer state** — `packages/ui/src/features/chat/composer/useComposerStore.ts` (persisted Zustand under `pi-deck:composer`) holds execution mode, model, and thinking effort. UI-only today (see `// TODO(protocol)` in the file); will forward to pi when the SDK exposes setters. Bottom-bar controls live in `ExecutionModeMenu.tsx`, `ModelMenu.tsx`, `ContextUsageIndicator.tsx` under the same folder.
 - **Usage tracking** — `packages/ui/src/features/chat/useUsageStore.ts` reads per-turn `usage` + `contextUsage` from `EVENT_SESSION_TURN_END`. Worker source: `packages/core/src/worker/agent-bridge.ts:forwardEvent` extracts `message.usage` and calls `session.getContextUsage()`. The per-category breakdown in `ContextUsageIndicator` is derived renderer-side from the messages store because pi's `ContextUsage` is aggregate-only.
+- **Theme system** — `packages/ui/src/theme/`. Tokens defined in `tokens.css` using descriptive names (`--bg-0..3`, `--ink-0..3`, `--accent*`, `--add/del/mod`, `--diff-*`). Active theme is JSON, applied by `loader.ts` as inline custom properties on `<html>`. VS Code themes are imported via `vscode-adapter.ts`. Shiki bridge in `shiki-bridge.ts` keeps syntax highlighting aligned with the active theme. Six bundled palettes: default / phosphor / nightshade × dark / light. The canonical Zod schema lives in `packages/core/src/protocol/theme.ts` and is re-exported via `@pi-deck/core`.
+- **Theme storage & hot reload** — `packages/core/src/host/themes/`. Bundled JSON lives in `packages/core/src/host/themes/bundled/` and is imported with `with { type: "json" }`. User themes live at `<userData>/themes/` (Electron `app.getPath("userData")`). Chokidar watches the dir and emits `theme.changed` events; if the active theme's spec changed on disk, the new spec ships in the event payload so the renderer re-applies without a round-trip.
+- **Renderer prefs** — `packages/ui/src/theme/usePreferencesStore.ts`. Density (compact/cozy) and font-pair (default/sans-only/mono-only) live here, separate from theme. Persisted to localStorage under `pi-deck:prefs`. Hydrated pre-mount via the inline script in `packages/desktop/index.html` so the first paint matches the user's preference.
+
+## Styling rules
+
+- **Never hardcode colours.** Always use a CSS variable from `tokens.css`. Adding a colour means proposing a new token.
+- **The token list is small on purpose.** If you find yourself reaching for "another shade of grey", reuse an existing surface token first.
+- **VS Code theme compatibility is best-effort, not pixel-perfect.** Imported themes will look close, not identical. Don't add a token just to match a VS Code-specific colour key - map it to the closest existing token instead.
+- **Shiki and pi-deck share the active theme.** When the active theme came from a VS Code JSON, Shiki uses that JSON directly. Otherwise it uses a curated bundled Shiki theme that matches our tokens.
+- **Adding a token** requires updating every bundled theme JSON in `packages/core/src/host/themes/bundled/` AND adding a fallback to the VS Code adapter's translation table.
+- **Compat aliases** (`--color-*` → `--bg-*`/`--ink-*`) in `tokens.css` are temporary. Remove each alias as the legacy file referencing it migrates.
 
 ## Protocol stability
 
