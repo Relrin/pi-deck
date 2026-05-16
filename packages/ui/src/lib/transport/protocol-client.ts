@@ -28,5 +28,9 @@ export class ProtocolClient {
     setActive: async (name: string): Promise<void> => {
       await this.call("theme.setActive", { name });
     },
+    import: async (sourcePath: string): Promise<{ name: string }> => {
+      const res = await this.call("theme.import", { sourcePath });
+      return { name: res.name };
+    },
   };
 }

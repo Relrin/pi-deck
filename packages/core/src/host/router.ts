@@ -100,6 +100,11 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     await ctx.themeManager.setActive(parsed.name);
     return { ok: true as const };
   },
+  "theme.import": async (ctx, payload) => {
+    const parsed = CommandSchemas["theme.import"].request.parse(payload);
+    const result = await ctx.themeManager.importFromPath(parsed.sourcePath);
+    return { name: result.name };
+  },
 };
 
 export async function dispatch(

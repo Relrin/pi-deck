@@ -57,6 +57,9 @@ export const ThemeGetResponse = z.object({ theme: z.unknown() });
 export const ThemeSetActiveRequest = z.object({ name: z.string().min(1) });
 export const ThemeSetActiveResponse = z.object({ ok: z.literal(true) });
 
+export const ThemeImportRequest = z.object({ sourcePath: z.string().min(1) });
+export const ThemeImportResponse = z.object({ name: z.string() });
+
 export const CommandSchemas = {
   ping: { request: PingRequest, response: PingResponse },
   "project.list": { request: ProjectListRequest, response: ProjectListResponse },
@@ -70,6 +73,7 @@ export const CommandSchemas = {
   "theme.list": { request: ThemeListRequest, response: ThemeListResponse },
   "theme.get": { request: ThemeGetRequest, response: ThemeGetResponse },
   "theme.setActive": { request: ThemeSetActiveRequest, response: ThemeSetActiveResponse },
+  "theme.import": { request: ThemeImportRequest, response: ThemeImportResponse },
 } as const;
 
 export type CommandName = keyof typeof CommandSchemas;

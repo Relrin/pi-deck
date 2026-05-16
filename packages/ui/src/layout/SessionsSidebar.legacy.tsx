@@ -1,4 +1,4 @@
-import { SessionsList } from "../features/sessions/SessionsList";
+import { SessionsList } from "../features/sessions/SessionsList.legacy";
 import { usePanelState } from "./use-panel-state.legacy";
 
 interface SessionsSidebarProps {

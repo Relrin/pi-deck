@@ -18,9 +18,14 @@ export interface SessionsStoreState {
   initError: string | undefined;
   /** True while a `session.list` round-trip is in flight; surfaces a sidebar spinner. */
   isRefreshing: boolean;
+  /** Cache of per-project sessions populated lazily by the overview / rail. */
+  sessionsByProject: Record<string, SessionSummary[]>;
+  loadingByProject: Record<string, boolean>;
+  errorByProject: Record<string, string | undefined>;
 
   initialize: () => Promise<void>;
   refreshSessions: (projectId: string) => Promise<void>;
+  loadProjectSessions: (projectId: string) => Promise<void>;
   createSession: (projectId: string) => Promise<void>;
   activateSession: (id: string) => Promise<void>;
   deactivateSession: (id: string) => Promise<void>;
@@ -31,6 +36,9 @@ export interface SessionsStoreState {
   updateSessionMetadata: (sessionId: string, partial: Partial<SessionSummary>) => void;
 }
 
+/** Dedupes concurrent loadProjectSessions calls without leaking into store state. */
+const projectFetches = new Map<string, Promise<void>>();
+
 export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
   status: "idle",
   client: undefined,
@@ -40,6 +48,9 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
   protocolVersion: undefined,
   initError: undefined,
   isRefreshing: false,
+  sessionsByProject: {},
+  loadingByProject: {},
+  errorByProject: {},
 
   initialize: async () => {
     if (get().client) return;
@@ -93,7 +104,11 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     set({ isRefreshing: true });
     try {
       const { sessions } = await client.call("session.list", { projectId });
-      set({ sessions });
+      set((state) => ({
+        sessions,
+        sessionsByProject: { ...state.sessionsByProject, [projectId]: sessions },
+        errorByProject: { ...state.errorByProject, [projectId]: undefined },
+      }));
     } catch (err) {
       useToastStore.getState().push(humanizeError(err, "Failed to load sessions"), "error");
     } finally {
@@ -101,15 +116,57 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     }
   },
 
+  loadProjectSessions: async (projectId) => {
+    const existing = projectFetches.get(projectId);
+    if (existing) return existing;
+    const client = get().client;
+    if (!client) return;
+    const activeProjectId = useProjectsStore.getState().activeProjectId;
+    const isActive = projectId === activeProjectId;
+    const run = (async () => {
+      set((state) => ({
+        loadingByProject: { ...state.loadingByProject, [projectId]: true },
+      }));
+      try {
+        const { sessions } = await client.call("session.list", { projectId });
+        set((state) => ({
+          sessionsByProject: { ...state.sessionsByProject, [projectId]: sessions },
+          errorByProject: { ...state.errorByProject, [projectId]: undefined },
+          // Mirror into the active-project array so legacy consumers stay in sync.
+          ...(isActive ? { sessions } : {}),
+        }));
+      } catch (err) {
+        const message = humanizeError(err, "Failed to load sessions");
+        set((state) => ({
+          errorByProject: { ...state.errorByProject, [projectId]: message },
+        }));
+      } finally {
+        set((state) => ({
+          loadingByProject: { ...state.loadingByProject, [projectId]: false },
+        }));
+        projectFetches.delete(projectId);
+      }
+    })();
+    projectFetches.set(projectId, run);
+    return run;
+  },
+
   createSession: async (projectId) => {
     const client = get().client;
     if (!client) throw new Error("Client not initialized");
     try {
       const { session } = await client.call("session.create", { projectId });
-      set((state) => ({
-        sessions: [...state.sessions, session],
-        activeSessionId: session.id,
-      }));
+      set((state) => {
+        const cached = state.sessionsByProject[projectId] ?? [];
+        return {
+          sessions: [...state.sessions, session],
+          activeSessionId: session.id,
+          sessionsByProject: {
+            ...state.sessionsByProject,
+            [projectId]: [...cached, session],
+          },
+        };
+      });
       useProjectsStore.getState().setLastActiveSession(projectId, session.id);
     } catch (err) {
       useToastStore.getState().push(humanizeError(err, "Failed to create session"), "error");

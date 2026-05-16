@@ -1,14 +1,17 @@
 import { useEffect } from "react";
 import { TooltipProvider } from "./components/ui/Tooltip";
 import { Toaster } from "./features/_status/Toaster";
-import { SessionsList } from "./features/sessions/SessionsList";
+import { PidSessionsList } from "./features/sessions/PidSessionsList";
+import { useNewSessionShortcut } from "./features/sessions/useNewSessionShortcut";
 import { useSessionsStore } from "./features/sessions/useSessionsStore";
+import { PidSettingsView } from "./features/settings/PidSettingsView";
+import { useSettingsHotkey } from "./features/settings/useSettingsHotkey";
 import { FilesTabStub } from "./layout/_stubs/FilesTabStub";
 import { GitTabStub } from "./layout/_stubs/GitTabStub";
 import { ContextSidebar as ContextSidebarLegacy } from "./layout/ContextSidebar.legacy";
-import { MainPanel } from "./layout/MainPanel.legacy";
 import { PidAppShell } from "./layout/PidAppShell";
 import { PidBody } from "./layout/PidBody";
+import { PidCenterRouter } from "./layout/PidCenterRouter";
 import { PidFooter } from "./layout/PidFooter";
 import { PidLeftRail } from "./layout/PidLeftRail";
 import { PidRightPane } from "./layout/PidRightPane";
@@ -18,6 +21,8 @@ import { ThemeProvider } from "./theme/ThemeProvider";
 
 export function App() {
   const initialize = useSessionsStore((s) => s.initialize);
+  useSettingsHotkey();
+  useNewSessionShortcut();
 
   useEffect(() => {
     initialize().catch((err) => {
@@ -38,13 +43,14 @@ export function App() {
           top={<PidTopBar />}
           body={
             <PidBody
-              left={<PidLeftRail sessions={<SessionsList />} files={<FilesTabStub />} />}
-              center={<MainPanel />}
+              left={<PidLeftRail sessions={<PidSessionsList />} files={<FilesTabStub />} />}
+              center={<PidCenterRouter />}
               right={<PidRightPane git={<GitTabStub />} context={<ContextSidebarLegacy />} />}
             />
           }
           bottom={<PidFooter />}
         />
+        <PidSettingsView />
         <Toaster />
       </TooltipProvider>
     </ThemeProvider>

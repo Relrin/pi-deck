@@ -1,6 +1,8 @@
 import type { CSSProperties } from "react";
 import { Glyph, type GlyphKind } from "../components/glyph";
 import { Tooltip } from "../components/ui/Tooltip";
+import { useSettingsStore } from "../features/settings/useSettingsStore";
+import { useNavStore } from "../lib/useNavStore";
 
 // The preload bridge exposes platform info on window.platform. Falls back to undefined
 // in non-Electron contexts (web target, tests); we treat that as "non-darwin" so the
@@ -40,24 +42,54 @@ function TopBarButton({ kind, label, tooltip }: TopBarButtonProps) {
   );
 }
 
+function BackToOverviewButton() {
+  return (
+    <Tooltip content="Back to overview">
+      <button
+        type="button"
+        className="pid-topbar-btn"
+        aria-label="Back to overview"
+        onClick={() => useNavStore.getState().goToOverview()}
+      >
+        <span style={{ display: "inline-flex", transform: "rotate(180deg)" }}>
+          <Glyph kind="arrow-right" />
+        </span>
+      </button>
+    </Tooltip>
+  );
+}
+
 export function PidTopBar() {
   const platformOs = getPlatformOs();
   const isMac = platformOs === "darwin";
   const reservesNativeOverlay = platformOs === "win32" || platformOs === "linux";
+  const openSettings = useSettingsStore((s) => s.setOpen);
+  const screen = useNavStore((s) => s.screen);
+  const showBack = screen !== "overview";
 
   const rightStyle: CSSProperties | undefined = reservesNativeOverlay
     ? { paddingRight: NATIVE_OVERLAY_RESERVE_PX }
     : undefined;
 
+  const settingsTooltip = `Settings (${isMac ? "⌘" : "Ctrl"}+,)`;
+
   return (
     <div className="pid-topbar">
       {isMac ? (
-        <div className="pid-topbar-spacer" aria-hidden />
+        <div
+          className="pid-topbar-spacer"
+          aria-hidden
+          style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}
+        >
+          {showBack ? <BackToOverviewButton /> : null}
+        </div>
       ) : (
         // Non-mac: titleBarOverlay paints native min/max/close at the far right; the spacer
         // role is taken over by the padding on .pid-topbar-right. We still need an empty grid
         // cell here so the three-column layout stays aligned.
-        <div aria-hidden />
+        <div aria-hidden style={{ display: "flex", alignItems: "center" }}>
+          {showBack ? <BackToOverviewButton /> : null}
+        </div>
       )}
 
       <div className="pid-topbar-center drag">
@@ -68,11 +100,16 @@ export function PidTopBar() {
       </div>
 
       <div className="pid-topbar-right" style={rightStyle}>
-        <TopBarButton
-          kind="cmd"
-          label="Command palette (coming soon)"
-          tooltip="Command palette — coming in 005c"
-        />
+        <Tooltip content={settingsTooltip}>
+          <button
+            type="button"
+            className="pid-topbar-btn"
+            aria-label="Open settings"
+            onClick={() => openSettings(true)}
+          >
+            <Glyph kind="settings" />
+          </button>
+        </Tooltip>
         <TopBarButton
           kind="panel-left"
           label="Toggle left rail (coming soon)"

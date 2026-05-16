@@ -3,9 +3,9 @@ import { EmptyState } from "../../components/EmptyState.js";
 import { Filter, Folder, Plus, Search } from "../../components/icons/index.js";
 import { Spinner } from "../../components/ui/Spinner.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
-import { NewSessionButton } from "./NewSessionButton.js";
-import { ProjectSwitcher } from "./ProjectSwitcher.js";
-import { SessionRow } from "./SessionRow.js";
+import { NewSessionButton } from "./NewSessionButton.legacy.js";
+import { ProjectSwitcher } from "./ProjectSwitcher.legacy.js";
+import { SessionRow } from "./SessionRow.legacy.js";
 import { useProjectsStore } from "./useProjectsStore.js";
 import { useSessionsStore } from "./useSessionsStore.js";
 

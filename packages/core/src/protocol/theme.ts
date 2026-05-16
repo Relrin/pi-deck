@@ -41,6 +41,7 @@ const tokens = {
   "mod-soft": tokenString.optional(),
   info: tokenString.optional(),
   warn: tokenString.optional(),
+  "warn-soft": tokenString.optional(),
 
   "diff-add-bg": tokenString.optional(),
   "diff-add-fg": tokenString.optional(),

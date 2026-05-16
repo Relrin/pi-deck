@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { EmptyState as Frame } from "../../components/EmptyState.js";
 import { FolderOpen, Plus } from "../../components/icons/index.js";
-import { Button } from "../../components/ui/Button.js";
+import { Button } from "../../components/ui/Button.legacy.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 

@@ -1,5 +1,5 @@
 import { List, MoreHorizontal } from "../components/icons";
-import { IconButton } from "../components/ui/IconButton";
+import { IconButton } from "../components/ui/IconButton.legacy";
 
 interface ResponsiveTopBarProps {
   onOpenSessions: () => void;

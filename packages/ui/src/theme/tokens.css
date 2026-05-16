@@ -63,6 +63,7 @@
   --add-soft: oklch(0.78 0.16 145 / 0.12);
   --del-soft: oklch(0.7 0.18 25 / 0.12);
   --mod-soft: oklch(0.78 0.14 85 / 0.12);
+  --warn-soft: oklch(0.8 0.15 80 / 0.14);
 
   /* diff / syntax bridge — alias onto semantic + ink + bg-inset */
   --diff-add-bg: var(--add-soft);
@@ -125,6 +126,7 @@
   --add-soft: oklch(0.55 0.16 145 / 0.1);
   --del-soft: oklch(0.55 0.2 25 / 0.1);
   --mod-soft: oklch(0.58 0.15 85 / 0.1);
+  --warn-soft: oklch(0.7 0.16 80 / 0.12);
 
   --shadow-pop: 0 18px 60px -16px rgba(40, 20, 0, 0.18), 0 2px 6px rgba(40, 20, 0, 0.06);
 }
@@ -214,6 +216,7 @@
   --color-mod-soft: var(--mod-soft);
   --color-info: var(--info);
   --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
 
   --font-display: var(--font-display);
   --font-ui: var(--font-ui);

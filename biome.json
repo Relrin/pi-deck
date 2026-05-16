@@ -15,7 +15,8 @@
       "!**/.vite",
       "!**/coverage",
       "!**/bun.lock",
-      "!**/bun.lockb"
+      "!**/bun.lockb",
+      "!plans"
     ]
   },
   "formatter": {

@@ -105,6 +105,13 @@ This list is populated as plans complete. When you finish a plan, add its key en
 - **Theme system** — `packages/ui/src/theme/`. Tokens defined in `tokens.css` using descriptive names (`--bg-0..3`, `--ink-0..3`, `--accent*`, `--add/del/mod`, `--diff-*`). Active theme is JSON, applied by `loader.ts` as inline custom properties on `<html>`. VS Code themes are imported via `vscode-adapter.ts`. Shiki bridge in `shiki-bridge.ts` keeps syntax highlighting aligned with the active theme. Six bundled palettes: default / phosphor / nightshade × dark / light. The canonical Zod schema lives in `packages/core/src/protocol/theme.ts` and is re-exported via `@pi-deck/core`.
 - **Theme storage & hot reload** — `packages/core/src/host/themes/`. Bundled JSON lives in `packages/core/src/host/themes/bundled/` and is imported with `with { type: "json" }`. User themes live at `<userData>/themes/` (Electron `app.getPath("userData")`). Chokidar watches the dir and emits `theme.changed` events; if the active theme's spec changed on disk, the new spec ships in the event payload so the renderer re-applies without a round-trip.
 - **Renderer prefs** — `packages/ui/src/theme/usePreferencesStore.ts`. Density (compact/cozy) and font-pair (default/sans-only/mono-only) live here, separate from theme. Persisted to localStorage under `pi-deck:prefs`. Hydrated pre-mount via the inline script in `packages/desktop/index.html` so the first paint matches the user's preference.
+- **Settings UI** — `packages/ui/src/features/settings/`. Opens via Cmd/Ctrl+, (`useSettingsHotkey`) or the topbar gear (`PidTopBar`). Overlay state lives in `useSettingsStore` (open/section, not persisted). Appearance section is wired against `useThemeStore` / `usePreferencesStore`; other sections are stubs landed in plans 006/007/011 and follow-ups. Theme import uses the new `theme.import` host command + `bridge:openFile` IPC.
+- **Nav store** — `packages/ui/src/lib/useNavStore.ts`. Single source of truth for which screen is in the center column (`overview | session | editor | git-diff | git-history`). Persists screen + per-project expand state to localStorage under `pi-deck:nav:v1`. Transient screens (editor/git-diff/git-history) coerce back to `session` on rehydrate. Plans 007, 008, 013 add their own routes here. Settings stays a modal — it is not a nav route.
+- **Intro screen** — `packages/ui/src/features/intro/`. `PidIntroScreen` renders the italic-serif hero, stub composer (bound to `useIntroComposerStore`), 6 static templates from `templates.ts`, and a recent-sessions strip. Fullscreen variant: empty-state landing when no project / no sessions exist. Inline variant: rendered inside the `session` route by `PidCenterRouter` when the active session has zero messages.
+- **Sessions overview** — `packages/ui/src/features/sessions/overview/`. `PidSessionsOverview` is the default landing screen. Grouped by project from `useProjectsStore`, each section lazy-loads its sessions via `useSessionsStore.loadProjectSessions(projectId)`. Cards (`PidSessionCard`) link back to the session route.
+- **Compact sessions rail** — `packages/ui/src/features/sessions/PidSessionsList.tsx` and friends (`PidSessionRow`, `PidProjectSwitcher`, `PidNewSessionButton`). Left-rail Sessions tab. Shares the same `sessionsByProject` cache as the overview. Project expand state lives in `useNavStore.expandedProjectsRail`.
+- **New-session shortcut** — `packages/ui/src/features/sessions/useNewSessionShortcut.ts`. Global Cmd/Ctrl+N. Suppressed inside editable elements. Mounted once in `App.tsx` alongside `useSettingsHotkey`.
+- **Center router** — `packages/ui/src/layout/PidCenterRouter.tsx`. Reads `useNavStore.screen` and renders overview / session (chat or inline-intro) / editor / git-diff / git-history. Editor / diff / history are placeholders until their owning plans land.
 
 ## App shell rules
 
@@ -112,7 +119,7 @@ This list is populated as plans complete. When you finish a plan, add its key en
 - **Overlays must portal.** Every overlay-shaped component (`Dialog`, `DropdownMenu`, `ContextMenu`, `Tooltip`, command palette) renders into a `document.body` portal so it sits above the `.pid-app::before` grain (`z-index: 999`, `mix-blend-mode: overlay`). Non-portaled overlays render below the grain and look muddy.
 - **The footer never shows a "screen switcher".** That's a tour helper in the design prototype, not production.
 - **`packages/desktop/src/main/window.ts` controls native title bar config.** Don't change `titleBarStyle` or `titleBarOverlay` without re-verifying the topbar drag region on all three OSes.
-- **Never import `lucide-react` in new code.** Extend `GlyphKind` in `packages/ui/src/components/glyph/kinds.tsx` instead. If an icon is genuinely missing, ship a placeholder dot-grid and TODO it.
+- Extend `GlyphKind` in `packages/ui/src/components/glyph/kinds.tsx` for icon that is not available or not present in the lucide-react package. If an icon cannot be found then, then put a placeholder dot-grid and TODO it.
 
 ## Styling rules
 
@@ -122,6 +129,8 @@ This list is populated as plans complete. When you finish a plan, add its key en
 - **Shiki and pi-deck share the active theme.** When the active theme came from a VS Code JSON, Shiki uses that JSON directly. Otherwise it uses a curated bundled Shiki theme that matches our tokens.
 - **Adding a token** requires updating every bundled theme JSON in `packages/core/src/host/themes/bundled/` AND adding a fallback to the VS Code adapter's translation table.
 - **Compat aliases** (`--color-*` → `--bg-*`/`--ink-*`) in `tokens.css` are temporary. Remove each alias as the legacy file referencing it migrates.
+- **First `Pid*` primitives** — `PidButton`, `PidIconButton`, `PidChip`, `PidKbd` in `packages/ui/src/components/{buttons,chip,kbd}/`. Style rules live in `packages/ui/src/theme/components.css`. Other primitives (inputs, selects, table rows) ship as later plans need them — no speculative scaffolding.
+- **Radix wrappers preserved.** `Dialog`, `Tabs`, `Tooltip`, `DropdownMenu`, `ContextMenu`, `Spinner` keep their current implementation; restyle via className in later plans rather than rewriting. The previous `Button` / `IconButton` are renamed `Button.legacy.tsx` / `IconButton.legacy.tsx` — new code must use the `Pid*` primitives.
 
 ## Protocol stability
 

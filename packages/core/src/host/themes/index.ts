@@ -1,4 +1,6 @@
 import { EventEmitter } from "node:events";
+import { copyFile, readFile } from "node:fs/promises";
+import { basename, extname, join } from "node:path";
 import { EVENT_THEME_CHANGED } from "../../protocol/events.js";
 import type { ThemeListing, ThemeSpec } from "../../protocol/theme.js";
 import { BUNDLED_THEMES } from "./bundled.js";
@@ -108,6 +110,28 @@ export class ThemeManager extends EventEmitter {
       console.warn("[themes] failed to persist active theme", err);
     });
     this.emitChange();
+  }
+
+  /**
+   * Copy `sourcePath` into the user themes dir. The watcher will re-list and emit
+   * `theme.changed` automatically; the renderer reacts to that event. Returns the
+   * derived theme name (basename without extension) so the caller can toast or focus.
+   */
+  async importFromPath(sourcePath: string): Promise<{ name: string }> {
+    const raw = await readFile(sourcePath, "utf8");
+    try {
+      JSON.parse(raw);
+    } catch {
+      throw new Error("Selected file is not valid JSON");
+    }
+    const ext = extname(sourcePath).toLowerCase();
+    if (ext !== ".json") {
+      throw new Error("Theme files must have a .json extension");
+    }
+    const fileName = basename(sourcePath);
+    const target = join(this.storage.themesDir, fileName);
+    await copyFile(sourcePath, target);
+    return { name: basename(fileName, extname(fileName)) };
   }
 
   private async refreshUserThemes(): Promise<void> {

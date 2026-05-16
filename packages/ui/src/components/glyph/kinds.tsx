@@ -41,6 +41,7 @@ export type GlyphKind =
   | "cmd"
   | "send"
   | "attach"
+  | "upload"
   | "logo";
 
 // Each entry is the inner SVG markup for a 14x14 viewBox. Paths ported from
@@ -323,6 +324,13 @@ export const GLYPH_PRIMITIVES: Record<GlyphKind, ReactElement> = {
   attach: (
     <>
       <path d="M9 4 L4.5 8.5 Q3 10 4.5 11.5 Q6 13 7.5 11.5 L11 8" />
+    </>
+  ),
+  upload: (
+    <>
+      <line x1="7" y1="2.5" x2="7" y2="9.5" />
+      <path d="M4 5.5 L7 2.5 L10 5.5" />
+      <line x1="2.5" y1="11.5" x2="11.5" y2="11.5" />
     </>
   ),
   logo: (

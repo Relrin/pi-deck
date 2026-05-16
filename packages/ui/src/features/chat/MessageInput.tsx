@@ -1,7 +1,7 @@
 import { type KeyboardEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Mic, Paperclip, Send, Square } from "../../components/icons/index.js";
-import { Button } from "../../components/ui/Button.js";
-import { IconButton } from "../../components/ui/IconButton.js";
+import { Button } from "../../components/ui/Button.legacy.js";
+import { IconButton } from "../../components/ui/IconButton.legacy.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { ContextUsageIndicator } from "./composer/ContextUsageIndicator.js";

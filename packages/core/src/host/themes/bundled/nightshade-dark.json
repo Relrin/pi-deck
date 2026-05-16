@@ -23,5 +23,6 @@
   "mod-soft": "oklch(0.78 0.14 85 / 0.12)",
   "info": "oklch(0.74 0.12 230)",
   "warn": "oklch(0.80 0.15 80)",
+  "warn-soft": "oklch(0.80 0.15 80 / 0.14)",
   "shadow-pop": "0 18px 60px -12px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.2)"
 }
