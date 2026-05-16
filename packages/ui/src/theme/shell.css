@@ -1,0 +1,338 @@
+/* ============================================================
+   pi-deck — App shell (Pid*) layout rules.
+   Ported from plans/design-mockup/html-css-mockup/theme.css.
+   Tokens are defined in tokens.css; this file is purely structural
+   rules for .pid-app / .pid-topbar / .pid-body / .pid-rail /
+   .pid-rightpane / .pid-footer.
+   ============================================================ */
+
+/* ---------- App frame ---------- */
+.pid-app {
+  display: grid;
+  height: 100vh;
+  width: 100vw;
+  grid-template-rows: var(--topbar-h) 1fr var(--footer-h);
+  background: var(--bg-0);
+  color: var(--ink-0);
+  position: relative;
+  isolation: isolate;
+}
+.pid-app::before {
+  /* subtle grain — sits above every painted child via z-index, but ignores pointer events */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--grain);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 999;
+  mix-blend-mode: overlay;
+}
+[data-theme="light"] .pid-app::before {
+  opacity: 0.3;
+  mix-blend-mode: multiply;
+}
+
+.pid-body {
+  display: grid;
+  grid-template-columns: var(--rail-w) 1fr var(--rightpane-w);
+  min-height: 0;
+  border-top: 1px solid var(--line);
+  position: relative; /* host for the absolutely-positioned resize handles */
+}
+.pid-body[data-rightpane="off"] {
+  grid-template-columns: var(--rail-w) 1fr;
+}
+
+/* ---------- Rail/pane resize handles ---------- */
+.pid-panel-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 5;
+  transition: background-color 0.12s;
+  border: 0;
+  padding: 0;
+}
+.pid-panel-handle:hover,
+.pid-panel-handle:focus-visible {
+  background: var(--accent-line);
+  outline: none;
+}
+.pid-panel-handle--left {
+  /* sit on the rail's right border */
+  left: calc(var(--rail-w) - 3px);
+}
+.pid-panel-handle--right {
+  /* sit on the right pane's left border */
+  right: calc(var(--rightpane-w) - 3px);
+}
+
+/* ---------- Topbar ---------- */
+.pid-topbar {
+  display: grid;
+  grid-template-columns: var(--rail-w) 1fr var(--rightpane-w);
+  align-items: center;
+  height: var(--topbar-h);
+  -webkit-app-region: drag;
+  background: var(--bg-0);
+  position: relative;
+}
+.pid-topbar[data-rightpane="off"] {
+  grid-template-columns: var(--rail-w) 1fr auto;
+}
+/* macOS leaves room for the native traffic lights via a transparent spacer. */
+.pid-topbar-spacer {
+  height: 100%;
+}
+.pid-topbar-center {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  -webkit-app-region: no-drag;
+  /* The bar itself drags; only the no-drag islands accept clicks. We re-enable drag in the
+     center column by making the gap fill draggable but keep the brand markers interactive
+     by promoting the brand element to its own drag region above. */
+  justify-content: center;
+}
+.pid-topbar-center.drag {
+  -webkit-app-region: drag;
+}
+.pid-topbar-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 0 6px 0 14px;
+  -webkit-app-region: no-drag;
+}
+.pid-brand-mark {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+}
+.pid-brand-text {
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  letter-spacing: 0.12em;
+  color: var(--ink-1);
+  text-transform: uppercase;
+}
+.pid-accent-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ---------- Left rail ---------- */
+.pid-rail {
+  border-right: 1px solid var(--line);
+  background: var(--bg-1);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.pid-rail-tab {
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: none;
+  border: 0;
+  color: var(--ink-2);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+  text-align: left;
+}
+.pid-rail-tab.active {
+  color: var(--ink-0);
+  border-bottom-color: var(--accent);
+}
+.pid-rail-tab:hover:not(.active) {
+  color: var(--ink-1);
+}
+.pid-rail-tabs {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+.pid-rail-tabs .pid-rail-tab {
+  flex: 1;
+}
+
+.pid-rail-search {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.pid-input {
+  width: 100%;
+  background: var(--bg-inset);
+  border: 1px solid var(--line);
+  color: var(--ink-0);
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  outline: none;
+}
+.pid-input:focus {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.pid-rail-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* ---------- Right pane ---------- */
+.pid-rightpane {
+  border-left: 1px solid var(--line);
+  background: var(--bg-1);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.pid-right-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  padding: 0 8px;
+  gap: 0;
+}
+.pid-right-tab {
+  flex: 1;
+  padding: 12px 12px;
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+}
+.pid-right-tab.active {
+  color: var(--ink-0);
+  border-bottom-color: var(--accent);
+}
+.pid-right-tab:hover:not(.active) {
+  color: var(--ink-1);
+}
+.pid-right-tab .count {
+  font-size: 10px;
+  color: var(--ink-3);
+  background: var(--bg-2);
+  padding: 1px 5px;
+  border-radius: 8px;
+}
+.pid-right-tab.active .count {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.pid-right-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* ---------- Center column ---------- */
+.pid-center {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg-0);
+  overflow: hidden;
+}
+
+/* ---------- Footer ---------- */
+.pid-footer {
+  display: flex;
+  align-items: center;
+  height: var(--footer-h);
+  padding: 0 14px;
+  border-top: 1px solid var(--line);
+  background: var(--bg-1);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-2);
+  letter-spacing: 0.06em;
+  gap: 16px;
+}
+.pid-footer .seg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pid-footer .seg .lbl {
+  color: var(--ink-3);
+}
+.pid-footer .spacer {
+  flex: 1;
+}
+.pid-footer .accent {
+  color: var(--accent);
+}
+
+/* ---------- Topbar buttons (palette / settings no-ops) ---------- */
+.pid-topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius);
+  background: transparent;
+  border: 0;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    background-color 0.12s,
+    color 0.12s;
+}
+.pid-topbar-btn:hover {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+.pid-topbar-btn:disabled,
+.pid-topbar-btn[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ---------- Tab stubs (Files / Git placeholders) ---------- */
+.pid-tab-stub {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-align: center;
+  padding: 24px;
+}

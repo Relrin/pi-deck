@@ -1,7 +1,7 @@
 import type { ComponentType } from "react";
 import { useState } from "react";
 import { Box, Folder, GitBranch } from "../components/icons/index.js";
-import { usePanelState } from "./use-panel-state";
+import { usePanelState } from "./use-panel-state.legacy";
 
 type TabId = "git" | "files" | "context";
 

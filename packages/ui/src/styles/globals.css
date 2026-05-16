@@ -1,5 +1,6 @@
 @import "./fonts.css";
 @import "../theme/tokens.css";
+@import "../theme/shell.css";
 @import "./reset.css";
 @import "tailwindcss";
 

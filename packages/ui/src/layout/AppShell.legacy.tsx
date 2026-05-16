@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { RESPONSIVE_BREAKPOINT_PX } from "../lib/ui-constants";
 import { useMediaQuery } from "../lib/useMediaQuery";
-import { ContextSidebar } from "./ContextSidebar";
-import { MainPanel } from "./MainPanel";
-import { PanelHandle } from "./PanelHandle";
-import { ResponsiveTopBar } from "./ResponsiveTopBar";
-import { SessionsSidebar } from "./SessionsSidebar";
-import { usePanelState } from "./use-panel-state";
+import { ContextSidebar } from "./ContextSidebar.legacy";
+import { MainPanel } from "./MainPanel.legacy";
+import { PanelHandle } from "./PanelHandle.legacy";
+import { ResponsiveTopBar } from "./ResponsiveTopBar.legacy";
+import { SessionsSidebar } from "./SessionsSidebar.legacy";
+import { usePanelState } from "./use-panel-state.legacy";
 
 const COLLAPSED_WIDTH = 36;
 

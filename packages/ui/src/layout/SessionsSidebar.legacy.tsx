@@ -1,5 +1,5 @@
 import { SessionsList } from "../features/sessions/SessionsList";
-import { usePanelState } from "./use-panel-state";
+import { usePanelState } from "./use-panel-state.legacy";
 
 interface SessionsSidebarProps {
   /** Provided when rendered as a drawer overlay (narrow viewports). */

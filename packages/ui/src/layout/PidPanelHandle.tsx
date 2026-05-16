@@ -1,13 +1,14 @@
 import { type PointerEvent, useRef } from "react";
-import { PANEL_LIMITS } from "./use-panel-state";
+import { RAIL_LIMITS } from "./use-rail-state";
 
-export type PanelHandleProps = {
-  onResize: (deltaX: number) => void;
+export interface PidPanelHandleProps {
+  side: "left" | "right";
   ariaLabel: string;
   currentWidth: number;
-};
+  onResize: (deltaX: number) => void;
+}
 
-export function PanelHandle({ onResize, ariaLabel, currentWidth }: PanelHandleProps) {
+export function PidPanelHandle({ side, ariaLabel, currentWidth, onResize }: PidPanelHandleProps) {
   const startXRef = useRef<number | null>(null);
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
@@ -32,31 +33,20 @@ export function PanelHandle({ onResize, ariaLabel, currentWidth }: PanelHandlePr
   }
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: <hr> cannot host pointer event handlers cleanly; resize handle keeps the separator role on a div
+    // biome-ignore lint/a11y/useSemanticElements: <hr> cannot host pointer event handlers cleanly; the separator role on a div is the conventional resize-handle pattern
     <div
       role="separator"
       aria-orientation="vertical"
       aria-label={ariaLabel}
       aria-valuenow={currentWidth}
-      aria-valuemin={PANEL_LIMITS.min}
-      aria-valuemax={PANEL_LIMITS.max}
+      aria-valuemin={RAIL_LIMITS.min}
+      aria-valuemax={RAIL_LIMITS.max}
       tabIndex={0}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
-      style={{
-        width: "4px",
-        cursor: "col-resize",
-        background: "transparent",
-        transition: "background-color 120ms ease",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = "var(--color-border-strong)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "transparent";
-      }}
+      className={`pid-panel-handle pid-panel-handle--${side}`}
     />
   );
 }
