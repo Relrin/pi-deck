@@ -10,6 +10,16 @@ import { cleanup } from "@testing-library/react";
 // biome-ignore lint/suspicious/noExplicitAny: global typed by React internals only
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
+// Silence "not wrapped in act(...)" warnings emitted by Radix popovers/menus during their own
+// internal state transitions. We can't `act()`-wrap library-owned timers from the outside, and
+// the warnings bury real failures in a wall of red text. Any other console.error still surfaces.
+const originalConsoleError = console.error;
+console.error = (...args: unknown[]) => {
+  const first = args[0];
+  if (typeof first === "string" && first.includes("not wrapped in act(")) return;
+  originalConsoleError(...args);
+};
+
 // biome-ignore lint/suspicious/noExplicitAny: bun's expect.extend signature is jest-compatible but typed differently
 expect.extend(matchers as any);
 
