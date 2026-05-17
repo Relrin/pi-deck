@@ -944,6 +944,289 @@
   text-align: left;
 }
 
+/* ---------- Modal chrome (plan 006) ---------- */
+.pid-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: color-mix(in oklab, var(--bg-0) 70%, transparent);
+  backdrop-filter: blur(2px);
+}
+.pid-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 91;
+  display: flex;
+  flex-direction: column;
+  width: min(720px, 92vw);
+  max-height: min(560px, 86vh);
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg, var(--radius));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.pid-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.pid-modal-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--t-16);
+  color: var(--ink-0);
+}
+.pid-modal-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ---------- Model picker (plan 006) ---------- */
+.pid-models-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.pid-providers-col {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  background: var(--bg-1);
+  overflow-y: auto;
+}
+.pid-providers-col-section {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 10px 14px 4px;
+}
+.pid-provider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: none;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink-1);
+  font-family: var(--font-ui);
+  font-size: var(--t-13);
+}
+.pid-provider-row:hover {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+.pid-provider-row[data-active="true"] {
+  background: var(--accent-soft);
+  color: var(--ink-0);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.pid-provider-row-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pid-provider-row-status {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  flex: 0 0 auto;
+}
+.pid-provider-row-status[data-state="authenticated"] {
+  background: var(--add);
+}
+.pid-provider-row-status[data-state="unreachable"] {
+  background: var(--del);
+}
+.pid-provider-row-status[data-state="needs-key"] {
+  background: var(--warn);
+}
+.pid-models-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-0);
+}
+.pid-models-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.pid-models-filter {
+  flex: 1;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  color: var(--ink-0);
+  font-family: var(--font-ui);
+  font-size: var(--t-13);
+}
+.pid-models-filter:focus-visible {
+  outline: none;
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.pid-models-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0 14px;
+}
+.pid-model-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  align-items: center;
+  padding: 9px 14px;
+  background: none;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink-1);
+  font-family: var(--font-ui);
+  font-size: var(--t-13);
+}
+.pid-model-row:hover {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+.pid-model-row[data-active="true"] {
+  background: var(--accent-soft);
+  color: var(--ink-0);
+}
+.pid-model-row-id {
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-2);
+  grid-column: 1 / 2;
+}
+.pid-model-row-name {
+  grid-column: 1 / 2;
+  color: var(--ink-0);
+  font-size: var(--t-13);
+}
+.pid-model-row-chips {
+  grid-column: 2 / 3;
+  grid-row: 1 / 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.pid-models-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 20px;
+  white-space: pre-line;
+}
+
+/* ---------- Model badge in chat header ---------- */
+.pid-model-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  cursor: pointer;
+  transition:
+    border-color 0.12s,
+    background-color 0.12s,
+    color 0.12s;
+}
+.pid-model-badge:hover {
+  background: var(--bg-2);
+  border-color: var(--line-strong);
+  color: var(--ink-0);
+}
+.pid-model-badge[data-empty="true"] {
+  color: var(--ink-3);
+  border-style: dashed;
+}
+.pid-model-badge-name {
+  color: var(--ink-0);
+}
+.pid-model-badge-sep {
+  color: var(--ink-3);
+}
+
+/* ---------- Auth & add-custom forms ---------- */
+.pid-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+.pid-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pid-form-label {
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.pid-form-input,
+.pid-form-select {
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 7px 10px;
+  font-family: var(--font-ui);
+  font-size: var(--t-13);
+  color: var(--ink-0);
+}
+.pid-form-input:focus-visible,
+.pid-form-select:focus-visible {
+  outline: none;
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.pid-form-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+.pid-form-hint {
+  font-family: var(--font-ui);
+  font-size: var(--t-12);
+  color: var(--ink-3);
+}
+
 /* ---------- Center placeholder for not-yet-implemented routes ---------- */
 .pid-route-placeholder {
   display: flex;

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SessionModelRefSchema, ThinkingLevelSchema } from "../domain/session.js";
 import { themeListingSchema } from "./theme.js";
 
 export const EVENT_SESSION_MESSAGE_DELTA = "session.message.delta" as const;
@@ -9,9 +10,11 @@ export const EVENT_SESSION_TOOL_CALL_END = "session.tool.call.end" as const;
 export const EVENT_SESSION_TURN_END = "session.turn.end" as const;
 export const EVENT_SESSION_WORKER_EXIT = "session.worker.exit" as const;
 export const EVENT_SESSION_AGENT_EVENT = "session.agent.event" as const;
+export const EVENT_SESSION_MODEL_CHANGED = "session.model.changed" as const;
 export const EVENT_HOST_ERROR = "host.error" as const;
 export const EVENT_HOST_READY = "host.ready" as const;
 export const EVENT_THEME_CHANGED = "theme.changed" as const;
+export const EVENT_PROVIDER_CHANGED = "provider.changed" as const;
 
 export const SessionMessageDeltaPayload = z.object({
   sessionId: z.string(),
@@ -109,6 +112,19 @@ export const ThemeChangedPayload = z.object({
   spec: z.unknown().optional(),
 });
 
+/** Emitted when the active model selection for a session changes (renderer ↔ host ↔ worker). */
+export const SessionModelChangedPayload = z.object({
+  sessionId: z.string(),
+  modelRef: SessionModelRefSchema,
+  thinkingLevel: ThinkingLevelSchema.optional(),
+});
+
+/** Emitted when the provider catalogue, auth state, or custom-provider list changes. */
+export const ProviderChangedPayload = z.object({
+  /** Provider whose state changed; omitted for whole-list refreshes. */
+  providerId: z.string().optional(),
+});
+
 export const EventSchemas = {
   [EVENT_SESSION_MESSAGE_DELTA]: SessionMessageDeltaPayload,
   [EVENT_SESSION_USER_MESSAGE]: SessionUserMessagePayload,
@@ -118,9 +134,11 @@ export const EventSchemas = {
   [EVENT_SESSION_TURN_END]: SessionTurnEndPayload,
   [EVENT_SESSION_WORKER_EXIT]: SessionWorkerExitPayload,
   [EVENT_SESSION_AGENT_EVENT]: SessionAgentEventPayload,
+  [EVENT_SESSION_MODEL_CHANGED]: SessionModelChangedPayload,
   [EVENT_HOST_ERROR]: HostErrorPayload,
   [EVENT_HOST_READY]: HostReadyPayload,
   [EVENT_THEME_CHANGED]: ThemeChangedPayload,
+  [EVENT_PROVIDER_CHANGED]: ProviderChangedPayload,
 } as const;
 
 export type EventTopic = keyof typeof EventSchemas;

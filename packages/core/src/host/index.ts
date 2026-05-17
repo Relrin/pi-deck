@@ -1,6 +1,7 @@
 import { PROTOCOL_VERSION } from "../protocol/version.js";
 import { generateToken } from "./auth.js";
 import { MetadataStore } from "./metadata-store.js";
+import { ProviderManager } from "./provider-manager.js";
 import type { RouterContext } from "./router.js";
 import { SessionManager } from "./session-manager.js";
 import { ThemeManager } from "./themes/index.js";
@@ -29,6 +30,8 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
   const metadataStore = new MetadataStore(opts.userDataDir);
   await metadataStore.ensure();
 
+  const providerManager = await ProviderManager.create(opts.userDataDir);
+
   let wsHandle: WsServerHandle | undefined;
 
   const spawnWorker = (): WorkerHandle => {
@@ -41,7 +44,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     return new WorkerHandle(spawnOpts);
   };
 
-  const sessionManager = new SessionManager({ spawnWorker });
+  const sessionManager = new SessionManager({ spawnWorker, providerManager });
   sessionManager.on("event", (topic, payload) => {
     wsHandle?.broadcast(topic, payload);
   });
@@ -52,10 +55,15 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     wsHandle?.broadcast(topic, payload);
   });
 
+  providerManager.on("event", (topic, payload) => {
+    wsHandle?.broadcast(topic, payload);
+  });
+
   const router: RouterContext = {
     metadataStore,
     sessionManager,
     themeManager,
+    providerManager,
     hostVersion: opts.hostVersion,
     protocolVersion: PROTOCOL_VERSION,
   };

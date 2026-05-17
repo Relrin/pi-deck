@@ -6,6 +6,7 @@ import { ProtocolClient } from "../../lib/transport/protocol-client.js";
 import { type ConnectionStatus, WsClient } from "../../lib/transport/ws-client.js";
 import { useToastStore } from "../_status/useToastStore.js";
 import { useMessagesStore } from "../chat/useMessagesStore.js";
+import { useProvidersStore } from "../models/useProvidersStore.js";
 import { useProjectsStore } from "./useProjectsStore.js";
 
 export interface SessionsStoreState {
@@ -81,6 +82,9 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     } catch {
       // ignore — will retry on reconnect
     }
+    // Fire-and-forget provider hydration — the picker can render its loading state in parallel
+    // with the project / session hydration below.
+    void useProvidersStore.getState().refreshProviders();
     try {
       await useProjectsStore.getState().hydrateActive(client);
       const activeProjectId = useProjectsStore.getState().activeProjectId;

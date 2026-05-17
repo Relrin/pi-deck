@@ -1,3 +1,4 @@
+import type { SessionModelRef, ThinkingLevel } from "../domain/session.js";
 import { createJsonlReader, encodeJsonl } from "../host/jsonl.js";
 import { type AgentBridge, initBridge } from "./agent-bridge.js";
 import { installLifecycleHandlers } from "./lifecycle.js";
@@ -26,7 +27,12 @@ async function handleRequest(frame: { id: string; cmd: string; payload: unknown 
   try {
     switch (frame.cmd) {
       case "init": {
-        const params = frame.payload as { projectPath: string; sessionFile?: string };
+        const params = frame.payload as {
+          projectPath: string;
+          sessionFile?: string;
+          modelRef?: SessionModelRef;
+          thinkingLevel?: ThinkingLevel;
+        };
         bridge = await initBridge(params, emitEvent);
         sendOk(frame.id, { sessionId: bridge.sessionId, sessionFile: bridge.sessionFile });
         return;
@@ -41,6 +47,23 @@ async function handleRequest(frame: { id: string; cmd: string; payload: unknown 
       case "cancel": {
         if (!bridge) throw new Error("Worker not initialized");
         await bridge.cancel();
+        sendOk(frame.id, { ok: true });
+        return;
+      }
+      case "setModel": {
+        if (!bridge) throw new Error("Worker not initialized");
+        const params = frame.payload as {
+          modelRef: SessionModelRef;
+          thinkingLevel?: ThinkingLevel;
+        };
+        await bridge.setModel(params.modelRef, params.thinkingLevel);
+        sendOk(frame.id, { ok: true });
+        return;
+      }
+      case "setThinkingLevel": {
+        if (!bridge) throw new Error("Worker not initialized");
+        const params = frame.payload as { level: ThinkingLevel };
+        bridge.setThinkingLevel(params.level);
         sendOk(frame.id, { ok: true });
         return;
       }

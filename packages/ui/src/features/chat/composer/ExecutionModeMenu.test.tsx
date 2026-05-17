@@ -4,11 +4,7 @@ import { ExecutionModeMenu } from "./ExecutionModeMenu";
 import { useComposerStore } from "./useComposerStore";
 
 beforeEach(() => {
-  useComposerStore.setState({
-    executionMode: "ask",
-    model: "claude-sonnet-4-6",
-    thinkingEffort: "off",
-  });
+  useComposerStore.setState({ executionMode: "ask" });
 });
 
 describe("ExecutionModeMenu", () => {

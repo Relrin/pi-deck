@@ -1,9 +1,12 @@
 import type { ThemeListing, ThemeSpec } from "@pi-deck/core";
+import type { SessionModelRef, ThinkingLevel } from "@pi-deck/core/domain/session.js";
 import {
   ContextUsage,
   EVENT_HOST_ERROR,
+  EVENT_PROVIDER_CHANGED,
   EVENT_SESSION_AGENT_EVENT,
   EVENT_SESSION_MESSAGE_DELTA,
+  EVENT_SESSION_MODEL_CHANGED,
   EVENT_SESSION_TOOL_CALL_END,
   EVENT_SESSION_TOOL_CALL_START,
   EVENT_SESSION_TOOL_CALL_UPDATE,
@@ -17,6 +20,7 @@ import { useToastStore } from "../../features/_status/useToastStore.js";
 import { resetHighlighter } from "../../features/chat/messages/code-highlight.js";
 import { useMessagesStore } from "../../features/chat/useMessagesStore.js";
 import { useUsageStore } from "../../features/chat/useUsageStore.js";
+import { useProvidersStore } from "../../features/models/useProvidersStore.js";
 import { useProjectsStore } from "../../features/sessions/useProjectsStore.js";
 import { useSessionsStore } from "../../features/sessions/useSessionsStore.js";
 import { useThemeStore } from "../../theme/useThemeStore.js";
@@ -32,6 +36,25 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
 
   if (topic === EVENT_THEME_CHANGED) {
     void handleThemeChanged(payload);
+    return;
+  }
+  if (topic === EVENT_PROVIDER_CHANGED) {
+    const providerId = typeof payload.providerId === "string" ? payload.providerId : undefined;
+    void useProvidersStore.getState().applyProviderChanged(providerId);
+    return;
+  }
+  if (topic === EVENT_SESSION_MODEL_CHANGED) {
+    const sid = typeof payload.sessionId === "string" ? payload.sessionId : "";
+    const modelRef = payload.modelRef as SessionModelRef | undefined;
+    if (sid && modelRef) {
+      useProvidersStore
+        .getState()
+        .applySessionModelChanged(
+          sid,
+          modelRef,
+          payload.thinkingLevel as ThinkingLevel | undefined,
+        );
+    }
     return;
   }
 

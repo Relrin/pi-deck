@@ -2,8 +2,11 @@ import { randomUUID } from "node:crypto";
 import {
   type AgentSession,
   type AgentSessionEvent,
+  AuthStorage,
   createAgentSession,
+  ModelRegistry,
 } from "@earendil-works/pi-coding-agent";
+import type { SessionModelRef, ThinkingLevel } from "../domain/session.js";
 import { validateAndChdir } from "./cwd.js";
 
 export type EventEmitter = (topic: string, payload: unknown) => void;
@@ -14,18 +17,60 @@ export interface AgentBridge {
   sessionFile: string;
   prompt: (text: string) => Promise<{ promptId: string }>;
   cancel: () => Promise<void>;
+  setModel: (ref: SessionModelRef, thinkingLevel?: ThinkingLevel) => Promise<void>;
+  setThinkingLevel: (level: ThinkingLevel) => void;
   dispose: () => void;
 }
 
 export interface InitParams {
   projectPath: string;
   sessionFile?: string;
+  modelRef?: SessionModelRef;
+  thinkingLevel?: ThinkingLevel;
+}
+
+/**
+ * The pi-ai `ThinkingLevel` doesn't include `"off"`; we model "off" client-side as "skip
+ * sending a level at all". This translates between the two vocabularies.
+ */
+type PiThinkingLevel = Exclude<ThinkingLevel, "off">;
+
+function toPiThinkingLevel(level: ThinkingLevel | undefined): PiThinkingLevel | undefined {
+  if (!level || level === "off") return undefined;
+  return level;
 }
 
 export async function initBridge(params: InitParams, emit: EventEmitter): Promise<AgentBridge> {
   validateAndChdir(params.projectPath);
 
-  const { session } = await createAgentSession({ cwd: params.projectPath });
+  // The worker constructs its own AuthStorage + ModelRegistry pointing at pi's default paths
+  // (`~/.pi/agent/auth.json` / `~/.pi/agent/models.json`). The host writes both, so the
+  // worker just reads the latest snapshot at spawn time.
+  const authStorage = AuthStorage.create();
+  const modelRegistry = ModelRegistry.create(authStorage);
+
+  const model = params.modelRef
+    ? modelRegistry.find(params.modelRef.providerId, params.modelRef.modelId)
+    : undefined;
+
+  if (params.modelRef && !model) {
+    // Surface a warning event but proceed with pi's resolution chain so we don't strand the
+    // session — pi will fall back to the global default model.
+    emit("agent.event", {
+      type: "prompt_error",
+      message: `Selected model ${params.modelRef.providerId}/${params.modelRef.modelId} is not registered; falling back to defaults.`,
+    });
+  }
+
+  const thinkingLevel = toPiThinkingLevel(params.thinkingLevel);
+
+  const { session } = await createAgentSession({
+    cwd: params.projectPath,
+    authStorage,
+    modelRegistry,
+    ...(model ? { model } : {}),
+    ...(thinkingLevel ? { thinkingLevel } : {}),
+  });
 
   const unsubscribe = session.subscribe((event: AgentSessionEvent) => {
     forwardEvent(event, emit, session);
@@ -45,6 +90,21 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     },
     cancel: async () => {
       await session.abort();
+    },
+    setModel: async (ref: SessionModelRef, level?: ThinkingLevel) => {
+      const next = modelRegistry.find(ref.providerId, ref.modelId);
+      if (!next) {
+        throw new Error(`Model ${ref.providerId}/${ref.modelId} is not registered`);
+      }
+      await session.setModel(next);
+      const piLevel = toPiThinkingLevel(level);
+      if (piLevel !== undefined) session.setThinkingLevel(piLevel);
+    },
+    setThinkingLevel: (level: ThinkingLevel) => {
+      const piLevel = toPiThinkingLevel(level);
+      // pi-ai has no "off" — when the user picks off we leave the level untouched. Callers
+      // that genuinely want to disable thinking should pick a non-reasoning model.
+      if (piLevel !== undefined) session.setThinkingLevel(piLevel);
     },
     dispose: () => {
       unsubscribe();

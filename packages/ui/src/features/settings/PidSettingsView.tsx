@@ -2,9 +2,9 @@ import { type ReactNode, useEffect } from "react";
 import { PidIconButton } from "../../components/buttons/PidIconButton";
 import { PidKbd } from "../../components/kbd/PidKbd";
 import { AppearanceSection } from "./sections/AppearanceSection";
+import { ProvidersSection } from "./sections/ProvidersSection";
 import {
   AdvancedSection,
-  AgentModelsSection,
   EditorSection,
   GitGitHubSection,
   KeybindsSection,
@@ -21,7 +21,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: "appearance", label: "Appearance", stub: false },
-  { id: "agent-models", label: "Agent & Models", stub: true },
+  { id: "agent-models", label: "Providers & Models", stub: false },
   { id: "git-github", label: "Git & GitHub", stub: true },
   { id: "mcp-servers", label: "MCP Servers", stub: true },
   { id: "editor", label: "Editor", stub: true },
@@ -32,7 +32,7 @@ const NAV_ITEMS: NavItem[] = [
 
 const SECTION_RENDERERS: Record<SettingsSectionId, () => ReactNode> = {
   appearance: () => <AppearanceSection />,
-  "agent-models": () => <AgentModelsSection />,
+  "agent-models": () => <ProvidersSection />,
   "git-github": () => <GitGitHubSection />,
   "mcp-servers": () => <McpServersSection />,
   editor: () => <EditorSection />,

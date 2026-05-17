@@ -79,7 +79,10 @@ bun run build         # Production build
 - Add dependencies without a clear reason. Especially anything that adds a transitive native module — those slow down install and Electron packaging.
 - Log API keys, OAuth tokens, or session content to disk outside the documented locations.
 - Use `console.log` in committed code. Use the structured logger (added in a later plan).
-- Touch `~/.pi/` directly. Always go through pi's API.
+- Touch `~/.pi/` directly with one exception: the provider registry writes `~/.pi/agent/models.json` and persists keys to `~/.pi/agent/auth.json` via pi's `AuthStorage` API. Everywhere else, go through pi's API.
+- Send API keys to the renderer. The renderer can request "is provider X authenticated?" but the secret itself stays in the host.
+- Log provider credentials in any form — even truncated.
+- Hardcode model IDs anywhere outside `packages/core/src/providers/`. The registry is the only place that knows model strings; the UI fetches them through `provider.models`.
 
 ## Per-subsystem entry points
 
@@ -100,7 +103,10 @@ This list is populated as plans complete. When you finish a plan, add its key en
 - **UI primitives** — `packages/ui/src/components/ui/`. Built on Radix. Always prefer extending these over importing Radix directly in feature code.
 - **Sessions / projects state** — `useProjectsStore`, `useSessionsStore`, `useMessagesStore` in `packages/ui/src/features/sessions/` and `packages/ui/src/features/chat/`. A single `routeEvent` function in `packages/ui/src/lib/transport/event-router.ts` is the only event subscriber; it dispatches into the stores.
 - **Message context menu** — `packages/ui/src/features/chat/messages/MessageContextMenu.tsx` wraps each user/assistant message in a Radix `ContextMenu`. Actions: Copy text, Copy as Markdown, Attach selection to next prompt (routes via `useDraftStore`). Tool-call cards are intentionally not selectable.
-- **Composer state** — `packages/ui/src/features/chat/composer/useComposerStore.ts` (persisted Zustand under `pi-deck:composer`) holds execution mode, model, and thinking effort. UI-only today (see `// TODO(protocol)` in the file); will forward to pi when the SDK exposes setters. Bottom-bar controls live in `ExecutionModeMenu.tsx`, `ModelMenu.tsx`, `ContextUsageIndicator.tsx` under the same folder.
+- **Composer state** — `packages/ui/src/features/chat/composer/useComposerStore.ts` (persisted Zustand under `pi-deck:composer`) holds the execution mode only. UI-only today (see `// TODO(protocol)` in the file); will forward to pi when the SDK exposes a setter for permission mode. Model + thinking-level moved to `useProvidersStore` (per-session) as of plan 006. Bottom-bar controls live in `ExecutionModeMenu.tsx`, `ModelMenu.tsx`, `ContextUsageIndicator.tsx` under the same folder.
+- **Provider registry** — `packages/core/src/providers/` + `packages/core/src/host/provider-manager.ts`. Built-in providers come from pi-ai's `ModelRegistry`. Custom OpenAI-compatible providers are stored in `~/.config/pi-deck/providers.json` and materialised to `~/.pi/agent/models.json` (via `models-json.ts`) so pi's `ModelRegistry` picks them up natively. No pi extension is shipped.
+- **Secrets** — API keys live in pi's `~/.pi/agent/auth.json` via the `AuthStorage` API (`packages/core/src/providers/auth-bridge.ts`). pi-deck never persists keys itself, never sends them to the renderer, and only materialises them at request time when pi's session resolves a provider. The renderer only ever sees an `AuthState` (`authenticated` / `needs-key` / `unreachable`).
+- **Model picker** — `packages/ui/src/features/models/`. Opened from the chat header `ModelBadge` (a `PidChip`-style button on `ChatHeader.tsx`) or via the `ModelMenu` dropdown in the composer. `ModelPicker.tsx` portals a two-column modal (providers left, models right) using the `.pid-modal-backdrop` + `.pid-modal` chrome from `components.css`. Per-session model and thinking level are stored in pi-deck via `useProvidersStore.sessionSelection`, persisted to `providers.json`, and forwarded to the live worker via `session.setModel` / `session.setThinkingLevel` commands.
 - **Usage tracking** — `packages/ui/src/features/chat/useUsageStore.ts` reads per-turn `usage` + `contextUsage` from `EVENT_SESSION_TURN_END`. Worker source: `packages/core/src/worker/agent-bridge.ts:forwardEvent` extracts `message.usage` and calls `session.getContextUsage()`. The per-category breakdown in `ContextUsageIndicator` is derived renderer-side from the messages store because pi's `ContextUsage` is aggregate-only.
 - **Theme system** — `packages/ui/src/theme/`. Tokens defined in `tokens.css` using descriptive names (`--bg-0..3`, `--ink-0..3`, `--accent*`, `--add/del/mod`, `--diff-*`). Active theme is JSON, applied by `loader.ts` as inline custom properties on `<html>`. VS Code themes are imported via `vscode-adapter.ts`. Shiki bridge in `shiki-bridge.ts` keeps syntax highlighting aligned with the active theme. Six bundled palettes: default / phosphor / nightshade × dark / light. The canonical Zod schema lives in `packages/core/src/protocol/theme.ts` and is re-exported via `@pi-deck/core`.
 - **Theme storage & hot reload** — `packages/core/src/host/themes/`. Bundled JSON lives in `packages/core/src/host/themes/bundled/` and is imported with `with { type: "json" }`. User themes live at `<userData>/themes/` (Electron `app.getPath("userData")`). Chokidar watches the dir and emits `theme.changed` events; if the active theme's spec changed on disk, the new spec ships in the event payload so the renderer re-applies without a round-trip.
@@ -147,6 +153,17 @@ The renderer↔host protocol is versioned (`packages/core/src/protocol/version.t
 - The renderer never has direct Node access. Anything OS-level goes through the preload bridge.
 - A localhost-only WebSocket is the renderer <-> backend transport. The server binds to `127.0.0.1` only and authenticates with a short-lived token generated at app start.
 - No remote content loaded into the main BrowserWindow. External links open in the OS browser via `shell.openExternal`.
+- **Content Security Policy.** In packaged builds the main process attaches a strict CSP via `session.defaultSession.webRequest.onHeadersReceived` (see `packages/desktop/src/main/security.ts`). No `'unsafe-eval'`; `connect-src` whitelists only `127.0.0.1`; `frame-ancestors 'none'`. In dev, Vite HMR requires `'unsafe-eval'` so we suppress Electron's security warning (the warning itself notes it never fires in packaged builds). Adding a new outbound origin requires editing `security.ts`.
+
+## Adding a built-in provider
+
+When pi adds a new built-in provider (or we choose to surface one that pi supports but we previously hid):
+
+1. Add a `BuiltInProviderDef` entry to `BUILT_IN_PROVIDERS` in `packages/core/src/providers/built-ins.ts` with the right `authJsonKey` (matches pi's `~/.pi/agent/auth.json` key) and `envVar` (matches pi-ai's `env-api-keys.ts`).
+2. Add a small monochrome `<svg>` glyph in `packages/ui/src/features/models/icons/index.tsx`.
+3. Smoke-test by authenticating, picking a model, sending a prompt.
+
+No code generation, no manifest dance. Adding a provider is a one-file change in the registry. Custom OpenAI-compatible endpoints don't need any of this — users add them at runtime via the picker.
 
 ## Acceptance gate for every change
 

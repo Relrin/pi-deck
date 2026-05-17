@@ -1,4 +1,5 @@
 import { EventEmitter } from "node:events";
+import type { SessionModelRef, ThinkingLevel } from "../domain/session.js";
 import {
   EVENT_HOST_ERROR,
   EVENT_SESSION_AGENT_EVENT,
@@ -11,6 +12,7 @@ import {
   EVENT_SESSION_WORKER_EXIT,
   type EventTopic,
 } from "../protocol/events.js";
+import type { ProviderManager } from "./provider-manager.js";
 import type { WorkerHandle } from "./worker-handle.js";
 
 export interface SessionRecord {
@@ -22,11 +24,15 @@ export interface SessionRecord {
   lastActivityAt: string;
   /** Pi session file path; set after worker init reports it. */
   sessionFile?: string;
+  /** Structured model selection, persisted via ProviderManager. */
+  modelRef?: SessionModelRef;
+  thinkingLevel?: ThinkingLevel;
   worker?: WorkerHandle;
 }
 
 export interface SessionManagerOptions {
   spawnWorker: () => WorkerHandle;
+  providerManager?: ProviderManager;
 }
 
 export type SessionManagerEvents = {
@@ -46,11 +52,13 @@ const WORKER_TOPIC_MAP: Record<string, EventTopic> = {
 export class SessionManager extends EventEmitter<SessionManagerEvents> {
   private readonly sessions = new Map<string, SessionRecord>();
   private readonly spawnWorker: () => WorkerHandle;
+  private readonly providerManager?: ProviderManager;
   private nextLocalId = 1;
 
   constructor(opts: SessionManagerOptions) {
     super();
     this.spawnWorker = opts.spawnWorker;
+    this.providerManager = opts.providerManager;
   }
 
   list(projectId: string): SessionRecord[] {
@@ -65,9 +73,14 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     projectId: string;
     projectPath: string;
     title?: string;
+    modelRef?: SessionModelRef;
+    thinkingLevel?: ThinkingLevel;
   }): Promise<SessionRecord> {
     const localId = `local-${this.nextLocalId++}`;
     const now = new Date().toISOString();
+    // If the caller didn't pin a model, inherit the user's last choice (recent default).
+    const fallback = this.providerManager?.registry.getDefaultModel();
+    const modelRef = input.modelRef ?? fallback;
     const record: SessionRecord = {
       id: localId,
       projectId: input.projectId,
@@ -75,10 +88,16 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       title: input.title ?? "New session",
       createdAt: now,
       lastActivityAt: now,
+      modelRef,
+      thinkingLevel: input.thinkingLevel,
     };
     this.sessions.set(localId, record);
     // Spawn immediately so pi can assign a real session id.
     await this.activate(localId);
+    if (modelRef && this.providerManager) {
+      // Persist the per-session pin so a restart restores it.
+      await this.providerManager.setSessionSelection(record.id, modelRef, input.thinkingLevel);
+    }
     return record;
   }
 
@@ -87,6 +106,15 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     if (!record) throw new Error(`Unknown session ${sessionId}`);
     if (record.worker?.isAlive) return;
 
+    // Hydrate the model selection from the providers store if it was persisted across runs.
+    if (!record.modelRef && this.providerManager) {
+      const saved = this.providerManager.getSessionSelection(sessionId);
+      if (saved) {
+        record.modelRef = saved.modelRef;
+        record.thinkingLevel = saved.thinkingLevel;
+      }
+    }
+
     const worker = this.spawnWorker();
     record.worker = worker;
     this.bindWorker(record, worker);
@@ -94,6 +122,8 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     const init = (await worker.request("init", {
       projectPath: record.projectPath,
       sessionFile: record.sessionFile,
+      modelRef: record.modelRef,
+      thinkingLevel: record.thinkingLevel,
     })) as { sessionId: string; sessionFile: string };
 
     if (init.sessionId && init.sessionId !== record.id) {
@@ -127,6 +157,37 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     const record = this.sessions.get(sessionId);
     if (!record?.worker?.isAlive) return;
     await record.worker.request("cancel", {});
+  }
+
+  /** Mid-session model switch. Forwarded to the live worker if there is one. */
+  async setModel(
+    sessionId: string,
+    modelRef: SessionModelRef,
+    thinkingLevel?: ThinkingLevel,
+  ): Promise<void> {
+    const record = this.sessions.get(sessionId);
+    if (!record) throw new Error(`Unknown session ${sessionId}`);
+    record.modelRef = modelRef;
+    if (thinkingLevel !== undefined) record.thinkingLevel = thinkingLevel;
+    if (this.providerManager) {
+      await this.providerManager.setSessionSelection(sessionId, modelRef, record.thinkingLevel);
+    }
+    if (record.worker?.isAlive) {
+      await record.worker.request("setModel", { modelRef, thinkingLevel: record.thinkingLevel });
+    }
+    record.lastActivityAt = new Date().toISOString();
+  }
+
+  async setThinkingLevel(sessionId: string, level: ThinkingLevel): Promise<void> {
+    const record = this.sessions.get(sessionId);
+    if (!record) throw new Error(`Unknown session ${sessionId}`);
+    record.thinkingLevel = level;
+    if (this.providerManager && record.modelRef) {
+      await this.providerManager.setSessionSelection(sessionId, record.modelRef, level);
+    }
+    if (record.worker?.isAlive) {
+      await record.worker.request("setThinkingLevel", { level });
+    }
   }
 
   shutdown(): void {

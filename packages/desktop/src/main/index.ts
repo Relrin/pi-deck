@@ -3,6 +3,7 @@ import { type BackendHandle, startBackend } from "./backend";
 import { waitForViteServer } from "./dev";
 import { registerBridgeIpc } from "./ipc";
 import { installAppMenu } from "./menu";
+import { installCspHeaders } from "./security";
 import { createWindow } from "./window";
 
 const DEV_URL_DEFAULT = "http://127.0.0.1:5173";
@@ -12,6 +13,7 @@ app.setName("pi-deck");
 let backend: BackendHandle | undefined;
 
 app.whenReady().then(async () => {
+  installCspHeaders();
   installAppMenu();
 
   try {

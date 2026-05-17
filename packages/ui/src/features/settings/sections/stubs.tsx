@@ -26,17 +26,6 @@ function StubSection({ title, kicker, plan, description }: StubProps) {
   );
 }
 
-export function AgentModelsSection() {
-  return (
-    <StubSection
-      title="Agent & Models"
-      kicker="Settings · Agent & Models"
-      plan="plan 006"
-      description="Configure the default agent, model menu, execution modes, and tool gating."
-    />
-  );
-}
-
 export function GitGitHubSection() {
   return (
     <StubSection

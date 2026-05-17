@@ -1,68 +1,72 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { act, fireEvent, render, screen } from "../../../../test/utils";
+import { render, screen } from "../../../../test/utils";
+import { useProvidersStore } from "../../models/useProvidersStore";
+import { useSessionsStore } from "../../sessions/useSessionsStore";
 import { ModelMenu } from "./ModelMenu";
-import { useComposerStore } from "./useComposerStore";
+
+function resetStores() {
+  useProvidersStore.setState({
+    providers: [],
+    defaultModel: undefined,
+    modelsByProvider: {},
+    loadingProviders: false,
+    loadingModelsByProvider: {},
+    sessionSelection: {},
+  });
+  useSessionsStore.setState({
+    sessions: [],
+    activeSessionId: undefined,
+  });
+}
 
 beforeEach(() => {
-  useComposerStore.setState({
-    executionMode: "ask",
-    model: "claude-sonnet-4-6",
-    thinkingEffort: "off",
-  });
+  resetStores();
 });
 
 describe("ModelMenu", () => {
-  test("trigger shows the current model label", () => {
+  test("shows 'Select model' when no model is active", () => {
     render(<ModelMenu />);
-    expect(screen.getByRole("button", { name: /Model: Claude Sonnet 4\.6/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Model: Select model/i })).toBeInTheDocument();
   });
 
-  test("trigger shows '· effort' suffix when a thinking effort is active", () => {
-    useComposerStore.setState({ thinkingEffort: "medium" });
+  test("reflects the per-session model selection in the trigger label", () => {
+    useSessionsStore.setState({
+      sessions: [
+        {
+          id: "s1",
+          projectId: "00000000-0000-0000-0000-000000000000",
+          title: "Local",
+          lastActivityAt: new Date().toISOString(),
+          modelRef: { providerId: "anthropic", modelId: "claude-opus-4-7" },
+        },
+      ],
+      activeSessionId: "s1",
+    });
+    useProvidersStore.setState({
+      providers: [
+        {
+          id: "anthropic",
+          name: "Anthropic",
+          kind: "built-in",
+          iconKey: "anthropic",
+          authJsonKey: "anthropic",
+          oauthSupported: true,
+          authState: "authenticated",
+        },
+      ],
+      modelsByProvider: {
+        anthropic: [
+          {
+            providerId: "anthropic",
+            id: "claude-opus-4-7",
+            label: "Claude Opus 4.7",
+            supportsThinking: true,
+            modalities: ["text"],
+          },
+        ],
+      },
+    });
     render(<ModelMenu />);
-    expect(screen.getByRole("button", { name: /· medium/i })).toBeInTheDocument();
-  });
-
-  test("selecting a model updates the store", () => {
-    render(<ModelMenu />);
-    act(() => {
-      fireEvent.pointerDown(screen.getByRole("button", { name: /Model:/i }), {
-        button: 0,
-        pointerType: "mouse",
-      });
-    });
-    act(() => {
-      fireEvent.click(screen.getByText("Claude Opus 4.7"));
-    });
-    expect(useComposerStore.getState().model).toBe("claude-opus-4-7");
-  });
-
-  test("thinking-effort items are disabled when the active model does not support it", () => {
-    useComposerStore.setState({ model: "claude-haiku-4-5" });
-    render(<ModelMenu />);
-    act(() => {
-      fireEvent.pointerDown(screen.getByRole("button", { name: /Model:/i }), {
-        button: 0,
-        pointerType: "mouse",
-      });
-    });
-    const lowItem = screen.getByText("Low");
-    expect(lowItem.getAttribute("data-disabled")).not.toBeNull();
-  });
-
-  test("thinking-effort items are enabled when the active model supports it", () => {
-    render(<ModelMenu />);
-    act(() => {
-      fireEvent.pointerDown(screen.getByRole("button", { name: /Model:/i }), {
-        button: 0,
-        pointerType: "mouse",
-      });
-    });
-    const highItem = screen.getByText("High");
-    expect(highItem.getAttribute("data-disabled")).toBeNull();
-    act(() => {
-      fireEvent.click(highItem);
-    });
-    expect(useComposerStore.getState().thinkingEffort).toBe("high");
+    expect(screen.getByRole("button", { name: /Model: Claude Opus 4\.7/i })).toBeInTheDocument();
   });
 });

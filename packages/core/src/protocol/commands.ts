@@ -1,6 +1,15 @@
 import { z } from "zod";
 import { ProjectSchema, ProjectSummarySchema } from "../domain/project.js";
-import { SessionSummarySchema } from "../domain/session.js";
+import {
+  SessionModelRefSchema,
+  SessionSummarySchema,
+  ThinkingLevelSchema,
+} from "../domain/session.js";
+import {
+  CustomProviderInputSchema,
+  ModelInfoSchema,
+  ProviderSummarySchema,
+} from "../providers/types.js";
 import { themeListingSchema } from "./theme.js";
 
 export const PingRequest = z.object({}).strict();
@@ -22,6 +31,8 @@ export const SessionListResponse = z.object({ sessions: z.array(SessionSummarySc
 export const SessionCreateRequest = z.object({
   projectId: z.string().uuid(),
   title: z.string().optional(),
+  modelRef: SessionModelRefSchema.optional(),
+  thinkingLevel: ThinkingLevelSchema.optional(),
 });
 export const SessionCreateResponse = z.object({ session: SessionSummarySchema });
 
@@ -44,6 +55,19 @@ export const SessionPromptResponse = z.object({
 export const SessionCancelRequest = z.object({ sessionId: z.string().min(1) });
 export const SessionCancelResponse = z.object({ ok: z.literal(true) });
 
+export const SessionSetModelRequest = z.object({
+  sessionId: z.string().min(1),
+  modelRef: SessionModelRefSchema,
+  thinkingLevel: ThinkingLevelSchema.optional(),
+});
+export const SessionSetModelResponse = z.object({ ok: z.literal(true) });
+
+export const SessionSetThinkingLevelRequest = z.object({
+  sessionId: z.string().min(1),
+  level: ThinkingLevelSchema,
+});
+export const SessionSetThinkingLevelResponse = z.object({ ok: z.literal(true) });
+
 export const ThemeListRequest = z.object({}).strict();
 export const ThemeListResponse = z.object({
   activeName: z.string(),
@@ -60,6 +84,37 @@ export const ThemeSetActiveResponse = z.object({ ok: z.literal(true) });
 export const ThemeImportRequest = z.object({ sourcePath: z.string().min(1) });
 export const ThemeImportResponse = z.object({ name: z.string() });
 
+export const ProviderListRequest = z.object({}).strict();
+export const ProviderListResponse = z.object({
+  providers: z.array(ProviderSummarySchema),
+  defaultModel: SessionModelRefSchema.optional(),
+});
+
+export const ProviderModelsRequest = z.object({ providerId: z.string().min(1) });
+export const ProviderModelsResponse = z.object({
+  providerId: z.string().min(1),
+  models: z.array(ModelInfoSchema),
+});
+
+export const ProviderAddCustomRequest = z.object({ def: CustomProviderInputSchema });
+export const ProviderAddCustomResponse = z.object({
+  id: z.string().min(1),
+  provider: ProviderSummarySchema,
+});
+
+export const ProviderRemoveCustomRequest = z.object({ id: z.string().min(1) });
+export const ProviderRemoveCustomResponse = z.object({ ok: z.literal(true) });
+
+export const ProviderSetApiKeyRequest = z.object({
+  authJsonKey: z.string().min(1),
+  /** Renderer ↔ host only; the host never forwards this to the renderer or worker stdio. */
+  secret: z.string().min(1),
+});
+export const ProviderSetApiKeyResponse = z.object({ ok: z.literal(true) });
+
+export const ProviderClearApiKeyRequest = z.object({ authJsonKey: z.string().min(1) });
+export const ProviderClearApiKeyResponse = z.object({ ok: z.literal(true) });
+
 export const CommandSchemas = {
   ping: { request: PingRequest, response: PingResponse },
   "project.list": { request: ProjectListRequest, response: ProjectListResponse },
@@ -70,10 +125,30 @@ export const CommandSchemas = {
   "session.deactivate": { request: SessionDeactivateRequest, response: SessionDeactivateResponse },
   "session.prompt": { request: SessionPromptRequest, response: SessionPromptResponse },
   "session.cancel": { request: SessionCancelRequest, response: SessionCancelResponse },
+  "session.setModel": { request: SessionSetModelRequest, response: SessionSetModelResponse },
+  "session.setThinkingLevel": {
+    request: SessionSetThinkingLevelRequest,
+    response: SessionSetThinkingLevelResponse,
+  },
   "theme.list": { request: ThemeListRequest, response: ThemeListResponse },
   "theme.get": { request: ThemeGetRequest, response: ThemeGetResponse },
   "theme.setActive": { request: ThemeSetActiveRequest, response: ThemeSetActiveResponse },
   "theme.import": { request: ThemeImportRequest, response: ThemeImportResponse },
+  "provider.list": { request: ProviderListRequest, response: ProviderListResponse },
+  "provider.models": { request: ProviderModelsRequest, response: ProviderModelsResponse },
+  "provider.addCustom": { request: ProviderAddCustomRequest, response: ProviderAddCustomResponse },
+  "provider.removeCustom": {
+    request: ProviderRemoveCustomRequest,
+    response: ProviderRemoveCustomResponse,
+  },
+  "provider.setApiKey": {
+    request: ProviderSetApiKeyRequest,
+    response: ProviderSetApiKeyResponse,
+  },
+  "provider.clearApiKey": {
+    request: ProviderClearApiKeyRequest,
+    response: ProviderClearApiKeyResponse,
+  },
 } as const;
 
 export type CommandName = keyof typeof CommandSchemas;

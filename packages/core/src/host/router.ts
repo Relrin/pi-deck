@@ -1,12 +1,14 @@
 import { type CommandName, CommandSchemas } from "../protocol/commands.js";
 import type { MetadataStore } from "./metadata-store.js";
-import type { SessionManager } from "./session-manager.js";
+import type { ProviderManager } from "./provider-manager.js";
+import type { SessionManager, SessionRecord } from "./session-manager.js";
 import type { ThemeManager } from "./themes/index.js";
 
 export interface RouterContext {
   metadataStore: MetadataStore;
   sessionManager: SessionManager;
   themeManager: ThemeManager;
+  providerManager: ProviderManager;
   hostVersion: string;
   protocolVersion: number;
 }
@@ -21,6 +23,18 @@ export class RouterError extends Error {
 }
 
 export type CommandHandler = (ctx: RouterContext, payload: unknown) => Promise<unknown>;
+
+function toSummary(record: SessionRecord) {
+  return {
+    id: record.id,
+    projectId: record.projectId,
+    title: record.title,
+    model: record.modelRef ? `${record.modelRef.providerId}/${record.modelRef.modelId}` : undefined,
+    modelRef: record.modelRef,
+    thinkingLevel: record.thinkingLevel,
+    lastActivityAt: record.lastActivityAt,
+  };
+}
 
 const handlers: { [C in CommandName]: CommandHandler } = {
   ping: async (ctx) => ({
@@ -37,14 +51,7 @@ const handlers: { [C in CommandName]: CommandHandler } = {
   "session.list": async (ctx, payload) => {
     const parsed = CommandSchemas["session.list"].request.parse(payload);
     const records = ctx.sessionManager.list(parsed.projectId);
-    return {
-      sessions: records.map((r) => ({
-        id: r.id,
-        projectId: r.projectId,
-        title: r.title,
-        lastActivityAt: r.lastActivityAt,
-      })),
-    };
+    return { sessions: records.map(toSummary) };
   },
   "session.create": async (ctx, payload) => {
     const parsed = CommandSchemas["session.create"].request.parse(payload);
@@ -54,16 +61,11 @@ const handlers: { [C in CommandName]: CommandHandler } = {
       projectId: project.id,
       projectPath: project.path,
       title: parsed.title,
+      modelRef: parsed.modelRef,
+      thinkingLevel: parsed.thinkingLevel,
     });
     await ctx.metadataStore.appendSessionId(project.id, record.id);
-    return {
-      session: {
-        id: record.id,
-        projectId: record.projectId,
-        title: record.title,
-        lastActivityAt: record.lastActivityAt,
-      },
-    };
+    return { session: toSummary(record) };
   },
   "session.activate": async (ctx, payload) => {
     const parsed = CommandSchemas["session.activate"].request.parse(payload);
@@ -85,6 +87,16 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     await ctx.sessionManager.cancel(parsed.sessionId);
     return { ok: true as const };
   },
+  "session.setModel": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.setModel"].request.parse(payload);
+    await ctx.sessionManager.setModel(parsed.sessionId, parsed.modelRef, parsed.thinkingLevel);
+    return { ok: true as const };
+  },
+  "session.setThinkingLevel": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.setThinkingLevel"].request.parse(payload);
+    await ctx.sessionManager.setThinkingLevel(parsed.sessionId, parsed.level);
+    return { ok: true as const };
+  },
   "theme.list": async (ctx) => ({
     activeName: ctx.themeManager.getActiveName(),
     themes: ctx.themeManager.list(),
@@ -104,6 +116,32 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     const parsed = CommandSchemas["theme.import"].request.parse(payload);
     const result = await ctx.themeManager.importFromPath(parsed.sourcePath);
     return { name: result.name };
+  },
+  "provider.list": async (ctx) => ctx.providerManager.listProviders(),
+  "provider.models": async (ctx, payload) => {
+    const parsed = CommandSchemas["provider.models"].request.parse(payload);
+    const models = await ctx.providerManager.listModels(parsed.providerId);
+    return { providerId: parsed.providerId, models };
+  },
+  "provider.addCustom": async (ctx, payload) => {
+    const parsed = CommandSchemas["provider.addCustom"].request.parse(payload);
+    const provider = await ctx.providerManager.addCustom(parsed.def);
+    return { id: provider.id, provider };
+  },
+  "provider.removeCustom": async (ctx, payload) => {
+    const parsed = CommandSchemas["provider.removeCustom"].request.parse(payload);
+    await ctx.providerManager.removeCustom(parsed.id);
+    return { ok: true as const };
+  },
+  "provider.setApiKey": async (ctx, payload) => {
+    const parsed = CommandSchemas["provider.setApiKey"].request.parse(payload);
+    ctx.providerManager.setApiKey(parsed.authJsonKey, parsed.secret);
+    return { ok: true as const };
+  },
+  "provider.clearApiKey": async (ctx, payload) => {
+    const parsed = CommandSchemas["provider.clearApiKey"].request.parse(payload);
+    ctx.providerManager.clearApiKey(parsed.authJsonKey);
+    return { ok: true as const };
   },
 };
 
