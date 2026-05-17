@@ -1,8 +1,10 @@
 export {
+  Archive,
   ArrowLeft,
   Bot,
   Box,
   Check,
+  CheckCheck,
   ChevronDown,
   ChevronRight,
   Edit3,
@@ -13,6 +15,7 @@ export {
   Folder,
   FolderOpen,
   GitBranch,
+  GitMerge,
   Layers,
   List,
   Loader2,

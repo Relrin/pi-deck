@@ -20,6 +20,12 @@ export interface PidChipPickerFooterAction {
 
 export interface PidChipPickerProps {
   icon: GlyphKind;
+  /**
+   * Replace the default Glyph in the trigger with a custom node — used to render the
+   * `π` brand mark on the model chip or a level-aware signal icon on the effort chip.
+   * Falls back to `<Glyph kind={icon} />` when omitted.
+   */
+  triggerLeading?: ReactNode;
   /** Override the chip's visible label; defaults to the active option's label/value. */
   triggerLabel?: string;
   /** Header text shown above the option list (e.g. "SELECT"). Defaults to "SELECT". */
@@ -36,6 +42,7 @@ export interface PidChipPickerProps {
 
 export function PidChipPicker({
   icon,
+  triggerLeading,
   triggerLabel,
   header = "Select",
   value,
@@ -53,7 +60,7 @@ export function PidChipPicker({
     <RadixDropdown.Root>
       <RadixDropdown.Trigger asChild disabled={disabled}>
         <button type="button" className="pid-picker-trigger" aria-label={ariaLabel}>
-          <Glyph kind={icon} size={12} />
+          {triggerLeading === undefined ? <Glyph kind={icon} size={12} /> : triggerLeading}
           <span className="pid-picker-trigger-label">{labelText}</span>
           <Glyph kind="chevron-down" size={10} className="pid-picker-trigger-chev" />
         </button>

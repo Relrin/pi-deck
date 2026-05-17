@@ -77,6 +77,12 @@ export function PidModelPicker() {
   return (
     <PidChipPicker
       icon="sparkle"
+      triggerLeading={
+        <span className="pid-picker-trigger-pi" aria-hidden>
+          π
+        </span>
+      }
+      header="Model"
       ariaLabel="Select model"
       value={activeKey}
       options={options}

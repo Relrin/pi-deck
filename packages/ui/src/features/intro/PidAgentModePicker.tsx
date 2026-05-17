@@ -1,7 +1,7 @@
 import type { AgentMode } from "@pi-deck/core/domain/session.js";
 import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import type { ComponentType } from "react";
-import { Check, Map as MapIcon, ShieldCheck, SquareCheck } from "../../components/icons/index.js";
+import { Check, CheckCheck, Map as MapIcon, ShieldCheck } from "../../components/icons/index.js";
 import { useIntroComposerStore } from "./useIntroComposerStore.js";
 
 interface ModeEntry {
@@ -22,7 +22,7 @@ const MODES: ModeEntry[] = [
     value: "accept-edits",
     label: "Accept edits",
     blurb: "Auto-accept edits to listed files & paths.",
-    Icon: SquareCheck,
+    Icon: CheckCheck,
   },
   {
     value: "plan",

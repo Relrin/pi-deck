@@ -1,7 +1,16 @@
-import { type FormEvent, Fragment, useEffect, useMemo } from "react";
-import { Glyph } from "../../components/glyph/index.js";
-import { Folder, X } from "../../components/icons/index.js";
+import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
+import {
+  type FormEvent,
+  Fragment,
+  type KeyboardEvent as ReactKeyboardEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { Archive, Folder, GitMerge, Send, X } from "../../components/icons/index.js";
 import { PidChipPicker, type PidChipPickerOption } from "../../components/picker/PidChipPicker.js";
+import { isMacOs } from "../../lib/platform.js";
 import { useNavStore } from "../../lib/useNavStore.js";
 import { useToastStore } from "../_status/useToastStore.js";
 import { useGitStore } from "../git/useGitStore.js";
@@ -11,8 +20,10 @@ import { PidAgentModePicker } from "./PidAgentModePicker.js";
 import { PidAttachmentsPicker } from "./PidAttachmentsPicker.js";
 import { PidEffortPicker } from "./PidEffortPicker.js";
 import { PidModelPicker } from "./PidModelPicker.js";
+import { PidRepoFileSearchDialog } from "./PidRepoFileSearchDialog.js";
 import { INTRO_TEMPLATES } from "./templates.js";
 import { useIntroComposerStore } from "./useIntroComposerStore.js";
+import { useRecentAttachmentsStore } from "./useRecentAttachmentsStore.js";
 
 const RECENT_LIMIT = 3;
 
@@ -24,7 +35,44 @@ export function PidComposerScreen() {
   const pendingThinkingLevel = useIntroComposerStore((s) => s.pendingThinkingLevel);
   const agentMode = useIntroComposerStore((s) => s.agentMode);
   const attachments = useIntroComposerStore((s) => s.attachments);
+  const addAttachments = useIntroComposerStore((s) => s.addAttachments);
   const removeAttachment = useIntroComposerStore((s) => s.removeAttachment);
+  const pushRecent = useRecentAttachmentsStore((s) => s.push);
+
+  const [repoSearchOpen, setRepoSearchOpen] = useState(false);
+
+  const attachAndRemember = useCallback(
+    (next: PromptAttachment[]) => {
+      if (next.length === 0) return;
+      addAttachments(next);
+      for (const a of next) pushRecent(a);
+    },
+    [addAttachments, pushRecent],
+  );
+
+  const chooseFiles = useCallback(async () => {
+    const picker = window.bridge?.openFiles;
+    if (!picker) {
+      useToastStore.getState().push("File picker unavailable in this build", "error");
+      return;
+    }
+    const paths = await picker();
+    if (paths.length === 0) return;
+    attachAndRemember(paths.map((path) => ({ kind: "file" as const, path })));
+  }, [attachAndRemember]);
+
+  const chooseFolder = useCallback(async () => {
+    const picker = window.bridge?.openDirectory;
+    if (!picker) {
+      useToastStore.getState().push("Folder picker unavailable in this build", "error");
+      return;
+    }
+    const path = await picker();
+    if (!path) return;
+    attachAndRemember([{ kind: "folder", path }]);
+  }, [attachAndRemember]);
+
+  const openRepoSearch = useCallback(() => setRepoSearchOpen(true), []);
 
   const projects = useProjectsStore((s) => s.projects);
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
@@ -121,6 +169,30 @@ export function PidComposerScreen() {
     void checkoutBranch(activeProjectId, name);
   };
 
+  // Keyboard shortcuts inside the composer textarea. Mirrors the kbd badges in the
+  // attachments popover so the visual hint matches the actual binding on this platform.
+  // `@` only fires at a word boundary so typing emails or mid-string `@` mentions still works.
+  const onComposerKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    const mod = isMacOs() ? event.metaKey : event.ctrlKey;
+    const key = event.key.toLowerCase();
+    if (mod && key === "o") {
+      event.preventDefault();
+      if (event.shiftKey) void chooseFolder();
+      else void chooseFiles();
+      return;
+    }
+    if (event.key === "@" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      const target = event.currentTarget;
+      const caret = target.selectionStart ?? 0;
+      const prev = caret > 0 ? target.value[caret - 1] : "";
+      const atBoundary = caret === 0 || !prev || /\s/.test(prev);
+      if (atBoundary) {
+        event.preventDefault();
+        openRepoSearch();
+      }
+    }
+  };
+
   return (
     <div className="pid-composer-screen">
       <div className="pid-composer-screen-inner">
@@ -141,6 +213,8 @@ export function PidComposerScreen() {
         <div className="pid-composer-chip-row">
           <PidChipPicker
             icon="folder"
+            triggerLeading={<Archive size={12} aria-hidden />}
+            header="Workspace"
             ariaLabel="Select workspace"
             value={activeProjectId ?? ""}
             options={workspaceOptions}
@@ -149,6 +223,8 @@ export function PidComposerScreen() {
           />
           <PidChipPicker
             icon="branch"
+            triggerLeading={<GitMerge size={12} aria-hidden />}
+            header="Branch"
             ariaLabel="Select branch"
             value={currentBranch ?? ""}
             options={branchOptions}
@@ -188,10 +264,16 @@ export function PidComposerScreen() {
             placeholder="e.g. 'add a /share button to PostHeader that copies a tracked URL'"
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onKeyDown={onComposerKeyDown}
           />
           <div className="pid-composer-row">
             <PidAgentModePicker />
-            <PidAttachmentsPicker />
+            <PidAttachmentsPicker
+              onChooseFiles={chooseFiles}
+              onChooseFolder={chooseFolder}
+              onOpenRepoSearch={openRepoSearch}
+              onPickRecent={(a) => attachAndRemember([a])}
+            />
             <span className="pid-composer-row-spacer" />
             <PidModelPicker />
             <PidEffortPicker />
@@ -200,7 +282,7 @@ export function PidComposerScreen() {
               className="pid-composer-send"
               disabled={!text.trim() || !activeProjectId}
             >
-              <Glyph kind="send" size={12} />
+              <Send size={12} aria-hidden />
               <span>Send</span>
             </button>
           </div>
@@ -243,6 +325,16 @@ export function PidComposerScreen() {
           </div>
         )}
       </div>
+      {repoSearchOpen && (
+        <PidRepoFileSearchDialog
+          open={repoSearchOpen}
+          onClose={() => setRepoSearchOpen(false)}
+          onSelect={(picks) => {
+            attachAndRemember(picks.map<PromptAttachment>((path) => ({ kind: "repo-ref", path })));
+            setRepoSearchOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -7,13 +7,12 @@ import { useIntroComposerStore } from "./useIntroComposerStore.js";
 interface EffortLevel {
   value: ThinkingLevel;
   label: string;
-  sub: string;
 }
 
 const LEVELS: EffortLevel[] = [
-  { value: "low", label: "low", sub: "snap reply" },
-  { value: "medium", label: "medium", sub: "balanced" },
-  { value: "high", label: "high", sub: "reason longer" },
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
 ];
 
 const DEFAULT_LEVEL: ThinkingLevel = "medium";
@@ -52,18 +51,22 @@ export function PidEffortPicker() {
   const options: PidChipPickerOption[] = LEVELS.map((l) => ({
     value: l.value,
     label: l.label,
-    sub: l.sub,
     disabled: !allowedLevels.has(l.value),
   }));
+
+  const activeLabel = LEVELS.find((l) => l.value === activeValue)?.label ?? activeValue;
 
   return (
     <PidChipPicker
       icon="sliders"
+      triggerLeading={null}
+      header="Effort"
       ariaLabel="Select thinking effort"
       value={activeValue}
       options={options}
       onChange={(v) => setPendingThinkingLevel(v as ThinkingLevel)}
-      triggerLabel={activeValue}
+      triggerLabel={activeLabel}
+      minPopoverWidth={140}
     />
   );
 }

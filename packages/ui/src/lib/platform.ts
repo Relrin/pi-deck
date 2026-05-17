@@ -12,6 +12,17 @@ export function isMacOs(): boolean {
   return getPlatformOs() === "darwin";
 }
 
+// Modifier-key glyphs for kbd badges and tooltips. On macOS we use the conventional
+// symbols (⌘ ⇧); elsewhere we spell them out so a Windows user immediately recognises
+// the binding.
+export function metaSymbol(): string {
+  return isMacOs() ? "⌘" : "Ctrl";
+}
+
+export function shiftSymbol(): string {
+  return isMacOs() ? "⇧" : "Shift";
+}
+
 // Windows + Linux paint native min/max/close inside the topbar area via
 // BrowserWindow.titleBarOverlay. Those buttons sit on top of our DOM, so any
 // full-width header (the app topbar, the settings overlay header, …) must pad

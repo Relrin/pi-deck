@@ -1291,16 +1291,19 @@
   text-transform: uppercase;
 }
 
-/* ---------- Picker (composer chips on blank screen) ---------- */
+/* ---------- Picker (composer chips on blank screen) ----------
+   Borderless ghost by default — hover paints a raised `bg-2` surface so the chip
+   reads as interactive without ever drawing an outline. 4px radius / 28px tall to
+   sit cleanly alongside the send button. */
 .pid-picker-trigger {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 26px;
+  height: 28px;
   padding: 0 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--bg-1);
+  border: 0;
+  border-radius: var(--radius, 4px);
+  background: transparent;
   color: var(--ink-1);
   font-family: var(--font-ui);
   font-size: var(--t-12);
@@ -1308,17 +1311,12 @@
   cursor: pointer;
   transition:
     background 80ms ease,
-    border-color 80ms ease,
     color 80ms ease;
 }
-.pid-picker-trigger:hover:not(:disabled) {
-  background: var(--bg-2);
-  color: var(--ink-0);
-}
+.pid-picker-trigger:hover:not(:disabled),
 .pid-picker-trigger[data-state="open"] {
   background: var(--bg-2);
   color: var(--ink-0);
-  border-color: var(--ink-3);
 }
 .pid-picker-trigger:disabled {
   opacity: 0.55;
@@ -1329,6 +1327,16 @@
 }
 .pid-picker-trigger-chev {
   opacity: 0.65;
+}
+/* Brand `π` in front of the model chip. Sits on the display-serif baseline so it
+   reads as the same mark used on the topbar logo. */
+.pid-picker-trigger-pi {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--accent);
+  margin-right: 2px;
 }
 
 .pid-picker-menu {
@@ -1375,8 +1383,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent);
+  color: var(--ink-2);
   width: 16px;
+}
+/* Leading icon goes accent on the active row and on hover/keyboard-focus, mirroring the
+   mockup where only the currently-applied option's glyph reads as orange. */
+.pid-picker-menu-item[data-active] .pid-picker-menu-item-check,
+.pid-picker-menu-item[data-highlighted] .pid-picker-menu-item-check {
+  color: var(--accent);
 }
 .pid-picker-menu-item-sub {
   font-family: var(--font-mono);
@@ -1424,14 +1438,14 @@
 }
 .pid-composer-hero-mark-row {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  align-items: baseline;
+  gap: 10px;
 }
 .pid-composer-hero-mark {
   font-family: var(--font-display);
   font-style: italic;
-  font-size: 56px;
-  line-height: 0.9;
+  font-size: 28px;
+  line-height: 1;
   color: var(--accent);
 }
 .pid-composer-hero-kicker {
@@ -1464,6 +1478,10 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  /* Hug the input shell — the chips are scoping context for the prompt that follows,
+     so they should read as a header for the input rather than a free-floating row.
+     Negates most of the parent's 28px gap, leaving ~4px between the chips and shell. */
+  margin-bottom: -24px;
 }
 .pid-composer-shell {
   display: flex;
@@ -1480,7 +1498,7 @@
 .pid-composer-input {
   width: 100%;
   min-height: 56px;
-  resize: vertical;
+  resize: none;
   border: 0;
   background: transparent;
   color: var(--ink-0);
@@ -1609,13 +1627,12 @@
   width: 28px;
   height: 28px;
   justify-content: center;
-  border-radius: 999px;
   position: relative;
 }
+/* When attachments are pending, hint via the icon colour but keep the ghost surface —
+   the trailing count badge already calls out the actual count. */
 .pid-picker-trigger-icon-only[data-has-attachments] {
   color: var(--accent);
-  border-color: var(--accent-line);
-  background: var(--accent-soft);
 }
 .pid-picker-trigger-badge {
   position: absolute;
@@ -1659,6 +1676,30 @@
 .pid-picker-menu-readonly[data-highlighted] {
   background: transparent;
   color: var(--ink-1);
+}
+
+/* Kbd cluster slot — sits in the trailing column of the menu grid alongside any
+   other sub label. Multiple `pid-kbd` chips render in a tight inline row. */
+.pid-picker-menu-item-kbd {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Recent attachment rows show the full path in mono and ellipsize from the left edge so
+   the basename (the thing the user actually scans for) stays visible. */
+.pid-picker-menu-item-recent .pid-picker-menu-item-recent-path {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink-2);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
+}
+.pid-picker-menu-item-recent[data-highlighted] .pid-picker-menu-item-recent-path {
+  color: var(--ink-0);
 }
 
 /* ---------- Composer attachments chips above textarea ---------- */
