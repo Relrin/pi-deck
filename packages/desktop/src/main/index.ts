@@ -11,6 +11,24 @@ const DEV_URL_DEFAULT = "http://127.0.0.1:5173";
 app.setName("pi-deck");
 
 let backend: BackendHandle | undefined;
+let shuttingDown = false;
+
+async function shutdown(reason: string): Promise<void> {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  try {
+    await backend?.close();
+  } catch (err) {
+    console.error(`[pi-deck] shutdown (${reason}) error:`, err);
+  }
+  app.exit(0);
+}
+
+// Force-kill scenarios (CTRL+C in dev, parent process termination) bypass
+// before-quit, so subscribe to the raw signals too. tree-kill on the host side
+// then cleans up worker children even if this handler doesn't run to completion.
+process.on("SIGINT", () => void shutdown("SIGINT"));
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
 app.whenReady().then(async () => {
   installCspHeaders();
@@ -24,7 +42,8 @@ app.whenReady().then(async () => {
   }
 
   if (!app.isPackaged) {
-    const url = process.env.VITE_DEV_SERVER_URL ?? DEV_URL_DEFAULT;
+    const url =
+      process.env.ELECTRON_RENDERER_URL ?? process.env.VITE_DEV_SERVER_URL ?? DEV_URL_DEFAULT;
     try {
       await waitForViteServer(url);
     } catch (err) {

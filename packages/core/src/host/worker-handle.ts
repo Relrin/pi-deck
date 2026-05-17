@@ -1,5 +1,6 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { EventEmitter } from "node:events";
+import treeKill from "tree-kill";
 import { createJsonlReader, encodeJsonl } from "./jsonl.js";
 
 export interface WorkerSpawnOptions {
@@ -101,7 +102,24 @@ export class WorkerHandle extends EventEmitter<WorkerHandleEvents> {
 
   kill(signal: NodeJS.Signals = "SIGTERM"): void {
     if (this.exited) return;
-    this.child.kill(signal);
+    const pid = this.child.pid;
+    if (!pid) {
+      this.child.kill(signal);
+      return;
+    }
+    // Windows child processes survive parent death by default and don't share a
+    // POSIX process group, so a plain `child.kill()` leaks any descendants the
+    // worker spawned. tree-kill shells out to `taskkill /F /T` on Windows and
+    // walks /proc on POSIX to take down the whole subtree.
+    treeKill(pid, signal, (err) => {
+      if (err && !this.exited) {
+        try {
+          this.child.kill(signal);
+        } catch {
+          // Process already gone.
+        }
+      }
+    });
   }
 
   private writeFrame(frame: unknown): void {

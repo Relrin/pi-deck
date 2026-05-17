@@ -2,21 +2,14 @@
   "name": "@pi-deck/desktop",
   "version": "0.0.0",
   "private": true,
-  "main": "./dist/main/index.js",
+  "main": "./dist/main/index.mjs",
   "scripts": {
     "type-check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.main.json --noEmit",
     "lint": "biome lint .",
     "test": "bun test",
-    "build:main": "bun build src/main/index.ts --target=node --format=cjs --external electron --external @earendil-works/pi-coding-agent --outfile=dist/main/index.js --sourcemap=inline",
-    "build:preload": "bun build src/preload/index.ts --target=node --format=cjs --external electron --outfile=dist/preload/index.js --sourcemap=inline",
-    "build:worker": "bun build ../core/src/worker/entry.ts --target=node --format=esm --external @earendil-works/pi-coding-agent --outfile=dist/worker.mjs --sourcemap=inline",
-    "build:backend": "bun run build:main && bun run build:preload && bun run build:worker",
-    "build:renderer": "vite build",
-    "build": "bun run build:renderer && bun run build:backend",
-    "dev:main": "bun build src/main/index.ts --target=node --format=cjs --external electron --external @earendil-works/pi-coding-agent --outfile=dist/main/index.js --sourcemap=inline --watch",
-    "dev:preload": "bun build src/preload/index.ts --target=node --format=cjs --external electron --outfile=dist/preload/index.js --sourcemap=inline --watch",
-    "dev:worker": "bun build ../core/src/worker/entry.ts --target=node --format=esm --external @earendil-works/pi-coding-agent --outfile=dist/worker.mjs --sourcemap=inline --watch",
-    "dev": "bun run build:backend && concurrently -k -n vite,main,preload,worker,electron -c blue,yellow,cyan,magenta,green \"vite\" \"bun run dev:main\" \"bun run dev:preload\" \"bun run dev:worker\" \"electronmon --no-stdin .\"",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
     "start": "electron .",
     "dist": "bun run build && electron-builder --config electron-builder.yml"
   },
@@ -31,6 +24,8 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "electron": "42.0.1",
-    "electron-builder": "26.8.1"
+    "electron-builder": "26.8.1",
+    "electron-vite": "5.0.0",
+    "tree-kill": "1.2.2"
   }
 }

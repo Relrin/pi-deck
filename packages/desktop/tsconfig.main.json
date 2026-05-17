@@ -20,5 +20,10 @@
       "@pi-deck/core/*": ["./packages/core/src/*"]
     }
   },
-  "include": ["src/main/**/*.ts", "src/preload/**/*.ts", "../core/src/**/*.ts"]
+  "include": [
+    "src/main/**/*.ts",
+    "src/preload/**/*.ts",
+    "src/worker/**/*.ts",
+    "../core/src/**/*.ts"
+  ]
 }

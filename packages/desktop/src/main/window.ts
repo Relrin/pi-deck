@@ -75,7 +75,8 @@ export function createWindow(): BrowserWindow {
   });
 
   if (!app.isPackaged) {
-    const devUrl = process.env.VITE_DEV_SERVER_URL ?? DEV_URL_DEFAULT;
+    const devUrl =
+      process.env.ELECTRON_RENDERER_URL ?? process.env.VITE_DEV_SERVER_URL ?? DEV_URL_DEFAULT;
     win.loadURL(devUrl);
     win.webContents.openDevTools({ mode: "detach" });
   } else {
