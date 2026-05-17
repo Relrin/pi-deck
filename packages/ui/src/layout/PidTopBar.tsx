@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Glyph, type GlyphKind } from "../components/glyph";
-import { PanelBottom, PanelLeft, PanelRight, Sliders } from "../components/icons";
+import { PanelBottom, PanelLeft, PanelRight, Settings } from "../components/icons";
 import { Tooltip } from "../components/ui/Tooltip";
 import { useSettingsStore } from "../features/settings/useSettingsStore";
 import {
@@ -87,7 +87,7 @@ function TopBarSettingsButton() {
         aria-label="Open settings"
         onClick={() => useSettingsStore.getState().setOpen(true)}
       >
-        <Sliders size={14} />
+        <Settings size={14} />
       </button>
     </Tooltip>
   );
@@ -108,12 +108,11 @@ export function PidTopBar() {
     : undefined;
 
   return (
-    <div
-      className="pid-topbar"
-      data-leftrail={leftVisible ? "on" : "off"}
-      data-rightpane={rightVisible ? "on" : "off"}
-    >
+    <div className="pid-topbar">
       {isMac ? (
+        // macOS leaves room for the native traffic lights via a transparent spacer.
+        // Width is fixed (independent of panel sizes) so icon spacing on the right
+        // stays consistent no matter how the user resizes the rail / right pane.
         <div
           className="pid-topbar-spacer"
           aria-hidden
@@ -122,20 +121,16 @@ export function PidTopBar() {
           {showBack ? <BackToStartButton /> : null}
         </div>
       ) : (
-        // Non-mac: titleBarOverlay paints native min/max/close at the far right; the spacer
-        // role is taken over by the padding on .pid-topbar-right. We still need an empty grid
-        // cell here so the three-column layout stays aligned.
-        <div aria-hidden style={{ display: "flex", alignItems: "center" }}>
+        // Non-mac: the native min/max/close are painted on the right via titleBarOverlay.
+        // The left cluster just holds the back button when the user isn't on the blank screen.
+        <div
+          className="pid-topbar-left"
+          aria-hidden
+          style={{ display: "flex", alignItems: "center" }}
+        >
           {showBack ? <BackToStartButton /> : null}
         </div>
       )}
-
-      <div className="pid-topbar-center drag">
-        <span className="pid-brand-mark" aria-hidden>
-          pi
-        </span>
-        <span className="pid-brand-text">PI-DECK</span>
-      </div>
 
       <div className="pid-topbar-right" style={rightStyle}>
         {/* Settings is normally housed in the left-rail footer; surface it here

@@ -24,6 +24,7 @@ export {
   Plus,
   Search,
   Send,
+  Settings,
   Sliders,
   Square,
   Terminal,

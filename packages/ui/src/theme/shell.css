@@ -79,40 +79,28 @@
 
 /* ---------- Topbar ---------- */
 .pid-topbar {
-  display: grid;
-  grid-template-columns: var(--rail-w) 1fr var(--rightpane-w);
+  /* Flex (not grid sized by --rail-w / --rightpane-w) so the right cluster stays
+     pinned to the window edge with consistent spacing regardless of panel resizes.
+     Empty space between the two clusters carries the window-drag region. */
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   height: var(--topbar-h);
   -webkit-app-region: drag;
   background: var(--bg-0);
   position: relative;
 }
-.pid-topbar[data-rightpane="off"] {
-  grid-template-columns: var(--rail-w) 1fr auto;
-}
-.pid-topbar[data-leftrail="off"] {
-  grid-template-columns: auto 1fr var(--rightpane-w);
-}
-.pid-topbar[data-leftrail="off"][data-rightpane="off"] {
-  grid-template-columns: auto 1fr auto;
-}
-/* macOS leaves room for the native traffic lights via a transparent spacer. */
+/* macOS: fixed spacer that clears the native traffic lights (~78px from the
+   window edge). Width is independent of the rail so resizing doesn't shift it. */
 .pid-topbar-spacer {
+  width: 78px;
   height: 100%;
+  flex: 0 0 auto;
 }
-.pid-topbar-center {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 16px;
-  -webkit-app-region: no-drag;
-  /* The bar itself drags; only the no-drag islands accept clicks. We re-enable drag in the
-     center column by making the gap fill draggable but keep the brand markers interactive
-     by promoting the brand element to its own drag region above. */
-  justify-content: center;
-}
-.pid-topbar-center.drag {
-  -webkit-app-region: drag;
+.pid-topbar-left {
+  height: 100%;
+  flex: 0 0 auto;
+  padding-left: 6px;
 }
 .pid-topbar-right {
   display: flex;
@@ -121,21 +109,7 @@
   gap: 2px;
   padding: 0 6px 0 14px;
   -webkit-app-region: no-drag;
-}
-.pid-brand-mark {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 22px;
-  line-height: 1;
-  color: var(--accent);
-  letter-spacing: -0.02em;
-}
-.pid-brand-text {
-  font-family: var(--font-mono);
-  font-size: var(--t-12);
-  letter-spacing: 0.12em;
-  color: var(--ink-1);
-  text-transform: uppercase;
+  flex: 0 0 auto;
 }
 .pid-accent-dot {
   width: 10px;

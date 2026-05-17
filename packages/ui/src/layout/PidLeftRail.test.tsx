@@ -22,6 +22,12 @@ describe("PidLeftRail — footer cluster", () => {
     expect(screen.getByRole("button", { name: "Terminal (coming soon)" })).toBeInTheDocument();
   });
 
+  test("settings button uses the lucide Settings (cog) icon, not the legacy Sliders glyph", () => {
+    render(<PidLeftRail sessions={<div>sessions</div>} files={<div>files</div>} />);
+    const settingsBtn = screen.getByRole("button", { name: "Open settings" });
+    expect(settingsBtn.querySelector("svg.lucide.lucide-settings")).not.toBeNull();
+  });
+
   test("clicking the settings button opens the settings modal", () => {
     render(<PidLeftRail sessions={<div>sessions</div>} files={<div>files</div>} />);
     expect(useSettingsStore.getState().open).toBe(false);

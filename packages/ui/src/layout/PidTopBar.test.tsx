@@ -100,15 +100,38 @@ describe("PidTopBar — panel toggles", () => {
     expect(screen.queryByRole("button", { name: "Open settings" })).toBeNull();
   });
 
-  test("topbar sets data attributes that mirror panel visibility for the CSS grid", () => {
+  test("topbar layout is decoupled from panel widths so icon spacing stays consistent on resize", () => {
+    // The topbar must NOT mirror --rail-w / --rightpane-w (previously it did,
+    // which caused the toggle cluster to squeeze when the user dragged the
+    // right pane narrower). Asserting via the absence of those data attrs
+    // catches the regression at the source: anything that re-introduces a
+    // panel-width-driven topbar grid would have to put these back.
     const { container } = render(<PidTopBar />);
     const topbar = container.querySelector(".pid-topbar");
-    expect(topbar?.getAttribute("data-leftrail")).toBe("on");
-    expect(topbar?.getAttribute("data-rightpane")).toBe("on");
+    expect(topbar?.getAttribute("data-leftrail")).toBeNull();
+    expect(topbar?.getAttribute("data-rightpane")).toBeNull();
 
+    // Toggling panels must not add the attributes either.
     fireEvent.click(screen.getByRole("button", { name: "Hide left rail" }));
     fireEvent.click(screen.getByRole("button", { name: "Hide right pane" }));
-    expect(topbar?.getAttribute("data-leftrail")).toBe("off");
-    expect(topbar?.getAttribute("data-rightpane")).toBe("off");
+    expect(topbar?.getAttribute("data-leftrail")).toBeNull();
+    expect(topbar?.getAttribute("data-rightpane")).toBeNull();
+  });
+
+  test("the PI-DECK brand cluster is gone", () => {
+    const { container } = render(<PidTopBar />);
+    expect(container.querySelector(".pid-topbar-center")).toBeNull();
+    expect(container.querySelector(".pid-brand-mark")).toBeNull();
+    expect(container.querySelector(".pid-brand-text")).toBeNull();
+    expect(screen.queryByText("PI-DECK")).toBeNull();
+  });
+
+  test("settings button (when shown) uses the lucide Settings (cog) icon, not Sliders", () => {
+    // The button only renders when the left rail is hidden.
+    useRailState.setState({ leftVisible: false });
+    const { container } = render(<PidTopBar />);
+    const settingsBtn = screen.getByRole("button", { name: "Open settings" });
+    expect(settingsBtn.querySelector("svg.lucide.lucide-settings")).not.toBeNull();
+    expect(container.querySelector("svg.lucide.lucide-sliders")).toBeNull();
   });
 });

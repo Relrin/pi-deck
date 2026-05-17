@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from "react";
 import { Glyph } from "../components/glyph";
-import { Files, List } from "../components/icons";
+import { Files, List, Settings } from "../components/icons";
 import { Tooltip } from "../components/ui/Tooltip";
 import { useSettingsStore } from "../features/settings/useSettingsStore";
 import { isMacOs } from "../lib/platform";
@@ -58,7 +58,7 @@ export function PidLeftRail({ sessions, files, initialTab = "sessions" }: PidLef
             aria-label="Open settings"
             onClick={() => useSettingsStore.getState().setOpen(true)}
           >
-            <Glyph kind="sliders" />
+            <Settings size={14} aria-hidden />
           </button>
         </Tooltip>
         <Tooltip content="Terminal — coming soon">
