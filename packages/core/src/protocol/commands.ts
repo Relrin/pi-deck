@@ -68,6 +68,26 @@ export const SessionSetThinkingLevelRequest = z.object({
 });
 export const SessionSetThinkingLevelResponse = z.object({ ok: z.literal(true) });
 
+export const GitBranchInfoSchema = z.object({
+  name: z.string().min(1),
+  isCurrent: z.boolean(),
+  lastActivityAt: z.string().optional(),
+});
+
+export const GitListBranchesRequest = z.object({ projectId: z.string().uuid() });
+export const GitListBranchesResponse = z.object({
+  branches: z.array(GitBranchInfoSchema),
+});
+
+export const GitCurrentBranchRequest = z.object({ projectId: z.string().uuid() });
+export const GitCurrentBranchResponse = z.object({ name: z.string() });
+
+export const GitCheckoutBranchRequest = z.object({
+  projectId: z.string().uuid(),
+  name: z.string().min(1),
+});
+export const GitCheckoutBranchResponse = z.object({ ok: z.literal(true) });
+
 export const ThemeListRequest = z.object({}).strict();
 export const ThemeListResponse = z.object({
   activeName: z.string(),
@@ -129,6 +149,18 @@ export const CommandSchemas = {
   "session.setThinkingLevel": {
     request: SessionSetThinkingLevelRequest,
     response: SessionSetThinkingLevelResponse,
+  },
+  "git.listBranches": {
+    request: GitListBranchesRequest,
+    response: GitListBranchesResponse,
+  },
+  "git.currentBranch": {
+    request: GitCurrentBranchRequest,
+    response: GitCurrentBranchResponse,
+  },
+  "git.checkoutBranch": {
+    request: GitCheckoutBranchRequest,
+    response: GitCheckoutBranchResponse,
   },
   "theme.list": { request: ThemeListRequest, response: ThemeListResponse },
   "theme.get": { request: ThemeGetRequest, response: ThemeGetResponse },

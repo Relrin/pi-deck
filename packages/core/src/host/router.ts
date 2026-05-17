@@ -1,4 +1,5 @@
 import { type CommandName, CommandSchemas } from "../protocol/commands.js";
+import { checkoutBranch, currentBranch, GitError, listBranches } from "./git-runner.js";
 import type { MetadataStore } from "./metadata-store.js";
 import type { ProviderManager } from "./provider-manager.js";
 import type { SessionManager, SessionRecord } from "./session-manager.js";
@@ -96,6 +97,44 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     const parsed = CommandSchemas["session.setThinkingLevel"].request.parse(payload);
     await ctx.sessionManager.setThinkingLevel(parsed.sessionId, parsed.level);
     return { ok: true as const };
+  },
+  "git.listBranches": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.listBranches"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const branches = await listBranches(project.path);
+      return { branches };
+    } catch (err) {
+      if (err instanceof GitError && err.code === "not_a_repo") {
+        return { branches: [] };
+      }
+      throw err instanceof GitError ? new RouterError("git_failed", err.message) : err;
+    }
+  },
+  "git.currentBranch": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.currentBranch"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      return { name: await currentBranch(project.path) };
+    } catch (err) {
+      if (err instanceof GitError && err.code === "not_a_repo") {
+        return { name: "" };
+      }
+      throw err instanceof GitError ? new RouterError("git_failed", err.message) : err;
+    }
+  },
+  "git.checkoutBranch": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.checkoutBranch"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      await checkoutBranch(project.path, parsed.name);
+      return { ok: true as const };
+    } catch (err) {
+      throw err instanceof GitError ? new RouterError("git_failed", err.message) : err;
+    }
   },
   "theme.list": async (ctx) => ({
     activeName: ctx.themeManager.getActiveName(),

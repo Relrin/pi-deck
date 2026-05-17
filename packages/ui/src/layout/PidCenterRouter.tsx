@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { ChatView } from "../features/chat/ChatView";
 import { selectMessages, useMessagesStore } from "../features/chat/useMessagesStore";
+import { PidComposerScreen } from "../features/intro/PidComposerScreen";
 import { PidIntroScreen } from "../features/intro/PidIntroScreen";
-import { PidSessionsOverview } from "../features/sessions/overview/PidSessionsOverview";
 import { useSessionsStore } from "../features/sessions/useSessionsStore";
 import { useNavStore } from "../lib/useNavStore";
 
@@ -25,12 +25,12 @@ export function PidCenterRouter() {
   }, [screen, activeSessionId]);
 
   if (screen === "blank") {
-    return <PidSessionsOverview />;
+    return <PidComposerScreen />;
   }
 
   if (screen === "session") {
     if (!activeSessionId) {
-      return <PidSessionsOverview />;
+      return <PidComposerScreen />;
     }
     return <SessionRoute sessionId={activeSessionId} />;
   }

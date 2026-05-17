@@ -1290,3 +1290,315 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
+
+/* ---------- Picker (composer chips on blank screen) ---------- */
+.pid-picker-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-1);
+  color: var(--ink-1);
+  font-family: var(--font-ui);
+  font-size: var(--t-12);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 80ms ease,
+    border-color 80ms ease,
+    color 80ms ease;
+}
+.pid-picker-trigger:hover:not(:disabled) {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+.pid-picker-trigger[data-state="open"] {
+  background: var(--bg-2);
+  color: var(--ink-0);
+  border-color: var(--ink-3);
+}
+.pid-picker-trigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.pid-picker-trigger-label {
+  white-space: nowrap;
+}
+.pid-picker-trigger-chev {
+  opacity: 0.65;
+}
+
+.pid-picker-menu {
+  z-index: 50;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg, 8px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  padding: 6px;
+  max-height: 360px;
+  overflow-y: auto;
+  outline: none;
+}
+.pid-picker-menu-header {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 6px 10px 6px 28px;
+}
+.pid-picker-menu-item {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius, 4px);
+  color: var(--ink-1);
+  font-family: var(--font-ui);
+  font-size: var(--t-14, 13px);
+  cursor: pointer;
+  outline: none;
+}
+.pid-picker-menu-item[data-highlighted] {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+.pid-picker-menu-item[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pid-picker-menu-item-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  width: 16px;
+}
+.pid-picker-menu-item-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.pid-picker-menu-sep {
+  height: 1px;
+  background: var(--line);
+  margin: 6px 4px;
+}
+.pid-picker-menu-footer .pid-picker-menu-item-check {
+  color: var(--ink-2);
+}
+.pid-picker-menu-footer .pid-picker-menu-item-label {
+  color: var(--ink-1);
+}
+.pid-picker-menu-item[data-active] .pid-picker-menu-item-label {
+  color: var(--ink-0);
+  font-weight: 500;
+}
+
+/* ---------- Composer screen (BLANK tab) ---------- */
+.pid-composer-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+  height: 100%;
+  overflow-y: auto;
+}
+.pid-composer-screen-inner {
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.pid-composer-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pid-composer-hero-mark-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.pid-composer-hero-mark {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 56px;
+  line-height: 0.9;
+  color: var(--accent);
+}
+.pid-composer-hero-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.pid-composer-hero-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 52px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--ink-0);
+  margin: 0;
+  max-width: 640px;
+}
+.pid-composer-hero-blurb {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  margin: 0;
+  max-width: 560px;
+}
+.pid-composer-chip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pid-composer-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg, 8px);
+  background: var(--bg-1);
+  padding: 12px 14px;
+}
+.pid-composer-shell:focus-within {
+  border-color: var(--accent);
+}
+.pid-composer-input {
+  width: 100%;
+  min-height: 56px;
+  resize: vertical;
+  border: 0;
+  background: transparent;
+  color: var(--ink-0);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  outline: none;
+}
+.pid-composer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+.pid-composer-row-spacer {
+  flex: 1;
+}
+.pid-composer-send {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: var(--radius, 4px);
+  border: 0;
+  background: var(--accent);
+  color: var(--accent-ink, #1a1208);
+  font-family: var(--font-ui);
+  font-size: var(--t-12);
+  font-weight: 500;
+  cursor: pointer;
+}
+.pid-composer-send:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.pid-composer-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pid-composer-templates-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 10px;
+}
+.pid-composer-templates {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.pid-composer-template {
+  text-align: left;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 4px);
+  background: var(--bg-1);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition:
+    background 80ms ease,
+    border-color 80ms ease;
+}
+.pid-composer-template:hover {
+  background: var(--bg-2);
+  border-color: var(--ink-3);
+}
+.pid-composer-template-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  font-variant-numeric: slashed-zero tabular-nums;
+  font-feature-settings:
+    "zero" 1,
+    "tnum" 1;
+}
+.pid-composer-template-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--ink-0);
+}
+.pid-composer-template-blurb {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.pid-composer-recent {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.pid-composer-recent-label {
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.pid-composer-recent-item {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--ink-1);
+  cursor: pointer;
+}
+.pid-composer-recent-item:hover {
+  color: var(--accent);
+}
+.pid-composer-recent-sep {
+  color: var(--ink-3);
+}
