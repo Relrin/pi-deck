@@ -1,4 +1,3 @@
-import { Glyph } from "../components/glyph";
 import { getAppVersion } from "../lib/platform";
 import { PidScreenSwitcher } from "./PidScreenSwitcher";
 
@@ -8,7 +7,6 @@ export function PidFooter() {
   return (
     <footer className="pid-footer">
       <div className="seg">
-        <Glyph kind="logo" size={12} />
         <span className="accent">pi-deck</span>
         <span className="lbl">{version}</span>
       </div>

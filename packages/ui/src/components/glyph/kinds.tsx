@@ -41,8 +41,7 @@ export type GlyphKind =
   | "cmd"
   | "send"
   | "attach"
-  | "upload"
-  | "logo";
+  | "upload";
 
 // Each entry is the inner SVG markup for a 14x14 viewBox. Paths ported from
 // plans/design-mockup/html-css-mockup/glyphs.jsx with mockup-specific keys
@@ -331,14 +330,6 @@ export const GLYPH_PRIMITIVES: Record<GlyphKind, ReactElement> = {
       <line x1="7" y1="2.5" x2="7" y2="9.5" />
       <path d="M4 5.5 L7 2.5 L10 5.5" />
       <line x1="2.5" y1="11.5" x2="11.5" y2="11.5" />
-    </>
-  ),
-  logo: (
-    <>
-      {/* pi-deck mark: a stylized π */}
-      <line x1="2" y1="4.5" x2="12" y2="4.5" />
-      <line x1="4.5" y1="4.5" x2="4.5" y2="11" />
-      <line x1="9.5" y1="4.5" x2="9.5" y2="11" />
     </>
   ),
 };
