@@ -1,6 +1,7 @@
-import { type ReactNode, useEffect } from "react";
-import { PidIconButton } from "../../components/buttons/PidIconButton";
+import { type CSSProperties, type ReactNode, useEffect } from "react";
+import { ArrowLeft } from "../../components/icons";
 import { PidKbd } from "../../components/kbd/PidKbd";
+import { NATIVE_OVERLAY_RESERVE_PX, reservesNativeOverlay } from "../../lib/platform";
 import { AppearanceSection } from "./sections/AppearanceSection";
 import { ProvidersSection } from "./sections/ProvidersSection";
 import {
@@ -61,13 +62,29 @@ export function PidSettingsView() {
 
   if (!open) return null;
 
+  // Win/Linux paint native min/max/close inside the topbar area; pad the right
+  // cluster so the Esc hint doesn't get covered by the system controls.
+  const rightStyle: CSSProperties | undefined = reservesNativeOverlay()
+    ? { paddingRight: NATIVE_OVERLAY_RESERVE_PX }
+    : undefined;
+
   return (
     <div className="pid-settings-root" role="dialog" aria-modal aria-label="Settings">
       <header className="pid-settings-header">
-        <span className="pid-settings-header-title">Settings</span>
-        <span className="pid-settings-header-hint">
+        <span className="pid-settings-header-actions">
+          <button
+            type="button"
+            className="pid-settings-back-btn"
+            aria-label="Close settings"
+            title="Back (Esc)"
+            onClick={() => setOpen(false)}
+          >
+            <ArrowLeft size={14} aria-hidden />
+          </button>
+          <span className="pid-settings-header-title">Settings</span>
+        </span>
+        <span className="pid-settings-header-hint" style={rightStyle}>
           <PidKbd keys={["Esc"]} /> to close
-          <PidIconButton kind="close" label="Close settings" onClick={() => setOpen(false)} />
         </span>
       </header>
       <div className="pid-settings-grid">

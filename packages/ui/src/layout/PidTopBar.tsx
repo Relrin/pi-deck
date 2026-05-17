@@ -3,15 +3,14 @@ import { Glyph, type GlyphKind } from "../components/glyph";
 import { PanelBottom, PanelLeft, PanelRight, Sliders } from "../components/icons";
 import { Tooltip } from "../components/ui/Tooltip";
 import { useSettingsStore } from "../features/settings/useSettingsStore";
-import { getPlatformOs, isMacOs } from "../lib/platform";
+import {
+  getPlatformOs,
+  isMacOs,
+  NATIVE_OVERLAY_RESERVE_PX,
+  reservesNativeOverlay,
+} from "../lib/platform";
 import { useNavStore } from "../lib/useNavStore";
 import { useRailState } from "./use-rail-state";
-
-// Windows + Linux paint native min/max/close inside the topbar area via
-// BrowserWindow.titleBarOverlay. Those buttons sit on top of our DOM, so we
-// pad the right cluster to leave room. Empirically ~140px covers Windows
-// 1.0 DPI; tighter scales fit comfortably under it.
-const NATIVE_OVERLAY_RESERVE_PX = 144;
 
 interface PlaceholderButtonProps {
   kind: GlyphKind;
@@ -97,7 +96,6 @@ function TopBarSettingsButton() {
 export function PidTopBar() {
   const platformOs = getPlatformOs();
   const isMac = platformOs === "darwin";
-  const reservesNativeOverlay = platformOs === "win32" || platformOs === "linux";
   const screen = useNavStore((s) => s.screen);
   const showBack = screen !== "blank";
   const leftVisible = useRailState((s) => s.leftVisible);
@@ -105,7 +103,7 @@ export function PidTopBar() {
   const toggleLeft = useRailState((s) => s.toggleLeft);
   const toggleRight = useRailState((s) => s.toggleRight);
 
-  const rightStyle: CSSProperties | undefined = reservesNativeOverlay
+  const rightStyle: CSSProperties | undefined = reservesNativeOverlay()
     ? { paddingRight: NATIVE_OVERLAY_RESERVE_PX }
     : undefined;
 

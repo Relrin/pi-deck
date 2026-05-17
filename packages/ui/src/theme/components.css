@@ -230,12 +230,60 @@
   isolation: isolate;
 }
 .pid-settings-header {
+  /* Two clusters: left = back button + "Settings" label, right = Esc hint
+     (padded inline on Win/Linux to clear the native window controls). */
   display: flex;
   align-items: center;
   justify-content: space-between;
+  height: var(--topbar-h);
   padding: 0 16px;
   border-bottom: 1px solid var(--line);
   background: var(--bg-0);
+  /* This header sits inside the Electron title bar region on Win/Linux. Mark it
+     as draggable so the user can move the window by the header, then opt the
+     interactive elements back out via no-drag below. Without this, the OS
+     swallows clicks on the back button when titleBarOverlay is enabled. */
+  -webkit-app-region: drag;
+}
+.pid-settings-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  -webkit-app-region: no-drag;
+}
+/* The back button in the settings header carries the same close-on-Esc
+   behaviour, so it needs to read as a real interactive control rather than
+   an inline icon. Borrow .pid-btn's chrome but constrain to a square footprint. */
+.pid-settings-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: var(--radius);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--ink-1);
+  cursor: pointer;
+  transition:
+    background-color 0.12s,
+    color 0.12s,
+    border-color 0.12s;
+}
+.pid-settings-back-btn:hover {
+  background: var(--bg-3);
+  color: var(--ink-0);
+  border-color: var(--line-strong);
+}
+.pid-settings-back-btn:focus-visible {
+  outline: none;
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+[data-density="cozy"] .pid-settings-back-btn {
+  width: 32px;
+  height: 32px;
 }
 .pid-settings-header-title {
   font-family: var(--font-display);
@@ -252,6 +300,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-3);
+  -webkit-app-region: no-drag;
 }
 .pid-settings-grid {
   display: grid;
