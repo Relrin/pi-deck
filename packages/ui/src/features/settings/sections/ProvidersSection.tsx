@@ -4,7 +4,7 @@ import { PidButton } from "../../../components/buttons/PidButton";
 import { PidChip } from "../../../components/chip/PidChip";
 import { AddCustomProviderDialog } from "../../models/AddCustomProviderDialog.js";
 import { AuthenticateProviderDialog } from "../../models/AuthenticateProviderDialog.js";
-import { ProviderIcon } from "../../models/icons";
+import { ProviderAvatar } from "../../models/icons";
 import { useProvidersStore } from "../../models/useProvidersStore.js";
 
 /**
@@ -122,7 +122,7 @@ function ProviderRow({
         background: "var(--bg-1)",
       }}
     >
-      <ProviderIcon iconKey={provider.iconKey} size={18} />
+      <ProviderAvatar iconKey={provider.iconKey} size={18} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ color: "var(--ink-0)", fontSize: "var(--t-13)" }}>{provider.name}</div>
         <div
@@ -173,7 +173,7 @@ function CustomProviderRow({
         background: "var(--bg-1)",
       }}
     >
-      <ProviderIcon iconKey={provider.iconKey} size={18} />
+      <ProviderAvatar iconKey={provider.iconKey} size={18} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ color: "var(--ink-0)", fontSize: "var(--t-13)" }}>{provider.name}</div>
         <div

@@ -1,3 +1,4 @@
+import { Anthropic, Cerebras, Gemini, Groq, OpenAI, OpenRouter } from "@lobehub/icons";
 import type { ReactNode } from "react";
 import { Glyph } from "../../../components/glyph";
 
@@ -7,48 +8,51 @@ interface IconProps {
 }
 
 /**
- * Inline monochrome SVG glyphs per built-in provider. Drawn at 16px on a 0-16 viewbox and
- * coloured via `currentColor` so they take on the picker's `--ink-*` / `--accent` tokens.
- * Each glyph gets a hidden `<title>` so screen readers announce the provider name.
+ * Provider mark map.
+ *
+ * Built-in providers use `@lobehub/icons` brand glyphs:
+ *  - `<Brand>` (the default export, which is `<Brand.Mono>`) renders a monochrome path that
+ *    inherits `currentColor` — exactly what our token-driven picker/composer/badge UI wants.
+ *  - `<Brand.Avatar>` is a filled brand-coloured tile, used in the settings provider list
+ *    where the larger 18px row benefits from the brand colour.
+ *
+ * The "custom" fallback uses our existing dot-grid `<Glyph kind="settings">` so user-added
+ * OpenAI-compatible endpoints (LM Studio, Ollama, …) get a neutral marker.
+ *
+ * To add a new built-in provider:
+ * 1. Append its entry to `BUILT_IN_PROVIDERS` in
+ *    `packages/core/src/providers/built-ins.ts` (the `iconKey` is the map key below).
+ * 2. Import the matching component from `@lobehub/icons` here and register it in
+ *    `PROVIDER_ICONS` (and `PROVIDER_AVATARS` if you want a coloured settings row).
  */
-function makeMark(name: string, d: string) {
-  return ({ size = 16, className }: IconProps) => (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.4}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      role="img"
-      aria-label={`${name} logo`}
-    >
-      <title>{name}</title>
-      <path d={d} />
-    </svg>
-  );
-}
 
-const Anthropic = makeMark("Anthropic", "M3 13 L7 3 L9 3 L13 13 M5 9 H11");
-const OpenAI = makeMark("OpenAI", "M8 3 A5 5 0 1 0 8 13 A5 5 0 1 0 8 3 M5 8 H11 M8 5 V11");
-const Google = makeMark("Google", "M12 8 A4 4 0 1 1 8 4 H12 V8");
-const Groq = makeMark("Groq", "M4 4 H12 V12 H4 Z M4 8 H12");
-const Cerebras = makeMark("Cerebras", "M8 3 V13 M3 8 H13 M5 5 L11 11 M11 5 L5 11");
-const OpenRouter = makeMark("OpenRouter", "M3 5 H10 A3 3 0 0 1 10 11 H3 M10 8 H13");
 const Custom = ({ size = 16, className }: IconProps) => (
   <Glyph kind="settings" size={size} className={className} />
 );
 
 export const PROVIDER_ICONS: Record<string, (props: IconProps) => ReactNode> = {
-  anthropic: Anthropic,
-  openai: OpenAI,
-  google: Google,
-  groq: Groq,
-  cerebras: Cerebras,
-  openrouter: OpenRouter,
+  anthropic: ({ size = 16, className }) => <Anthropic size={size} className={className} />,
+  openai: ({ size = 16, className }) => <OpenAI size={size} className={className} />,
+  // Pi calls the provider `google` (matches `~/.pi/agent/auth.json`'s `google` key) but the
+  // brand glyph is the Gemini logo.
+  google: ({ size = 16, className }) => <Gemini size={size} className={className} />,
+  groq: ({ size = 16, className }) => <Groq size={size} className={className} />,
+  cerebras: ({ size = 16, className }) => <Cerebras size={size} className={className} />,
+  openrouter: ({ size = 16, className }) => <OpenRouter size={size} className={className} />,
+  custom: Custom,
+};
+
+/**
+ * Brand-colour avatars for the settings list. Falls back to the monochrome mark if a
+ * provider doesn't have an Avatar form (only `custom` for now).
+ */
+export const PROVIDER_AVATARS: Record<string, (props: IconProps) => ReactNode> = {
+  anthropic: ({ size = 18, className }) => <Anthropic.Avatar size={size} className={className} />,
+  openai: ({ size = 18, className }) => <OpenAI.Avatar size={size} className={className} />,
+  google: ({ size = 18, className }) => <Gemini.Avatar size={size} className={className} />,
+  groq: ({ size = 18, className }) => <Groq.Avatar size={size} className={className} />,
+  cerebras: ({ size = 18, className }) => <Cerebras.Avatar size={size} className={className} />,
+  openrouter: ({ size = 18, className }) => <OpenRouter.Avatar size={size} className={className} />,
   custom: Custom,
 };
 
@@ -62,5 +66,23 @@ export function ProviderIcon({
   className?: string;
 }) {
   const Comp = PROVIDER_ICONS[iconKey] ?? Custom;
+  return <Comp size={size} className={className} />;
+}
+
+/**
+ * Brand-coloured tile variant. Use in the settings provider list; everywhere else
+ * (`ModelPicker`, `ModelBadge`, composer `ModelMenu`) keep using `ProviderIcon` so the icon
+ * inherits the active theme's `--ink-*` colours.
+ */
+export function ProviderAvatar({
+  iconKey,
+  size = 18,
+  className,
+}: {
+  iconKey: string;
+  size?: number;
+  className?: string;
+}) {
+  const Comp = PROVIDER_AVATARS[iconKey] ?? Custom;
   return <Comp size={size} className={className} />;
 }
