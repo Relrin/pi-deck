@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type NavScreen = "overview" | "session" | "editor" | "git-diff" | "git-history";
+export type NavScreen = "blank" | "session" | "editor" | "git-diff" | "git-history";
 
 export interface NavStoreState {
   screen: NavScreen;
@@ -11,7 +11,7 @@ export interface NavStoreState {
   toggleOverviewProject: (projectId: string) => void;
   toggleRailProject: (projectId: string) => void;
   goToSession: () => void;
-  goToOverview: () => void;
+  goToBlank: () => void;
 }
 
 const TRANSIENT_SCREENS: ReadonlySet<NavScreen> = new Set(["editor", "git-diff", "git-history"]);
@@ -19,7 +19,7 @@ const TRANSIENT_SCREENS: ReadonlySet<NavScreen> = new Set(["editor", "git-diff",
 export const useNavStore = create<NavStoreState>()(
   persist(
     (set) => ({
-      screen: "overview",
+      screen: "blank",
       expandedProjectsOverview: {},
       expandedProjectsRail: {},
       setScreen: (screen) => set({ screen }),
@@ -38,7 +38,7 @@ export const useNavStore = create<NavStoreState>()(
           },
         })),
       goToSession: () => set({ screen: "session" }),
-      goToOverview: () => set({ screen: "overview" }),
+      goToBlank: () => set({ screen: "blank" }),
     }),
     {
       name: "pi-deck:nav:v1",
@@ -48,7 +48,12 @@ export const useNavStore = create<NavStoreState>()(
         expandedProjectsRail: state.expandedProjectsRail,
       }),
       onRehydrateStorage: () => (rehydrated) => {
-        if (rehydrated && TRANSIENT_SCREENS.has(rehydrated.screen)) {
+        if (!rehydrated) return;
+        // Migrate stored "overview" route from earlier builds to the renamed "blank" route.
+        if ((rehydrated.screen as string) === "overview") {
+          rehydrated.screen = "blank";
+        }
+        if (TRANSIENT_SCREENS.has(rehydrated.screen)) {
           rehydrated.screen = "session";
         }
       },

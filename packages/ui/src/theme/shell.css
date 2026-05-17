@@ -200,6 +200,14 @@
   min-height: 0;
 }
 
+.pid-rail-footer {
+  padding: 8px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
 /* ---------- Right pane ---------- */
 .pid-rightpane {
   border-left: 1px solid var(--line);
@@ -293,6 +301,38 @@
 }
 .pid-footer .accent {
   color: var(--accent);
+}
+
+/* ---------- Screen switcher (in footer) ---------- */
+.pid-screen-switcher {
+  display: flex;
+  gap: 1px;
+  background: var(--bg-2);
+  border-radius: 3px;
+  padding: 1px;
+}
+.pid-screen-switcher button {
+  padding: 2px 7px;
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--ink-2);
+  border: 0;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.pid-screen-switcher button:hover:not([data-active="true"]):not([data-disabled="true"]) {
+  color: var(--ink-0);
+}
+.pid-screen-switcher button[data-active="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.pid-screen-switcher button[data-disabled="true"] {
+  color: var(--ink-3);
+  cursor: not-allowed;
 }
 
 /* ---------- Topbar buttons (palette / settings no-ops) ---------- */

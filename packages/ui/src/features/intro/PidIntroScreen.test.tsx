@@ -48,7 +48,7 @@ const originalActivate = useSessionsStore.getState().activateSession;
 beforeEach(() => {
   useIntroComposerStore.setState({ text: "" });
   useNavStore.setState({
-    screen: "overview",
+    screen: "blank",
     expandedProjectsOverview: {},
     expandedProjectsRail: {},
   });

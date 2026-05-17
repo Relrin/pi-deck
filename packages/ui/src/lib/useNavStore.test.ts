@@ -5,7 +5,7 @@ const STORAGE_KEY = "pi-deck:nav:v1";
 
 function resetStore() {
   useNavStore.setState({
-    screen: "overview",
+    screen: "blank",
     expandedProjectsOverview: {},
     expandedProjectsRail: {},
   });
@@ -22,15 +22,15 @@ describe("useNavStore", () => {
     resetStore();
   });
 
-  test("defaults to overview screen", () => {
-    expect(useNavStore.getState().screen).toBe("overview");
+  test("defaults to blank screen", () => {
+    expect(useNavStore.getState().screen).toBe("blank");
   });
 
-  test("setScreen + goToSession + goToOverview update state", () => {
+  test("setScreen + goToSession + goToBlank update state", () => {
     useNavStore.getState().setScreen("editor");
     expect(useNavStore.getState().screen).toBe("editor");
-    useNavStore.getState().goToOverview();
-    expect(useNavStore.getState().screen).toBe("overview");
+    useNavStore.getState().goToBlank();
+    expect(useNavStore.getState().screen).toBe("blank");
     useNavStore.getState().goToSession();
     expect(useNavStore.getState().screen).toBe("session");
   });
@@ -66,12 +66,12 @@ describe("useNavStore", () => {
     expect(useNavStore.getState().expandedProjectsOverview.x).toBe(false);
   });
 
-  test("rehydrate keeps overview and session as-is", () => {
+  test("rehydrate keeps blank and session as-is", () => {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
         state: {
-          screen: "overview",
+          screen: "blank",
           expandedProjectsOverview: {},
           expandedProjectsRail: {},
         },
@@ -79,6 +79,23 @@ describe("useNavStore", () => {
       }),
     );
     useNavStore.persist.rehydrate();
-    expect(useNavStore.getState().screen).toBe("overview");
+    expect(useNavStore.getState().screen).toBe("blank");
+  });
+
+  test("rehydrate migrates legacy 'overview' route to 'blank'", () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        state: {
+          screen: "overview",
+          expandedProjectsOverview: { x: true },
+          expandedProjectsRail: {},
+        },
+        version: 0,
+      }),
+    );
+    useNavStore.persist.rehydrate();
+    expect(useNavStore.getState().screen).toBe("blank");
+    expect(useNavStore.getState().expandedProjectsOverview.x).toBe(true);
   });
 });

@@ -9,7 +9,7 @@ const originalCreate = useSessionsStore.getState().createSession;
 
 beforeEach(() => {
   useNavStore.setState({
-    screen: "overview",
+    screen: "blank",
     expandedProjectsOverview: {},
     expandedProjectsRail: {},
   });

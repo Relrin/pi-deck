@@ -1,5 +1,8 @@
 import { type ReactNode, useState } from "react";
 import { Glyph } from "../components/glyph";
+import { Tooltip } from "../components/ui/Tooltip";
+import { useSettingsStore } from "../features/settings/useSettingsStore";
+import { isMacOs } from "../lib/platform";
 
 type RailTab = "sessions" | "files";
 
@@ -11,6 +14,7 @@ export interface PidLeftRailProps {
 
 export function PidLeftRail({ sessions, files, initialTab = "sessions" }: PidLeftRailProps) {
   const [tab, setTab] = useState<RailTab>(initialTab);
+  const settingsTooltip = `Settings (${isMacOs() ? "⌘" : "Ctrl"}+,)`;
 
   return (
     <aside className="pid-rail" aria-label="Left rail">
@@ -43,6 +47,30 @@ export function PidLeftRail({ sessions, files, initialTab = "sessions" }: PidLef
 
       <div className="pid-rail-body" role="tabpanel">
         {tab === "sessions" ? sessions : files}
+      </div>
+
+      <div className="pid-rail-footer">
+        <Tooltip content={settingsTooltip}>
+          <button
+            type="button"
+            className="pid-btn icon ghost"
+            aria-label="Open settings"
+            onClick={() => useSettingsStore.getState().setOpen(true)}
+          >
+            <Glyph kind="sliders" />
+          </button>
+        </Tooltip>
+        <Tooltip content="Terminal — coming soon">
+          <button
+            type="button"
+            className="pid-btn icon ghost"
+            aria-label="Terminal (coming soon)"
+            aria-disabled
+            onClick={(event) => event.preventDefault()}
+          >
+            <Glyph kind="terminal" />
+          </button>
+        </Tooltip>
       </div>
     </aside>
   );

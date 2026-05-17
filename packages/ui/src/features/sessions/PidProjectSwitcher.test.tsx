@@ -12,7 +12,7 @@ const project = {
 
 beforeEach(() => {
   useNavStore.setState({
-    screen: "overview",
+    screen: "blank",
     expandedProjectsOverview: {},
     expandedProjectsRail: {},
   });

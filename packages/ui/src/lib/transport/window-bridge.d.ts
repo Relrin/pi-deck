@@ -11,5 +11,6 @@ declare global {
       openDirectory?: () => Promise<string | undefined>;
       openFile?: (opts?: BridgeOpenFileOptions) => Promise<string | undefined>;
     };
+    appVersion?: string;
   }
 }

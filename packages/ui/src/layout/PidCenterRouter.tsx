@@ -16,15 +16,15 @@ export function PidCenterRouter() {
   const screen = useNavStore((s) => s.screen);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
 
-  // If we rehydrated to "session" but no session is active, fall back to overview so the
-  // center column isn't blank.
+  // If we rehydrated to "session" but no session is active, fall back to the blank/start screen
+  // so the center column isn't empty.
   useEffect(() => {
     if (screen === "session" && !activeSessionId) {
-      useNavStore.getState().goToOverview();
+      useNavStore.getState().goToBlank();
     }
   }, [screen, activeSessionId]);
 
-  if (screen === "overview") {
+  if (screen === "blank") {
     return <PidSessionsOverview />;
   }
 

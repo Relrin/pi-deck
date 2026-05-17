@@ -86,7 +86,7 @@ beforeEach(() => {
   });
 
   useNavStore.setState({
-    screen: "overview",
+    screen: "blank",
     // Collapse both project sections by default so no useEffect side-effect fires on mount.
     // Each test that needs an expand will toggle explicitly via the section header.
     expandedProjectsOverview: { "p-a": false, "p-b": false },
