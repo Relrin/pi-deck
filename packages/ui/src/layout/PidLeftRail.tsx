@@ -53,7 +53,7 @@ export function PidLeftRail({ sessions, files, initialTab = "sessions" }: PidLef
         <Tooltip content={settingsTooltip}>
           <button
             type="button"
-            className="pid-btn icon ghost"
+            className="pid-topbar-btn"
             aria-label="Open settings"
             onClick={() => useSettingsStore.getState().setOpen(true)}
           >
@@ -63,7 +63,7 @@ export function PidLeftRail({ sessions, files, initialTab = "sessions" }: PidLef
         <Tooltip content="Terminal — coming soon">
           <button
             type="button"
-            className="pid-btn icon ghost"
+            className="pid-topbar-btn"
             aria-label="Terminal (coming soon)"
             aria-disabled
             onClick={(event) => event.preventDefault()}
