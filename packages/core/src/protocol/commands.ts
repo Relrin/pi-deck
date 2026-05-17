@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ProjectSchema, ProjectSummarySchema } from "../domain/project.js";
 import {
+  AgentModeSchema,
   SessionModelRefSchema,
   SessionSummarySchema,
   ThinkingLevelSchema,
@@ -25,6 +26,24 @@ export const ProjectListResponse = z.object({ projects: z.array(ProjectSummarySc
 export const ProjectOpenRequest = z.object({ path: z.string().min(1) });
 export const ProjectOpenResponse = z.object({ project: ProjectSchema });
 
+export const ProjectFileEntrySchema = z.object({
+  path: z.string().min(1),
+  kind: z.enum(["file"]),
+});
+export const ProjectListFilesRequest = z.object({
+  projectId: z.string().uuid(),
+  limit: z.number().int().positive().max(20000).optional(),
+});
+export const ProjectListFilesResponse = z.object({
+  entries: z.array(ProjectFileEntrySchema),
+});
+
+export const PromptAttachmentSchema = z.object({
+  kind: z.enum(["file", "folder", "repo-ref"]),
+  path: z.string().min(1),
+});
+export type PromptAttachment = z.infer<typeof PromptAttachmentSchema>;
+
 export const SessionListRequest = z.object({ projectId: z.string().uuid() });
 export const SessionListResponse = z.object({ sessions: z.array(SessionSummarySchema) });
 
@@ -33,6 +52,7 @@ export const SessionCreateRequest = z.object({
   title: z.string().optional(),
   modelRef: SessionModelRefSchema.optional(),
   thinkingLevel: ThinkingLevelSchema.optional(),
+  agentMode: AgentModeSchema.optional(),
 });
 export const SessionCreateResponse = z.object({ session: SessionSummarySchema });
 
@@ -45,6 +65,10 @@ export const SessionDeactivateResponse = z.object({ ok: z.literal(true) });
 export const SessionPromptRequest = z.object({
   sessionId: z.string().min(1),
   text: z.string().min(1),
+  /** Composer agent mode for this turn; also rewrites the session's persisted mode. */
+  agentMode: AgentModeSchema.optional(),
+  /** Files / folders / repo refs the user attached to this turn. */
+  attachments: z.array(PromptAttachmentSchema).optional(),
 });
 export const SessionPromptResponse = z.object({
   accepted: z.literal(true),
@@ -139,6 +163,10 @@ export const CommandSchemas = {
   ping: { request: PingRequest, response: PingResponse },
   "project.list": { request: ProjectListRequest, response: ProjectListResponse },
   "project.open": { request: ProjectOpenRequest, response: ProjectOpenResponse },
+  "project.listFiles": {
+    request: ProjectListFilesRequest,
+    response: ProjectListFilesResponse,
+  },
   "session.list": { request: SessionListRequest, response: SessionListResponse },
   "session.create": { request: SessionCreateRequest, response: SessionCreateResponse },
   "session.activate": { request: SessionActivateRequest, response: SessionActivateResponse },

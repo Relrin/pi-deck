@@ -10,6 +10,7 @@ declare global {
       connect?: () => Promise<BridgeConnectInfo | undefined>;
       openDirectory?: () => Promise<string | undefined>;
       openFile?: (opts?: BridgeOpenFileOptions) => Promise<string | undefined>;
+      openFiles?: (opts?: BridgeOpenFileOptions) => Promise<string[]>;
     };
     appVersion?: string;
   }

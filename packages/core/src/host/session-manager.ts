@@ -1,5 +1,6 @@
 import { EventEmitter } from "node:events";
-import type { SessionModelRef, ThinkingLevel } from "../domain/session.js";
+import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/session.js";
+import type { PromptAttachment } from "../protocol/commands.js";
 import {
   EVENT_HOST_ERROR,
   EVENT_SESSION_AGENT_EVENT,
@@ -27,6 +28,8 @@ export interface SessionRecord {
   /** Structured model selection, persisted via ProviderManager. */
   modelRef?: SessionModelRef;
   thinkingLevel?: ThinkingLevel;
+  /** Agent permission mode set on the composer; not enforced by the agent loop yet. */
+  agentMode?: AgentMode;
   worker?: WorkerHandle;
 }
 
@@ -75,6 +78,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     title?: string;
     modelRef?: SessionModelRef;
     thinkingLevel?: ThinkingLevel;
+    agentMode?: AgentMode;
   }): Promise<SessionRecord> {
     const localId = `local-${this.nextLocalId++}`;
     const now = new Date().toISOString();
@@ -90,6 +94,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       lastActivityAt: now,
       modelRef,
       thinkingLevel: input.thinkingLevel,
+      agentMode: input.agentMode,
     };
     this.sessions.set(localId, record);
     // Spawn immediately so pi can assign a real session id.
@@ -142,12 +147,20 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     record.worker = undefined;
   }
 
-  async prompt(sessionId: string, text: string): Promise<{ promptId: string }> {
+  async prompt(
+    sessionId: string,
+    text: string,
+    opts?: { agentMode?: AgentMode; attachments?: PromptAttachment[] },
+  ): Promise<{ promptId: string }> {
     const record = this.sessions.get(sessionId);
     if (!record) throw new Error(`Unknown session ${sessionId}`);
     if (!record.worker?.isAlive) await this.activate(sessionId);
     const worker = record.worker;
     if (!worker) throw new Error("Worker not running");
+    if (opts?.agentMode) record.agentMode = opts.agentMode;
+    // TODO: enforce in agent loop. For now the agent worker only consumes `text`; attachments
+    // and agentMode are accepted on the wire and persisted on the session record but not yet
+    // forwarded into the agent's prompt context.
     const result = (await worker.request("prompt", { text })) as { promptId: string };
     record.lastActivityAt = new Date().toISOString();
     return result;

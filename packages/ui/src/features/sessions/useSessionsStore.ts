@@ -1,8 +1,10 @@
 import type {
+  AgentMode,
   SessionModelRef,
   SessionSummary,
   ThinkingLevel,
 } from "@pi-deck/core/domain/session.js";
+import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
 import { create } from "zustand";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { routeEvent } from "../../lib/transport/event-router.js";
@@ -33,11 +35,18 @@ export interface SessionsStoreState {
   loadProjectSessions: (projectId: string) => Promise<void>;
   createSession: (
     projectId: string,
-    opts?: { modelRef?: SessionModelRef; thinkingLevel?: ThinkingLevel },
+    opts?: {
+      modelRef?: SessionModelRef;
+      thinkingLevel?: ThinkingLevel;
+      agentMode?: AgentMode;
+    },
   ) => Promise<void>;
   activateSession: (id: string) => Promise<void>;
   deactivateSession: (id: string) => Promise<void>;
-  sendPrompt: (text: string) => Promise<void>;
+  sendPrompt: (
+    text: string,
+    opts?: { agentMode?: AgentMode; attachments?: PromptAttachment[] },
+  ) => Promise<void>;
   cancelPrompt: () => Promise<void>;
   setActiveSessionId: (id: string | undefined) => void;
   /** Merge backend-pushed updates (e.g. title rename) into the local sessions list. */
@@ -170,6 +179,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         projectId,
         modelRef: opts?.modelRef,
         thinkingLevel: opts?.thinkingLevel,
+        agentMode: opts?.agentMode,
       });
       set((state) => {
         const cached = state.sessionsByProject[projectId] ?? [];
@@ -208,13 +218,18 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     await client.call("session.deactivate", { sessionId: id });
   },
 
-  sendPrompt: async (text) => {
+  sendPrompt: async (text, opts) => {
     const client = get().client;
     const id = get().activeSessionId;
     if (!client || !id) throw new Error("No active session");
     useMessagesStore.getState().markTurnInFlight(id, true);
     try {
-      await client.call("session.prompt", { sessionId: id, text });
+      await client.call("session.prompt", {
+        sessionId: id,
+        text,
+        agentMode: opts?.agentMode,
+        attachments: opts?.attachments,
+      });
       // Optimistically append the user message immediately on ack. The bridge will later
       // emit its own `user.message` event; the store dedups by text + time-window.
       useMessagesStore.getState().appendUserMessage(id, {

@@ -35,4 +35,16 @@ export function registerBridgeIpc(info: BridgeInfo): void {
     if (result.canceled || result.filePaths.length === 0) return undefined;
     return result.filePaths[0];
   });
+  ipcMain.handle("bridge:openFiles", async (_event, opts?: OpenFileOptions) => {
+    const options = {
+      properties: ["openFile" as const, "multiSelections" as const],
+      filters: opts?.filters,
+    };
+    const focused = BrowserWindow.getFocusedWindow();
+    const result = focused
+      ? await dialog.showOpenDialog(focused, options)
+      : await dialog.showOpenDialog(options);
+    if (result.canceled || result.filePaths.length === 0) return [];
+    return result.filePaths;
+  });
 }

@@ -1,11 +1,14 @@
 import { type FormEvent, Fragment, useEffect, useMemo } from "react";
 import { Glyph } from "../../components/glyph/index.js";
+import { Folder, X } from "../../components/icons/index.js";
 import { PidChipPicker, type PidChipPickerOption } from "../../components/picker/PidChipPicker.js";
 import { useNavStore } from "../../lib/useNavStore.js";
 import { useToastStore } from "../_status/useToastStore.js";
 import { useGitStore } from "../git/useGitStore.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
+import { PidAgentModePicker } from "./PidAgentModePicker.js";
+import { PidAttachmentsPicker } from "./PidAttachmentsPicker.js";
 import { PidEffortPicker } from "./PidEffortPicker.js";
 import { PidModelPicker } from "./PidModelPicker.js";
 import { INTRO_TEMPLATES } from "./templates.js";
@@ -19,6 +22,9 @@ export function PidComposerScreen() {
   const clear = useIntroComposerStore((s) => s.clear);
   const pendingModelRef = useIntroComposerStore((s) => s.pendingModelRef);
   const pendingThinkingLevel = useIntroComposerStore((s) => s.pendingThinkingLevel);
+  const agentMode = useIntroComposerStore((s) => s.agentMode);
+  const attachments = useIntroComposerStore((s) => s.attachments);
+  const removeAttachment = useIntroComposerStore((s) => s.removeAttachment);
 
   const projects = useProjectsStore((s) => s.projects);
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
@@ -87,8 +93,12 @@ export function PidComposerScreen() {
       await store.createSession(activeProjectId, {
         modelRef: pendingModelRef,
         thinkingLevel: pendingThinkingLevel,
+        agentMode,
       });
-      await useSessionsStore.getState().sendPrompt(trimmed);
+      await useSessionsStore.getState().sendPrompt(trimmed, {
+        agentMode,
+        attachments: attachments.length > 0 ? attachments : undefined,
+      });
       clear();
       useNavStore.getState().goToSession();
     } catch {
@@ -149,6 +159,26 @@ export function PidComposerScreen() {
         </div>
 
         <form className="pid-composer-shell" onSubmit={onSubmit}>
+          {attachments.length > 0 && (
+            <div className="pid-composer-attachments">
+              {attachments.map((a) => (
+                <span key={`${a.kind}|${a.path}`} className="pid-composer-attachment">
+                  {a.kind === "folder" ? <Folder size={11} /> : null}
+                  <span className="pid-composer-attachment-path" title={a.path}>
+                    {basename(a.path)}
+                  </span>
+                  <button
+                    type="button"
+                    className="pid-composer-attachment-remove"
+                    onClick={() => removeAttachment(a.path)}
+                    aria-label={`Remove ${a.path}`}
+                  >
+                    <X size={10} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
           <label className="sr-only" htmlFor="pid-composer-input">
             New prompt
           </label>
@@ -160,6 +190,8 @@ export function PidComposerScreen() {
             onChange={(e) => setText(e.target.value)}
           />
           <div className="pid-composer-row">
+            <PidAgentModePicker />
+            <PidAttachmentsPicker />
             <span className="pid-composer-row-spacer" />
             <PidModelPicker />
             <PidEffortPicker />
@@ -213,6 +245,11 @@ export function PidComposerScreen() {
       </div>
     </div>
   );
+}
+
+function basename(p: string): string {
+  const parts = p.split(/[\\/]/);
+  return parts[parts.length - 1] || p;
 }
 
 function formatRelative(iso?: string): string | undefined {

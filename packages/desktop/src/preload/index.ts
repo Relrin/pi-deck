@@ -28,4 +28,6 @@ contextBridge.exposeInMainWorld("bridge", {
   openDirectory: (): Promise<string | undefined> => ipcRenderer.invoke("bridge:openDirectory"),
   openFile: (opts?: OpenFileOptions): Promise<string | undefined> =>
     ipcRenderer.invoke("bridge:openFile", opts),
+  openFiles: (opts?: OpenFileOptions): Promise<string[]> =>
+    ipcRenderer.invoke("bridge:openFiles", opts),
 });

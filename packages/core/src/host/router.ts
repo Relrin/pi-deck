@@ -1,5 +1,11 @@
 import { type CommandName, CommandSchemas } from "../protocol/commands.js";
-import { checkoutBranch, currentBranch, GitError, listBranches } from "./git-runner.js";
+import {
+  checkoutBranch,
+  currentBranch,
+  GitError,
+  listBranches,
+  listProjectFiles,
+} from "./git-runner.js";
 import type { MetadataStore } from "./metadata-store.js";
 import type { ProviderManager } from "./provider-manager.js";
 import type { SessionManager, SessionRecord } from "./session-manager.js";
@@ -33,6 +39,7 @@ function toSummary(record: SessionRecord) {
     model: record.modelRef ? `${record.modelRef.providerId}/${record.modelRef.modelId}` : undefined,
     modelRef: record.modelRef,
     thinkingLevel: record.thinkingLevel,
+    agentMode: record.agentMode,
     lastActivityAt: record.lastActivityAt,
   };
 }
@@ -64,6 +71,7 @@ const handlers: { [C in CommandName]: CommandHandler } = {
       title: parsed.title,
       modelRef: parsed.modelRef,
       thinkingLevel: parsed.thinkingLevel,
+      agentMode: parsed.agentMode,
     });
     await ctx.metadataStore.appendSessionId(project.id, record.id);
     return { session: toSummary(record) };
@@ -80,7 +88,10 @@ const handlers: { [C in CommandName]: CommandHandler } = {
   },
   "session.prompt": async (ctx, payload) => {
     const parsed = CommandSchemas["session.prompt"].request.parse(payload);
-    const result = await ctx.sessionManager.prompt(parsed.sessionId, parsed.text);
+    const result = await ctx.sessionManager.prompt(parsed.sessionId, parsed.text, {
+      agentMode: parsed.agentMode,
+      attachments: parsed.attachments,
+    });
     return { accepted: true as const, promptId: result.promptId };
   },
   "session.cancel": async (ctx, payload) => {
@@ -97,6 +108,17 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     const parsed = CommandSchemas["session.setThinkingLevel"].request.parse(payload);
     await ctx.sessionManager.setThinkingLevel(parsed.sessionId, parsed.level);
     return { ok: true as const };
+  },
+  "project.listFiles": async (ctx, payload) => {
+    const parsed = CommandSchemas["project.listFiles"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const entries = await listProjectFiles(project.path, parsed.limit);
+      return { entries };
+    } catch (err) {
+      throw err instanceof GitError ? new RouterError("git_failed", err.message) : err;
+    }
   },
   "git.listBranches": async (ctx, payload) => {
     const parsed = CommandSchemas["git.listBranches"].request.parse(payload);
