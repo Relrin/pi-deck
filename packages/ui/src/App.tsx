@@ -6,9 +6,9 @@ import { useNewSessionShortcut } from "./features/sessions/useNewSessionShortcut
 import { useSessionsStore } from "./features/sessions/useSessionsStore";
 import { PidSettingsView } from "./features/settings/PidSettingsView";
 import { useSettingsHotkey } from "./features/settings/useSettingsHotkey";
+import { ContextTabStub } from "./layout/_stubs/ContextTabStub";
 import { FilesTabStub } from "./layout/_stubs/FilesTabStub";
 import { GitTabStub } from "./layout/_stubs/GitTabStub";
-import { ContextSidebar as ContextSidebarLegacy } from "./layout/ContextSidebar.legacy";
 import { PidAppShell } from "./layout/PidAppShell";
 import { PidBody } from "./layout/PidBody";
 import { PidCenterRouter } from "./layout/PidCenterRouter";
@@ -45,7 +45,7 @@ export function App() {
             <PidBody
               left={<PidLeftRail sessions={<PidSessionsList />} files={<FilesTabStub />} />}
               center={<PidCenterRouter />}
-              right={<PidRightPane git={<GitTabStub />} context={<ContextSidebarLegacy />} />}
+              right={<PidRightPane git={<GitTabStub />} context={<ContextTabStub />} />}
             />
           }
           bottom={<PidFooter />}
