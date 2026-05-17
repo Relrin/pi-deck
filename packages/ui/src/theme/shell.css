@@ -43,6 +43,12 @@
 .pid-body[data-rightpane="off"] {
   grid-template-columns: var(--rail-w) 1fr;
 }
+.pid-body[data-leftrail="off"] {
+  grid-template-columns: 1fr var(--rightpane-w);
+}
+.pid-body[data-leftrail="off"][data-rightpane="off"] {
+  grid-template-columns: 1fr;
+}
 
 /* ---------- Rail/pane resize handles ---------- */
 .pid-panel-handle {
@@ -83,6 +89,12 @@
 }
 .pid-topbar[data-rightpane="off"] {
   grid-template-columns: var(--rail-w) 1fr auto;
+}
+.pid-topbar[data-leftrail="off"] {
+  grid-template-columns: auto 1fr var(--rightpane-w);
+}
+.pid-topbar[data-leftrail="off"][data-rightpane="off"] {
+  grid-template-columns: auto 1fr auto;
 }
 /* macOS leaves room for the native traffic lights via a transparent spacer. */
 .pid-topbar-spacer {

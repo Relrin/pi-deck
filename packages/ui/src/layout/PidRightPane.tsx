@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from "react";
-import { Glyph } from "../components/glyph";
+import { GitBranch, Layers } from "../components/icons";
 
 type RightTab = "git" | "context";
 
@@ -30,7 +30,7 @@ export function PidRightPane({
           className={`pid-right-tab${tab === "git" ? " active" : ""}`}
           onClick={() => setTab("git")}
         >
-          <Glyph kind="git" />
+          <GitBranch size={14} aria-hidden />
           Git
           {gitCount !== undefined && <span className="count">{gitCount}</span>}
         </button>
@@ -41,7 +41,7 @@ export function PidRightPane({
           className={`pid-right-tab${tab === "context" ? " active" : ""}`}
           onClick={() => setTab("context")}
         >
-          <Glyph kind="context" />
+          <Layers size={14} aria-hidden />
           Context
           {contextCount !== undefined && <span className="count">{contextCount}</span>}
         </button>

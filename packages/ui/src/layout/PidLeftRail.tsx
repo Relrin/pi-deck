@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from "react";
 import { Glyph } from "../components/glyph";
+import { Files, List } from "../components/icons";
 import { Tooltip } from "../components/ui/Tooltip";
 import { useSettingsStore } from "../features/settings/useSettingsStore";
 import { isMacOs } from "../lib/platform";
@@ -27,7 +28,7 @@ export function PidLeftRail({ sessions, files, initialTab = "sessions" }: PidLef
           onClick={() => setTab("sessions")}
         >
           <span style={{ marginRight: 6, display: "inline-flex", verticalAlign: "-2px" }}>
-            <Glyph kind="sessions" />
+            <List size={14} aria-hidden />
           </span>
           Sessions
         </button>
@@ -39,7 +40,7 @@ export function PidLeftRail({ sessions, files, initialTab = "sessions" }: PidLef
           onClick={() => setTab("files")}
         >
           <span style={{ marginRight: 6, display: "inline-flex", verticalAlign: "-2px" }}>
-            <Glyph kind="files" />
+            <Files size={14} aria-hidden />
           </span>
           Files
         </button>

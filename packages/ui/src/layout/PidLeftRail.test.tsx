@@ -37,3 +37,23 @@ describe("PidLeftRail — footer cluster", () => {
     expect(useSettingsStore.getState().open).toBe(false);
   });
 });
+
+describe("PidLeftRail — tab icons", () => {
+  test("Sessions and Files tabs render the lucide icons (not the legacy Glyph SVGs)", () => {
+    const { container } = render(
+      <PidLeftRail sessions={<div>sessions</div>} files={<div>files</div>} />,
+    );
+    const sessionsTab = screen.getByRole("tab", { name: /sessions/i });
+    const filesTab = screen.getByRole("tab", { name: /files/i });
+
+    expect(sessionsTab.querySelector("svg.lucide.lucide-list")).not.toBeNull();
+    expect(filesTab.querySelector("svg.lucide.lucide-files")).not.toBeNull();
+
+    // Sanity-check that the rail no longer renders the old inline-SVG glyphs in
+    // these specific tab buttons (they used a 14×14 viewBox with hand-drawn strokes).
+    expect(sessionsTab.querySelector('svg:not([class*="lucide"])')).toBeNull();
+    expect(filesTab.querySelector('svg:not([class*="lucide"])')).toBeNull();
+    // Avoid "unused container" lint by acknowledging it.
+    expect(container).toBeTruthy();
+  });
+});

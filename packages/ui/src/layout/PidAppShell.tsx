@@ -9,12 +9,15 @@ export interface PidAppShellProps {
 
 export function PidAppShell({ top, body, bottom }: PidAppShellProps) {
   // Drive --rail-w / --rightpane-w from the persisted store so both the topbar grid and
-  // the body grid stay in sync without each subtree re-reading the state.
+  // the body grid stay in sync without each subtree re-reading the state. When a panel
+  // is hidden, collapse its column to 0 so the center cell expands cleanly.
   const leftWidth = useRailState((s) => s.leftWidth);
   const rightWidth = useRailState((s) => s.rightWidth);
+  const leftVisible = useRailState((s) => s.leftVisible);
+  const rightVisible = useRailState((s) => s.rightVisible);
   const styleVars = {
-    "--rail-w": `${leftWidth}px`,
-    "--rightpane-w": `${rightWidth}px`,
+    "--rail-w": leftVisible ? `${leftWidth}px` : "0px",
+    "--rightpane-w": rightVisible ? `${rightWidth}px` : "0px",
   } as CSSProperties;
 
   return (

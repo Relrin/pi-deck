@@ -11,8 +11,14 @@ const clamp = (value: number, min: number, max: number) => Math.min(Math.max(val
 export interface RailState {
   leftWidth: number;
   rightWidth: number;
+  leftVisible: boolean;
+  rightVisible: boolean;
   setLeftWidth: (px: number) => void;
   setRightWidth: (px: number) => void;
+  setLeftVisible: (v: boolean) => void;
+  setRightVisible: (v: boolean) => void;
+  toggleLeft: () => void;
+  toggleRight: () => void;
 }
 
 export const useRailState = create<RailState>()(
@@ -20,11 +26,34 @@ export const useRailState = create<RailState>()(
     (set) => ({
       leftWidth: DEFAULT_LEFT_WIDTH,
       rightWidth: DEFAULT_RIGHT_WIDTH,
+      leftVisible: true,
+      rightVisible: true,
       setLeftWidth: (px) => set({ leftWidth: clamp(px, MIN_WIDTH, MAX_WIDTH) }),
       setRightWidth: (px) => set({ rightWidth: clamp(px, MIN_WIDTH, MAX_WIDTH) }),
+      setLeftVisible: (v) => set({ leftVisible: v }),
+      setRightVisible: (v) => set({ rightVisible: v }),
+      toggleLeft: () => set((s) => ({ leftVisible: !s.leftVisible })),
+      toggleRight: () => set((s) => ({ rightVisible: !s.rightVisible })),
     }),
-    { name: "pi-deck:rails" },
+    {
+      name: "pi-deck:rails",
+      version: 2,
+      // v1 → v2 added leftVisible/rightVisible. Default both to true so existing
+      // users see no change on upgrade.
+      migrate: (persisted, version) => {
+        const next = (persisted ?? {}) as Partial<RailState>;
+        if (version < 2) {
+          next.leftVisible = true;
+          next.rightVisible = true;
+        }
+        return next as RailState;
+      },
+    },
   ),
 );
 
 export const RAIL_LIMITS = { min: MIN_WIDTH, max: MAX_WIDTH };
+export const RAIL_DEFAULTS = {
+  leftWidth: DEFAULT_LEFT_WIDTH,
+  rightWidth: DEFAULT_RIGHT_WIDTH,
+};

@@ -11,21 +11,34 @@ export interface PidBodyProps {
 export function PidBody({ left, center, right }: PidBodyProps) {
   const leftWidth = useRailState((s) => s.leftWidth);
   const rightWidth = useRailState((s) => s.rightWidth);
+  const leftVisible = useRailState((s) => s.leftVisible);
+  const rightVisible = useRailState((s) => s.rightVisible);
   const setLeftWidth = useRailState((s) => s.setLeftWidth);
   const setRightWidth = useRailState((s) => s.setRightWidth);
-  const rightPaneOff = right === undefined || right === null;
+
+  // A consumer that passes no `right` prop turns the right pane off structurally
+  // (e.g. screens with no context column). Visibility toggling via the topbar is
+  // orthogonal and goes through the store.
+  const rightPaneOff = right === undefined || right === null || !rightVisible;
+  const leftRailOff = !leftVisible;
 
   return (
-    <div className="pid-body" data-rightpane={rightPaneOff ? "off" : "on"}>
-      {left}
+    <div
+      className="pid-body"
+      data-leftrail={leftRailOff ? "off" : "on"}
+      data-rightpane={rightPaneOff ? "off" : "on"}
+    >
+      {!leftRailOff && left}
       <div className="pid-center">{center}</div>
-      {right}
-      <PidPanelHandle
-        side="left"
-        ariaLabel="Resize left rail"
-        currentWidth={leftWidth}
-        onResize={(delta) => setLeftWidth(leftWidth + delta)}
-      />
+      {!rightPaneOff && right}
+      {!leftRailOff && (
+        <PidPanelHandle
+          side="left"
+          ariaLabel="Resize left rail"
+          currentWidth={leftWidth}
+          onResize={(delta) => setLeftWidth(leftWidth + delta)}
+        />
+      )}
       {!rightPaneOff && (
         <PidPanelHandle
           side="right"

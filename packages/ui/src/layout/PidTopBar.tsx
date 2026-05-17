@@ -1,8 +1,11 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Glyph, type GlyphKind } from "../components/glyph";
+import { PanelBottom, PanelLeft, PanelRight, Sliders } from "../components/icons";
 import { Tooltip } from "../components/ui/Tooltip";
-import { getPlatformOs } from "../lib/platform";
+import { useSettingsStore } from "../features/settings/useSettingsStore";
+import { getPlatformOs, isMacOs } from "../lib/platform";
 import { useNavStore } from "../lib/useNavStore";
+import { useRailState } from "./use-rail-state";
 
 // Windows + Linux paint native min/max/close inside the topbar area via
 // BrowserWindow.titleBarOverlay. Those buttons sit on top of our DOM, so we
@@ -10,13 +13,14 @@ import { useNavStore } from "../lib/useNavStore";
 // 1.0 DPI; tighter scales fit comfortably under it.
 const NATIVE_OVERLAY_RESERVE_PX = 144;
 
-interface TopBarButtonProps {
+interface PlaceholderButtonProps {
   kind: GlyphKind;
   label: string;
   tooltip: string;
+  icon?: ReactNode;
 }
 
-function TopBarButton({ kind, label, tooltip }: TopBarButtonProps) {
+function PlaceholderButton({ kind, label, tooltip, icon }: PlaceholderButtonProps) {
   return (
     <Tooltip content={tooltip}>
       <button
@@ -26,7 +30,32 @@ function TopBarButton({ kind, label, tooltip }: TopBarButtonProps) {
         aria-disabled
         onClick={(event) => event.preventDefault()}
       >
-        <Glyph kind={kind} />
+        {icon ?? <Glyph kind={kind} />}
+      </button>
+    </Tooltip>
+  );
+}
+
+interface ToggleButtonProps {
+  pressed: boolean;
+  onToggle: () => void;
+  showLabel: string;
+  hideLabel: string;
+  icon: ReactNode;
+}
+
+function ToggleButton({ pressed, onToggle, showLabel, hideLabel, icon }: ToggleButtonProps) {
+  const label = pressed ? hideLabel : showLabel;
+  return (
+    <Tooltip content={label}>
+      <button
+        type="button"
+        className="pid-topbar-btn"
+        aria-label={label}
+        aria-pressed={pressed}
+        onClick={onToggle}
+      >
+        {icon}
       </button>
     </Tooltip>
   );
@@ -49,19 +78,43 @@ function BackToStartButton() {
   );
 }
 
+function TopBarSettingsButton() {
+  const tooltip = `Settings (${isMacOs() ? "⌘" : "Ctrl"}+,)`;
+  return (
+    <Tooltip content={tooltip}>
+      <button
+        type="button"
+        className="pid-topbar-btn"
+        aria-label="Open settings"
+        onClick={() => useSettingsStore.getState().setOpen(true)}
+      >
+        <Sliders size={14} />
+      </button>
+    </Tooltip>
+  );
+}
+
 export function PidTopBar() {
   const platformOs = getPlatformOs();
   const isMac = platformOs === "darwin";
   const reservesNativeOverlay = platformOs === "win32" || platformOs === "linux";
   const screen = useNavStore((s) => s.screen);
   const showBack = screen !== "blank";
+  const leftVisible = useRailState((s) => s.leftVisible);
+  const rightVisible = useRailState((s) => s.rightVisible);
+  const toggleLeft = useRailState((s) => s.toggleLeft);
+  const toggleRight = useRailState((s) => s.toggleRight);
 
   const rightStyle: CSSProperties | undefined = reservesNativeOverlay
     ? { paddingRight: NATIVE_OVERLAY_RESERVE_PX }
     : undefined;
 
   return (
-    <div className="pid-topbar">
+    <div
+      className="pid-topbar"
+      data-leftrail={leftVisible ? "on" : "off"}
+      data-rightpane={rightVisible ? "on" : "off"}
+    >
       {isMac ? (
         <div
           className="pid-topbar-spacer"
@@ -87,20 +140,28 @@ export function PidTopBar() {
       </div>
 
       <div className="pid-topbar-right" style={rightStyle}>
-        <TopBarButton
-          kind="panel-left"
-          label="Toggle left rail (coming soon)"
-          tooltip="Toggle left rail — coming soon"
+        {/* Settings is normally housed in the left-rail footer; surface it here
+            when the rail is hidden so the user keeps a visible affordance. */}
+        {!leftVisible && <TopBarSettingsButton />}
+        <ToggleButton
+          pressed={leftVisible}
+          onToggle={toggleLeft}
+          showLabel="Show left rail"
+          hideLabel="Hide left rail"
+          icon={<PanelLeft size={14} />}
         />
-        <TopBarButton
+        <PlaceholderButton
           kind="panel-bottom"
           label="Toggle bottom panel (coming soon)"
           tooltip="Toggle bottom panel — coming soon"
+          icon={<PanelBottom size={14} />}
         />
-        <TopBarButton
-          kind="panel-right"
-          label="Toggle right pane (coming soon)"
-          tooltip="Toggle right pane — coming soon"
+        <ToggleButton
+          pressed={rightVisible}
+          onToggle={toggleRight}
+          showLabel="Show right pane"
+          hideLabel="Hide right pane"
+          icon={<PanelRight size={14} />}
         />
       </div>
     </div>
