@@ -1,4 +1,8 @@
-import type { SessionSummary } from "@pi-deck/core/domain/session.js";
+import type {
+  SessionModelRef,
+  SessionSummary,
+  ThinkingLevel,
+} from "@pi-deck/core/domain/session.js";
 import { create } from "zustand";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { routeEvent } from "../../lib/transport/event-router.js";
@@ -27,7 +31,10 @@ export interface SessionsStoreState {
   initialize: () => Promise<void>;
   refreshSessions: (projectId: string) => Promise<void>;
   loadProjectSessions: (projectId: string) => Promise<void>;
-  createSession: (projectId: string) => Promise<void>;
+  createSession: (
+    projectId: string,
+    opts?: { modelRef?: SessionModelRef; thinkingLevel?: ThinkingLevel },
+  ) => Promise<void>;
   activateSession: (id: string) => Promise<void>;
   deactivateSession: (id: string) => Promise<void>;
   sendPrompt: (text: string) => Promise<void>;
@@ -155,11 +162,15 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     return run;
   },
 
-  createSession: async (projectId) => {
+  createSession: async (projectId, opts) => {
     const client = get().client;
     if (!client) throw new Error("Client not initialized");
     try {
-      const { session } = await client.call("session.create", { projectId });
+      const { session } = await client.call("session.create", {
+        projectId,
+        modelRef: opts?.modelRef,
+        thinkingLevel: opts?.thinkingLevel,
+      });
       set((state) => {
         const cached = state.sessionsByProject[projectId] ?? [];
         return {

@@ -6,6 +6,8 @@ import { useToastStore } from "../_status/useToastStore.js";
 import { useGitStore } from "../git/useGitStore.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
+import { PidEffortPicker } from "./PidEffortPicker.js";
+import { PidModelPicker } from "./PidModelPicker.js";
 import { INTRO_TEMPLATES } from "./templates.js";
 import { useIntroComposerStore } from "./useIntroComposerStore.js";
 
@@ -15,6 +17,8 @@ export function PidComposerScreen() {
   const text = useIntroComposerStore((s) => s.text);
   const setText = useIntroComposerStore((s) => s.setText);
   const clear = useIntroComposerStore((s) => s.clear);
+  const pendingModelRef = useIntroComposerStore((s) => s.pendingModelRef);
+  const pendingThinkingLevel = useIntroComposerStore((s) => s.pendingThinkingLevel);
 
   const projects = useProjectsStore((s) => s.projects);
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
@@ -80,7 +84,10 @@ export function PidComposerScreen() {
     }
     const store = useSessionsStore.getState();
     try {
-      await store.createSession(activeProjectId);
+      await store.createSession(activeProjectId, {
+        modelRef: pendingModelRef,
+        thinkingLevel: pendingThinkingLevel,
+      });
       await useSessionsStore.getState().sendPrompt(trimmed);
       clear();
       useNavStore.getState().goToSession();
@@ -154,6 +161,8 @@ export function PidComposerScreen() {
           />
           <div className="pid-composer-row">
             <span className="pid-composer-row-spacer" />
+            <PidModelPicker />
+            <PidEffortPicker />
             <button
               type="submit"
               className="pid-composer-send"
