@@ -1783,6 +1783,16 @@
   font-size: 12.5px;
   cursor: pointer;
   outline: none;
+  /* `.pid-model-menu-item` is rendered as a <button> in the virtualized PidModelPicker
+     (rows are plain buttons, not RadixDropdown.Item — see the picker for why). These
+     resets neutralize native button chrome so the grid layout reads the same whether
+     the row is a button (model picker) or a div/Radix.Item (branch picker). The font
+     declarations above already win against the UA stylesheet, so we only need to reset
+     the box (background/border) and the alignment. */
+  background: transparent;
+  border: 0;
+  width: 100%;
+  text-align: left;
 }
 .pid-model-menu-item[data-highlighted] {
   background: var(--bg-2);
