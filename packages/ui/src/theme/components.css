@@ -1699,7 +1699,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  /* Compact — sits at list-item height (~30px) to match the mockup `.pid-attach-pop`
+     search row instead of the older ~37px treatment. */
+  padding: 6px 12px;
   border-bottom: 1px solid var(--line);
   flex: 0 0 auto;
 }
@@ -1715,7 +1717,8 @@
   color: var(--ink-0);
   font-family: var(--font-ui);
   font-size: 12.5px;
-  padding: 2px 0;
+  /* No internal vertical padding — the container's 6px above/below handles spacing. */
+  padding: 0;
 }
 .pid-model-menu-search-input::placeholder {
   color: var(--ink-3);
