@@ -1668,6 +1668,139 @@
   color: var(--ink-2);
 }
 
+/* ---------- Model picker popover (search + grouped per provider) ----------
+   Differs from the shared PidChipPicker menu: wider, has a sticky search row,
+   and groups options under provider headers. The list area scrolls; the search
+   row stays pinned at the top. */
+.pid-model-menu {
+  display: flex;
+  flex-direction: column;
+  width: 360px;
+  max-height: 440px;
+  padding: 0;
+  overflow: hidden;
+}
+.pid-model-menu-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+.pid-model-menu-search-icon {
+  color: var(--ink-3);
+  flex: 0 0 auto;
+}
+.pid-model-menu-search-input {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--ink-0);
+  font-family: var(--font-ui);
+  font-size: var(--t-13);
+  padding: 2px 0;
+}
+.pid-model-menu-search-input::placeholder {
+  color: var(--ink-3);
+}
+.pid-model-menu-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 4px;
+  /* Firefox custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
+}
+/* Chromium custom scrollbar — slim, accent on hover. */
+.pid-model-menu-list::-webkit-scrollbar {
+  width: 6px;
+}
+.pid-model-menu-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pid-model-menu-list::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 3px;
+}
+.pid-model-menu-list::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
+}
+.pid-model-menu-section + .pid-model-menu-section {
+  margin-top: 4px;
+}
+.pid-model-menu-section-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.pid-model-menu-section-default {
+  color: var(--accent);
+  font-size: 9px;
+}
+.pid-model-menu-section-default::before {
+  content: "·";
+  margin-right: 4px;
+  color: var(--ink-3);
+}
+.pid-model-menu-item {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius, 4px);
+  color: var(--ink-1);
+  font-family: var(--font-ui);
+  font-size: var(--t-14, 13px);
+  cursor: pointer;
+  outline: none;
+}
+.pid-model-menu-item[data-highlighted] {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+.pid-model-menu-item[data-active] {
+  color: var(--ink-0);
+}
+.pid-model-menu-item-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  width: 16px;
+}
+.pid-model-menu-item-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.pid-model-menu-item-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.pid-model-menu-item[data-highlighted] .pid-model-menu-item-sub {
+  color: var(--ink-2);
+}
+.pid-model-menu-empty {
+  padding: 16px 10px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
 /* Readonly row (currently-attached list inside the attachments popover) */
 .pid-picker-menu-readonly {
   cursor: default;
