@@ -270,7 +270,7 @@ export function PidComposerScreen() {
           </div>
         </form>
 
-        <div>
+        <div className="pid-composer-templates-wrap">
           <div className="pid-composer-templates-label">start from a template</div>
           <div className="pid-composer-templates">
             {INTRO_TEMPLATES.map((template) => (
