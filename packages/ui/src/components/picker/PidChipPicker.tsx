@@ -68,6 +68,7 @@ export function PidChipPicker({
       <RadixDropdown.Portal>
         <RadixDropdown.Content
           align="start"
+          side="top"
           sideOffset={6}
           className="pid-picker-menu"
           style={{ minWidth: minPopoverWidth }}

@@ -280,6 +280,7 @@ export function PidModelPicker() {
       <RadixDropdown.Portal>
         <RadixDropdown.Content
           align="start"
+          side="top"
           sideOffset={6}
           className="pid-picker-menu pid-model-menu"
           // The search input lives inside the menu — let it own focus instead of the first item.

@@ -115,6 +115,7 @@ export function PidBranchPicker({ projectId }: Props) {
       <RadixDropdown.Portal>
         <RadixDropdown.Content
           align="start"
+          side="top"
           sideOffset={6}
           className="pid-picker-menu pid-branch-menu"
           // The search input owns focus inside the menu — same trick PidModelPicker uses.
