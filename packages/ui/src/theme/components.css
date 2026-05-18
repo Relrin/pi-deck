@@ -1801,6 +1801,93 @@
   color: var(--ink-3);
 }
 
+/* ---------- Branch picker (search + create unified) ---------- */
+/* Reuses .pid-model-menu-* chrome (search input, list, item rows) and overrides the
+   metrics to match plans/design-mockup/html-css-mockup/theme.css `.pid-attach-pop`
+   (row padding 7×12, label padding 4×12, mono header 9px, narrower 260–280 popover,
+   sections flush to the border instead of inset 6px from .pid-picker-menu padding). */
+.pid-branch-menu.pid-picker-menu {
+  width: 280px;
+  padding: 0;
+  border-radius: var(--radius, 4px);
+  overflow: hidden;
+}
+.pid-branch-menu .pid-model-menu-search {
+  padding: 8px 12px;
+}
+.pid-branch-menu .pid-model-menu-search-input {
+  font-size: 12.5px;
+  padding: 0;
+}
+.pid-branch-menu .pid-model-menu-list {
+  padding: 4px 0;
+}
+.pid-branch-menu .pid-model-menu-section-head {
+  padding: 4px 12px 4px;
+  font-size: 9px;
+}
+.pid-branch-menu .pid-model-menu-item {
+  grid-template-columns: 16px 1fr auto;
+  gap: 10px;
+  padding: 7px 12px;
+  margin: 0;
+  border-radius: 0;
+  font-size: 12.5px;
+}
+.pid-branch-menu .pid-model-menu-item-check {
+  width: 16px;
+}
+.pid-branch-menu .pid-model-menu-empty {
+  padding: 10px 12px;
+  font-size: 10px;
+}
+
+/* Accent-tinted "+ Create branch <name>" row that replaces the list when the user
+   has typed a name that doesn't match any existing branch. */
+.pid-branch-menu-create {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  margin: 4px;
+  border-radius: var(--radius, 4px);
+  background: var(--accent-soft, oklch(0.74 0.17 50 / 0.14));
+  border: 1px solid var(--accent-line, oklch(0.74 0.17 50 / 0.35));
+  color: var(--ink-0);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  cursor: pointer;
+  outline: none;
+}
+.pid-branch-menu-create[data-highlighted] {
+  background: var(--accent-soft, oklch(0.74 0.17 50 / 0.22));
+  border-color: var(--accent, oklch(0.74 0.17 50));
+}
+.pid-branch-menu-create-icon {
+  display: inline-flex;
+  color: var(--accent);
+}
+.pid-branch-menu-create-label {
+  color: var(--ink-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pid-branch-menu-create-name {
+  color: var(--accent);
+  font-weight: 500;
+}
+/* Keyboard hint on the right of the create row. Sits on --ink-1 instead of --ink-3
+   so the ↵ glyph stays readable against the accent-tinted background. */
+.pid-branch-menu-create-kbd {
+  display: inline-flex;
+  color: var(--ink-1);
+}
+.pid-branch-menu-create[data-highlighted] .pid-branch-menu-create-kbd {
+  color: var(--ink-0);
+}
+
 /* Readonly row (currently-attached list inside the attachments popover) */
 .pid-picker-menu-readonly {
   cursor: default;

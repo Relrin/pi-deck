@@ -25,5 +25,6 @@
     "src/preload/**/*.ts",
     "src/worker/**/*.ts",
     "../core/src/**/*.ts"
-  ]
+  ],
+  "exclude": ["../core/src/**/*.test.ts"]
 }

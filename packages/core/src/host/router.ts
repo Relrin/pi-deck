@@ -1,6 +1,7 @@
 import { type CommandName, CommandSchemas } from "../protocol/commands.js";
 import {
   checkoutBranch,
+  createBranch,
   currentBranch,
   GitError,
   listBranches,
@@ -153,6 +154,17 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
     try {
       await checkoutBranch(project.path, parsed.name);
+      return { ok: true as const };
+    } catch (err) {
+      throw err instanceof GitError ? new RouterError("git_failed", err.message) : err;
+    }
+  },
+  "git.createBranch": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.createBranch"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      await createBranch(project.path, parsed.name);
       return { ok: true as const };
     } catch (err) {
       throw err instanceof GitError ? new RouterError("git_failed", err.message) : err;

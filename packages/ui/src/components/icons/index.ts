@@ -7,6 +7,7 @@ export {
   CheckCheck,
   ChevronDown,
   ChevronRight,
+  CornerDownLeft,
   Edit3,
   File,
   Files,

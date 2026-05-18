@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { Archive, Folder, GitMerge, Send, X } from "../../components/icons/index.js";
+import { Archive, Folder, Send, X } from "../../components/icons/index.js";
 import { PidChipPicker, type PidChipPickerOption } from "../../components/picker/PidChipPicker.js";
 import { isMacOs } from "../../lib/platform.js";
 import { useNavStore } from "../../lib/useNavStore.js";
@@ -18,6 +18,7 @@ import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { PidAgentModePicker } from "./PidAgentModePicker.js";
 import { PidAttachmentsPicker } from "./PidAttachmentsPicker.js";
+import { PidBranchPicker } from "./PidBranchPicker.js";
 import { PidEffortPicker } from "./PidEffortPicker.js";
 import { PidModelPicker } from "./PidModelPicker.js";
 import { PidRepoFileSearchDialog } from "./PidRepoFileSearchDialog.js";
@@ -78,15 +79,18 @@ export function PidComposerScreen() {
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const activeProject = useProjectsStore((s) => s.projects.find((p) => p.id === s.activeProjectId));
   const setActiveProject = useProjectsStore((s) => s.setActive);
+  const openProjectFromDialog = useProjectsStore((s) => s.openProjectFromDialog);
+  const protocolClient = useSessionsStore((s) => s.client);
 
-  const branches = useGitStore((s) =>
-    activeProjectId ? s.branchesByProject[activeProjectId] : undefined,
-  );
-  const currentBranch = useGitStore((s) =>
-    activeProjectId ? s.currentBranchByProject[activeProjectId] : undefined,
-  );
+  const openAnotherFolder = useCallback(() => {
+    if (!protocolClient) {
+      useToastStore.getState().push("Host not connected", "error");
+      return;
+    }
+    void openProjectFromDialog(protocolClient);
+  }, [openProjectFromDialog, protocolClient]);
+
   const refreshGit = useGitStore((s) => s.refresh);
-  const checkoutBranch = useGitStore((s) => s.checkout);
 
   const sessions = useSessionsStore((s) => s.sessions);
 
@@ -112,17 +116,6 @@ export function PidComposerScreen() {
       })),
     [projects],
   );
-
-  const branchOptions: PidChipPickerOption[] = useMemo(() => {
-    if (!branches || branches.length === 0) {
-      return currentBranch ? [{ value: currentBranch, label: currentBranch, sub: "current" }] : [];
-    }
-    return branches.map((b) => ({
-      value: b.name,
-      label: b.name,
-      sub: b.isCurrent ? "current" : formatRelative(b.lastActivityAt),
-    }));
-  }, [branches, currentBranch]);
 
   const projectKicker = activeProject
     ? `${activeProject.displayName.toUpperCase()} · IDLE`
@@ -162,11 +155,6 @@ export function PidComposerScreen() {
       .activateSession(sessionId)
       .catch(() => {});
     useNavStore.getState().goToSession();
-  };
-
-  const onBranchChange = (name: string) => {
-    if (!activeProjectId || name === currentBranch) return;
-    void checkoutBranch(activeProjectId, name);
   };
 
   // Keyboard shortcuts inside the composer textarea. Mirrors the kbd badges in the
@@ -214,24 +202,18 @@ export function PidComposerScreen() {
           <PidChipPicker
             icon="folder"
             triggerLeading={<Archive size={12} aria-hidden />}
-            header="Workspace"
             ariaLabel="Select workspace"
             value={activeProjectId ?? ""}
             options={workspaceOptions}
             onChange={(id) => setActiveProject(id)}
             triggerLabel={activeProject?.displayName ?? "no project"}
+            footerAction={{
+              label: "Open another folder…",
+              icon: "plus",
+              onSelect: openAnotherFolder,
+            }}
           />
-          <PidChipPicker
-            icon="branch"
-            triggerLeading={<GitMerge size={12} aria-hidden />}
-            header="Branch"
-            ariaLabel="Select branch"
-            value={currentBranch ?? ""}
-            options={branchOptions}
-            onChange={onBranchChange}
-            triggerLabel={currentBranch || "—"}
-            disabled={!activeProjectId || branchOptions.length === 0}
-          />
+          <PidBranchPicker projectId={activeProjectId} />
         </div>
 
         <form className="pid-composer-shell" onSubmit={onSubmit}>
@@ -342,20 +324,4 @@ export function PidComposerScreen() {
 function basename(p: string): string {
   const parts = p.split(/[\\/]/);
   return parts[parts.length - 1] || p;
-}
-
-function formatRelative(iso?: string): string | undefined {
-  if (!iso) return undefined;
-  const then = Date.parse(iso);
-  if (Number.isNaN(then)) return undefined;
-  const diffMs = Date.now() - then;
-  const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d`;
-  const months = Math.floor(days / 30);
-  return `${months}mo`;
 }

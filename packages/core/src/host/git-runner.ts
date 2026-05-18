@@ -59,6 +59,10 @@ export async function checkoutBranch(cwd: string, name: string): Promise<void> {
   await runGit(cwd, ["checkout", name]);
 }
 
+export async function createBranch(cwd: string, name: string): Promise<void> {
+  await runGit(cwd, ["checkout", "-b", name]);
+}
+
 export interface ProjectFileEntry {
   path: string;
   kind: "file";

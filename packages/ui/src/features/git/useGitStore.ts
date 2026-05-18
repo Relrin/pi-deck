@@ -17,6 +17,7 @@ interface GitStoreState {
 
   refresh: (projectId: string) => Promise<void>;
   checkout: (projectId: string, name: string) => Promise<void>;
+  createBranch: (projectId: string, name: string) => Promise<void>;
 }
 
 const inflight = new Map<string, Promise<void>>();
@@ -80,6 +81,23 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       void get().refresh(projectId);
     } catch (err) {
       useToastStore.getState().push(humanizeError(err, "Failed to checkout branch"), "error");
+      throw err;
+    }
+  },
+
+  createBranch: async (projectId, name) => {
+    const client = useSessionsStore.getState().client;
+    if (!client) return;
+    try {
+      await client.call("git.createBranch", { projectId, name });
+      // git checkout -b makes the new branch HEAD — update local state optimistically
+      // and refresh to pick up the canonical branch list (including lastActivityAt).
+      set((state) => ({
+        currentBranchByProject: { ...state.currentBranchByProject, [projectId]: name },
+      }));
+      void get().refresh(projectId);
+    } catch (err) {
+      useToastStore.getState().push(humanizeError(err, "Failed to create branch"), "error");
       throw err;
     }
   },

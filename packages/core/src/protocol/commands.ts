@@ -112,6 +112,12 @@ export const GitCheckoutBranchRequest = z.object({
 });
 export const GitCheckoutBranchResponse = z.object({ ok: z.literal(true) });
 
+export const GitCreateBranchRequest = z.object({
+  projectId: z.string().uuid(),
+  name: z.string().min(1),
+});
+export const GitCreateBranchResponse = z.object({ ok: z.literal(true) });
+
 export const ThemeListRequest = z.object({}).strict();
 export const ThemeListResponse = z.object({
   activeName: z.string(),
@@ -189,6 +195,10 @@ export const CommandSchemas = {
   "git.checkoutBranch": {
     request: GitCheckoutBranchRequest,
     response: GitCheckoutBranchResponse,
+  },
+  "git.createBranch": {
+    request: GitCreateBranchRequest,
+    response: GitCreateBranchResponse,
   },
   "theme.list": { request: ThemeListRequest, response: ThemeListResponse },
   "theme.get": { request: ThemeGetRequest, response: ThemeGetResponse },
