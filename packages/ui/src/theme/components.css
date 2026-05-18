@@ -1417,6 +1417,14 @@
   color: var(--ink-0);
   font-weight: 500;
 }
+/* Agent-mode picker — pull the right-side check into the active row's accent
+   so it visually pairs with the left mode-glyph (also accent on the active
+   row). Scoped to .pid-picker-mode-item so it doesn't bleed into other
+   consumers of .pid-picker-menu-item-sub (chip picker sub-labels,
+   attachments-picker kbd hints), which keep the dim --ink-3 default. */
+.pid-picker-mode-item[data-active] .pid-picker-menu-item-sub {
+  color: var(--accent);
+}
 
 /* ---------- Composer screen (BLANK tab) ---------- */
 .pid-composer-screen {
