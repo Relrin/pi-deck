@@ -94,10 +94,16 @@ export function PidComposerScreen() {
 
   const sessions = useSessionsStore((s) => s.sessions);
 
+  // Wait for the protocol client before kicking off the git refresh. `activeProjectId`
+  // is restored synchronously from localStorage (via zustand `persist`), but the client
+  // is only available once the WebSocket has been bootstrapped — so on first render the
+  // refresh would silently bail inside the store (`if (!client) return`) and never retry.
+  // Including `protocolClient` in the deps re-fires the effect the moment the client
+  // becomes available, letting the branch picker populate on its own.
   useEffect(() => {
-    if (!activeProjectId) return;
+    if (!activeProjectId || !protocolClient) return;
     void refreshGit(activeProjectId);
-  }, [activeProjectId, refreshGit]);
+  }, [activeProjectId, refreshGit, protocolClient]);
 
   const recents = useMemo(
     () =>
