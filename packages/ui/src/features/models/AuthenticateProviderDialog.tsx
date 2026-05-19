@@ -56,6 +56,10 @@ export function AuthenticateProviderDialog({ provider, open, onOpenChange }: Pro
             <RadixDialog.Title className="pid-modal-title">
               Authenticate {provider?.name ?? "provider"}
             </RadixDialog.Title>
+            <RadixDialog.Description className="pid-modal-description">
+              Paste an API key — it's forwarded to the host process and stored in pi's auth file,
+              never echoed back to the renderer.
+            </RadixDialog.Description>
           </div>
           <form className="pid-form" onSubmit={onSubmit}>
             <div className="pid-form-field">

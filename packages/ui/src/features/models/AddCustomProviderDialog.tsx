@@ -73,6 +73,10 @@ export function AddCustomProviderDialog({ open, onOpenChange, onAdded }: Props) 
         >
           <div className="pid-modal-header">
             <RadixDialog.Title className="pid-modal-title">Add custom provider</RadixDialog.Title>
+            <RadixDialog.Description className="pid-modal-description">
+              Connect an OpenAI-compatible endpoint such as LM Studio, Ollama, vLLM, or a
+              self-hosted gateway.
+            </RadixDialog.Description>
           </div>
           <form className="pid-form" onSubmit={onSubmit}>
             <div className="pid-form-field">
