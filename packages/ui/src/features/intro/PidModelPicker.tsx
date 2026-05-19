@@ -6,12 +6,14 @@ import Fuse from "fuse.js";
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Glyph } from "../../components/glyph/index.js";
 import { Check, Search } from "../../components/icons/index.js";
+import { ProviderIcon } from "../models/icons/index.js";
 import { useProvidersStore } from "../models/useProvidersStore.js";
 import { useIntroComposerStore } from "./useIntroComposerStore.js";
 
 interface ProviderGroup {
   id: string;
   name: string;
+  iconKey: string;
   isDefault: boolean;
   models: ModelInfo[];
 }
@@ -31,6 +33,7 @@ type ListRow =
       key: string;
       providerId: string;
       modelId: string;
+      iconKey: string;
       label: string;
       ctx: string | undefined;
       isActive: boolean;
@@ -105,11 +108,20 @@ export function PidModelPicker() {
       .map<ProviderGroup>((p) => ({
         id: p.id,
         name: p.name,
+        iconKey: p.iconKey,
         isDefault: defaultModel?.providerId === p.id,
         models: modelsByProvider[p.id] ?? [],
       }))
       .filter((g) => g.models.length > 0);
   }, [providers, modelsByProvider, defaultModel]);
+
+  // Icon for the currently selected model's provider — drives the brand glyph on the
+  // trigger button. Falls back to `undefined` when nothing is selected; the JSX then
+  // renders the legacy `π` mark so the chip never appears empty.
+  const activeIconKey = useMemo(() => {
+    if (!activeRef) return undefined;
+    return providers.find((p) => p.id === activeRef.providerId)?.iconKey;
+  }, [activeRef, providers]);
 
   const activeLabel = useMemo(() => {
     if (!activeRef) return "model";
@@ -166,6 +178,7 @@ export function PidModelPicker() {
           key,
           providerId: g.id,
           modelId: m.id,
+          iconKey: g.iconKey,
           label: m.label,
           ctx: formatContextWindow(m.contextWindow),
           isActive: key === activeKey,
@@ -270,9 +283,13 @@ export function PidModelPicker() {
     <RadixDropdown.Root open={open} onOpenChange={setOpen}>
       <RadixDropdown.Trigger asChild disabled={groups.length === 0}>
         <button type="button" className="pid-picker-trigger" aria-label="Select model">
-          <span className="pid-picker-trigger-pi" aria-hidden>
-            π
-          </span>
+          {activeIconKey ? (
+            <ProviderIcon iconKey={activeIconKey} size={14} className="pid-picker-trigger-icon" />
+          ) : (
+            <span className="pid-picker-trigger-pi" aria-hidden>
+              π
+            </span>
+          )}
           <span className="pid-picker-trigger-label">{activeLabel}</span>
           <Glyph kind="chevron-down" size={10} className="pid-picker-trigger-chev" />
         </button>
@@ -344,6 +361,7 @@ export function PidModelPicker() {
                         <button
                           type="button"
                           className="pid-model-menu-item"
+                          data-has-icon
                           data-active={row.isActive || undefined}
                           data-highlighted={row.key === highlightedKey || undefined}
                           onClick={() => onPick(row.providerId, row.modelId)}
@@ -351,6 +369,9 @@ export function PidModelPicker() {
                         >
                           <span className="pid-model-menu-item-check" aria-hidden>
                             {row.isActive ? <Check size={12} /> : null}
+                          </span>
+                          <span className="pid-model-menu-item-icon" aria-hidden>
+                            <ProviderIcon iconKey={row.iconKey} size={14} />
                           </span>
                           <span className="pid-model-menu-item-label">{row.label}</span>
                           {row.ctx && <span className="pid-model-menu-item-sub">{row.ctx}</span>}

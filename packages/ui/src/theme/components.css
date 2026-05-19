@@ -1802,6 +1802,13 @@
   width: 100%;
   text-align: left;
 }
+/* Model picker rows carry a provider icon between the check column and the label.
+   The attribute scopes the wider grid to just those rows so the branch picker — which
+   reuses `.pid-model-menu-item` for its own (check + label) rows — keeps the original
+   3-column layout. */
+.pid-model-menu-item[data-has-icon] {
+  grid-template-columns: 16px 16px 1fr auto;
+}
 .pid-model-menu-item[data-highlighted] {
   background: var(--bg-2);
   color: var(--ink-0);
@@ -1815,6 +1822,18 @@
   justify-content: center;
   color: var(--accent);
   width: 16px;
+}
+.pid-model-menu-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  color: var(--ink-2);
+  flex: 0 0 auto;
+}
+.pid-model-menu-item[data-highlighted] .pid-model-menu-item-icon,
+.pid-model-menu-item[data-active] .pid-model-menu-item-icon {
+  color: var(--ink-0);
 }
 .pid-model-menu-item-label {
   overflow: hidden;
