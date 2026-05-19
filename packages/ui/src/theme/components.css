@@ -1474,7 +1474,7 @@
 }
 .pid-composer-hero-mark-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -1620,7 +1620,6 @@
 }
 .pid-composer-template-title {
   font-family: var(--font-display);
-  font-style: italic;
   font-size: 22px;
   line-height: 1.2;
   color: var(--ink-0);
