@@ -11,6 +11,7 @@ export const EVENT_SESSION_TURN_END = "session.turn.end" as const;
 export const EVENT_SESSION_WORKER_EXIT = "session.worker.exit" as const;
 export const EVENT_SESSION_AGENT_EVENT = "session.agent.event" as const;
 export const EVENT_SESSION_MODEL_CHANGED = "session.model.changed" as const;
+export const EVENT_SESSION_TOOL_APPROVAL_REQUESTED = "session.tool.approval.requested" as const;
 export const EVENT_HOST_ERROR = "host.error" as const;
 export const EVENT_HOST_READY = "host.ready" as const;
 export const EVENT_THEME_CHANGED = "theme.changed" as const;
@@ -125,6 +126,21 @@ export const ProviderChangedPayload = z.object({
   providerId: z.string().optional(),
 });
 
+/**
+ * Emitted by the agent-mode plugin when a tool call needs explicit user approval. The renderer
+ * matches `toolCallId` against the live `session.tool.call.start` row to show an inline pill,
+ * then calls `session.toolApproval` with the `approvalId` and the user's decision.
+ */
+export const SessionToolApprovalRequestedPayload = z.object({
+  sessionId: z.string(),
+  approvalId: z.string().min(1),
+  toolCallId: z.string().min(1),
+  toolName: z.string().min(1),
+  input: z.unknown(),
+  /** Optional hint from the plugin (e.g. "Edit target outside the auto-approve allowlist."). */
+  reason: z.string().optional(),
+});
+
 export const EventSchemas = {
   [EVENT_SESSION_MESSAGE_DELTA]: SessionMessageDeltaPayload,
   [EVENT_SESSION_USER_MESSAGE]: SessionUserMessagePayload,
@@ -139,6 +155,7 @@ export const EventSchemas = {
   [EVENT_HOST_READY]: HostReadyPayload,
   [EVENT_THEME_CHANGED]: ThemeChangedPayload,
   [EVENT_PROVIDER_CHANGED]: ProviderChangedPayload,
+  [EVENT_SESSION_TOOL_APPROVAL_REQUESTED]: SessionToolApprovalRequestedPayload,
 } as const;
 
 export type EventTopic = keyof typeof EventSchemas;

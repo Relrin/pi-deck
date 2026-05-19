@@ -4,9 +4,17 @@ import {
   type AgentSessionEvent,
   AuthStorage,
   createAgentSession,
+  DefaultResourceLoader,
+  getAgentDir,
   ModelRegistry,
+  SettingsManager,
 } from "@earendil-works/pi-coding-agent";
-import type { SessionModelRef, ThinkingLevel } from "../domain/session.js";
+import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/session.js";
+import { type ApprovalDecision, createAgentModeExtension } from "../extensions/agent-mode/index.js";
+import { createAttachmentsExtension } from "../extensions/attachments/index.js";
+import { listProjectFiles } from "../host/git-runner.js";
+import type { PromptAttachment } from "../protocol/commands.js";
+import { EVENT_SESSION_TOOL_APPROVAL_REQUESTED } from "../protocol/events.js";
 import { validateAndChdir } from "./cwd.js";
 
 export type EventEmitter = (topic: string, payload: unknown) => void;
@@ -19,6 +27,14 @@ export interface AgentBridge {
   cancel: () => Promise<void>;
   setModel: (ref: SessionModelRef, thinkingLevel?: ThinkingLevel) => Promise<void>;
   setThinkingLevel: (level: ThinkingLevel) => void;
+  /** Switch agent mode for the next turn (and onwards, until called again). */
+  setAgentMode: (mode: AgentMode) => void;
+  /** Stage attachments to be materialized at the start of the next turn. */
+  setPendingAttachments: (attachments: PromptAttachment[]) => void;
+  /** Replace the auto-approve edit allowlist used by `accept-edits` mode. */
+  setEditAllowlist: (paths: string[]) => void;
+  /** Resolve a pending tool-call approval (allow / deny). */
+  resolveApproval: (approvalId: string, decision: ApprovalDecision, reason?: string) => void;
   dispose: () => void;
 }
 
@@ -27,6 +43,7 @@ export interface InitParams {
   sessionFile?: string;
   modelRef?: SessionModelRef;
   thinkingLevel?: ThinkingLevel;
+  agentMode?: AgentMode;
 }
 
 /**
@@ -64,10 +81,34 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
 
   const thinkingLevel = toPiThinkingLevel(params.thinkingLevel);
 
+  // Built-in plugins: agent-mode (enforce composer permissions) + attachments (materialize
+  // staged files into a custom message on the next turn). Each plugin owns its own state via
+  // its returned controller; agent-bridge composes them and exposes setters on AgentBridge.
+  const agentModeController = createAgentModeExtension({
+    projectPath: params.projectPath,
+    initialMode: params.agentMode ?? "plan",
+    onApprovalRequest: (request) => {
+      emit(EVENT_SESSION_TOOL_APPROVAL_REQUESTED, request);
+    },
+  });
+  const attachmentsController = createAttachmentsExtension({
+    projectPath: params.projectPath,
+    listProjectFiles: (cwd, limit) => listProjectFiles(cwd, limit),
+  });
+
+  const agentDir = getAgentDir();
+  const resourceLoader = new DefaultResourceLoader({
+    cwd: params.projectPath,
+    agentDir,
+    settingsManager: SettingsManager.create(params.projectPath, agentDir),
+    extensionFactories: [agentModeController.factory, attachmentsController.factory],
+  });
+
   const { session } = await createAgentSession({
     cwd: params.projectPath,
     authStorage,
     modelRegistry,
+    resourceLoader,
     ...(model ? { model } : {}),
     ...(thinkingLevel ? { thinkingLevel } : {}),
   });
@@ -106,8 +147,21 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
       // that genuinely want to disable thinking should pick a non-reasoning model.
       if (piLevel !== undefined) session.setThinkingLevel(piLevel);
     },
+    setAgentMode: (mode) => {
+      agentModeController.setMode(mode);
+    },
+    setPendingAttachments: (attachments) => {
+      attachmentsController.setPending(attachments);
+    },
+    setEditAllowlist: (paths) => {
+      agentModeController.setEditAllowlist(paths);
+    },
+    resolveApproval: (approvalId, decision, reason) => {
+      agentModeController.resolveApproval(approvalId, decision, reason);
+    },
     dispose: () => {
       unsubscribe();
+      agentModeController.dispose();
       session.dispose();
     },
   };

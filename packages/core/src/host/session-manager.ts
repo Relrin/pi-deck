@@ -1,10 +1,12 @@
 import { EventEmitter } from "node:events";
 import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/session.js";
+import type { ApprovalDecision } from "../extensions/agent-mode/index.js";
 import type { PromptAttachment } from "../protocol/commands.js";
 import {
   EVENT_HOST_ERROR,
   EVENT_SESSION_AGENT_EVENT,
   EVENT_SESSION_MESSAGE_DELTA,
+  EVENT_SESSION_TOOL_APPROVAL_REQUESTED,
   EVENT_SESSION_TOOL_CALL_END,
   EVENT_SESSION_TOOL_CALL_START,
   EVENT_SESSION_TOOL_CALL_UPDATE,
@@ -50,6 +52,9 @@ const WORKER_TOPIC_MAP: Record<string, EventTopic> = {
   "tool.call.end": EVENT_SESSION_TOOL_CALL_END,
   "turn.end": EVENT_SESSION_TURN_END,
   "agent.event": EVENT_SESSION_AGENT_EVENT,
+  // The agent-mode plugin emits this topic verbatim from the worker; we expose it under the
+  // canonical EventTopic name so renderer code subscribes via the same constant.
+  [EVENT_SESSION_TOOL_APPROVAL_REQUESTED]: EVENT_SESSION_TOOL_APPROVAL_REQUESTED,
 };
 
 export class SessionManager extends EventEmitter<SessionManagerEvents> {
@@ -129,6 +134,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       sessionFile: record.sessionFile,
       modelRef: record.modelRef,
       thinkingLevel: record.thinkingLevel,
+      agentMode: record.agentMode,
     })) as { sessionId: string; sessionFile: string };
 
     if (init.sessionId && init.sessionId !== record.id) {
@@ -157,13 +163,44 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     if (!record.worker?.isAlive) await this.activate(sessionId);
     const worker = record.worker;
     if (!worker) throw new Error("Worker not running");
-    if (opts?.agentMode) record.agentMode = opts.agentMode;
-    // TODO: enforce in agent loop. For now the agent worker only consumes `text`; attachments
-    // and agentMode are accepted on the wire and persisted on the session record but not yet
-    // forwarded into the agent's prompt context.
+
+    if (opts?.agentMode && opts.agentMode !== record.agentMode) {
+      record.agentMode = opts.agentMode;
+      await worker.request("setAgentMode", { mode: opts.agentMode });
+    }
+
+    if (opts?.attachments) {
+      await worker.request("setPendingAttachments", { attachments: opts.attachments });
+      // Auto-include the user's attached folders in the edit allowlist so `accept-edits` mode
+      // can act on them without prompting. The worker already starts with the project root in
+      // its allowlist (set up in agent-bridge.initBridge), so we extend rather than replace.
+      const folderRoots = opts.attachments.filter((a) => a.kind === "folder").map((a) => a.path);
+      if (folderRoots.length > 0) {
+        await worker.request("setEditAllowlist", {
+          paths: [record.projectPath, ...folderRoots],
+        });
+      }
+    }
+
     const result = (await worker.request("prompt", { text })) as { promptId: string };
     record.lastActivityAt = new Date().toISOString();
     return result;
+  }
+
+  /** Resolve a pending tool-call approval requested by the agent-mode plugin. */
+  async resolveApproval(
+    sessionId: string,
+    approvalId: string,
+    decision: ApprovalDecision,
+    reason?: string,
+  ): Promise<void> {
+    const record = this.sessions.get(sessionId);
+    if (!record) throw new Error(`Unknown session ${sessionId}`);
+    if (!record.worker?.isAlive) {
+      // A dead worker can't act on the approval; the renderer treats a stale pill as resolved.
+      return;
+    }
+    await record.worker.request("resolveApproval", { approvalId, decision, reason });
   }
 
   async cancel(sessionId: string): Promise<void> {

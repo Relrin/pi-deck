@@ -110,6 +110,16 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     await ctx.sessionManager.setThinkingLevel(parsed.sessionId, parsed.level);
     return { ok: true as const };
   },
+  "session.toolApproval": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.toolApproval"].request.parse(payload);
+    await ctx.sessionManager.resolveApproval(
+      parsed.sessionId,
+      parsed.approvalId,
+      parsed.decision,
+      parsed.reason,
+    );
+    return { ok: true as const };
+  },
   "project.listFiles": async (ctx, payload) => {
     const parsed = CommandSchemas["project.listFiles"].request.parse(payload);
     const project = await ctx.metadataStore.readProject(parsed.projectId);

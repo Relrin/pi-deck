@@ -92,6 +92,15 @@ export const SessionSetThinkingLevelRequest = z.object({
 });
 export const SessionSetThinkingLevelResponse = z.object({ ok: z.literal(true) });
 
+/** Renderer → host call resolving a `session.tool.approval.requested` event. */
+export const SessionToolApprovalRequest = z.object({
+  sessionId: z.string().min(1),
+  approvalId: z.string().min(1),
+  decision: z.enum(["allow", "deny"]),
+  reason: z.string().optional(),
+});
+export const SessionToolApprovalResponse = z.object({ ok: z.literal(true) });
+
 export const GitBranchInfoSchema = z.object({
   name: z.string().min(1),
   isCurrent: z.boolean(),
@@ -183,6 +192,10 @@ export const CommandSchemas = {
   "session.setThinkingLevel": {
     request: SessionSetThinkingLevelRequest,
     response: SessionSetThinkingLevelResponse,
+  },
+  "session.toolApproval": {
+    request: SessionToolApprovalRequest,
+    response: SessionToolApprovalResponse,
   },
   "git.listBranches": {
     request: GitListBranchesRequest,

@@ -1,5 +1,7 @@
-import type { SessionModelRef, ThinkingLevel } from "../domain/session.js";
+import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/session.js";
+import type { ApprovalDecision } from "../extensions/agent-mode/index.js";
 import { createJsonlReader, encodeJsonl } from "../host/jsonl.js";
+import type { PromptAttachment } from "../protocol/commands.js";
 import { type AgentBridge, initBridge } from "./agent-bridge.js";
 import { installLifecycleHandlers } from "./lifecycle.js";
 
@@ -32,6 +34,7 @@ async function handleRequest(frame: { id: string; cmd: string; payload: unknown 
           sessionFile?: string;
           modelRef?: SessionModelRef;
           thinkingLevel?: ThinkingLevel;
+          agentMode?: AgentMode;
         };
         bridge = await initBridge(params, emitEvent);
         sendOk(frame.id, { sessionId: bridge.sessionId, sessionFile: bridge.sessionFile });
@@ -64,6 +67,38 @@ async function handleRequest(frame: { id: string; cmd: string; payload: unknown 
         if (!bridge) throw new Error("Worker not initialized");
         const params = frame.payload as { level: ThinkingLevel };
         bridge.setThinkingLevel(params.level);
+        sendOk(frame.id, { ok: true });
+        return;
+      }
+      case "setAgentMode": {
+        if (!bridge) throw new Error("Worker not initialized");
+        const params = frame.payload as { mode: AgentMode };
+        bridge.setAgentMode(params.mode);
+        sendOk(frame.id, { ok: true });
+        return;
+      }
+      case "setPendingAttachments": {
+        if (!bridge) throw new Error("Worker not initialized");
+        const params = frame.payload as { attachments: PromptAttachment[] };
+        bridge.setPendingAttachments(params.attachments);
+        sendOk(frame.id, { ok: true });
+        return;
+      }
+      case "setEditAllowlist": {
+        if (!bridge) throw new Error("Worker not initialized");
+        const params = frame.payload as { paths: string[] };
+        bridge.setEditAllowlist(params.paths);
+        sendOk(frame.id, { ok: true });
+        return;
+      }
+      case "resolveApproval": {
+        if (!bridge) throw new Error("Worker not initialized");
+        const params = frame.payload as {
+          approvalId: string;
+          decision: ApprovalDecision;
+          reason?: string;
+        };
+        bridge.resolveApproval(params.approvalId, params.decision, params.reason);
         sendOk(frame.id, { ok: true });
         return;
       }
