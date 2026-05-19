@@ -21,15 +21,15 @@ describe("ToolCallCard", () => {
     expect(toggle).toBeInTheDocument();
   });
 
-  test("auto-expanded for running status", () => {
+  test("collapsed by default for running status", () => {
     render(<ToolCallCard call={call({ status: "running" })} />);
-    expect(screen.getByRole("button", { expanded: true })).toBeInTheDocument();
+    expect(screen.getByRole("button", { expanded: false })).toBeInTheDocument();
   });
 
-  test("auto-expanded for error status with the message visible", () => {
+  test("collapsed by default for error status; the error text stays visible in the stat column", () => {
     render(<ToolCallCard call={call({ status: "error", errorText: "permission denied" })} />);
-    expect(screen.getByRole("button", { expanded: true })).toBeInTheDocument();
-    expect(screen.getAllByText("permission denied").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { expanded: false })).toBeInTheDocument();
+    expect(screen.getByText("permission denied")).toBeInTheDocument();
   });
 
   test("clicking the header toggles expanded state", () => {

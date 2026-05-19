@@ -77,7 +77,7 @@ export function MessageList({ sessionId }: { sessionId: string }) {
     <div className="relative flex-1 min-h-0">
       <div
         ref={parentRef}
-        className="absolute inset-0 overflow-y-auto px-4 py-4"
+        className="pid-chat-body absolute inset-0 overflow-y-auto"
         data-testid="message-list-scroll"
       >
         <div

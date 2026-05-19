@@ -12,15 +12,26 @@ function call(name: string, input: unknown, result?: unknown): ToolCallEntry {
   return { id: "t", name, status: "done", startedAt: 1, input, result };
 }
 
+// The renderers intentionally do NOT repeat the path / pattern that the tool-call header
+// already shows (e.g. "READ · /a.ts"). These tests check the secondary detail that the
+// expanded body renders on top of the file output.
+
 describe("ReadRenderer", () => {
-  test("renders path chip and file body", () => {
+  test("renders file body", () => {
     render(
       <ReadRenderer
         call={call("read", { path: "/a.ts" }, { content: [{ type: "text", text: "file body" }] })}
       />,
     );
-    expect(screen.getByText("/a.ts")).toBeInTheDocument();
     expect(screen.getByLabelText("File contents").textContent).toContain("file body");
+  });
+
+  test("renders offset + limit when present", () => {
+    render(
+      <ReadRenderer call={call("read", { path: "/a.ts", offset: 40, limit: 80 }, undefined)} />,
+    );
+    expect(screen.getByText("offset 40")).toBeInTheDocument();
+    expect(screen.getByText("limit 80")).toBeInTheDocument();
   });
 
   test("summary truncates long paths in the middle and exposes the full path as title", () => {
@@ -31,9 +42,8 @@ describe("ReadRenderer", () => {
 });
 
 describe("WriteRenderer", () => {
-  test("renders path chip and content", () => {
+  test("renders content", () => {
     render(<WriteRenderer call={call("write", { path: "/a.ts", content: "new file body" })} />);
-    expect(screen.getByText("/a.ts")).toBeInTheDocument();
     expect(screen.getByLabelText("File contents to write").textContent).toContain("new file body");
   });
 
@@ -44,7 +54,7 @@ describe("WriteRenderer", () => {
 });
 
 describe("GrepRenderer", () => {
-  test("renders pattern and modifiers", () => {
+  test("renders modifiers (path / glob / case)", () => {
     render(
       <GrepRenderer
         call={call(
@@ -54,7 +64,6 @@ describe("GrepRenderer", () => {
         )}
       />,
     );
-    expect(screen.getByText("TODO")).toBeInTheDocument();
     expect(screen.getByText("in src")).toBeInTheDocument();
     expect(screen.getByText("glob *.ts")).toBeInTheDocument();
     expect(screen.getByText("case-insensitive")).toBeInTheDocument();
@@ -66,11 +75,10 @@ describe("GrepRenderer", () => {
 });
 
 describe("FindRenderer", () => {
-  test("renders pattern + path scope", () => {
+  test("renders the path scope", () => {
     render(
       <FindRenderer call={call("find", { pattern: "*.ts", path: "src" }, "src/a.ts\nsrc/b.ts")} />,
     );
-    expect(screen.getByText("*.ts")).toBeInTheDocument();
     expect(screen.getByText("in src")).toBeInTheDocument();
   });
 
@@ -80,9 +88,9 @@ describe("FindRenderer", () => {
 });
 
 describe("LsRenderer", () => {
-  test("renders the listed path", () => {
+  test("renders the directory listing body", () => {
     render(<LsRenderer call={call("ls", { path: "packages/ui" }, "src/\ntest/\n")} />);
-    expect(screen.getByText("packages/ui")).toBeInTheDocument();
+    expect(screen.getByLabelText("Directory listing").textContent).toContain("src/");
   });
 
   test("lsSummary defaults to '.' when no path", () => {

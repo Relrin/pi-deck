@@ -1,10 +1,11 @@
 import type { UserMessageEntry } from "../types.js";
 import { MessageContextMenu } from "./MessageContextMenu.js";
 import { MessageSurface } from "./MessageSurface.js";
+import { formatMessageTime } from "./time.js";
 
 export function UserMessage({ message }: { message: UserMessageEntry }) {
   return (
-    <MessageSurface align="right">
+    <MessageSurface kind="user" timestamp={formatMessageTime(message.createdAt)}>
       <MessageContextMenu rawText={message.text}>
         <pre
           className="whitespace-pre-wrap font-sans m-0 select-text"

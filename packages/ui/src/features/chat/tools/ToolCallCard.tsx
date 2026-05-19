@@ -7,15 +7,22 @@ import { DefaultRenderer } from "./renderers/DefaultRenderer.js";
 import { StatusIcon } from "./StatusIcon.js";
 import { getRenderer, getSummarizer } from "./ToolRendererRegistry.js";
 
+function statusStat(call: ToolCallEntry): { text: string; tone: "ok" | "error" } | undefined {
+  if (call.status === "done") return { text: "ok", tone: "ok" };
+  if (call.status === "error") {
+    return { text: call.errorText ?? "error", tone: "error" };
+  }
+  return undefined;
+}
+
 export function ToolCallCard({ call }: { call: ToolCallEntry }) {
-  const defaultExpanded =
-    call.status === "running" || call.status === "pending" || call.status === "error";
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  // Always start collapsed — the header row already shows tool name, summary, and
+  // status (incl. error text in the stat column). Users click to open the detail panel.
+  const [expanded, setExpanded] = useState(false);
   const Renderer = getRenderer(call.name) ?? DefaultRenderer;
   const summary = getSummarizer(call.name)?.(call.input);
 
   // Flash a subtle ring when this card first appears so the user spots the new activity.
-  // Triggered on the initial mount only; persists for TOOL_CARD_HIGHLIGHT_MS.
   const [highlight, setHighlight] = useState(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
@@ -25,52 +32,51 @@ export function ToolCallCard({ call }: { call: ToolCallEntry }) {
     };
   }, []);
 
+  const stat = statusStat(call);
+  const summaryText = summary?.text;
+  const summaryTitle = summary?.title ?? summaryText ?? call.name;
+
   return (
     <div
       className={cn(
-        "my-2 rounded-[var(--radius-md)] border bg-[var(--color-panel)] text-sm transition-shadow duration-300",
-        highlight
-          ? "border-[var(--color-accent)] motion-safe:shadow-[0_0_0_2px_color-mix(in_oklab,var(--color-accent)_30%,transparent)]"
-          : "border-[var(--color-border)]",
+        "pid-tool-row transition-shadow duration-300",
+        highlight &&
+          "motion-safe:shadow-[0_0_0_2px_color-mix(in_oklab,var(--accent)_30%,transparent)]",
       )}
+      style={highlight ? { borderColor: "var(--accent)" } : undefined}
     >
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
         aria-controls={`tool-call-body-${call.id}`}
-        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-[var(--color-panel-hover)] transition-colors rounded-t-[var(--radius-md)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+        className="pid-tool-row-head"
+        title={summaryTitle}
       >
-        {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        <span className="pid-tool-row-chev">
+          {expanded ? (
+            <ChevronDown size={12} aria-hidden />
+          ) : (
+            <ChevronRight size={12} aria-hidden />
+          )}
+        </span>
         <StatusIcon status={call.status} toolName={call.name} errorText={call.errorText} />
-        <span className="font-mono text-xs text-[var(--color-text)]">{call.name}</span>
-        {summary?.text && (
+        <span className="pid-tool-row-tag">{call.name}</span>
+        <span className="pid-tool-row-body">{summaryText ?? ""}</span>
+        {stat && (
           <span
-            className="font-mono text-xs text-[var(--color-text-muted)] truncate min-w-0"
-            title={summary.title ?? summary.text}
+            className="pid-tool-row-stat"
+            data-tone={stat.tone === "error" ? "error" : undefined}
           >
-            {summary.text}
-          </span>
-        )}
-        {call.status === "error" && call.errorText && (
-          <span
-            className="ml-auto text-xs text-[var(--color-danger)] truncate max-w-[24rem]"
-            title={call.errorText}
-          >
-            {call.errorText}
+            {stat.text}
           </span>
         )}
       </button>
-      <div
-        id={`tool-call-body-${call.id}`}
-        hidden={!expanded}
-        className={cn(
-          "border-t border-[var(--color-border)] p-3 text-xs",
-          expanded ? "block" : "hidden",
-        )}
-      >
-        <Renderer call={call} />
-      </div>
+      {expanded && (
+        <div id={`tool-call-body-${call.id}`} className="pid-tool-row-detail">
+          <Renderer call={call} />
+        </div>
+      )}
     </div>
   );
 }

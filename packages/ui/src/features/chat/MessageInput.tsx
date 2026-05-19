@@ -1,24 +1,22 @@
-import { type KeyboardEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Mic, Paperclip, Send, Square } from "../../components/icons/index.js";
-import { Button } from "../../components/ui/Button.legacy.js";
-import { IconButton } from "../../components/ui/IconButton.legacy.js";
-import { Tooltip } from "../../components/ui/Tooltip.js";
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Paperclip, Send, Square } from "../../components/icons/index.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { ContextUsageIndicator } from "./composer/ContextUsageIndicator.js";
-import { ExecutionModeMenu } from "./composer/ExecutionModeMenu.js";
-import { ModelMenu } from "./composer/ModelMenu.js";
+import { SessionAgentModePicker } from "./composer/SessionAgentModePicker.js";
+import { SessionEffortPicker } from "./composer/SessionEffortPicker.js";
+import { SessionModelPicker } from "./composer/SessionModelPicker.js";
+import { useComposerStore } from "./composer/useComposerStore.js";
 import { useDraftStore } from "./useDraftStore.js";
 import { selectTurnInFlight, useMessagesStore } from "./useMessagesStore.js";
 
-const MAX_ROWS = 12;
-const LINE_HEIGHT_PX = 20;
-const PLACEHOLDER = "Send a message…  (Enter to send, Shift/Ctrl+Enter for newline)";
+const PLACEHOLDER = "Send a message…  @ files · / commands · ! shell";
 
 export function MessageInput({ sessionId }: { sessionId: string }) {
   const [text, setText] = useState("");
   const isInFlight = useMessagesStore(useMemo(() => selectTurnInFlight(sessionId), [sessionId]));
   const sendPrompt = useSessionsStore((s) => s.sendPrompt);
   const cancelPrompt = useSessionsStore((s) => s.cancelPrompt);
+  const executionMode = useComposerStore((s) => s.executionMode);
   const pendingInsert = useDraftStore((s) => s.pendingInsert);
   const consumePendingInsert = useDraftStore((s) => s.consumePendingInsert);
   const ref = useRef<HTMLTextAreaElement | null>(null);
@@ -42,19 +40,8 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
     });
   }, [pendingInsert, consumePendingInsert]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure height when the typed text changes
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.height = "auto";
-    const maxHeight = LINE_HEIGHT_PX * MAX_ROWS;
-    el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`;
-  }, [text]);
-
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key !== "Enter") return;
-    // Plain Enter sends; Shift+Enter and Ctrl/Cmd+Enter fall through to the browser's
-    // default newline behavior.
     if (e.shiftKey || e.ctrlKey || e.metaKey) return;
     e.preventDefault();
     submit();
@@ -71,16 +58,15 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
 
   const dispatchPrompt = async (trimmed: string) => {
     try {
-      await sendPrompt(trimmed);
+      await sendPrompt(trimmed, { agentMode: executionMode });
     } catch {
-      // Errors surface via toast store from event router; leave text restored to user.
       setText(trimmed);
     }
   };
 
   return (
-    <div className="p-3">
-      <div className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-2 focus-within:border-[var(--color-accent)] transition-colors">
+    <div className="pid-chat-composer">
+      <div className="pid-composer-shell">
         <textarea
           ref={ref}
           value={text}
@@ -89,50 +75,46 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
           placeholder={PLACEHOLDER}
           aria-label="Message"
           aria-keyshortcuts="Enter"
-          rows={2}
-          className="resize-none border-0 bg-transparent px-1 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-subtle)] focus:outline-none font-sans leading-5"
+          rows={3}
+          className="pid-composer-input"
         />
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1">
-            <ExecutionModeMenu />
-            <Tooltip content="Attach files" side="top">
-              <IconButton label="Attach files" disabled>
-                <Paperclip size={14} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip content="Voice input" side="top">
-              <IconButton label="Voice input" disabled>
-                <Mic size={14} />
-              </IconButton>
-            </Tooltip>
-          </div>
-          <div className="flex items-center gap-1">
-            <ModelMenu />
-            <ContextUsageIndicator sessionId={sessionId} />
-            {isInFlight ? (
-              <Button
-                variant="danger"
-                onClick={() => void cancelPrompt()}
-                size="sm"
-                aria-label="Stop generating"
-              >
-                <Square size={12} />
-                Stop
-              </Button>
-            ) : (
-              <Button
-                variant="primary"
-                onClick={() => void submit()}
-                disabled={isEmpty}
-                size="sm"
-                aria-label="Send message"
-                title="Enter"
-              >
-                <Send size={12} />
-                Send
-              </Button>
-            )}
-          </div>
+        <div className="pid-composer-row">
+          <SessionAgentModePicker />
+          <button
+            type="button"
+            className="pid-picker-trigger pid-picker-trigger-icon-only"
+            aria-label="Attach (coming soon)"
+            disabled
+          >
+            <Paperclip size={14} aria-hidden />
+          </button>
+          <span className="pid-composer-row-spacer" />
+          <ContextUsageIndicator sessionId={sessionId} />
+          <SessionModelPicker sessionId={sessionId} />
+          <SessionEffortPicker sessionId={sessionId} />
+          {isInFlight ? (
+            <button
+              type="button"
+              onClick={() => void cancelPrompt()}
+              className="pid-composer-stop"
+              aria-label="Stop generating"
+            >
+              <Square size={12} aria-hidden />
+              <span>Stop</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void submit()}
+              disabled={isEmpty}
+              className="pid-composer-send"
+              aria-label="Send message"
+              title="Enter"
+            >
+              <Send size={12} aria-hidden />
+              <span>Send</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

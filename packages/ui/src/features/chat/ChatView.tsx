@@ -22,7 +22,7 @@ export function ChatView({ sessionId }: ChatViewProps) {
   }, [sessionId, activate]);
 
   return (
-    <div className="flex h-full w-full flex-col bg-[var(--color-bg)] text-[var(--color-text)] overflow-hidden">
+    <div className="flex h-full w-full flex-col bg-[var(--bg-0)] text-[var(--ink-0)] overflow-hidden">
       {session && <ChatHeader session={session} />}
       <MessageList sessionId={sessionId} />
       <MessageInput sessionId={sessionId} />

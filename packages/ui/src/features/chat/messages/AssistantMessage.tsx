@@ -5,6 +5,7 @@ import { Markdown } from "./Markdown.js";
 import { MessageContextMenu } from "./MessageContextMenu.js";
 import { MessageSurface } from "./MessageSurface.js";
 import { StreamingStatus } from "./StreamingStatus.js";
+import { formatMessageTime } from "./time.js";
 
 interface AssistantMessageProps {
   message: AssistantMessageEntry;
@@ -15,13 +16,10 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
   const toolCalls = useMessagesStore((s) => s.bySession[sessionId]?.toolCalls);
 
   return (
-    <MessageSurface align="left">
+    <MessageSurface kind="agent" timestamp={formatMessageTime(message.createdAt)}>
       <MessageContextMenu rawText={message.text}>
         <div className="select-text" data-selectable-message data-message-raw={message.text}>
           {message.text && (
-            // The same `<Markdown>` path runs whether streaming or complete; this kills the
-            // pre→markdown reflow on completion. While `isComplete` is false, fenced code
-            // renders as plain `<pre>` (no Shiki); the flag flips after `turn.end`.
             <div
               role="status"
               aria-live={message.isComplete ? undefined : "polite"}

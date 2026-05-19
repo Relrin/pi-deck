@@ -1,48 +1,50 @@
 import type { SessionSummary } from "@pi-deck/core/domain/session.js";
-import { useMemo, useState } from "react";
-import { ModelPicker } from "../models/ModelPicker.js";
-import { useProvidersStore } from "../models/useProvidersStore.js";
-import { ModelBadge } from "./ModelBadge.js";
-import { ThinkingLevelPicker } from "./ThinkingLevelPicker.js";
+import { useEffect, useMemo, useState } from "react";
+import { GitBranch } from "../../components/icons/index.js";
+import { relativeTime } from "../../lib/format/relative-time.js";
+import { useGitStore } from "../git/useGitStore.js";
+import { selectTurnInFlight, useMessagesStore } from "./useMessagesStore.js";
 
 interface ChatHeaderProps {
   session: SessionSummary;
 }
 
 export function ChatHeader({ session }: ChatHeaderProps) {
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const providers = useProvidersStore((s) => s.providers);
-  const modelsByProvider = useProvidersStore((s) => s.modelsByProvider);
-  const storeSelection = useProvidersStore((s) => s.sessionSelection[session.id]);
+  const isInFlight = useMessagesStore(useMemo(() => selectTurnInFlight(session.id), [session.id]));
+  const branch = useGitStore((s) => s.currentBranchByProject[session.projectId]);
 
-  const modelRef = storeSelection?.modelRef ?? session.modelRef;
-  const thinkingLevel = storeSelection?.thinkingLevel ?? session.thinkingLevel;
-
-  const provider = useMemo(
-    () => providers.find((p) => p.id === modelRef?.providerId),
-    [providers, modelRef?.providerId],
-  );
-  const model = useMemo(() => {
-    if (!modelRef) return undefined;
-    return modelsByProvider[modelRef.providerId]?.find((m) => m.id === modelRef.modelId);
-  }, [modelsByProvider, modelRef]);
+  // The "Xm ago" string is computed on every render, but ticks on its own so a stalled
+  // session doesn't read "just now" forever once the user is idle in the view.
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => forceTick((n) => n + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
-    <header className="flex h-10 items-center justify-between px-4 border-b border-[var(--line)] bg-[var(--bg-1)]">
-      <div className="min-w-0 flex-1">
-        <h2 className="text-sm font-medium text-[var(--ink-0)] truncate">{session.title}</h2>
+    <header className="pid-chat-header">
+      <div className="pid-chat-header-main">
+        <div className="pid-chat-header-title-row">
+          <span
+            className="pid-chat-header-status"
+            data-running={isInFlight || undefined}
+            aria-hidden
+          />
+          <h2 className="pid-chat-header-title" title={session.title}>
+            {session.title}
+          </h2>
+        </div>
+        <div className="pid-chat-header-meta">
+          {branch && (
+            <span className="pid-chat-header-meta-branch">
+              <GitBranch size={11} aria-hidden />
+              <span>{branch}</span>
+            </span>
+          )}
+          {branch && <span aria-hidden>·</span>}
+          <span>{relativeTime(session.lastActivityAt)}</span>
+        </div>
       </div>
-      <div className="ml-3 flex items-center gap-2">
-        <ModelBadge
-          modelRef={modelRef}
-          provider={provider}
-          modelLabel={model?.label}
-          thinkingLevel={thinkingLevel}
-          onOpenPicker={() => setPickerOpen(true)}
-        />
-        <ThinkingLevelPicker sessionId={session.id} model={model} level={thinkingLevel} />
-      </div>
-      <ModelPicker open={pickerOpen} onOpenChange={setPickerOpen} sessionId={session.id} />
     </header>
   );
 }

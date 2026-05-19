@@ -2,7 +2,6 @@ import { useState } from "react";
 import { cn } from "../../../../lib/cn.js";
 import { EDIT_RENDERER_COLLAPSED_EDITS } from "../../../../lib/ui-constants.js";
 import type { ToolRendererProps, ToolSummarizer } from "../types.js";
-import { Chip } from "./common.js";
 
 interface EditEntry {
   oldText?: string;
@@ -25,11 +24,8 @@ export function EditRenderer({ call }: ToolRendererProps) {
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2 text-[var(--color-text-muted)]">
-        <Chip title={input.path}>{input.path ?? "(no path)"}</Chip>
-        <span className="text-xs">
-          {edits.length} edit{edits.length === 1 ? "" : "s"}
-        </span>
+      <div className="text-[var(--color-text-muted)] text-xs">
+        {edits.length} edit{edits.length === 1 ? "" : "s"}
       </div>
       <div className="space-y-2">
         {visible.map((edit, idx) => (

@@ -2141,3 +2141,293 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+
+/* ============================================================
+   Chat session — header, log-style messages, tool rows, composer
+   ============================================================ */
+.pid-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-0);
+  flex: 0 0 auto;
+}
+.pid-chat-header-main {
+  min-width: 0;
+  flex: 1;
+}
+.pid-chat-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 2px;
+  min-width: 0;
+}
+.pid-chat-header-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  flex: 0 0 auto;
+}
+.pid-chat-header-status[data-running] {
+  background: var(--add);
+  box-shadow: 0 0 0 4px oklch(0.78 0.16 145 / 0.18);
+  animation: pid-pulse 1.6s ease-out infinite;
+}
+@keyframes pid-pulse {
+  0% {
+    box-shadow: 0 0 0 0 oklch(0.78 0.16 145 / 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 6px oklch(0.78 0.16 145 / 0);
+  }
+}
+.pid-chat-header-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1.2;
+  color: var(--ink-0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.pid-chat-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+.pid-chat-header-meta-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-1);
+}
+
+/* Chat body — log-style rows */
+.pid-chat-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 0 24px;
+  font-family: var(--font-mono);
+  font-size: var(--t-13);
+}
+/* Scrollbar matches the model picker's thin track for visual consistency with
+   other scrollable surfaces in the app. */
+.pid-chat-body::-webkit-scrollbar {
+  width: 6px;
+}
+.pid-chat-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pid-chat-body::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 3px;
+}
+.pid-chat-body::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
+}
+
+/* User / agent message rows */
+.pid-msg {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 24px 14px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.pid-msg[data-kind="user"] {
+  padding: 12px 24px 14px;
+  align-items: flex-end;
+}
+.pid-msg[data-kind="agent"] {
+  padding-left: 38px;
+  align-items: flex-start;
+}
+.pid-msg-bubble {
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.pid-msg[data-kind="user"] .pid-msg-bubble {
+  max-width: 72%;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg, 8px);
+  padding: 10px 14px;
+}
+/* Agent bubble stretches to the full available width so embedded tool-call rows
+   and renderer output take advantage of the chat column instead of collapsing to
+   the width of the agent's first text line. */
+.pid-msg[data-kind="agent"] .pid-msg-bubble {
+  width: 100%;
+}
+.pid-msg-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.pid-msg[data-kind="user"] .pid-msg-tag {
+  color: var(--accent);
+  justify-content: flex-end;
+}
+.pid-msg[data-kind="agent"] .pid-msg-tag {
+  color: var(--info);
+}
+.pid-msg-tag-time {
+  color: var(--ink-3);
+}
+.pid-msg-body {
+  color: var(--ink-0);
+  word-break: break-word;
+}
+.pid-msg-body pre {
+  white-space: pre-wrap;
+  font-family: inherit;
+  margin: 0;
+}
+
+/* Compact tool-call row (one-liner with TAG · BODY · STAT, expandable) */
+.pid-tool-row {
+  margin: 4px 24px 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-2);
+  overflow: hidden;
+}
+/* Inside an agent message, the bubble already inherits the chat's left indent so
+   the row uses negative-left margin to break flush with the chat-pane gutter and
+   span the full available width. */
+.pid-msg[data-kind="agent"] .pid-tool-row {
+  margin-left: -14px;
+  margin-right: 0;
+}
+.pid-tool-row-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 12px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.pid-tool-row-head:hover {
+  background: var(--bg-2);
+}
+.pid-tool-row-chev {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-3);
+  flex: 0 0 auto;
+}
+.pid-tool-row-tag {
+  color: var(--ink-3);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  min-width: 38px;
+  flex: 0 0 auto;
+}
+.pid-tool-row-body {
+  color: var(--ink-1);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pid-tool-row-stat {
+  color: var(--add);
+  font-size: 10px;
+  flex: 0 0 auto;
+}
+.pid-tool-row-stat[data-tone="error"] {
+  color: var(--del);
+}
+.pid-tool-row-detail {
+  border-top: 1px solid var(--line);
+  padding: 8px 12px;
+  background: var(--bg-0);
+}
+/* Match the chat-body / model-picker scrollbar treatment so the expanded renderer
+   surfaces (CodeBlock pre, DefaultRenderer sections, EditRenderer diffs) don't
+   show the default platform scrollbar inside a styled card. */
+.pid-tool-row-detail ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.pid-tool-row-detail ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pid-tool-row-detail ::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 3px;
+}
+.pid-tool-row-detail ::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
+}
+
+/* Composer in-chat (uses pid-composer-shell + pid-composer-input from the BLANK tab) */
+.pid-chat-composer {
+  padding: 14px 24px 18px;
+  background: transparent;
+  flex: 0 0 auto;
+}
+.pid-chat-composer .pid-composer-shell {
+  border-color: var(--line);
+}
+.pid-chat-composer .pid-composer-shell:focus-within {
+  border-color: var(--accent);
+}
+.pid-composer-context {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  background: transparent;
+  border: 0;
+  cursor: default;
+}
+.pid-composer-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: var(--radius, 4px);
+  border: 1px solid var(--del);
+  background: transparent;
+  color: var(--del);
+  font-family: var(--font-ui);
+  font-size: var(--t-12);
+  font-weight: 500;
+  cursor: pointer;
+}
+.pid-composer-stop:hover {
+  background: oklch(0.7 0.18 25 / 0.12);
+}
