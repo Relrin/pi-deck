@@ -18,6 +18,7 @@ interface FileEntry {
 }
 
 const RESULT_LIMIT = 20;
+const MAX_PICKS = 5;
 
 export function PidRepoFileSearchDialog({ open, onClose, onSelect }: PidRepoFileSearchDialogProps) {
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
@@ -85,11 +86,18 @@ export function PidRepoFileSearchDialog({ open, onClose, onSelect }: PidRepoFile
     setActiveIdx(0);
   }, [results]);
 
+  // Per-modal-session cap of MAX_PICKS. Adding past the cap is a silent no-op;
+  // deselection always works so the user can swap picks without resetting.
   const toggle = (path: string) => {
     setPicked((prev) => {
+      if (prev.has(path)) {
+        const next = new Set(prev);
+        next.delete(path);
+        return next;
+      }
+      if (prev.size >= MAX_PICKS) return prev;
       const next = new Set(prev);
-      if (next.has(path)) next.delete(path);
-      else next.add(path);
+      next.add(path);
       return next;
     });
   };
@@ -104,7 +112,11 @@ export function PidRepoFileSearchDialog({ open, onClose, onSelect }: PidRepoFile
     setQuery("");
   };
 
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+  // Attached to Dialog.Content so it fires regardless of which descendant has focus —
+  // previously the handler was on the <input>, but the input was rendered `disabled`
+  // during the brief initial load and never received the focus from `inputRef.focus()`,
+  // so arrow/Enter silently did nothing.
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setActiveIdx((i) => Math.min(i + 1, Math.max(0, results.length - 1)));
@@ -122,8 +134,11 @@ export function PidRepoFileSearchDialog({ open, onClose, onSelect }: PidRepoFile
     <RadixDialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="pid-dialog-overlay" />
-        <RadixDialog.Content className="pid-dialog pid-repo-search-dialog">
+        <RadixDialog.Content className="pid-dialog pid-repo-search-dialog" onKeyDown={onKeyDown}>
           <RadixDialog.Title className="sr-only">Reference from repo</RadixDialog.Title>
+          <RadixDialog.Description className="sr-only">
+            Search project files and attach up to {MAX_PICKS} as references for the next prompt.
+          </RadixDialog.Description>
           <div className="pid-repo-search-input-row">
             <Search size={14} className="pid-repo-search-input-icon" />
             <input
@@ -132,9 +147,7 @@ export function PidRepoFileSearchDialog({ open, onClose, onSelect }: PidRepoFile
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={onKeyDown}
               placeholder={loading ? "Loading project files…" : "Search files…"}
-              disabled={loading || !entries}
               aria-label="Search project files"
             />
             <button
@@ -158,6 +171,7 @@ export function PidRepoFileSearchDialog({ open, onClose, onSelect }: PidRepoFile
             {results.map((entry, ix) => {
               const isPicked = picked.has(entry.path);
               const isActive = ix === activeIdx;
+              const atCap = picked.size >= MAX_PICKS;
               return (
                 <button
                   key={entry.path}
@@ -165,6 +179,7 @@ export function PidRepoFileSearchDialog({ open, onClose, onSelect }: PidRepoFile
                   className="pid-repo-search-row"
                   data-active={isActive || undefined}
                   data-picked={isPicked || undefined}
+                  disabled={atCap && !isPicked}
                   onClick={() => toggle(entry.path)}
                   onMouseEnter={() => setActiveIdx(ix)}
                 >
@@ -178,7 +193,9 @@ export function PidRepoFileSearchDialog({ open, onClose, onSelect }: PidRepoFile
           </div>
           <div className="pid-repo-search-footer">
             <span className="pid-repo-search-hint">
-              {picked.size === 0 ? "↑↓ navigate · ↵ toggle" : `${picked.size} selected`}
+              {picked.size === 0
+                ? "↑↓ navigate · ↵ toggle"
+                : `${picked.size}/${MAX_PICKS} selected`}
             </span>
             <button
               type="button"

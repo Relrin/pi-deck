@@ -1459,6 +1459,19 @@
   display: flex;
   flex-direction: column;
 }
+.pid-composer-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg, 8px);
+  background: var(--bg-1);
+  padding: 12px 14px;
+}
+.pid-composer-shell:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
 .pid-composer-screen-inner > * + * {
   margin-top: 28px;
 }
@@ -1515,19 +1528,6 @@
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-}
-.pid-composer-shell {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg, 8px);
-  background: var(--bg-1);
-  padding: 12px 14px;
-}
-.pid-composer-shell:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 /* BLANK screen pulls the composer forward as the focal point — the in-session
    composer (ChatView / inline-empty-session) keeps the neutral border. */
@@ -2116,6 +2116,10 @@
 }
 .pid-repo-search-row[data-picked] .pid-repo-search-check {
   color: var(--accent);
+}
+.pid-repo-search-row:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 .pid-repo-search-path {
   overflow: hidden;

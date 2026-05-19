@@ -10,7 +10,6 @@ import {
 } from "react";
 import { Archive, Folder, Send, X } from "../../components/icons/index.js";
 import { PidChipPicker, type PidChipPickerOption } from "../../components/picker/PidChipPicker.js";
-import { isMacOs } from "../../lib/platform.js";
 import { useNavStore } from "../../lib/useNavStore.js";
 import { useToastStore } from "../_status/useToastStore.js";
 import { useGitStore } from "../git/useGitStore.js";
@@ -23,6 +22,7 @@ import { PidEffortPicker } from "./PidEffortPicker.js";
 import { PidModelPicker } from "./PidModelPicker.js";
 import { PidRepoFileSearchDialog } from "./PidRepoFileSearchDialog.js";
 import { INTRO_TEMPLATES } from "./templates.js";
+import { useAttachmentsHotkeys } from "./useAttachmentsHotkeys.js";
 import { useIntroComposerStore } from "./useIntroComposerStore.js";
 import { useRecentAttachmentsStore } from "./useRecentAttachmentsStore.js";
 
@@ -74,6 +74,11 @@ export function PidComposerScreen() {
   }, [attachAndRemember]);
 
   const openRepoSearch = useCallback(() => setRepoSearchOpen(true), []);
+
+  // Cmd/Ctrl+O and Cmd/Ctrl+Shift+O fire from anywhere on the screen — including while
+  // the attachments popover is open, where focus has left the textarea. The `@` shortcut
+  // stays in the textarea handler below since `@` is a literal character.
+  useAttachmentsHotkeys({ onChooseFiles: chooseFiles, onChooseFolder: chooseFolder });
 
   const projects = useProjectsStore((s) => s.projects);
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
@@ -163,18 +168,10 @@ export function PidComposerScreen() {
     useNavStore.getState().goToSession();
   };
 
-  // Keyboard shortcuts inside the composer textarea. Mirrors the kbd badges in the
-  // attachments popover so the visual hint matches the actual binding on this platform.
-  // `@` only fires at a word boundary so typing emails or mid-string `@` mentions still works.
+  // `@` at a word boundary opens the repo search modal. Cmd/Ctrl+O variants are owned
+  // by `useAttachmentsHotkeys` at window scope so they keep firing when focus leaves
+  // the textarea (e.g. while the attachments popover is open).
   const onComposerKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
-    const mod = isMacOs() ? event.metaKey : event.ctrlKey;
-    const key = event.key.toLowerCase();
-    if (mod && key === "o") {
-      event.preventDefault();
-      if (event.shiftKey) void chooseFolder();
-      else void chooseFiles();
-      return;
-    }
     if (event.key === "@" && !event.ctrlKey && !event.metaKey && !event.altKey) {
       const target = event.currentTarget;
       const caret = target.selectionStart ?? 0;
