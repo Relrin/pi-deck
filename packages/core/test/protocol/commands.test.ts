@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { CommandSchemas, GitCreateBranchRequest, GitCreateBranchResponse } from "./commands.js";
+import {
+  CommandSchemas,
+  GitCreateBranchRequest,
+  GitCreateBranchResponse,
+} from "../../src/protocol/commands.js";
 
 const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
 

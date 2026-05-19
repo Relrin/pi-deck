@@ -3,8 +3,8 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { BeforeAgentStartEventResult } from "@earendil-works/pi-coding-agent";
-import { createMockExtensionApi } from "../testing/mock-api.js";
-import { createAttachmentsExtension } from "./attachments.js";
+import { createAttachmentsExtension } from "../../../src/extensions/attachments/attachments.js";
+import { createMockExtensionApi } from "../helpers/mock-api.js";
 
 describe("createAttachmentsExtension", () => {
   let projectPath: string;

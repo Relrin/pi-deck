@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { PromptAttachment } from "../../protocol/commands.js";
-import { renderAttachmentsBlock } from "./render.js";
+import { renderAttachmentsBlock } from "../../../src/extensions/attachments/render.js";
+import type { PromptAttachment } from "../../../src/protocol/commands.js";
 
 describe("renderAttachmentsBlock", () => {
   let projectPath: string;

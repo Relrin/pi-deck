@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { isAbsolute, resolve } from "node:path";
 import type { ToolCallEvent, ToolCallEventResult } from "@earendil-works/pi-coding-agent";
-import { createMockExtensionApi } from "../testing/mock-api.js";
-import { createAgentModeExtension, type ToolApprovalRequest } from "./agent-mode.js";
+import {
+  createAgentModeExtension,
+  type ToolApprovalRequest,
+} from "../../../src/extensions/agent-mode/agent-mode.js";
+import { createMockExtensionApi } from "../helpers/mock-api.js";
 
 const PROJECT = isAbsolute("/repo") ? "/repo" : resolve("C:\\repo");
 

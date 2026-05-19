@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { isAbsolute, join, resolve, sep } from "node:path";
-import { decideToolCall, isEditPathAllowed } from "./decision.js";
+import { decideToolCall, isEditPathAllowed } from "../../../src/extensions/agent-mode/decision.js";
 
 const PROJECT = isAbsolute("/repo") ? "/repo" : resolve("C:\\repo");
 
