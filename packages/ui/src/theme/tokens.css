@@ -218,7 +218,11 @@
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
 
-  --font-display: var(--font-display);
-  --font-ui: var(--font-ui);
-  --font-mono: var(--font-mono);
+  /* Font stacks — literal values, NOT var() self-references. Self-referencing
+     (e.g. --font-display: var(--font-display)) is circular per CSS spec and resolves
+     to the guaranteed-invalid value, breaking font-family everywhere.
+     --font-sans sets Tailwind v4's preflight default (*) selector font. */
+  --font-sans: "Geist Variable", "Geist", -apple-system, "Helvetica Neue", sans-serif;
+  --font-display: "Instrument Serif", "Times New Roman", serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", "SF Mono", ui-monospace, monospace;
 }

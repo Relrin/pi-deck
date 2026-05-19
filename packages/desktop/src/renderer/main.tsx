@@ -1,3 +1,4 @@
+import "@pi-deck/ui/styles/fonts";
 import { App } from "@pi-deck/ui";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";

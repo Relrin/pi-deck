@@ -1,4 +1,3 @@
-@import "./fonts.css";
 @import "../theme/tokens.css";
 @import "../theme/shell.css";
 @import "../theme/components.css";
@@ -14,4 +13,5 @@ body {
   font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-synthesis: none;
 }
