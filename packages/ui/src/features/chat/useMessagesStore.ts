@@ -114,6 +114,24 @@ function newAssistant(now: number): AssistantMessageEntry {
   };
 }
 
+/**
+ * Pi only carries the resolved `model` on the assistant snapshot delivered via
+ * `message.delta` / `appendAssistantDelta`. When a new agent turn opens with a tool call
+ * BEFORE any text delta arrives (a common pi pattern between turns within one agent loop),
+ * `applyToolCallStart` is the first event we see and it creates a bubble that has no model
+ * attached — the UI then falls back to the "pi" label even though the user knows which
+ * model is running. Carrying the last known model forward keeps these continuation bubbles
+ * labelled correctly; the next `message.delta` (which does include `model`) will overwrite
+ * it if pi reports a different one mid-stream.
+ */
+function lastKnownAssistantModel(messages: MessageEntry[]): string | undefined {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m && m.kind === "assistant" && m.model) return m.model;
+  }
+  return undefined;
+}
+
 export const useMessagesStore = create<MessagesStoreState>((set) => ({
   bySession: {},
 
@@ -204,7 +222,9 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
         const fresh = newAssistant(Date.now());
         fresh.remoteTimestamp = remoteTimestamp;
         fresh.text = snapshotText;
-        fresh.model = snapshotModel;
+        // Prefer the model from the snapshot; otherwise carry the last known model forward
+        // so a turn that begins with a text delta (rare, but possible) still labels correctly.
+        fresh.model = snapshotModel ?? lastKnownAssistantModel(messages);
         messages.push(fresh);
       }
       return {
@@ -218,23 +238,41 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
   applyToolCallStart: (sessionId, { callId, name, input }) =>
     set((state) => {
       const session = getOrInit(state.bySession, sessionId);
+
+      // Pi sometimes re-emits `tool_execution_start` for a callId that we already attached
+      // to an earlier assistant bubble (e.g. when a new turn begins, the previous turn's
+      // tool history can be replayed). If we let the default path run again, the callId
+      // would be appended to a *second* bubble's `toolCallIds`, and the renderer would
+      // render the same ToolCallCard twice. Drop the event when the call is already known
+      // and attached — keep the existing entry's state (status, partialResult, result)
+      // exactly as is.
+      const alreadyAttached = session.messages.some(
+        (m) => m.kind === "assistant" && m.toolCallIds.includes(callId),
+      );
+      if (alreadyAttached) {
+        return state;
+      }
+
       const messages = [...session.messages];
       let idx = lastIncompleteAssistantIdx(messages);
       let current: AssistantMessageEntry;
       if (idx === -1) {
+        // No in-flight assistant — pi opened the new turn with a tool call, before any
+        // text delta arrived. Carry the previous turn's model so this continuation row
+        // doesn't fall back to the generic "pi" label. `appendAssistantDelta` will
+        // overwrite `model` from the snapshot once pi emits the first text delta.
         current = newAssistant(Date.now());
+        current.model = lastKnownAssistantModel(messages);
         messages.push(current);
         idx = messages.length - 1;
       } else {
         current = messages[idx] as AssistantMessageEntry;
       }
-      if (!current.toolCallIds.includes(callId)) {
-        const updated: AssistantMessageEntry = {
-          ...current,
-          toolCallIds: [...current.toolCallIds, callId],
-        };
-        messages[idx] = updated;
-      }
+      const updated: AssistantMessageEntry = {
+        ...current,
+        toolCallIds: [...current.toolCallIds, callId],
+      };
+      messages[idx] = updated;
       const entry: ToolCallEntry = {
         id: callId,
         name,

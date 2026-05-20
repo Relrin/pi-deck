@@ -208,6 +208,107 @@ describe("useMessagesStore — tool calls", () => {
   });
 });
 
+describe("useMessagesStore — tool-call replay dedup", () => {
+  beforeEach(reset);
+
+  test("a replayed tool_execution_start for an already-attached callId is a no-op (no second bubble, no double render)", () => {
+    // Turn 1: assistant text + a tool call attached to it.
+    useMessagesStore.getState().appendAssistantDelta(
+      SID,
+      {},
+      {
+        content: [{ type: "text", text: "running it" }],
+        model: "claude-sonnet-4-5",
+        timestamp: 1_000,
+      },
+    );
+    useMessagesStore
+      .getState()
+      .applyToolCallStart(SID, { callId: "abc", name: "write", input: { path: "x" } });
+    useMessagesStore
+      .getState()
+      .applyToolCallEnd(SID, { callId: "abc", result: "ok", isError: false });
+    useMessagesStore.getState().endTurn(SID, undefined);
+
+    const beforeReplay = useMessagesStore.getState().bySession[SID];
+    const entryBefore = beforeReplay?.toolCalls.abc;
+    expect(entryBefore?.status).toBe("done");
+
+    // Turn 2 opens with a replayed `tool_execution_start` for the SAME callId — pi can
+    // do this when the previous turn's history is rolled into the new turn's context.
+    useMessagesStore
+      .getState()
+      .applyToolCallStart(SID, { callId: "abc", name: "write", input: { path: "x" } });
+
+    const afterReplay = useMessagesStore.getState().bySession[SID];
+    // Still exactly one assistant bubble (no orphan continuation created for the dup).
+    expect(afterReplay?.messages.filter((m) => m.kind === "assistant")).toHaveLength(1);
+    // The single bubble carries `abc` exactly once.
+    const onlyAssistant = afterReplay?.messages.find((m) => m.kind === "assistant");
+    if (onlyAssistant?.kind !== "assistant") throw new Error("expected assistant");
+    expect(onlyAssistant.toolCallIds.filter((id) => id === "abc")).toHaveLength(1);
+    // And the entry's terminal status is preserved — we don't reset it back to "running".
+    expect(afterReplay?.toolCalls.abc?.status).toBe("done");
+  });
+});
+
+describe("useMessagesStore — model carry-over across turns", () => {
+  beforeEach(reset);
+
+  test("tool-only continuation bubble inherits the previous turn's model", () => {
+    // Turn 1: assistant streams text + model — captured from the snapshot.
+    useMessagesStore.getState().appendAssistantDelta(
+      SID,
+      {},
+      {
+        content: [{ type: "text", text: "Let me look." }],
+        model: "claude-sonnet-4-5",
+        timestamp: 1_000,
+      },
+    );
+    useMessagesStore.getState().endTurn(SID, undefined);
+
+    // Turn 2 opens with a tool call BEFORE any text delta — this used to create a
+    // model-less bubble that rendered as the generic "pi" label.
+    useMessagesStore.getState().applyToolCallStart(SID, { callId: "t1", name: "bash", input: {} });
+
+    const messages = useMessagesStore.getState().bySession[SID]?.messages ?? [];
+    const continuation = messages[messages.length - 1];
+    expect(continuation?.kind).toBe("assistant");
+    if (continuation?.kind !== "assistant") throw new Error("unreachable");
+    expect(continuation.model).toBe("claude-sonnet-4-5");
+  });
+
+  test("a later assistant delta still wins over the carried-forward model", () => {
+    useMessagesStore.getState().appendAssistantDelta(
+      SID,
+      {},
+      {
+        content: [{ type: "text", text: "" }],
+        model: "claude-sonnet-4-5",
+        timestamp: 1_000,
+      },
+    );
+    useMessagesStore.getState().endTurn(SID, undefined);
+    useMessagesStore.getState().applyToolCallStart(SID, { callId: "t1", name: "bash", input: {} });
+    // Now the actual text delta arrives, reporting a different model.
+    useMessagesStore.getState().appendAssistantDelta(
+      SID,
+      {},
+      {
+        content: [{ type: "text", text: "Switching models." }],
+        model: "kimi-k2-5",
+        timestamp: 2_000,
+      },
+    );
+    const messages = useMessagesStore.getState().bySession[SID]?.messages ?? [];
+    const last = messages[messages.length - 1];
+    expect(last?.kind).toBe("assistant");
+    if (last?.kind !== "assistant") throw new Error("unreachable");
+    expect(last.model).toBe("kimi-k2-5");
+  });
+});
+
 describe("useMessagesStore — session isolation", () => {
   beforeEach(reset);
 
