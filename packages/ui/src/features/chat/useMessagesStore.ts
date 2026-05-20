@@ -1,3 +1,4 @@
+import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
 import { create } from "zustand";
 import { USER_MESSAGE_DEDUP_WINDOW_MS } from "../../lib/ui-constants.js";
 import type {
@@ -17,7 +18,12 @@ interface MessagesStoreState {
   bySession: Record<string, SessionMessageState>;
   appendUserMessage: (
     sessionId: string,
-    p: { messageId: string; text: string; createdAt: number },
+    p: {
+      messageId: string;
+      text: string;
+      createdAt: number;
+      attachments?: PromptAttachment[];
+    },
   ) => void;
   appendAssistantDelta: (sessionId: string, deltaEvent: unknown, snapshot: unknown) => void;
   applyToolCallStart: (
@@ -135,7 +141,7 @@ function lastKnownAssistantModel(messages: MessageEntry[]): string | undefined {
 export const useMessagesStore = create<MessagesStoreState>((set) => ({
   bySession: {},
 
-  appendUserMessage: (sessionId, { messageId, text, createdAt }) =>
+  appendUserMessage: (sessionId, { messageId, text, createdAt, attachments }) =>
     set((state) => {
       const session = getOrInit(state.bySession, sessionId);
       // Dedup by id (replay), and by same-text within a short window — the renderer appends
@@ -157,7 +163,16 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
           ...state.bySession,
           [sessionId]: {
             ...session,
-            messages: [...session.messages, { kind: "user", id: messageId, text, createdAt }],
+            messages: [
+              ...session.messages,
+              {
+                kind: "user",
+                id: messageId,
+                text,
+                createdAt,
+                ...(attachments && attachments.length > 0 ? { attachments } : {}),
+              },
+            ],
             // Leave isTurnInFlight as-is: by the time the bridge echo arrives the turn may
             // already be complete, and we don't want to flip "Stop" back on.
           },

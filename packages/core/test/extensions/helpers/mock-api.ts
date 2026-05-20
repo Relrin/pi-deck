@@ -13,10 +13,13 @@ export interface MockExtensionApi extends ExtensionAPI {
   fire<R>(event: string, payload: unknown): Promise<R | undefined>;
   /** Names of events that have at least one registered handler. */
   handlers(): string[];
+  /** Custom entries appended via `pi.appendEntry()` — captured for assertions. */
+  appendedEntries(): { customType: string; data: unknown }[];
 }
 
 export function createMockExtensionApi(): MockExtensionApi {
   const handlers = new Map<string, Array<(event: unknown, ctx: ExtensionContext) => unknown>>();
+  const entries: { customType: string; data: unknown }[] = [];
 
   const proxy = new Proxy({} as Record<string, unknown>, {
     get(target, prop: string) {
@@ -36,6 +39,10 @@ export function createMockExtensionApi(): MockExtensionApi {
     handlers.set(event, list);
   }) as ExtensionAPI["on"];
 
+  proxy.appendEntry = ((customType: string, data?: unknown) => {
+    entries.push({ customType, data });
+  }) as ExtensionAPI["appendEntry"];
+
   proxy.fire = async <R>(event: string, payload: unknown): Promise<R | undefined> => {
     const list = handlers.get(event) ?? [];
     let last: unknown;
@@ -47,6 +54,7 @@ export function createMockExtensionApi(): MockExtensionApi {
   };
 
   proxy.handlers = () => [...handlers.keys()];
+  proxy.appendedEntries = () => [...entries];
 
   return proxy;
 }

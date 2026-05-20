@@ -2013,6 +2013,17 @@
   background: var(--bg-3);
   color: var(--ink-0);
 }
+/* Chips on a sent user-message bubble — no remove button, small bottom gap from text.
+   The accent border + soft fill distinguish them from the composer-staging variant so the
+   user can tell at a glance which files the agent received with the prompt. */
+.pid-user-attachments {
+  margin-bottom: 8px;
+}
+.pid-user-attachments .pid-composer-attachment {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--ink-0);
+}
 
 /* ---------- Repo file search dialog ---------- */
 .pid-dialog-overlay {

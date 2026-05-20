@@ -23,6 +23,46 @@ describe("UserMessage", () => {
     expect(el).not.toBeNull();
     expect(el?.getAttribute("data-message-raw")).toBe("hello");
   });
+
+  test("renders attachment chips when attachments are present", () => {
+    const message: UserMessageEntry = {
+      kind: "user",
+      id: "u-1",
+      text: "what are these?",
+      createdAt: 1,
+      attachments: [
+        { kind: "file", path: "/abs/path/demo_config.json" },
+        { kind: "folder", path: "src" },
+        { kind: "repo-ref", path: "packages/ui" },
+      ],
+    };
+    const { container } = render(<UserMessage message={message} />);
+    const chipRow = container.querySelector(".pid-user-attachments");
+    expect(chipRow).not.toBeNull();
+    const chips = chipRow?.querySelectorAll(".pid-composer-attachment") ?? [];
+    expect(chips.length).toBe(3);
+    expect(chips[0]?.textContent).toContain("demo_config.json");
+    expect(chips[1]?.textContent).toContain("src");
+    expect(chips[2]?.textContent).toContain("ui");
+    // No remove buttons in history — chips are immutable once sent.
+    expect(chipRow?.querySelector(".pid-composer-attachment-remove")).toBeNull();
+  });
+
+  test("omits the chip row when attachments are absent or empty", () => {
+    const withoutField = render(<UserMessage message={userMsg("hi")} />);
+    expect(withoutField.container.querySelector(".pid-user-attachments")).toBeNull();
+    withoutField.unmount();
+
+    const empty: UserMessageEntry = {
+      kind: "user",
+      id: "u-2",
+      text: "hi",
+      createdAt: 1,
+      attachments: [],
+    };
+    const { container } = render(<UserMessage message={empty} />);
+    expect(container.querySelector(".pid-user-attachments")).toBeNull();
+  });
 });
 
 describe("UserMessage — context menu", () => {

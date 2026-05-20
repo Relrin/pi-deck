@@ -103,6 +103,12 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     settingsManager: SettingsManager.create(params.projectPath, agentDir),
     extensionFactories: [agentModeController.factory, attachmentsController.factory],
   });
+  // pi 0.74's `createAgentSession` only auto-calls `reload()` on the loader it constructs
+  // itself; when we pass our own (which we must, to register the inline factories), we own
+  // the lifecycle. Without this call the factories never run, so `pi.on("input", ...)` and
+  // `pi.on("tool_call", ...)` are never registered and our built-in extensions are silent
+  // no-ops.
+  await resourceLoader.reload();
 
   const { session } = await createAgentSession({
     cwd: params.projectPath,
@@ -265,9 +271,9 @@ function extractMessageUsage(message: unknown): TokenUsageShape | undefined {
 }
 
 function extractUserText(content: unknown): string {
-  if (typeof content === "string") return content;
+  if (typeof content === "string") return stripAttachmentsBlock(content);
   if (!Array.isArray(content)) return "";
-  return content
+  const joined = content
     .filter(
       (block): block is { type: string; text: string } =>
         typeof block === "object" &&
@@ -277,4 +283,24 @@ function extractUserText(content: unknown): string {
     )
     .map((block) => block.text)
     .join("");
+  return stripAttachmentsBlock(joined);
+}
+
+/**
+ * The built-in attachments extension prepends an `<attachments>…</attachments>` block to
+ * the user's typed text via pi's `input` transform so the LLM sees attachments inside the
+ * same user turn (see `extensions/attachments/attachments.ts`). The renderer should still
+ * display only what the user actually typed, so strip a leading attachments block if one
+ * is present. Match is anchored to the start to avoid clobbering text where the user
+ * literally typed `<attachments>` later in the message.
+ */
+export function stripAttachmentsBlock(text: string): string {
+  if (!text.startsWith("<attachments>")) return text;
+  const end = text.indexOf("</attachments>");
+  if (end === -1) return text;
+  let cursor = end + "</attachments>".length;
+  // Consume the blank-line separator we emit between the block and the user's text.
+  if (text.startsWith("\n\n", cursor)) cursor += 2;
+  else if (text.startsWith("\n", cursor)) cursor += 1;
+  return text.slice(cursor);
 }

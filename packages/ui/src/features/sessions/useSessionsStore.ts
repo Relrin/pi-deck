@@ -231,11 +231,14 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         attachments: opts?.attachments,
       });
       // Optimistically append the user message immediately on ack. The bridge will later
-      // emit its own `user.message` event; the store dedups by text + time-window.
+      // emit its own `user.message` event; the store dedups by text + time-window. The
+      // attachments stay on the local entry so the user bubble can render the chips for
+      // what was sent.
       useMessagesStore.getState().appendUserMessage(id, {
         messageId: `u-local-${Date.now()}`,
         text,
         createdAt: Date.now(),
+        attachments: opts?.attachments,
       });
     } catch (err) {
       useMessagesStore.getState().markTurnInFlight(id, false);

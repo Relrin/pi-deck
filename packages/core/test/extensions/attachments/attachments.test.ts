@@ -2,8 +2,11 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { BeforeAgentStartEventResult } from "@earendil-works/pi-coding-agent";
-import { createAttachmentsExtension } from "../../../src/extensions/attachments/attachments.js";
+import type { InputEventResult } from "@earendil-works/pi-coding-agent";
+import {
+  ATTACHMENTS_ENTRY_TYPE,
+  createAttachmentsExtension,
+} from "../../../src/extensions/attachments/attachments.js";
 import { createMockExtensionApi } from "../helpers/mock-api.js";
 
 describe("createAttachmentsExtension", () => {
@@ -17,27 +20,66 @@ describe("createAttachmentsExtension", () => {
     await rm(projectPath, { recursive: true, force: true });
   });
 
-  test("before_agent_start emits a customMessage when pending attachments exist", async () => {
+  test("input event transforms the user text by prepending the attachments block", async () => {
     await writeFile(join(projectPath, "hello.ts"), "export const x = 1;\n");
     const controller = createAttachmentsExtension({ projectPath });
     const api = createMockExtensionApi();
     controller.factory(api);
 
     controller.setPending([{ kind: "file", path: "hello.ts" }]);
-    const result = await api.fire<BeforeAgentStartEventResult>("before_agent_start", {
-      type: "before_agent_start",
-      prompt: "hi",
-      systemPrompt: "",
-      systemPromptOptions: {} as never,
+    const result = await api.fire<InputEventResult>("input", {
+      type: "input",
+      text: "what does this file do?",
+      source: "interactive",
     });
 
     expect(result).toBeDefined();
-    expect(result?.message?.customType).toBe("pideck.attachments");
-    expect(typeof result?.message?.content).toBe("string");
-    expect(result?.message?.content).toContain('<file path="hello.ts">');
-    expect(result?.message?.details).toEqual({
-      attachments: [{ kind: "file", path: "hello.ts" }],
+    expect(result?.action).toBe("transform");
+    if (result?.action !== "transform") throw new Error("expected transform");
+    expect(result.text.startsWith("<attachments>")).toBe(true);
+    expect(result.text).toContain('<file path="hello.ts">');
+    expect(result.text.endsWith("what does this file do?")).toBe(true);
+    expect(result.text).toMatch(/<\/attachments>\n\nwhat does this file do\?$/);
+  });
+
+  test("forwards images through the transform unchanged", async () => {
+    await writeFile(join(projectPath, "hello.ts"), "export const x = 1;\n");
+    const controller = createAttachmentsExtension({ projectPath });
+    const api = createMockExtensionApi();
+    controller.factory(api);
+
+    controller.setPending([{ kind: "file", path: "hello.ts" }]);
+    const images = [{ type: "image", mimeType: "image/png", data: "abc" } as const];
+    const result = await api.fire<InputEventResult>("input", {
+      type: "input",
+      text: "describe",
+      images,
+      source: "interactive",
     });
+
+    if (result?.action !== "transform") throw new Error("expected transform");
+    expect(result.images).toEqual(images);
+  });
+
+  test("records the attachment snapshot via appendEntry", async () => {
+    await writeFile(join(projectPath, "hello.ts"), "export const x = 1;\n");
+    const controller = createAttachmentsExtension({ projectPath });
+    const api = createMockExtensionApi();
+    controller.factory(api);
+
+    controller.setPending([{ kind: "file", path: "hello.ts" }]);
+    await api.fire<InputEventResult>("input", {
+      type: "input",
+      text: "hi",
+      source: "interactive",
+    });
+
+    expect(api.appendedEntries()).toEqual([
+      {
+        customType: ATTACHMENTS_ENTRY_TYPE,
+        data: { attachments: [{ kind: "file", path: "hello.ts" }] },
+      },
+    ]);
   });
 
   test("pending queue is consumed after one turn", async () => {
@@ -49,23 +91,37 @@ describe("createAttachmentsExtension", () => {
     controller.setPending([{ kind: "file", path: "hello.ts" }]);
     expect(controller.getPending()).toHaveLength(1);
 
-    await api.fire("before_agent_start", {
-      type: "before_agent_start",
-      prompt: "hi",
-      systemPrompt: "",
-      systemPromptOptions: {} as never,
+    await api.fire<InputEventResult>("input", {
+      type: "input",
+      text: "hi",
+      source: "interactive",
     });
 
     expect(controller.getPending()).toHaveLength(0);
 
-    // Second turn with no setPending in between: handler returns undefined, no message.
-    const second = await api.fire("before_agent_start", {
-      type: "before_agent_start",
-      prompt: "next",
-      systemPrompt: "",
-      systemPromptOptions: {} as never,
+    // Second turn with no setPending in between: handler returns `continue`, no transform,
+    // no extra appendEntry call.
+    const second = await api.fire<InputEventResult>("input", {
+      type: "input",
+      text: "next",
+      source: "interactive",
     });
-    expect(second).toBeUndefined();
+    expect(second?.action).toBe("continue");
+    expect(api.appendedEntries()).toHaveLength(1);
+  });
+
+  test("returns continue when no attachments are pending", async () => {
+    const controller = createAttachmentsExtension({ projectPath });
+    const api = createMockExtensionApi();
+    controller.factory(api);
+
+    const result = await api.fire<InputEventResult>("input", {
+      type: "input",
+      text: "hi",
+      source: "interactive",
+    });
+    expect(result?.action).toBe("continue");
+    expect(api.appendedEntries()).toHaveLength(0);
   });
 
   test("setProjectPath retargets path resolution", async () => {
@@ -79,29 +135,15 @@ describe("createAttachmentsExtension", () => {
       controller.setProjectPath(otherProject);
       controller.setPending([{ kind: "file", path: "n.ts" }]);
 
-      const result = await api.fire<BeforeAgentStartEventResult>("before_agent_start", {
-        type: "before_agent_start",
-        prompt: "hi",
-        systemPrompt: "",
-        systemPromptOptions: {} as never,
+      const result = await api.fire<InputEventResult>("input", {
+        type: "input",
+        text: "hi",
+        source: "interactive",
       });
-      expect(result?.message?.content).toContain("// from other");
+      if (result?.action !== "transform") throw new Error("expected transform");
+      expect(result.text).toContain("// from other");
     } finally {
       await rm(otherProject, { recursive: true, force: true });
     }
-  });
-
-  test("returns undefined (no message) when only unresolvable entries were queued", async () => {
-    const controller = createAttachmentsExtension({ projectPath });
-    const api = createMockExtensionApi();
-    controller.factory(api);
-    controller.setPending([]);
-    const result = await api.fire<BeforeAgentStartEventResult>("before_agent_start", {
-      type: "before_agent_start",
-      prompt: "hi",
-      systemPrompt: "",
-      systemPromptOptions: {} as never,
-    });
-    expect(result).toBeUndefined();
   });
 });

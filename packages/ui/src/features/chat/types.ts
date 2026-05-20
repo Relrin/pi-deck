@@ -1,3 +1,5 @@
+import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
+
 export type ToolCallStatus = "pending" | "running" | "done" | "error" | "cancelled";
 
 export interface ToolCallEntry {
@@ -17,6 +19,8 @@ export interface UserMessageEntry {
   id: string;
   text: string;
   createdAt: number;
+  /** Files / folders / refs the user attached when sending this prompt. */
+  attachments?: PromptAttachment[];
 }
 
 export interface AssistantMessageEntry {
