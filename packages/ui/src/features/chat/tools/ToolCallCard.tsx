@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight } from "../../../components/icons/index.js";
 import { cn } from "../../../lib/cn.js";
 import { TOOL_CARD_HIGHLIGHT_MS } from "../../../lib/ui-constants.js";
@@ -22,15 +22,18 @@ export function ToolCallCard({ call }: { call: ToolCallEntry }) {
   const Renderer = getRenderer(call.name) ?? DefaultRenderer;
   const summary = getSummarizer(call.name)?.(call.input);
 
-  // Flash a subtle ring when this card first appears so the user spots the new activity.
-  const [highlight, setHighlight] = useState(true);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // Flash a subtle ring when the card first appears so the user spots new activity. The
+  // "new" window is measured against the call's stable `startedAt` — NOT the component's
+  // mount time — because the message list is virtualized: as the user scrolls, off-screen
+  // cards unmount and remount when they come back into view. Anchoring to mount time
+  // would re-flash long-finished calls every time the user scrolls past them.
+  const remainingHighlightMs = Math.max(0, TOOL_CARD_HIGHLIGHT_MS - (Date.now() - call.startedAt));
+  const [highlight, setHighlight] = useState(remainingHighlightMs > 0);
   useEffect(() => {
-    timerRef.current = setTimeout(() => setHighlight(false), TOOL_CARD_HIGHLIGHT_MS);
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
+    if (remainingHighlightMs === 0) return;
+    const timer = setTimeout(() => setHighlight(false), remainingHighlightMs);
+    return () => clearTimeout(timer);
+  }, [remainingHighlightMs]);
 
   const stat = statusStat(call);
   const summaryText = summary?.text;

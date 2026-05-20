@@ -54,4 +54,27 @@ describe("ToolCallCard", () => {
     const header = screen.getByRole("button", { expanded: false });
     expect(header.textContent).toContain("bash");
   });
+
+  // The MessageList is virtualized — tool cards unmount and remount as the user scrolls.
+  // The "newly arrived" highlight ring must NOT re-trigger every time a long-finished
+  // card scrolls back into view, otherwise scrolling up through a long conversation
+  // re-flashes every previously-completed step. The highlight window is anchored to the
+  // call's `startedAt`, not the component's mount time.
+  test("old calls remount without the highlight ring", () => {
+    const { container } = render(
+      <ToolCallCard call={call({ status: "done", startedAt: Date.now() - 10_000 })} />,
+    );
+    const row = container.querySelector(".pid-tool-row") as HTMLElement | null;
+    expect(row).not.toBeNull();
+    // No inline border colour means highlight is off.
+    expect(row?.style.borderColor).toBe("");
+  });
+
+  test("freshly started calls do flash the highlight ring", () => {
+    const { container } = render(
+      <ToolCallCard call={call({ status: "running", startedAt: Date.now() })} />,
+    );
+    const row = container.querySelector(".pid-tool-row") as HTMLElement | null;
+    expect(row?.style.borderColor).toContain("accent");
+  });
 });
