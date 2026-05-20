@@ -77,4 +77,26 @@ describe("ToolCallCard", () => {
     const row = container.querySelector(".pid-tool-row") as HTMLElement | null;
     expect(row?.style.borderColor).toContain("accent");
   });
+
+  // Regression: a card that's freshly mounted (highlight on) and then re-rendered after
+  // the highlight window has elapsed must NOT stay highlighted. A previous implementation
+  // depended on a per-render `Date.now()` value, so a re-render landing right at expiry
+  // would clear the pending timer and never flip the state to false. Here we simulate a
+  // re-render via the expand toggle and then assert the eventual cleared state.
+  test("highlight clears after the window even when the card re-renders mid-window", async () => {
+    const { container } = render(
+      <ToolCallCard call={call({ status: "running", startedAt: Date.now() })} />,
+    );
+    const row = container.querySelector(".pid-tool-row") as HTMLElement | null;
+    expect(row?.style.borderColor).toContain("accent");
+
+    // Cause a re-render by toggling the detail panel — neither call.startedAt nor the
+    // highlight state changes, so the effect must not re-run / clear the timer prematurely.
+    const toggle = screen.getByRole("button", { expanded: false });
+    fireEvent.click(toggle);
+
+    // Wait past TOOL_CARD_HIGHLIGHT_MS (1500 ms).
+    await new Promise((r) => setTimeout(r, 1700));
+    expect(row?.style.borderColor).toBe("");
+  });
 });

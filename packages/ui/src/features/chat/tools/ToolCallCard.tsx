@@ -23,17 +23,29 @@ export function ToolCallCard({ call }: { call: ToolCallEntry }) {
   const summary = getSummarizer(call.name)?.(call.input);
 
   // Flash a subtle ring when the card first appears so the user spots new activity. The
-  // "new" window is measured against the call's stable `startedAt` — NOT the component's
-  // mount time — because the message list is virtualized: as the user scrolls, off-screen
-  // cards unmount and remount when they come back into view. Anchoring to mount time
-  // would re-flash long-finished calls every time the user scrolls past them.
-  const remainingHighlightMs = Math.max(0, TOOL_CARD_HIGHLIGHT_MS - (Date.now() - call.startedAt));
-  const [highlight, setHighlight] = useState(remainingHighlightMs > 0);
+  // "new" window is anchored to the call's stable `startedAt` — NOT the component's mount
+  // time — because the message list is virtualized: off-screen cards unmount and remount
+  // when scrolled back into view. Anchoring to mount time would re-flash long-finished
+  // calls every time the user scrolls past them.
+  //
+  // The effect depends ONLY on `call.startedAt` (which never changes for a given call), so
+  // unrelated parent re-renders can't churn through cleanup/setup cycles and accidentally
+  // leave a fired timer un-replaced (the previous incarnation of this code depended on a
+  // per-render `Date.now()` value and would lock `highlight` to `true` if a re-render
+  // happened to land right as the window expired).
+  const [highlight, setHighlight] = useState(
+    () => Date.now() - call.startedAt < TOOL_CARD_HIGHLIGHT_MS,
+  );
   useEffect(() => {
-    if (remainingHighlightMs === 0) return;
-    const timer = setTimeout(() => setHighlight(false), remainingHighlightMs);
+    if (!highlight) return;
+    const remaining = TOOL_CARD_HIGHLIGHT_MS - (Date.now() - call.startedAt);
+    if (remaining <= 0) {
+      setHighlight(false);
+      return;
+    }
+    const timer = setTimeout(() => setHighlight(false), remaining);
     return () => clearTimeout(timer);
-  }, [remainingHighlightMs]);
+  }, [call.startedAt, highlight]);
 
   const stat = statusStat(call);
   const summaryText = summary?.text;
