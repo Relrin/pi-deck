@@ -2237,6 +2237,46 @@
   background: var(--line-strong);
 }
 
+/* "Jump to latest" pill — sits absolutely above the chat body when the user has scrolled
+   away from the bottom. The raised surface + soft shadow makes it readable against any
+   message content underneath. */
+.pid-jump-latest {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-2);
+  color: var(--ink-1);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: var(--shadow-pop);
+  transition:
+    background 80ms ease,
+    color 80ms ease,
+    border-color 80ms ease;
+}
+.pid-jump-latest:hover {
+  background: var(--bg-3);
+  color: var(--ink-0);
+  border-color: var(--accent-line);
+}
+.pid-jump-latest:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow:
+    var(--shadow-pop),
+    0 0 0 3px var(--accent-soft);
+}
+
 /* User / agent message rows */
 .pid-msg {
   display: flex;

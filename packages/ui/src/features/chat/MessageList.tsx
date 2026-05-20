@@ -119,10 +119,11 @@ export function MessageList({ sessionId }: { sessionId: string }) {
             el.scrollTop = el.scrollHeight;
             setStickToBottom(true);
           }}
-          className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--color-panel-2)] border border-[var(--color-border)] px-3 py-1 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          className="pid-jump-latest"
           aria-label="Jump to latest message"
         >
-          ↓ Jump to latest
+          <span aria-hidden>↓</span>
+          <span>Jump to latest</span>
         </button>
       )}
     </div>
