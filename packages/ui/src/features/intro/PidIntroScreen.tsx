@@ -1,6 +1,7 @@
-import { type FormEvent, useMemo } from "react";
+import { type FormEvent, type KeyboardEvent, useMemo } from "react";
 import { PidButton } from "../../components/buttons/PidButton";
 import { PidKbd } from "../../components/kbd/PidKbd";
+import { Tooltip } from "../../components/ui/Tooltip";
 import { useNavStore } from "../../lib/useNavStore";
 import { useToastStore } from "../_status/useToastStore";
 import { useProjectsStore } from "../sessions/useProjectsStore";
@@ -54,6 +55,16 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
     setText(body);
   };
 
+  // Enter submits the prompt; Shift/Ctrl/Cmd+Enter falls through to the textarea's default
+  // newline-insertion behaviour. Mirrors MessageInput (SESSION tab) and PidComposerScreen
+  // (BLANK tab) so the keyboard contract is identical across every composer in the app.
+  const onComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== "Enter") return;
+    if (event.shiftKey || event.ctrlKey || event.metaKey) return;
+    event.preventDefault();
+    event.currentTarget.form?.requestSubmit();
+  };
+
   const onRecent = (sessionId: string) => {
     useSessionsStore
       .getState()
@@ -91,19 +102,24 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
           placeholder="e.g. 'add a /share button to PostHeader that copies a tracked URL'"
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onKeyDown={onComposerKeyDown}
         />
         <div className="pid-intro-composer-footer">
           <span aria-hidden>
             {activeProject ? `${activeProject.displayName} · main` : "no project · main"}
           </span>
-          <PidButton
-            type="submit"
-            variant="primary"
-            disabled={!text.trim() || !activeProjectId}
-            longLabel
-          >
-            Dispatch
-          </PidButton>
+          <Tooltip content="Dispatch · Enter" side="top">
+            <PidButton
+              type="submit"
+              variant="primary"
+              disabled={!text.trim() || !activeProjectId}
+              longLabel
+              aria-label="Dispatch prompt"
+              aria-keyshortcuts="Enter"
+            >
+              Dispatch
+            </PidButton>
+          </Tooltip>
         </div>
       </form>
 

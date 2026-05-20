@@ -10,6 +10,7 @@ import {
 } from "react";
 import { Archive, Folder, Send, X } from "../../components/icons/index.js";
 import { PidChipPicker, type PidChipPickerOption } from "../../components/picker/PidChipPicker.js";
+import { Tooltip } from "../../components/ui/Tooltip.js";
 import { useNavStore } from "../../lib/useNavStore.js";
 import { useToastStore } from "../_status/useToastStore.js";
 import { useGitStore } from "../git/useGitStore.js";
@@ -168,10 +169,21 @@ export function PidComposerScreen() {
     useNavStore.getState().goToSession();
   };
 
-  // `@` at a word boundary opens the repo search modal. Cmd/Ctrl+O variants are owned
-  // by `useAttachmentsHotkeys` at window scope so they keep firing when focus leaves
-  // the textarea (e.g. while the attachments popover is open).
+  // Composer key handling:
+  //   - plain Enter submits the prompt (matches MessageInput on the SESSION tab)
+  //   - Shift+Enter / Ctrl+Enter / Cmd+Enter fall through to the textarea's default
+  //     newline-insertion behaviour
+  //   - `@` at a word boundary opens the repo-search modal
+  // Cmd/Ctrl+O variants are owned by `useAttachmentsHotkeys` at window scope so they
+  // keep firing when focus leaves the textarea (e.g. while the attachments popover is open).
   const onComposerKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+      event.preventDefault();
+      // requestSubmit fires the form's `onSubmit`, including any HTML validity check,
+      // instead of calling the handler directly — keeps a single source of truth.
+      event.currentTarget.form?.requestSubmit();
+      return;
+    }
     if (event.key === "@" && !event.ctrlKey && !event.metaKey && !event.altKey) {
       const target = event.currentTarget;
       const caret = target.selectionStart ?? 0;
@@ -262,14 +274,18 @@ export function PidComposerScreen() {
             <span className="pid-composer-row-spacer" />
             <PidModelPicker />
             <PidEffortPicker />
-            <button
-              type="submit"
-              className="pid-composer-send"
-              disabled={!text.trim() || !activeProjectId}
-            >
-              <Send size={12} aria-hidden />
-              <span>Send</span>
-            </button>
+            <Tooltip content="Send message · Enter" side="top">
+              <button
+                type="submit"
+                className="pid-composer-send"
+                disabled={!text.trim() || !activeProjectId}
+                aria-label="Send message"
+                aria-keyshortcuts="Enter"
+              >
+                <Send size={12} aria-hidden />
+                <span>Send</span>
+              </button>
+            </Tooltip>
           </div>
         </form>
 

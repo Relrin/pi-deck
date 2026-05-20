@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
-import { fireEvent, render, screen } from "../../../test/utils";
+import { fireEvent, render, screen, userEvent } from "../../../test/utils";
 import { useNavStore } from "../../lib/useNavStore";
 import { useProjectsStore } from "../sessions/useProjectsStore";
 import { useSessionsStore } from "../sessions/useSessionsStore";
@@ -43,7 +43,13 @@ function seedSessions() {
   }));
 }
 
+// Snapshot the real store actions once so each test can mock freely and still leave the
+// store clean for sibling test files (Zustand setState is a partial merge — restoring only
+// activateSession would leave my createSession / sendPrompt mocks lying around for the
+// next test file that exercises the real `useSessionsStore`).
 const originalActivate = useSessionsStore.getState().activateSession;
+const originalCreateSession = useSessionsStore.getState().createSession;
+const originalSendPrompt = useSessionsStore.getState().sendPrompt;
 
 beforeEach(() => {
   useIntroComposerStore.setState({ text: "" });
@@ -57,7 +63,12 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  useSessionsStore.setState((prev) => ({ ...prev, activateSession: originalActivate }));
+  useSessionsStore.setState((prev) => ({
+    ...prev,
+    activateSession: originalActivate,
+    createSession: originalCreateSession,
+    sendPrompt: originalSendPrompt,
+  }));
 });
 
 describe("PidIntroScreen", () => {
@@ -96,5 +107,54 @@ describe("PidIntroScreen", () => {
 
     expect(activate).toHaveBeenCalledWith("sess-1");
     expect(useNavStore.getState().screen).toBe("session");
+  });
+
+  // Keyboard contract: Enter submits, Shift+Enter inserts a newline. Mirrors MessageInput
+  // (SESSION tab) so the composer behaves identically wherever it appears.
+  test("plain Enter on the composer submits the prompt", async () => {
+    let createdProject: string | undefined;
+    let sentText: string | undefined;
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      createSession: (async (projectId: string) => {
+        createdProject = projectId;
+      }) as never,
+      sendPrompt: (async (text: string) => {
+        sentText = text;
+      }) as never,
+    }));
+    useIntroComposerStore.setState({ text: "ship it" });
+
+    const user = userEvent.setup();
+    render(<PidIntroScreen variant="fullscreen" />);
+    const textarea = screen.getByLabelText("New prompt");
+    textarea.focus();
+    await user.keyboard("{Enter}");
+
+    expect(createdProject).toBe("proj-1");
+    expect(sentText).toBe("ship it");
+  });
+
+  test("Shift+Enter on the composer inserts a newline and does NOT submit", async () => {
+    let sentText: string | undefined;
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      sendPrompt: (async (text: string) => {
+        sentText = text;
+      }) as never,
+    }));
+    useIntroComposerStore.setState({ text: "line 1" });
+
+    const user = userEvent.setup();
+    render(<PidIntroScreen variant="fullscreen" />);
+    const textarea = screen.getByLabelText("New prompt") as HTMLTextAreaElement;
+    textarea.focus();
+    // Move caret to end of the controlled value.
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    await user.keyboard("{Shift>}{Enter}{/Shift}");
+    await user.type(textarea, "line 2");
+
+    expect(sentText).toBeUndefined();
+    expect(useIntroComposerStore.getState().text).toBe("line 1\nline 2");
   });
 });
