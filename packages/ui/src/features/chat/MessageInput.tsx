@@ -1,5 +1,6 @@
-import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Paperclip, Send, Square } from "../../components/icons/index.js";
+import { Tooltip } from "../../components/ui/Tooltip.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { ContextUsageIndicator } from "./composer/ContextUsageIndicator.js";
 import { SessionAgentModePicker } from "./composer/SessionAgentModePicker.js";
@@ -39,6 +40,27 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
       el.setSelectionRange(el.value.length, el.value.length);
     });
   }, [pendingInsert, consumePendingInsert]);
+
+  const cancel = useCallback(() => {
+    void cancelPrompt();
+  }, [cancelPrompt]);
+
+  // Esc cancels the in-flight turn. Mounted globally while a turn is in flight so the user
+  // can interrupt from anywhere in the app, not only from the textarea. Skips when:
+  //   - a modifier is held (lets system shortcuts like Cmd+Esc still work);
+  //   - the event has already been handled (e.g. Radix dropdown / dialog closed first).
+  useEffect(() => {
+    if (!isInFlight) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (e.defaultPrevented) return;
+      if (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return;
+      e.preventDefault();
+      cancel();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isInFlight, cancel]);
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key !== "Enter") return;
@@ -93,27 +115,32 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
           <SessionModelPicker sessionId={sessionId} />
           <SessionEffortPicker sessionId={sessionId} />
           {isInFlight ? (
-            <button
-              type="button"
-              onClick={() => void cancelPrompt()}
-              className="pid-composer-stop"
-              aria-label="Stop generating"
-            >
-              <Square size={12} aria-hidden />
-              <span>Stop</span>
-            </button>
+            <Tooltip content="Stop generating · Esc" side="top">
+              <button
+                type="button"
+                onClick={cancel}
+                className="pid-composer-stop"
+                aria-label="Stop generating"
+                aria-keyshortcuts="Escape"
+              >
+                <Square size={12} aria-hidden />
+                <span>Stop</span>
+              </button>
+            </Tooltip>
           ) : (
-            <button
-              type="button"
-              onClick={() => void submit()}
-              disabled={isEmpty}
-              className="pid-composer-send"
-              aria-label="Send message"
-              title="Enter"
-            >
-              <Send size={12} aria-hidden />
-              <span>Send</span>
-            </button>
+            <Tooltip content="Send message · Enter" side="top">
+              <button
+                type="button"
+                onClick={() => void submit()}
+                disabled={isEmpty}
+                className="pid-composer-send"
+                aria-label="Send message"
+                aria-keyshortcuts="Enter"
+              >
+                <Send size={12} aria-hidden />
+                <span>Send</span>
+              </button>
+            </Tooltip>
           )}
         </div>
       </div>

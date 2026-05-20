@@ -129,4 +129,48 @@ describe("MessageInput", () => {
     await user.click(stop);
     expect(cancelled).toBe(true);
   });
+
+  test("Stop button advertises the Esc shortcut to assistive tech", () => {
+    useMessagesStore.setState({
+      bySession: {
+        [SID]: { messages: [], toolCalls: {}, isTurnInFlight: true },
+      },
+    });
+    render(<MessageInput sessionId={SID} />);
+    const stop = screen.getByRole("button", { name: "Stop generating" });
+    expect(stop.getAttribute("aria-keyshortcuts")).toBe("Escape");
+  });
+
+  test("Esc cancels the in-flight turn from anywhere on the page", async () => {
+    useMessagesStore.setState({
+      bySession: {
+        [SID]: { messages: [], toolCalls: {}, isTurnInFlight: true },
+      },
+    });
+    let cancelled = false;
+    useSessionsStore.setState({
+      cancelPrompt: (async () => {
+        cancelled = true;
+      }) as never,
+    });
+    const user = userEvent.setup();
+    render(<MessageInput sessionId={SID} />);
+    // Focus is on document.body — confirming Esc works even when focus isn't on the
+    // textarea or the Stop button (the listener is on document).
+    await user.keyboard("{Escape}");
+    expect(cancelled).toBe(true);
+  });
+
+  test("Esc is ignored when no turn is in flight (no spurious cancelPrompt)", async () => {
+    let cancelled = false;
+    useSessionsStore.setState({
+      cancelPrompt: (async () => {
+        cancelled = true;
+      }) as never,
+    });
+    const user = userEvent.setup();
+    render(<MessageInput sessionId={SID} />);
+    await user.keyboard("{Escape}");
+    expect(cancelled).toBe(false);
+  });
 });
