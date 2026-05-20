@@ -6,11 +6,28 @@ import {
 } from "../../lib/ui-constants.js";
 import { AssistantMessage } from "./messages/AssistantMessage.js";
 import { UserMessage } from "./messages/UserMessage.js";
+import type { MessageEntry } from "./types.js";
 import { selectMessages, useMessagesStore } from "./useMessagesStore.js";
 import { useScrollPositionStore } from "./useScrollPositionStore.js";
 
+/**
+ * Pi sometimes terminates an agent loop with a trailing `message_update` that carries an
+ * empty snapshot (`content: []`) and is then closed out by `turn_end`. The store dutifully
+ * materialises that into an assistant entry — but with no text and no attached tool calls,
+ * the only thing visible would be the "MODEL · HH:MM:SS" tag row, dangling at the bottom
+ * of the chat. Hide those completed empties at the render layer so they don't show up as
+ * mysterious time-only stubs. While still streaming, the bubble can stay (it'll be filled
+ * in or surface a StreamingStatus indicator inside AssistantMessage).
+ */
+export function isRenderableMessage(m: MessageEntry): boolean {
+  if (m.kind !== "assistant") return true;
+  if (!m.isComplete) return true;
+  return m.text.length > 0 || m.toolCallIds.length > 0;
+}
+
 export function MessageList({ sessionId }: { sessionId: string }) {
-  const messages = useMessagesStore(useMemo(() => selectMessages(sessionId), [sessionId]));
+  const allMessages = useMessagesStore(useMemo(() => selectMessages(sessionId), [sessionId]));
+  const messages = useMemo(() => allMessages.filter(isRenderableMessage), [allMessages]);
   const parentRef = useRef<HTMLDivElement | null>(null);
   const [stickToBottom, setStickToBottom] = useState(true);
   const snapshotScroll = useScrollPositionStore((s) => s.snapshot);
