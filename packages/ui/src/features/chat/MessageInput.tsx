@@ -1,6 +1,13 @@
+import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Paperclip, Send, Square } from "../../components/icons/index.js";
+import { Folder, Send, Square, X } from "../../components/icons/index.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
+import { useToastStore } from "../_status/useToastStore.js";
+import { PidAttachmentsPicker } from "../intro/PidAttachmentsPicker.js";
+import { PidRepoFileSearchDialog } from "../intro/PidRepoFileSearchDialog.js";
+import { useAttachmentsHotkeys } from "../intro/useAttachmentsHotkeys.js";
+import { useIntroComposerStore } from "../intro/useIntroComposerStore.js";
+import { useRecentAttachmentsStore } from "../intro/useRecentAttachmentsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { ContextUsageIndicator } from "./composer/ContextUsageIndicator.js";
 import { SessionAgentModePicker } from "./composer/SessionAgentModePicker.js";
@@ -20,6 +27,17 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   const executionMode = useComposerStore((s) => s.executionMode);
   const pendingInsert = useDraftStore((s) => s.pendingInsert);
   const consumePendingInsert = useDraftStore((s) => s.consumePendingInsert);
+
+  // Attachments share the intro composer store: the BLANK tab and SESSION tab both consume
+  // the same "next prompt attachments" queue, so files staged from one surface survive
+  // navigation between the two. The list is cleared after a successful Send.
+  const attachments = useIntroComposerStore((s) => s.attachments);
+  const addAttachments = useIntroComposerStore((s) => s.addAttachments);
+  const removeAttachment = useIntroComposerStore((s) => s.removeAttachment);
+  const clearAttachments = useIntroComposerStore((s) => s.clearAttachments);
+  const pushRecent = useRecentAttachmentsStore((s) => s.push);
+
+  const [repoSearchOpen, setRepoSearchOpen] = useState(false);
   const ref = useRef<HTMLTextAreaElement | null>(null);
 
   // "Attach selection to next prompt" pushes through useDraftStore; consume it into the
@@ -41,14 +59,49 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
     });
   }, [pendingInsert, consumePendingInsert]);
 
+  const attachAndRemember = useCallback(
+    (next: PromptAttachment[]) => {
+      if (next.length === 0) return;
+      addAttachments(next);
+      for (const a of next) pushRecent(a);
+    },
+    [addAttachments, pushRecent],
+  );
+
+  const chooseFiles = useCallback(async () => {
+    const picker = window.bridge?.openFiles;
+    if (!picker) {
+      useToastStore.getState().push("File picker unavailable in this build", "error");
+      return;
+    }
+    const paths = await picker();
+    if (paths.length === 0) return;
+    attachAndRemember(paths.map((path) => ({ kind: "file" as const, path })));
+  }, [attachAndRemember]);
+
+  const chooseFolder = useCallback(async () => {
+    const picker = window.bridge?.openDirectory;
+    if (!picker) {
+      useToastStore.getState().push("Folder picker unavailable in this build", "error");
+      return;
+    }
+    const path = await picker();
+    if (!path) return;
+    attachAndRemember([{ kind: "folder", path }]);
+  }, [attachAndRemember]);
+
+  const openRepoSearch = useCallback(() => setRepoSearchOpen(true), []);
+
+  // Cmd/Ctrl+O and Cmd/Ctrl+Shift+O fire at window scope so they keep working while the
+  // attachments popover or any modal portal has focus. (Mirrors the BLANK tab.)
+  useAttachmentsHotkeys({ onChooseFiles: chooseFiles, onChooseFolder: chooseFolder });
+
   const cancel = useCallback(() => {
     void cancelPrompt();
   }, [cancelPrompt]);
 
   // Esc cancels the in-flight turn. Mounted globally while a turn is in flight so the user
-  // can interrupt from anywhere in the app, not only from the textarea. Skips when:
-  //   - a modifier is held (lets system shortcuts like Cmd+Esc still work);
-  //   - the event has already been handled (e.g. Radix dropdown / dialog closed first).
+  // can interrupt from anywhere in the app, not only from the textarea.
   useEffect(() => {
     if (!isInFlight) return;
     const onKey = (e: globalThis.KeyboardEvent) => {
@@ -63,6 +116,18 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   }, [isInFlight, cancel]);
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // `@` at a word boundary opens the repo file search modal — same UX as BLANK tab.
+    if (e.key === "@" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const target = e.currentTarget;
+      const caret = target.selectionStart ?? 0;
+      const prev = caret > 0 ? target.value[caret - 1] : "";
+      const atBoundary = caret === 0 || !prev || /\s/.test(prev);
+      if (atBoundary) {
+        e.preventDefault();
+        openRepoSearch();
+        return;
+      }
+    }
     if (e.key !== "Enter") return;
     if (e.shiftKey || e.ctrlKey || e.metaKey) return;
     e.preventDefault();
@@ -74,21 +139,51 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   const submit = () => {
     const trimmed = text.trim();
     if (!trimmed || isInFlight) return;
+    // Snapshot the attachments BEFORE we optimistically clear the input — if the send
+    // fails we restore the text but also need to know what to forward to pi.
+    const sending = attachments.slice();
     setText("");
-    void dispatchPrompt(trimmed);
+    clearAttachments();
+    void dispatchPrompt(trimmed, sending);
   };
 
-  const dispatchPrompt = async (trimmed: string) => {
+  const dispatchPrompt = async (trimmed: string, sending: PromptAttachment[]) => {
     try {
-      await sendPrompt(trimmed, { agentMode: executionMode });
+      await sendPrompt(trimmed, {
+        agentMode: executionMode,
+        attachments: sending.length > 0 ? sending : undefined,
+      });
     } catch {
+      // Errors surface via toast in the store; restore the text + attachments so the user
+      // can edit and retry without retyping or re-staging files.
       setText(trimmed);
+      if (sending.length > 0) addAttachments(sending);
     }
   };
 
   return (
     <div className="pid-chat-composer">
       <div className="pid-composer-shell">
+        {attachments.length > 0 && (
+          <div className="pid-composer-attachments">
+            {attachments.map((a) => (
+              <span key={`${a.kind}|${a.path}`} className="pid-composer-attachment">
+                {a.kind === "folder" ? <Folder size={11} /> : null}
+                <span className="pid-composer-attachment-path" title={a.path}>
+                  {basename(a.path)}
+                </span>
+                <button
+                  type="button"
+                  className="pid-composer-attachment-remove"
+                  onClick={() => removeAttachment(a.path)}
+                  aria-label={`Remove ${a.path}`}
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
         <textarea
           ref={ref}
           value={text}
@@ -102,14 +197,12 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
         />
         <div className="pid-composer-row">
           <SessionAgentModePicker />
-          <button
-            type="button"
-            className="pid-picker-trigger pid-picker-trigger-icon-only"
-            aria-label="Attach (coming soon)"
-            disabled
-          >
-            <Paperclip size={14} aria-hidden />
-          </button>
+          <PidAttachmentsPicker
+            onChooseFiles={chooseFiles}
+            onChooseFolder={chooseFolder}
+            onOpenRepoSearch={openRepoSearch}
+            onPickRecent={(a) => attachAndRemember([a])}
+          />
           <span className="pid-composer-row-spacer" />
           <ContextUsageIndicator sessionId={sessionId} />
           <SessionModelPicker sessionId={sessionId} />
@@ -144,6 +237,21 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
           )}
         </div>
       </div>
+      {repoSearchOpen && (
+        <PidRepoFileSearchDialog
+          open={repoSearchOpen}
+          onClose={() => setRepoSearchOpen(false)}
+          onSelect={(picks) => {
+            attachAndRemember(picks.map<PromptAttachment>((path) => ({ kind: "repo-ref", path })));
+            setRepoSearchOpen(false);
+          }}
+        />
+      )}
     </div>
   );
+}
+
+function basename(p: string): string {
+  const parts = p.split(/[\\/]/);
+  return parts[parts.length - 1] || p;
 }

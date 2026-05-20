@@ -1,5 +1,6 @@
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { render, screen, userEvent } from "../../../test/utils";
+import { useIntroComposerStore } from "../intro/useIntroComposerStore";
 import { useSessionsStore } from "../sessions/useSessionsStore";
 import { MessageInput } from "./MessageInput";
 import { useMessagesStore } from "./useMessagesStore";
@@ -21,6 +22,9 @@ beforeEach(() => {
     sendPrompt: ORIGINAL_SEND,
     cancelPrompt: ORIGINAL_CANCEL,
   });
+  // The SESSION composer reads attachments from the same intro-composer store as the
+  // BLANK tab — reset it so a leak from another test can't masquerade as stale state.
+  useIntroComposerStore.setState({ attachments: [], text: "" });
 });
 
 // Restore once at the very end so we don't leak mocks into sibling test files. Restoring
@@ -172,5 +176,71 @@ describe("MessageInput", () => {
     render(<MessageInput sessionId={SID} />);
     await user.keyboard("{Escape}");
     expect(cancelled).toBe(false);
+  });
+
+  test("renders chips for currently-attached files and forwards them on send", async () => {
+    useIntroComposerStore.setState({
+      attachments: [
+        { kind: "file", path: "/repo/src/index.ts" },
+        { kind: "folder", path: "/repo/src/lib" },
+      ],
+    });
+    let sentAttachments: unknown;
+    useSessionsStore.setState({
+      sendPrompt: (async (_text: string, opts: { attachments?: unknown }) => {
+        sentAttachments = opts?.attachments;
+      }) as never,
+    });
+
+    const user = userEvent.setup();
+    render(<MessageInput sessionId={SID} />);
+
+    // Chips should render with the basename for readability and the full path in `title`.
+    expect(screen.getByText("index.ts")).toBeInTheDocument();
+    expect(screen.getByText("lib")).toBeInTheDocument();
+    expect(screen.getByLabelText("Remove /repo/src/index.ts")).toBeInTheDocument();
+
+    const textarea = screen.getByLabelText("Message");
+    await user.type(textarea, "use these");
+    await user.keyboard("{Enter}");
+
+    expect(sentAttachments).toEqual([
+      { kind: "file", path: "/repo/src/index.ts" },
+      { kind: "folder", path: "/repo/src/lib" },
+    ]);
+    // Successful send clears the queued attachments.
+    expect(useIntroComposerStore.getState().attachments).toEqual([]);
+  });
+
+  test("clicking a chip's × removes that attachment", async () => {
+    useIntroComposerStore.setState({
+      attachments: [
+        { kind: "file", path: "/a.ts" },
+        { kind: "file", path: "/b.ts" },
+      ],
+    });
+    const user = userEvent.setup();
+    render(<MessageInput sessionId={SID} />);
+    await user.click(screen.getByLabelText("Remove /a.ts"));
+    expect(useIntroComposerStore.getState().attachments).toEqual([{ kind: "file", path: "/b.ts" }]);
+  });
+
+  test("`@` at a word boundary opens the repo file search dialog", async () => {
+    const user = userEvent.setup();
+    render(<MessageInput sessionId={SID} />);
+    const textarea = screen.getByLabelText("Message");
+    await user.type(textarea, "@");
+    // The dialog has a search input with placeholder text we can assert on.
+    expect(screen.queryByPlaceholderText(/search/i)).not.toBeNull();
+  });
+
+  test("`@` in the middle of a word does NOT open the dialog (typed `@` is preserved)", async () => {
+    const user = userEvent.setup();
+    render(<MessageInput sessionId={SID} />);
+    const textarea = screen.getByLabelText("Message") as HTMLTextAreaElement;
+    await user.type(textarea, "user@");
+    // No dialog mounted; the `@` should land in the textarea content.
+    expect(screen.queryByPlaceholderText(/search/i)).toBeNull();
+    expect(textarea.value).toBe("user@");
   });
 });
