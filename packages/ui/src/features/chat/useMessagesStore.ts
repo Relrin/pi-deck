@@ -71,6 +71,17 @@ function extractAssistantTimestamp(snapshot: unknown): number | undefined {
   return typeof s.timestamp === "number" ? s.timestamp : undefined;
 }
 
+/**
+ * Pi attaches the resolved model id to the AssistantMessage snapshot. We persist it on the
+ * message entry so the UI can show the model that produced each turn — important when users
+ * switch models mid-session.
+ */
+function extractAssistantModel(snapshot: unknown): string | undefined {
+  if (typeof snapshot !== "object" || snapshot === null) return undefined;
+  const s = snapshot as { model?: unknown };
+  return typeof s.model === "string" && s.model.length > 0 ? s.model : undefined;
+}
+
 function lastIncompleteAssistantIdx(messages: MessageEntry[]): number {
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i];
@@ -142,6 +153,7 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
       const messages = [...session.messages];
       const remoteTimestamp = extractAssistantTimestamp(snapshot);
       const snapshotText = extractAssistantSnapshotText(snapshot);
+      const snapshotModel = extractAssistantModel(snapshot);
 
       // First: try to match by stable timestamp — survives `endTurn`, so a late delta
       // arriving after the turn ended still updates its existing bubble instead of
@@ -152,6 +164,7 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
         messages[tsIdx] = {
           ...matched,
           text: snapshotText || matched.text,
+          model: snapshotModel ?? matched.model,
         };
         return {
           bySession: {
@@ -176,6 +189,7 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
           ...current,
           remoteTimestamp,
           text: snapshotText,
+          model: snapshotModel ?? current.model,
         };
       } else if (current) {
         messages[idx] = {
@@ -184,11 +198,13 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
           remoteTimestamp: current.remoteTimestamp ?? remoteTimestamp,
           // Snapshot-as-truth: avoids accumulating duplicate deltas if pi/provider replays them.
           text: snapshotText || current.text,
+          model: snapshotModel ?? current.model,
         };
       } else {
         const fresh = newAssistant(Date.now());
         fresh.remoteTimestamp = remoteTimestamp;
         fresh.text = snapshotText;
+        fresh.model = snapshotModel;
         messages.push(fresh);
       }
       return {

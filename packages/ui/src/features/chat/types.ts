@@ -28,6 +28,12 @@ export interface AssistantMessageEntry {
   isComplete: boolean;
   toolCallIds: string[];
   createdAt: number;
+  /**
+   * The model that produced this response, as reported by pi on the assistant snapshot.
+   * Captured per-message so the UI can show which model answered each turn — useful when
+   * users switch models mid-session.
+   */
+  model?: string;
 }
 
 export type MessageEntry = UserMessageEntry | AssistantMessageEntry;

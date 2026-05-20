@@ -2292,6 +2292,14 @@
 .pid-msg-tag-time {
   color: var(--ink-3);
 }
+/* Model name shown on agent rows (e.g. "CLAUDE SONNET 4.5 · 21:14"). Same uppercased
+   mono style as the rest of the tag, kept on a single line. No width cap — the model
+   name is the row's identity, so we let it span as wide as it needs and rely on the
+   flex tag row's natural wrap behaviour when the column is very narrow. */
+.pid-msg-tag-model {
+  color: var(--info);
+  white-space: nowrap;
+}
 .pid-msg-body {
   color: var(--ink-0);
   word-break: break-word;
