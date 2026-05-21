@@ -17,6 +17,7 @@ export {
   FolderOpen,
   GitBranch,
   GitMerge,
+  Image,
   Layers,
   List,
   Loader2,

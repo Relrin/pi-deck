@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/session.js";
 import type { ApprovalDecision } from "../extensions/agent-mode/index.js";
-import type { PromptAttachment } from "../protocol/commands.js";
+import type { PromptAttachment, PromptImage } from "../protocol/commands.js";
 import {
   EVENT_HOST_ERROR,
   EVENT_SESSION_AGENT_EVENT,
@@ -156,7 +156,11 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
   async prompt(
     sessionId: string,
     text: string,
-    opts?: { agentMode?: AgentMode; attachments?: PromptAttachment[] },
+    opts?: {
+      agentMode?: AgentMode;
+      attachments?: PromptAttachment[];
+      images?: PromptImage[];
+    },
   ): Promise<{ promptId: string }> {
     const record = this.sessions.get(sessionId);
     if (!record) throw new Error(`Unknown session ${sessionId}`);
@@ -182,7 +186,9 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       }
     }
 
-    const result = (await worker.request("prompt", { text })) as { promptId: string };
+    const result = (await worker.request("prompt", { text, images: opts?.images })) as {
+      promptId: string;
+    };
     record.lastActivityAt = new Date().toISOString();
     return result;
   }

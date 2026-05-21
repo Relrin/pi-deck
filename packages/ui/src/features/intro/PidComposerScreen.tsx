@@ -1,11 +1,13 @@
-import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
+import type { PromptAttachment, PromptImage } from "@pi-deck/core/protocol/commands.js";
 import {
   type FormEvent,
   Fragment,
+  type DragEvent as ReactDragEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Archive, Folder, Send, X } from "../../components/icons/index.js";
@@ -13,6 +15,9 @@ import { PidChipPicker, type PidChipPickerOption } from "../../components/picker
 import { Tooltip } from "../../components/ui/Tooltip.js";
 import { useNavStore } from "../../lib/useNavStore.js";
 import { useToastStore } from "../_status/useToastStore.js";
+import { ImagePreviewDialog } from "../chat/composer/ImagePreviewDialog.js";
+import { useImagePaste } from "../chat/composer/useImagePaste.js";
+import type { UserMessageImage } from "../chat/types.js";
 import { useGitStore } from "../git/useGitStore.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
@@ -24,7 +29,7 @@ import { PidModelPicker } from "./PidModelPicker.js";
 import { PidRepoFileSearchDialog } from "./PidRepoFileSearchDialog.js";
 import { INTRO_TEMPLATES } from "./templates.js";
 import { useAttachmentsHotkeys } from "./useAttachmentsHotkeys.js";
-import { useIntroComposerStore } from "./useIntroComposerStore.js";
+import { type PromptImageDraft, useIntroComposerStore } from "./useIntroComposerStore.js";
 import { useRecentAttachmentsStore } from "./useRecentAttachmentsStore.js";
 
 const RECENT_LIMIT = 3;
@@ -39,9 +44,33 @@ export function PidComposerScreen() {
   const attachments = useIntroComposerStore((s) => s.attachments);
   const addAttachments = useIntroComposerStore((s) => s.addAttachments);
   const removeAttachment = useIntroComposerStore((s) => s.removeAttachment);
+  const images = useIntroComposerStore((s) => s.images);
+  const addImages = useIntroComposerStore((s) => s.addImages);
+  const removeImage = useIntroComposerStore((s) => s.removeImage);
   const pushRecent = useRecentAttachmentsStore((s) => s.push);
 
   const [repoSearchOpen, setRepoSearchOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState<PromptImageDraft | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const dragDepthRef = useRef(0);
+  const { onPaste, onDrop, onDragOver, chooseImage } = useImagePaste({ onImages: addImages });
+  const onShellDrop = useCallback(
+    (e: ReactDragEvent<HTMLElement>) => {
+      dragDepthRef.current = 0;
+      setDragOver(false);
+      onDrop(e);
+    },
+    [onDrop],
+  );
+  const onShellDragEnter = useCallback((e: ReactDragEvent<HTMLElement>) => {
+    if (!e.dataTransfer?.types.includes("Files")) return;
+    dragDepthRef.current += 1;
+    setDragOver(true);
+  }, []);
+  const onShellDragLeave = useCallback(() => {
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setDragOver(false);
+  }, []);
 
   const attachAndRemember = useCallback(
     (next: PromptAttachment[]) => {
@@ -142,6 +171,18 @@ export function PidComposerScreen() {
       return;
     }
     const store = useSessionsStore.getState();
+    const wireImages: PromptImage[] | undefined =
+      images.length > 0
+        ? images.map((i) => ({ mimeType: i.mimeType, data: i.data, name: i.name }))
+        : undefined;
+    const messageImages: UserMessageImage[] | undefined =
+      images.length > 0
+        ? images.map((i) => ({
+            thumbnailDataUrl: i.thumbnailDataUrl,
+            name: i.name,
+            mimeType: i.mimeType,
+          }))
+        : undefined;
     try {
       await store.createSession(activeProjectId, {
         modelRef: pendingModelRef,
@@ -151,6 +192,8 @@ export function PidComposerScreen() {
       await useSessionsStore.getState().sendPrompt(trimmed, {
         agentMode,
         attachments: attachments.length > 0 ? attachments : undefined,
+        images: wireImages,
+        messageImages,
       });
       clear();
       useNavStore.getState().goToSession();
@@ -231,8 +274,16 @@ export function PidComposerScreen() {
           <PidBranchPicker projectId={activeProjectId} />
         </div>
 
-        <form className="pid-composer-shell" onSubmit={onSubmit}>
-          {attachments.length > 0 && (
+        <form
+          className="pid-composer-shell"
+          data-drag-over={dragOver || undefined}
+          onSubmit={onSubmit}
+          onDragEnter={onShellDragEnter}
+          onDragLeave={onShellDragLeave}
+          onDragOver={onDragOver}
+          onDrop={onShellDrop}
+        >
+          {(attachments.length > 0 || images.length > 0) && (
             <div className="pid-composer-attachments">
               {attachments.map((a) => (
                 <span key={`${a.kind}|${a.path}`} className="pid-composer-attachment">
@@ -250,6 +301,30 @@ export function PidComposerScreen() {
                   </button>
                 </span>
               ))}
+              {images.map((img) => (
+                <div
+                  key={img.id}
+                  className="pid-composer-attachment pid-composer-attachment-image"
+                  title={img.name}
+                >
+                  <button
+                    type="button"
+                    className="pid-composer-attachment-image-trigger"
+                    aria-label={`Preview ${img.name}`}
+                    onClick={() => setPreviewImage(img)}
+                  >
+                    <img src={img.thumbnailDataUrl} alt={img.name} draggable={false} />
+                  </button>
+                  <button
+                    type="button"
+                    className="pid-composer-attachment-image-remove"
+                    aria-label={`Remove ${img.name}`}
+                    onClick={() => removeImage(img.id)}
+                  >
+                    <X size={10} aria-hidden />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
           <label className="sr-only" htmlFor="pid-composer-input">
@@ -262,6 +337,7 @@ export function PidComposerScreen() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={onComposerKeyDown}
+            onPaste={onPaste}
           />
           <div className="pid-composer-row">
             <PidAgentModePicker />
@@ -270,6 +346,7 @@ export function PidComposerScreen() {
               onChooseFolder={chooseFolder}
               onOpenRepoSearch={openRepoSearch}
               onPickRecent={(a) => attachAndRemember([a])}
+              onChooseImage={() => void chooseImage()}
             />
             <span className="pid-composer-row-spacer" />
             <PidModelPicker />
@@ -334,6 +411,16 @@ export function PidComposerScreen() {
             attachAndRemember(picks.map<PromptAttachment>((path) => ({ kind: "repo-ref", path })));
             setRepoSearchOpen(false);
           }}
+        />
+      )}
+      {previewImage && (
+        <ImagePreviewDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setPreviewImage(null);
+          }}
+          src={`data:${previewImage.mimeType};base64,${previewImage.data}`}
+          name={previewImage.name}
         />
       )}
     </div>

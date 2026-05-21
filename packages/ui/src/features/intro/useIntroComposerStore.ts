@@ -3,6 +3,26 @@ import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+/**
+ * In-memory representation of a clipboard/dropped image staged in the composer. Carries
+ * the full-resolution base64 payload (sent to pi on Send) plus a small pre-generated
+ * thumbnail data-URL used for the chip, the lightbox source on quick previews, and the
+ * persisted user-message history thumbnail.
+ */
+export interface PromptImageDraft {
+  /** Stable local key for React lists and `removeImage(id)`. */
+  id: string;
+  mimeType: string;
+  /** Full-resolution base64 (no `data:…;base64,` prefix). Sent to pi, dropped after Send. */
+  data: string;
+  /** ~256 px max-dim data-URL used for chip + history thumbnail. */
+  thumbnailDataUrl: string;
+  /** Display label (e.g. "Pasted image" or original filename). */
+  name: string;
+  /** Original byte size of the full payload; drives the size cap. */
+  byteSize: number;
+}
+
 interface IntroComposerState {
   text: string;
   /** Last-selected model on the intro composer; applied to the session created on Send. */
@@ -13,6 +33,8 @@ interface IntroComposerState {
   agentMode: AgentMode;
   /** Files / folders / repo refs queued for the next prompt; cleared on Send. */
   attachments: PromptAttachment[];
+  /** Clipboard/dropped images queued for the next prompt; cleared on Send. */
+  images: PromptImageDraft[];
 
   setText: (text: string) => void;
   setPendingModel: (ref: SessionModelRef | undefined) => void;
@@ -21,6 +43,9 @@ interface IntroComposerState {
   addAttachments: (next: PromptAttachment[]) => void;
   removeAttachment: (path: string) => void;
   clearAttachments: () => void;
+  addImages: (next: PromptImageDraft[]) => void;
+  removeImage: (id: string) => void;
+  clearImages: () => void;
   clear: () => void;
 }
 
@@ -38,6 +63,7 @@ export const useIntroComposerStore = create<IntroComposerState>()(
       pendingThinkingLevel: undefined,
       agentMode: "plan",
       attachments: [],
+      images: [],
 
       setText: (text) => set({ text }),
       setPendingModel: (pendingModelRef) => set({ pendingModelRef }),
@@ -59,8 +85,23 @@ export const useIntroComposerStore = create<IntroComposerState>()(
       removeAttachment: (path) =>
         set((s) => ({ attachments: s.attachments.filter((a) => a.path !== path) })),
       clearAttachments: () => set({ attachments: [] }),
-      // `clear` runs after Send — drops both the typed text and the just-consumed attachments.
-      clear: () => set({ text: "", attachments: [] }),
+      addImages: (next) =>
+        set((s) => {
+          // De-dupe on `id` — `useImagePaste` generates a fresh id per paste, so this only
+          // protects against accidental double-fires of the same handler.
+          const seen = new Set(s.images.map((i) => i.id));
+          const merged = [...s.images];
+          for (const img of next) {
+            if (seen.has(img.id)) continue;
+            seen.add(img.id);
+            merged.push(img);
+          }
+          return { images: merged };
+        }),
+      removeImage: (id) => set((s) => ({ images: s.images.filter((i) => i.id !== id) })),
+      clearImages: () => set({ images: [] }),
+      // `clear` runs after Send — drops typed text, attachments, and any staged images.
+      clear: () => set({ text: "", attachments: [], images: [] }),
     }),
     {
       name: "pi-deck:intro-composer:v1",

@@ -1,6 +1,6 @@
 import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
 import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
-import { File, FileText, Folder, Paperclip, Search } from "../../components/icons/index.js";
+import { File, FileText, Folder, Image, Paperclip, Search } from "../../components/icons/index.js";
 import { metaSymbol, shiftSymbol } from "../../lib/platform.js";
 import { useIntroComposerStore } from "./useIntroComposerStore.js";
 import { useRecentAttachmentsStore } from "./useRecentAttachmentsStore.js";
@@ -10,6 +10,8 @@ interface PidAttachmentsPickerProps {
   onChooseFolder: () => void;
   onOpenRepoSearch: () => void;
   onPickRecent: (attachment: PromptAttachment) => void;
+  /** Optional — when provided, an "Attach image…" entry appears in the menu. */
+  onChooseImage?: () => void;
 }
 
 export function PidAttachmentsPicker({
@@ -17,8 +19,10 @@ export function PidAttachmentsPicker({
   onChooseFolder,
   onOpenRepoSearch,
   onPickRecent,
+  onChooseImage,
 }: PidAttachmentsPickerProps) {
   const attachments = useIntroComposerStore((s) => s.attachments);
+  const images = useIntroComposerStore((s) => s.images);
   const recents = useRecentAttachmentsStore((s) => s.entries);
 
   const meta = metaSymbol();
@@ -31,11 +35,11 @@ export function PidAttachmentsPicker({
           type="button"
           className="pid-picker-trigger pid-picker-trigger-icon-only"
           aria-label="Attach files or folders"
-          data-has-attachments={attachments.length > 0 || undefined}
+          data-has-attachments={attachments.length + images.length > 0 || undefined}
         >
           <Paperclip size={14} />
-          {attachments.length > 0 && (
-            <span className="pid-picker-trigger-badge">{attachments.length}</span>
+          {attachments.length + images.length > 0 && (
+            <span className="pid-picker-trigger-badge">{attachments.length + images.length}</span>
           )}
         </button>
       </RadixDropdown.Trigger>
@@ -52,17 +56,26 @@ export function PidAttachmentsPicker({
             <span className="pid-picker-menu-item-check" aria-hidden>
               <FileText size={14} />
             </span>
-            <span className="pid-picker-menu-item-label">Choose files&hellip;</span>
+            <span className="pid-picker-menu-item-label">Add files</span>
             <span className="pid-picker-menu-item-sub pid-picker-menu-item-kbd">
               <kbd className="pid-kbd">{meta}</kbd>
               <kbd className="pid-kbd">O</kbd>
             </span>
           </RadixDropdown.Item>
+          {onChooseImage && (
+            <RadixDropdown.Item className="pid-picker-menu-item" onSelect={onChooseImage}>
+              <span className="pid-picker-menu-item-check" aria-hidden>
+                <Image size={14} />
+              </span>
+              <span className="pid-picker-menu-item-label">Attach image</span>
+              <span className="pid-picker-menu-item-sub">paste · drop · pick</span>
+            </RadixDropdown.Item>
+          )}
           <RadixDropdown.Item className="pid-picker-menu-item" onSelect={onChooseFolder}>
             <span className="pid-picker-menu-item-check" aria-hidden>
               <Folder size={14} />
             </span>
-            <span className="pid-picker-menu-item-label">Choose folder&hellip;</span>
+            <span className="pid-picker-menu-item-label">Add folder</span>
             <span className="pid-picker-menu-item-sub pid-picker-menu-item-kbd">
               <kbd className="pid-kbd">{meta}</kbd>
               <kbd className="pid-kbd">{shift}</kbd>
@@ -80,7 +93,7 @@ export function PidAttachmentsPicker({
             <span className="pid-picker-menu-item-check" aria-hidden>
               <Search size={14} />
             </span>
-            <span className="pid-picker-menu-item-label">Reference from repo&hellip;</span>
+            <span className="pid-picker-menu-item-label">Reference from repo</span>
             <span className="pid-picker-menu-item-sub pid-picker-menu-item-kbd">
               <kbd className="pid-kbd">@</kbd>
             </span>

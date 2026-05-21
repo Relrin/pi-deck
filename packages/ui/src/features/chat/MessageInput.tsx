@@ -1,19 +1,30 @@
-import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
-import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { PromptAttachment, PromptImage } from "@pi-deck/core/protocol/commands.js";
+import {
+  type DragEvent,
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Folder, Send, Square, X } from "../../components/icons/index.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
 import { useToastStore } from "../_status/useToastStore.js";
 import { PidAttachmentsPicker } from "../intro/PidAttachmentsPicker.js";
 import { PidRepoFileSearchDialog } from "../intro/PidRepoFileSearchDialog.js";
 import { useAttachmentsHotkeys } from "../intro/useAttachmentsHotkeys.js";
-import { useIntroComposerStore } from "../intro/useIntroComposerStore.js";
+import { type PromptImageDraft, useIntroComposerStore } from "../intro/useIntroComposerStore.js";
 import { useRecentAttachmentsStore } from "../intro/useRecentAttachmentsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { ContextUsageIndicator } from "./composer/ContextUsageIndicator.js";
+import { ImagePreviewDialog } from "./composer/ImagePreviewDialog.js";
 import { SessionAgentModePicker } from "./composer/SessionAgentModePicker.js";
 import { SessionEffortPicker } from "./composer/SessionEffortPicker.js";
 import { SessionModelPicker } from "./composer/SessionModelPicker.js";
 import { useComposerStore } from "./composer/useComposerStore.js";
+import { useImagePaste } from "./composer/useImagePaste.js";
+import type { UserMessageImage } from "./types.js";
 import { useDraftStore } from "./useDraftStore.js";
 import { selectTurnInFlight, useMessagesStore } from "./useMessagesStore.js";
 
@@ -35,10 +46,37 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   const addAttachments = useIntroComposerStore((s) => s.addAttachments);
   const removeAttachment = useIntroComposerStore((s) => s.removeAttachment);
   const clearAttachments = useIntroComposerStore((s) => s.clearAttachments);
+  const images = useIntroComposerStore((s) => s.images);
+  const addImages = useIntroComposerStore((s) => s.addImages);
+  const removeImage = useIntroComposerStore((s) => s.removeImage);
+  const clearImages = useIntroComposerStore((s) => s.clearImages);
   const pushRecent = useRecentAttachmentsStore((s) => s.push);
 
   const [repoSearchOpen, setRepoSearchOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState<PromptImageDraft | null>(null);
+  const [dragOver, setDragOver] = useState(false);
   const ref = useRef<HTMLTextAreaElement | null>(null);
+  const dragDepthRef = useRef(0);
+
+  const { onPaste, onDrop, onDragOver, chooseImage } = useImagePaste({ onImages: addImages });
+
+  const onComposerDrop = useCallback(
+    (e: DragEvent<HTMLElement>) => {
+      dragDepthRef.current = 0;
+      setDragOver(false);
+      onDrop(e);
+    },
+    [onDrop],
+  );
+  const onComposerDragEnter = useCallback((e: DragEvent<HTMLElement>) => {
+    if (!e.dataTransfer?.types.includes("Files")) return;
+    dragDepthRef.current += 1;
+    setDragOver(true);
+  }, []);
+  const onComposerDragLeave = useCallback(() => {
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setDragOver(false);
+  }, []);
 
   // "Attach selection to next prompt" pushes through useDraftStore; consume it into the
   // local textarea state so the user can edit before sending.
@@ -141,30 +179,63 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
     if (!trimmed || isInFlight) return;
     // Snapshot the attachments BEFORE we optimistically clear the input — if the send
     // fails we restore the text but also need to know what to forward to pi.
-    const sending = attachments.slice();
+    const sendingAttachments = attachments.slice();
+    const sendingImages = images.slice();
     setText("");
     clearAttachments();
-    void dispatchPrompt(trimmed, sending);
+    clearImages();
+    void dispatchPrompt(trimmed, sendingAttachments, sendingImages);
   };
 
-  const dispatchPrompt = async (trimmed: string, sending: PromptAttachment[]) => {
+  const dispatchPrompt = async (
+    trimmed: string,
+    sendingAttachments: PromptAttachment[],
+    sendingImages: PromptImageDraft[],
+  ) => {
+    const wireImages: PromptImage[] | undefined =
+      sendingImages.length > 0
+        ? sendingImages.map((i) => ({ mimeType: i.mimeType, data: i.data, name: i.name }))
+        : undefined;
+    const messageImages: UserMessageImage[] | undefined =
+      sendingImages.length > 0
+        ? sendingImages.map((i) => ({
+            thumbnailDataUrl: i.thumbnailDataUrl,
+            name: i.name,
+            mimeType: i.mimeType,
+          }))
+        : undefined;
     try {
       await sendPrompt(trimmed, {
         agentMode: executionMode,
-        attachments: sending.length > 0 ? sending : undefined,
+        attachments: sendingAttachments.length > 0 ? sendingAttachments : undefined,
+        images: wireImages,
+        messageImages,
       });
     } catch {
-      // Errors surface via toast in the store; restore the text + attachments so the user
-      // can edit and retry without retyping or re-staging files.
+      // Errors surface via toast in the store; restore the text + attachments + images
+      // so the user can edit and retry without retyping or re-staging files.
       setText(trimmed);
-      if (sending.length > 0) addAttachments(sending);
+      if (sendingAttachments.length > 0) addAttachments(sendingAttachments);
+      if (sendingImages.length > 0) addImages(sendingImages);
     }
   };
 
+  const hasChips = attachments.length > 0 || images.length > 0;
+
   return (
     <div className="pid-chat-composer">
-      <div className="pid-composer-shell">
-        {attachments.length > 0 && (
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: composer shell is a layout
+          container; the textarea and chip buttons inside are the real interactive surfaces.
+          Drop handlers live here only so the user can drop on the chip row, not just the textarea. */}
+      <div
+        className="pid-composer-shell"
+        data-drag-over={dragOver || undefined}
+        onDragEnter={onComposerDragEnter}
+        onDragLeave={onComposerDragLeave}
+        onDragOver={onDragOver}
+        onDrop={onComposerDrop}
+      >
+        {hasChips && (
           <div className="pid-composer-attachments">
             {attachments.map((a) => (
               <span key={`${a.kind}|${a.path}`} className="pid-composer-attachment">
@@ -182,6 +253,30 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
                 </button>
               </span>
             ))}
+            {images.map((img) => (
+              <div
+                key={img.id}
+                className="pid-composer-attachment pid-composer-attachment-image"
+                title={img.name}
+              >
+                <button
+                  type="button"
+                  className="pid-composer-attachment-image-trigger"
+                  aria-label={`Preview ${img.name}`}
+                  onClick={() => setPreviewImage(img)}
+                >
+                  <img src={img.thumbnailDataUrl} alt={img.name} draggable={false} />
+                </button>
+                <button
+                  type="button"
+                  className="pid-composer-attachment-image-remove"
+                  aria-label={`Remove ${img.name}`}
+                  onClick={() => removeImage(img.id)}
+                >
+                  <X size={10} aria-hidden />
+                </button>
+              </div>
+            ))}
           </div>
         )}
         <textarea
@@ -189,6 +284,7 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKeyDown}
+          onPaste={onPaste}
           placeholder={PLACEHOLDER}
           aria-label="Message"
           aria-keyshortcuts="Enter"
@@ -202,6 +298,7 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
             onChooseFolder={chooseFolder}
             onOpenRepoSearch={openRepoSearch}
             onPickRecent={(a) => attachAndRemember([a])}
+            onChooseImage={() => void chooseImage()}
           />
           <span className="pid-composer-row-spacer" />
           <ContextUsageIndicator sessionId={sessionId} />
@@ -245,6 +342,16 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
             attachAndRemember(picks.map<PromptAttachment>((path) => ({ kind: "repo-ref", path })));
             setRepoSearchOpen(false);
           }}
+        />
+      )}
+      {previewImage && (
+        <ImagePreviewDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setPreviewImage(null);
+          }}
+          src={`data:${previewImage.mimeType};base64,${previewImage.data}`}
+          name={previewImage.name}
         />
       )}
     </div>

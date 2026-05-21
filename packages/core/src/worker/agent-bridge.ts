@@ -13,7 +13,7 @@ import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/sessio
 import { type ApprovalDecision, createAgentModeExtension } from "../extensions/agent-mode/index.js";
 import { createAttachmentsExtension } from "../extensions/attachments/index.js";
 import { listProjectFiles } from "../host/git-runner.js";
-import type { PromptAttachment } from "../protocol/commands.js";
+import type { PromptAttachment, PromptImage } from "../protocol/commands.js";
 import { EVENT_SESSION_TOOL_APPROVAL_REQUESTED } from "../protocol/events.js";
 import { validateAndChdir } from "./cwd.js";
 
@@ -23,7 +23,7 @@ export interface AgentBridge {
   session: AgentSession;
   sessionId: string;
   sessionFile: string;
-  prompt: (text: string) => Promise<{ promptId: string }>;
+  prompt: (text: string, opts?: { images?: PromptImage[] }) => Promise<{ promptId: string }>;
   cancel: () => Promise<void>;
   setModel: (ref: SessionModelRef, thinkingLevel?: ThinkingLevel) => Promise<void>;
   setThinkingLevel: (level: ThinkingLevel) => void;
@@ -127,10 +127,18 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     session,
     sessionId: session.sessionId,
     sessionFile: session.sessionFile ?? "",
-    prompt: async (text: string) => {
+    prompt: async (text: string, opts?: { images?: PromptImage[] }) => {
       const promptId = randomUUID();
+      // pi's ImageContent uses { type: "image", mimeType, data }. Map our protocol shape
+      // (mimeType + base64 data) directly onto it. The `name` is renderer-only metadata.
+      const piImages = opts?.images?.map((i) => ({
+        type: "image" as const,
+        mimeType: i.mimeType,
+        data: i.data,
+      }));
+      const promptOpts = piImages && piImages.length > 0 ? { images: piImages } : undefined;
       // Fire-and-forget; events stream via the subscription. Errors surface as host.error.
-      session.prompt(text).catch((err: Error) => {
+      session.prompt(text, promptOpts).catch((err: Error) => {
         emit("agent.event", { type: "prompt_error", message: err.message, promptId });
       });
       return { promptId };

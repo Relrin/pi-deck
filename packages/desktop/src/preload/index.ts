@@ -23,6 +23,13 @@ export type OpenFileOptions = {
   filters?: Array<{ name: string; extensions: string[] }>;
 };
 
+export type ReadImageResult = {
+  mimeType: string;
+  data: string;
+  name: string;
+  byteSize: number;
+};
+
 contextBridge.exposeInMainWorld("bridge", {
   connect: (): Promise<BridgeConnectInfo | undefined> => ipcRenderer.invoke("bridge:connect"),
   openDirectory: (): Promise<string | undefined> => ipcRenderer.invoke("bridge:openDirectory"),
@@ -30,4 +37,6 @@ contextBridge.exposeInMainWorld("bridge", {
     ipcRenderer.invoke("bridge:openFile", opts),
   openFiles: (opts?: OpenFileOptions): Promise<string[]> =>
     ipcRenderer.invoke("bridge:openFiles", opts),
+  readImage: (path: string): Promise<ReadImageResult> =>
+    ipcRenderer.invoke("bridge:readImage", path),
 });

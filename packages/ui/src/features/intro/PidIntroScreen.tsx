@@ -1,13 +1,26 @@
-import { type FormEvent, type KeyboardEvent, useMemo } from "react";
+import type { PromptImage } from "@pi-deck/core/protocol/commands.js";
+import {
+  type FormEvent,
+  type KeyboardEvent,
+  type DragEvent as ReactDragEvent,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { PidButton } from "../../components/buttons/PidButton";
+import { X } from "../../components/icons/index.js";
 import { PidKbd } from "../../components/kbd/PidKbd";
 import { Tooltip } from "../../components/ui/Tooltip";
 import { useNavStore } from "../../lib/useNavStore";
 import { useToastStore } from "../_status/useToastStore";
+import { ImagePreviewDialog } from "../chat/composer/ImagePreviewDialog";
+import { useImagePaste } from "../chat/composer/useImagePaste";
+import type { UserMessageImage } from "../chat/types";
 import { useProjectsStore } from "../sessions/useProjectsStore";
 import { useSessionsStore } from "../sessions/useSessionsStore";
 import { INTRO_TEMPLATES } from "./templates";
-import { useIntroComposerStore } from "./useIntroComposerStore";
+import { type PromptImageDraft, useIntroComposerStore } from "./useIntroComposerStore";
 
 export interface PidIntroScreenProps {
   variant: "fullscreen" | "inline-empty-session";
@@ -19,9 +32,34 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
   const text = useIntroComposerStore((s) => s.text);
   const setText = useIntroComposerStore((s) => s.setText);
   const clear = useIntroComposerStore((s) => s.clear);
+  const images = useIntroComposerStore((s) => s.images);
+  const addImages = useIntroComposerStore((s) => s.addImages);
+  const removeImage = useIntroComposerStore((s) => s.removeImage);
   const sessions = useSessionsStore((s) => s.sessions);
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const activeProject = useProjectsStore((s) => s.projects.find((p) => p.id === s.activeProjectId));
+
+  const [previewImage, setPreviewImage] = useState<PromptImageDraft | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const dragDepthRef = useRef(0);
+  const { onPaste, onDrop, onDragOver } = useImagePaste({ onImages: addImages });
+  const onShellDrop = useCallback(
+    (e: ReactDragEvent<HTMLElement>) => {
+      dragDepthRef.current = 0;
+      setDragOver(false);
+      onDrop(e);
+    },
+    [onDrop],
+  );
+  const onShellDragEnter = useCallback((e: ReactDragEvent<HTMLElement>) => {
+    if (!e.dataTransfer?.types.includes("Files")) return;
+    dragDepthRef.current += 1;
+    setDragOver(true);
+  }, []);
+  const onShellDragLeave = useCallback(() => {
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setDragOver(false);
+  }, []);
 
   const recents = useMemo(
     () =>
@@ -40,10 +78,25 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
       return;
     }
     const store = useSessionsStore.getState();
+    const wireImages: PromptImage[] | undefined =
+      images.length > 0
+        ? images.map((i) => ({ mimeType: i.mimeType, data: i.data, name: i.name }))
+        : undefined;
+    const messageImages: UserMessageImage[] | undefined =
+      images.length > 0
+        ? images.map((i) => ({
+            thumbnailDataUrl: i.thumbnailDataUrl,
+            name: i.name,
+            mimeType: i.mimeType,
+          }))
+        : undefined;
     try {
       await store.createSession(activeProjectId);
       // createSession sets activeSessionId; sendPrompt picks it up.
-      await useSessionsStore.getState().sendPrompt(trimmed);
+      await useSessionsStore.getState().sendPrompt(trimmed, {
+        images: wireImages,
+        messageImages,
+      });
       clear();
       useNavStore.getState().goToSession();
     } catch {
@@ -93,16 +146,53 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
         </p>
       </header>
 
-      <form className="pid-intro-composer" onSubmit={onSubmit}>
+      <form
+        className="pid-intro-composer"
+        data-drag-over={dragOver || undefined}
+        onSubmit={onSubmit}
+        onDragEnter={onShellDragEnter}
+        onDragLeave={onShellDragLeave}
+        onDragOver={onDragOver}
+        onDrop={onShellDrop}
+      >
         <label className="sr-only" htmlFor="pid-intro-composer-input">
           New prompt
         </label>
+        {images.length > 0 && (
+          <div className="pid-composer-attachments">
+            {images.map((img) => (
+              <div
+                key={img.id}
+                className="pid-composer-attachment pid-composer-attachment-image"
+                title={img.name}
+              >
+                <button
+                  type="button"
+                  className="pid-composer-attachment-image-trigger"
+                  aria-label={`Preview ${img.name}`}
+                  onClick={() => setPreviewImage(img)}
+                >
+                  <img src={img.thumbnailDataUrl} alt={img.name} draggable={false} />
+                </button>
+                <button
+                  type="button"
+                  className="pid-composer-attachment-image-remove"
+                  aria-label={`Remove ${img.name}`}
+                  onClick={() => removeImage(img.id)}
+                >
+                  <X size={10} aria-hidden />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <textarea
           id="pid-intro-composer-input"
           placeholder="e.g. 'add a /share button to PostHeader that copies a tracked URL'"
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onComposerKeyDown}
+          onPaste={onPaste}
         />
         <div className="pid-intro-composer-footer">
           <span aria-hidden>
@@ -166,6 +256,16 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
           <PidKbd keys={["Mod", "N"]} />
           <span>new session</span>
         </div>
+      )}
+      {previewImage && (
+        <ImagePreviewDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setPreviewImage(null);
+          }}
+          src={`data:${previewImage.mimeType};base64,${previewImage.data}`}
+          name={previewImage.name}
+        />
       )}
     </div>
   );

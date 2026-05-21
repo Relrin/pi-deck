@@ -4,13 +4,14 @@ import type {
   SessionSummary,
   ThinkingLevel,
 } from "@pi-deck/core/domain/session.js";
-import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
+import type { PromptAttachment, PromptImage } from "@pi-deck/core/protocol/commands.js";
 import { create } from "zustand";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { routeEvent } from "../../lib/transport/event-router.js";
 import { ProtocolClient } from "../../lib/transport/protocol-client.js";
 import { type ConnectionStatus, WsClient } from "../../lib/transport/ws-client.js";
 import { useToastStore } from "../_status/useToastStore.js";
+import type { UserMessageImage } from "../chat/types.js";
 import { useMessagesStore } from "../chat/useMessagesStore.js";
 import { useProvidersStore } from "../models/useProvidersStore.js";
 import { useProjectsStore } from "./useProjectsStore.js";
@@ -45,7 +46,14 @@ export interface SessionsStoreState {
   deactivateSession: (id: string) => Promise<void>;
   sendPrompt: (
     text: string,
-    opts?: { agentMode?: AgentMode; attachments?: PromptAttachment[] },
+    opts?: {
+      agentMode?: AgentMode;
+      attachments?: PromptAttachment[];
+      /** Wire payload (mimeType + base64). */
+      images?: PromptImage[];
+      /** Optimistic thumbnails persisted onto the user message for history rendering. */
+      messageImages?: UserMessageImage[];
+    },
   ) => Promise<void>;
   cancelPrompt: () => Promise<void>;
   setActiveSessionId: (id: string | undefined) => void;
@@ -229,6 +237,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         text,
         agentMode: opts?.agentMode,
         attachments: opts?.attachments,
+        images: opts?.images,
       });
       // Optimistically append the user message immediately on ack. The bridge will later
       // emit its own `user.message` event; the store dedups by text + time-window. The
@@ -239,6 +248,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         text,
         createdAt: Date.now(),
         attachments: opts?.attachments,
+        images: opts?.messageImages,
       });
     } catch (err) {
       useMessagesStore.getState().markTurnInFlight(id, false);

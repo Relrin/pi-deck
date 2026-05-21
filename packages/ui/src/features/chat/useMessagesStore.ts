@@ -6,6 +6,7 @@ import type {
   MessageEntry,
   ToolCallEntry,
   ToolCallStatus,
+  UserMessageImage,
 } from "./types.js";
 
 interface SessionMessageState {
@@ -23,6 +24,7 @@ interface MessagesStoreState {
       text: string;
       createdAt: number;
       attachments?: PromptAttachment[];
+      images?: UserMessageImage[];
     },
   ) => void;
   appendAssistantDelta: (sessionId: string, deltaEvent: unknown, snapshot: unknown) => void;
@@ -141,7 +143,7 @@ function lastKnownAssistantModel(messages: MessageEntry[]): string | undefined {
 export const useMessagesStore = create<MessagesStoreState>((set) => ({
   bySession: {},
 
-  appendUserMessage: (sessionId, { messageId, text, createdAt, attachments }) =>
+  appendUserMessage: (sessionId, { messageId, text, createdAt, attachments, images }) =>
     set((state) => {
       const session = getOrInit(state.bySession, sessionId);
       // Dedup by id (replay), and by same-text within a short window — the renderer appends
@@ -171,6 +173,7 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
                 text,
                 createdAt,
                 ...(attachments && attachments.length > 0 ? { attachments } : {}),
+                ...(images && images.length > 0 ? { images } : {}),
               },
             ],
             // Leave isTurnInFlight as-is: by the time the bridge echo arrives the turn may

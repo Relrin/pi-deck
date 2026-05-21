@@ -44,6 +44,22 @@ export const PromptAttachmentSchema = z.object({
 });
 export type PromptAttachment = z.infer<typeof PromptAttachmentSchema>;
 
+/**
+ * Binary image attached to a prompt (e.g. a clipboard-pasted screenshot). Carried inline
+ * as base64 so the worker can hand it straight to pi's `session.prompt(text, { images })`
+ * without touching disk. Kept separate from `PromptAttachment` because the path-based
+ * attachments and binary blobs have nothing in common beyond "user attached this".
+ */
+export const PromptImageSchema = z.object({
+  /** MIME type accepted by pi's `ImageContent`. */
+  mimeType: z.string().regex(/^image\/(png|jpeg|jpg|webp|gif)$/),
+  /** Base64-encoded payload, NO `data:…;base64,` prefix. */
+  data: z.string().min(1),
+  /** Display name (e.g. "Pasted image" or original filename). */
+  name: z.string().optional(),
+});
+export type PromptImage = z.infer<typeof PromptImageSchema>;
+
 export const SessionListRequest = z.object({ projectId: z.string().uuid() });
 export const SessionListResponse = z.object({ sessions: z.array(SessionSummarySchema) });
 
@@ -69,6 +85,8 @@ export const SessionPromptRequest = z.object({
   agentMode: AgentModeSchema.optional(),
   /** Files / folders / repo refs the user attached to this turn. */
   attachments: z.array(PromptAttachmentSchema).optional(),
+  /** Inline images (e.g. clipboard pastes) the user attached to this turn. */
+  images: z.array(PromptImageSchema).optional(),
 });
 export const SessionPromptResponse = z.object({
   accepted: z.literal(true),

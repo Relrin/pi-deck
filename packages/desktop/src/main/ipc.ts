@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { basename, extname } from "node:path";
 import type { FileFilter } from "electron";
 import { BrowserWindow, dialog, ipcMain } from "electron";
 
@@ -9,6 +11,21 @@ export interface BridgeInfo {
 export interface OpenFileOptions {
   filters?: FileFilter[];
 }
+
+export interface ReadImageResult {
+  mimeType: string;
+  data: string;
+  name: string;
+  byteSize: number;
+}
+
+const IMAGE_EXT_TO_MIME: Record<string, string> = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+};
 
 let bridgeInfo: BridgeInfo | undefined;
 let registered = false;
@@ -46,5 +63,22 @@ export function registerBridgeIpc(info: BridgeInfo): void {
       : await dialog.showOpenDialog(options);
     if (result.canceled || result.filePaths.length === 0) return [];
     return result.filePaths;
+  });
+  // Read an image file from disk and ship it back as base64. Only used by the composer's
+  // "Attach image…" picker — the renderer is sandboxed so it can't `fs.readFile` directly.
+  ipcMain.handle("bridge:readImage", async (_event, path: string): Promise<ReadImageResult> => {
+    if (typeof path !== "string" || path.length === 0) {
+      throw new Error("readImage: path is required");
+    }
+    const ext = extname(path).toLowerCase();
+    const mimeType = IMAGE_EXT_TO_MIME[ext];
+    if (!mimeType) throw new Error(`Unsupported image extension: ${ext || "(none)"}`);
+    const buf = await readFile(path);
+    return {
+      mimeType,
+      data: buf.toString("base64"),
+      name: basename(path),
+      byteSize: buf.byteLength,
+    };
   });
 }

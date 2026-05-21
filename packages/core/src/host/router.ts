@@ -92,6 +92,7 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     const result = await ctx.sessionManager.prompt(parsed.sessionId, parsed.text, {
       agentMode: parsed.agentMode,
       attachments: parsed.attachments,
+      images: parsed.images,
     });
     return { accepted: true as const, promptId: result.promptId };
   },

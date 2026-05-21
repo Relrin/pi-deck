@@ -1,7 +1,7 @@
 import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/session.js";
 import type { ApprovalDecision } from "../extensions/agent-mode/index.js";
 import { createJsonlReader, encodeJsonl } from "../host/jsonl.js";
-import type { PromptAttachment } from "../protocol/commands.js";
+import type { PromptAttachment, PromptImage } from "../protocol/commands.js";
 import { type AgentBridge, initBridge } from "./agent-bridge.js";
 import { installLifecycleHandlers } from "./lifecycle.js";
 
@@ -42,8 +42,8 @@ async function handleRequest(frame: { id: string; cmd: string; payload: unknown 
       }
       case "prompt": {
         if (!bridge) throw new Error("Worker not initialized");
-        const params = frame.payload as { text: string };
-        const result = await bridge.prompt(params.text);
+        const params = frame.payload as { text: string; images?: PromptImage[] };
+        const result = await bridge.prompt(params.text, { images: params.images });
         sendOk(frame.id, result);
         return;
       }
