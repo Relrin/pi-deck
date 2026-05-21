@@ -1,22 +1,29 @@
-import { type CommandName, CommandSchemas } from "../protocol/commands.js";
 import {
   checkoutBranch,
   createBranch,
   currentBranch,
-  GitError,
+  GitNotFoundError,
+  initRepo,
   listBranches,
   listProjectFiles,
-} from "./git-runner.js";
+  NotARepoError,
+} from "../git/index.js";
+import { getRecentCommits } from "../git/log.js";
+import { type CommandName, CommandSchemas } from "../protocol/commands.js";
+import type { GitWatchManager } from "./git-watch-manager.js";
 import type { MetadataStore } from "./metadata-store.js";
 import type { ProviderManager } from "./provider-manager.js";
 import type { SessionManager, SessionRecord } from "./session-manager.js";
 import type { ThemeManager } from "./themes/index.js";
+import type { TurnTracker } from "./turn-tracker.js";
 
 export interface RouterContext {
   metadataStore: MetadataStore;
   sessionManager: SessionManager;
   themeManager: ThemeManager;
   providerManager: ProviderManager;
+  gitWatchManager: GitWatchManager;
+  turnTracker: TurnTracker;
   hostVersion: string;
   protocolVersion: number;
 }
@@ -43,6 +50,16 @@ function toSummary(record: SessionRecord) {
     agentMode: record.agentMode,
     lastActivityAt: record.lastActivityAt,
   };
+}
+
+function mapGitError(err: unknown): never {
+  if (err instanceof GitNotFoundError) {
+    throw new RouterError("git_not_found", err.message);
+  }
+  if (err instanceof NotARepoError) {
+    throw new RouterError("not_a_repo", err.message);
+  }
+  throw err instanceof Error ? new RouterError("git_failed", err.message) : err;
 }
 
 const handlers: { [C in CommandName]: CommandHandler } = {
@@ -85,6 +102,7 @@ const handlers: { [C in CommandName]: CommandHandler } = {
   "session.deactivate": async (ctx, payload) => {
     const parsed = CommandSchemas["session.deactivate"].request.parse(payload);
     await ctx.sessionManager.deactivate(parsed.sessionId);
+    ctx.turnTracker.forget(parsed.sessionId);
     return { ok: true as const };
   },
   "session.prompt": async (ctx, payload) => {
@@ -129,7 +147,7 @@ const handlers: { [C in CommandName]: CommandHandler } = {
       const entries = await listProjectFiles(project.path, parsed.limit);
       return { entries };
     } catch (err) {
-      throw err instanceof GitError ? new RouterError("git_failed", err.message) : err;
+      mapGitError(err);
     }
   },
   "git.listBranches": async (ctx, payload) => {
@@ -140,10 +158,8 @@ const handlers: { [C in CommandName]: CommandHandler } = {
       const branches = await listBranches(project.path);
       return { branches };
     } catch (err) {
-      if (err instanceof GitError && err.code === "not_a_repo") {
-        return { branches: [] };
-      }
-      throw err instanceof GitError ? new RouterError("git_failed", err.message) : err;
+      if (err instanceof NotARepoError) return { branches: [] };
+      mapGitError(err);
     }
   },
   "git.currentBranch": async (ctx, payload) => {
@@ -153,10 +169,8 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     try {
       return { name: await currentBranch(project.path) };
     } catch (err) {
-      if (err instanceof GitError && err.code === "not_a_repo") {
-        return { name: "" };
-      }
-      throw err instanceof GitError ? new RouterError("git_failed", err.message) : err;
+      if (err instanceof NotARepoError) return { name: "" };
+      mapGitError(err);
     }
   },
   "git.checkoutBranch": async (ctx, payload) => {
@@ -167,7 +181,7 @@ const handlers: { [C in CommandName]: CommandHandler } = {
       await checkoutBranch(project.path, parsed.name);
       return { ok: true as const };
     } catch (err) {
-      throw err instanceof GitError ? new RouterError("git_failed", err.message) : err;
+      mapGitError(err);
     }
   },
   "git.createBranch": async (ctx, payload) => {
@@ -178,8 +192,47 @@ const handlers: { [C in CommandName]: CommandHandler } = {
       await createBranch(project.path, parsed.name);
       return { ok: true as const };
     } catch (err) {
-      throw err instanceof GitError ? new RouterError("git_failed", err.message) : err;
+      mapGitError(err);
     }
+  },
+  "git.status": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.status"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const status = await ctx.gitWatchManager.getOrLoad(parsed.projectId);
+      return { status };
+    } catch (err) {
+      mapGitError(err);
+    }
+  },
+  "git.log": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.log"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const commits = await getRecentCommits(project.path, parsed.limit);
+      return { commits };
+    } catch (err) {
+      mapGitError(err);
+    }
+  },
+  "git.init": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.init"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      await initRepo(project.path);
+      // Trigger a status refresh so the renderer transitions out of the empty state.
+      await ctx.gitWatchManager.getOrLoad(parsed.projectId);
+      return { ok: true as const };
+    } catch (err) {
+      mapGitError(err);
+    }
+  },
+  "git.turnTouches": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.turnTouches"].request.parse(payload);
+    return ctx.turnTracker.getFor(parsed.sessionId);
   },
   "theme.list": async (ctx) => ({
     activeName: ctx.themeManager.getActiveName(),

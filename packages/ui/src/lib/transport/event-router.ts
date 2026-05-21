@@ -1,7 +1,10 @@
 import type { ThemeListing, ThemeSpec } from "@pi-deck/core";
 import type { SessionModelRef, ThinkingLevel } from "@pi-deck/core/domain/session.js";
+import type { GitStatus } from "@pi-deck/core/git/types.js";
 import {
   ContextUsage,
+  EVENT_GIT_STATUS_CHANGED,
+  EVENT_GIT_TURN_TOUCHES_CHANGED,
   EVENT_HOST_ERROR,
   EVENT_PROVIDER_CHANGED,
   EVENT_SESSION_AGENT_EVENT,
@@ -20,6 +23,7 @@ import { useToastStore } from "../../features/_status/useToastStore.js";
 import { resetHighlighter } from "../../features/chat/messages/code-highlight.js";
 import { useMessagesStore } from "../../features/chat/useMessagesStore.js";
 import { useUsageStore } from "../../features/chat/useUsageStore.js";
+import { useGitStore } from "../../features/git/useGitStore.js";
 import { useProvidersStore } from "../../features/models/useProvidersStore.js";
 import { useProjectsStore } from "../../features/sessions/useProjectsStore.js";
 import { useSessionsStore } from "../../features/sessions/useSessionsStore.js";
@@ -41,6 +45,24 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
   if (topic === EVENT_PROVIDER_CHANGED) {
     const providerId = typeof payload.providerId === "string" ? payload.providerId : undefined;
     void useProvidersStore.getState().applyProviderChanged(providerId);
+    return;
+  }
+  if (topic === EVENT_GIT_STATUS_CHANGED) {
+    const projectId = typeof payload.projectId === "string" ? payload.projectId : "";
+    const status = payload.status as GitStatus | undefined;
+    if (projectId && status) {
+      useGitStore.getState().applyStatusChanged(projectId, status);
+    }
+    return;
+  }
+  if (topic === EVENT_GIT_TURN_TOUCHES_CHANGED) {
+    const sessionId = typeof payload.sessionId === "string" ? payload.sessionId : "";
+    const paths = Array.isArray(payload.paths)
+      ? (payload.paths.filter((p) => typeof p === "string") as string[])
+      : [];
+    if (sessionId) {
+      useGitStore.getState().applyTurnTouches(sessionId, paths);
+    }
     return;
   }
   if (topic === EVENT_SESSION_MODEL_CHANGED) {

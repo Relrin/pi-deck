@@ -72,6 +72,8 @@ bun run build         # Production build
 - **Markdown:** route all assistant text through the chat `Markdown` component (`packages/ui/src/features/chat/messages/Markdown.tsx`). It owns Shiki highlighting, autolinking, and the GFM dialect. Don't render raw markdown ad-hoc.
 - **Icons:** import from `packages/ui/src/components/icons` only. This is the swap point if we change icon libraries.
 
+- **Git operations:** all go through `packages/core/src/git/runner.ts`. Direct spawning of `git` elsewhere is forbidden. Errors are typed (`GitNotFoundError`, `NotARepoError`, `GitCommandError`).
+
 ## Do not
 
 - Modify pi's source or wrap its protocol in incompatible ways. We are a *client*, not a fork.
@@ -120,6 +122,9 @@ This list is populated as plans complete. When you finish a plan, add its key en
 - **Compact sessions rail** — `packages/ui/src/features/sessions/PidSessionsList.tsx` and friends (`PidSessionRow`, `PidProjectSwitcher`, `PidNewSessionButton`). Left-rail Sessions tab. Shares the same `sessionsByProject` cache as the overview. Project expand state lives in `useNavStore.expandedProjectsRail`.
 - **New-session shortcut** — `packages/ui/src/features/sessions/useNewSessionShortcut.ts`. Global Cmd/Ctrl+N. Suppressed inside editable elements. Mounted once in `App.tsx` alongside `useSettingsHotkey`.
 - **Center router** — `packages/ui/src/layout/PidCenterRouter.tsx`. Reads `useNavStore.screen` and renders overview / session (chat or inline-intro) / editor / git-diff / git-history. Editor / diff / history are placeholders until their owning plans land.
+- **Git** — `packages/core/src/git/`. All git operations go through `runner.ts` (no JS-git library). Repo detection via `detect.ts`, status via `status.ts`, recent commits via `log.ts`, file watching via `watcher.ts`, init via `init.ts`. Pure read-only display in v1 — no commit/push/pull/stage. The host orchestrates per-project watchers from `packages/core/src/host/git-watch-manager.ts`, broadcasting `git.status.changed` to the renderer.
+- **Turn file tracking** — `packages/core/src/host/turn-tracker.ts`. Listens for `session.tool.call.end` events from the session manager and records the file path against the active session whenever a file-mutating tool (`write`, `edit`, `patch`, etc.) succeeds. In-memory only; cleared on `session.deactivate` and on worker exit. Consumed by the git sidebar (recent-touch dot on `ChangeRow`) and ready for the review panel in plan 008.
+- **Git sidebar UI** — `packages/ui/src/features/git/`. Subscribes to `git.status.changed` / `git.turnTouches.changed` events via the renderer's event router. `GitSidebar` composes `BranchHeader` (Radix dropdown that runs checkout), `ChangesList` (flat list + diffbar), `RecentCommitsList`, and the `EmptyState` Init button. Per-project state lives in the existing `useGitStore` (extended with `statusByProject`, `commitsByProject`, `touchesBySession`).
 
 ## App shell rules
 

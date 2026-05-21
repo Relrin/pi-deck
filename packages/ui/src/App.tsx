@@ -1,14 +1,16 @@
 import { useEffect } from "react";
 import { TooltipProvider } from "./components/ui/Tooltip";
 import { Toaster } from "./features/_status/Toaster";
+import { GitSidebar } from "./features/git/GitSidebar";
+import { useGitStore } from "./features/git/useGitStore";
 import { PidSessionsList } from "./features/sessions/PidSessionsList";
 import { useNewSessionShortcut } from "./features/sessions/useNewSessionShortcut";
+import { useProjectsStore } from "./features/sessions/useProjectsStore";
 import { useSessionsStore } from "./features/sessions/useSessionsStore";
 import { PidSettingsView } from "./features/settings/PidSettingsView";
 import { useSettingsHotkey } from "./features/settings/useSettingsHotkey";
 import { ContextTabStub } from "./layout/_stubs/ContextTabStub";
 import { FilesTabStub } from "./layout/_stubs/FilesTabStub";
-import { GitTabStub } from "./layout/_stubs/GitTabStub";
 import { PidAppShell } from "./layout/PidAppShell";
 import { PidBody } from "./layout/PidBody";
 import { PidCenterRouter } from "./layout/PidCenterRouter";
@@ -21,6 +23,10 @@ import { ThemeProvider } from "./theme/ThemeProvider";
 
 export function App() {
   const initialize = useSessionsStore((s) => s.initialize);
+  const projectId = useProjectsStore((s) => s.activeProjectId);
+  const gitCount = useGitStore((s) =>
+    projectId ? (s.statusByProject[projectId]?.changes.length ?? undefined) : undefined,
+  );
   useSettingsHotkey();
   useNewSessionShortcut();
 
@@ -45,7 +51,14 @@ export function App() {
             <PidBody
               left={<PidLeftRail sessions={<PidSessionsList />} files={<FilesTabStub />} />}
               center={<PidCenterRouter />}
-              right={<PidRightPane git={<GitTabStub />} context={<ContextTabStub />} />}
+              right={
+                <PidRightPane
+                  git={<GitSidebar />}
+                  context={<ContextTabStub />}
+                  gitCount={gitCount}
+                  initialTab="git"
+                />
+              }
             />
           }
           bottom={<PidFooter />}

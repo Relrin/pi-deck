@@ -12,7 +12,7 @@ import {
 import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/session.js";
 import { type ApprovalDecision, createAgentModeExtension } from "../extensions/agent-mode/index.js";
 import { createAttachmentsExtension } from "../extensions/attachments/index.js";
-import { listProjectFiles } from "../host/git-runner.js";
+import { listProjectFiles } from "../git/files.js";
 import type { PromptAttachment, PromptImage } from "../protocol/commands.js";
 import { EVENT_SESSION_TOOL_APPROVAL_REQUESTED } from "../protocol/events.js";
 import { validateAndChdir } from "./cwd.js";

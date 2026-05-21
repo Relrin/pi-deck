@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SessionModelRefSchema, ThinkingLevelSchema } from "../domain/session.js";
+import { GitStatusSchema } from "../git/types.js";
 import { themeListingSchema } from "./theme.js";
 
 export const EVENT_SESSION_MESSAGE_DELTA = "session.message.delta" as const;
@@ -16,6 +17,8 @@ export const EVENT_HOST_ERROR = "host.error" as const;
 export const EVENT_HOST_READY = "host.ready" as const;
 export const EVENT_THEME_CHANGED = "theme.changed" as const;
 export const EVENT_PROVIDER_CHANGED = "provider.changed" as const;
+export const EVENT_GIT_STATUS_CHANGED = "git.status.changed" as const;
+export const EVENT_GIT_TURN_TOUCHES_CHANGED = "git.turnTouches.changed" as const;
 
 export const SessionMessageDeltaPayload = z.object({
   sessionId: z.string(),
@@ -127,6 +130,27 @@ export const ProviderChangedPayload = z.object({
 });
 
 /**
+ * Pushed by the git watcher when `.git/HEAD`, `.git/index`, or `.git/refs/` change on disk —
+ * or on the 5-second polling tick. The payload carries a fresh GitStatus so the renderer can
+ * re-render without an extra round trip.
+ */
+export const GitStatusChangedPayload = z.object({
+  projectId: z.string().min(1),
+  status: GitStatusSchema,
+});
+
+/**
+ * Pushed by the turn tracker when a tool call writes / edits a file. The renderer uses
+ * `turnSeq` to drop snapshots from a prior turn; `paths` are absolute and may be filtered
+ * by the active project root on the renderer side.
+ */
+export const GitTurnTouchesChangedPayload = z.object({
+  sessionId: z.string().min(1),
+  paths: z.array(z.string()),
+  turnSeq: z.number().int().nonnegative(),
+});
+
+/**
  * Emitted by the agent-mode plugin when a tool call needs explicit user approval. The renderer
  * matches `toolCallId` against the live `session.tool.call.start` row to show an inline pill,
  * then calls `session.toolApproval` with the `approvalId` and the user's decision.
@@ -156,6 +180,8 @@ export const EventSchemas = {
   [EVENT_THEME_CHANGED]: ThemeChangedPayload,
   [EVENT_PROVIDER_CHANGED]: ProviderChangedPayload,
   [EVENT_SESSION_TOOL_APPROVAL_REQUESTED]: SessionToolApprovalRequestedPayload,
+  [EVENT_GIT_STATUS_CHANGED]: GitStatusChangedPayload,
+  [EVENT_GIT_TURN_TOUCHES_CHANGED]: GitTurnTouchesChangedPayload,
 } as const;
 
 export type EventTopic = keyof typeof EventSchemas;

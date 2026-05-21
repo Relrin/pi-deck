@@ -2598,3 +2598,445 @@
 .pid-composer-stop:hover {
   background: oklch(0.7 0.18 25 / 0.12);
 }
+
+/* ---------- Git sidebar (right pane "Git" tab) ---------- */
+.pid-git {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.pid-git-placeholder {
+  padding: 16px 14px;
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-3);
+}
+.pid-git-section {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.pid-git-section:last-child {
+  border-bottom: 0;
+}
+.pid-git-section-label {
+  display: block;
+  margin-bottom: 6px;
+}
+.pid-git-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.pid-git-section-spacer {
+  flex: 1;
+}
+
+/* ---- Branch row ---- */
+.pid-git-branch-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--ink-0);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
+}
+.pid-git-branch-trigger:hover:not(:disabled),
+.pid-git-branch-trigger[data-state="open"] {
+  background: var(--bg-3);
+  border-color: var(--line-strong);
+}
+.pid-git-branch-trigger:focus-visible {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 1px;
+}
+.pid-git-branch-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.pid-git-branch-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--t-13);
+  color: var(--ink-0);
+}
+.pid-git-branch-tracking {
+  display: inline-flex;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+}
+.pid-git-branch-tracking span[data-tone="add"] {
+  color: var(--add);
+}
+.pid-git-branch-tracking span[data-tone="del"] {
+  color: var(--del);
+}
+.pid-git-branch-chev {
+  color: var(--ink-3);
+}
+.pid-git-branch-menu {
+  min-width: 260px;
+  padding: 6px 0;
+}
+
+/* Pull / Push / Open-PR row — vertical icon stacks, ghost styling. */
+.pid-git-branch-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+  margin-top: 8px;
+}
+.pid-git-branch-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--ink-1);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: lowercase;
+  transition:
+    background-color 0.12s,
+    color 0.12s;
+}
+.pid-git-branch-action:hover {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+.pid-git-branch-action-label {
+  font-size: 10.5px;
+  color: inherit;
+}
+
+/* ---- Changes header (stage all + filter icon + diffbar with totals) ---- */
+.pid-git-changes-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius);
+  background: transparent;
+  border: 0;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.pid-git-changes-icon:hover {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+.pid-git-changes-stage-all {
+  background: transparent;
+  border: 0;
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--radius);
+}
+.pid-git-changes-stage-all:hover {
+  color: var(--ink-0);
+  background: var(--bg-2);
+}
+
+/* Diffbar — proportional add/del bar with totals on the right. */
+.pid-git-diffbar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.pid-git-diffbar {
+  flex: 1;
+  display: flex;
+  height: 6px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--bg-3);
+}
+.pid-git-diffbar-add {
+  background: var(--add);
+}
+.pid-git-diffbar-del {
+  background: var(--del);
+}
+.pid-git-diffbar-empty {
+  width: 100%;
+  background: var(--bg-3);
+}
+.pid-git-diffbar-totals {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+.pid-git-diffbar-totals span[data-tone="add"] {
+  color: var(--add);
+}
+.pid-git-diffbar-totals span[data-tone="del"] {
+  color: var(--del);
+}
+.pid-git-diffbar-sep {
+  color: var(--ink-3);
+}
+
+/* ---- Change rows ---- */
+.pid-git-rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0 -14px;
+}
+.pid-git-empty {
+  padding: 8px 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-3);
+  font-style: italic;
+}
+.pid-git-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-1);
+  border-left: 2px solid transparent;
+  min-height: 28px;
+}
+.pid-git-row:hover {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+.pid-git-row[data-active="true"] {
+  background: var(--accent-soft);
+  color: var(--ink-0);
+  border-left-color: var(--accent);
+}
+.pid-git-row[data-touched="true"]:not([data-active="true"]) {
+  border-left-color: var(--accent-line);
+}
+.pid-git-row-check {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+}
+.pid-git-row-body {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.pid-git-row-body:focus-visible {
+  outline: 1px solid var(--accent-line);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.pid-git-row-status {
+  text-align: center;
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+}
+.pid-git-row[data-tone="add"] .pid-git-row-status {
+  color: var(--add);
+}
+.pid-git-row[data-tone="mod"] .pid-git-row-status {
+  color: var(--mod);
+}
+.pid-git-row[data-tone="del"] .pid-git-row-status {
+  color: var(--del);
+}
+.pid-git-row[data-tone="unt"] .pid-git-row-status {
+  color: var(--ink-3);
+}
+.pid-git-row-name {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  overflow: hidden;
+}
+.pid-git-row-filename {
+  font-weight: 500;
+  color: var(--ink-0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pid-git-row[data-active="true"] .pid-git-row-filename {
+  font-weight: 600;
+}
+.pid-git-row-dir {
+  color: var(--ink-3);
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.pid-git-row-counts {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.pid-git-row-counts span[data-tone="add"] {
+  color: var(--add);
+}
+.pid-git-row-counts span[data-tone="del"] {
+  color: var(--del);
+}
+.pid-git-row-touch {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--bg-1);
+}
+
+/* ---- Commit composer (visual chrome; write ops land later) ---- */
+.pid-git-commit-composer {
+  background: var(--bg-2);
+}
+.pid-git-commit-shell {
+  padding: 8px 10px;
+}
+.pid-git-commit-input {
+  min-height: 40px;
+  font-size: var(--t-13);
+}
+.pid-git-commit-amend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-2);
+  cursor: pointer;
+  user-select: none;
+}
+.pid-git-commit-amend-check {
+  accent-color: var(--accent);
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  cursor: pointer;
+}
+.pid-git-commit-amend-spacer {
+  flex: 1;
+}
+.pid-git-commit-amend-sha {
+  color: var(--ink-3);
+  font-size: 10px;
+}
+.pid-git-commit-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.pid-git-commit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.12s,
+    color 0.12s,
+    border-color 0.12s;
+}
+.pid-git-commit-btn:hover {
+  background: var(--bg-3);
+  color: var(--ink-0);
+  border-color: var(--line-strong);
+}
+.pid-git-commit-btn-primary {
+  flex: 1;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.pid-git-commit-btn-primary:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  filter: brightness(1.05);
+}
+
+/* Empty-state: "Initialise repo" CTA when the project isn't a repo. */
+.pid-git-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 24px;
+  text-align: center;
+}
+.pid-git-empty-glyph {
+  color: var(--ink-2);
+  margin-bottom: 4px;
+}
+.pid-git-empty-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 20px;
+  color: var(--ink-0);
+}
+.pid-git-empty-blurb {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-3);
+  line-height: 1.5;
+  max-width: 280px;
+}

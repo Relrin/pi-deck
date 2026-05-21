@@ -19,6 +19,11 @@ beforeEach(() => {
     currentBranchByProject: {},
     loadingByProject: {},
     errorByProject: {},
+    statusByProject: {},
+    commitsByProject: {},
+    statusLoadingByProject: {},
+    commitsLoadingByProject: {},
+    touchesBySession: {},
   });
   useSessionsStore.setState({
     sessions: [],

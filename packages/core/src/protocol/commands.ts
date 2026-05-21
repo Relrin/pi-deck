@@ -6,6 +6,7 @@ import {
   SessionSummarySchema,
   ThinkingLevelSchema,
 } from "../domain/session.js";
+import { GitBranchInfoSchema, GitCommitSchema, GitStatusSchema } from "../git/types.js";
 import {
   CustomProviderInputSchema,
   ModelInfoSchema,
@@ -119,12 +120,6 @@ export const SessionToolApprovalRequest = z.object({
 });
 export const SessionToolApprovalResponse = z.object({ ok: z.literal(true) });
 
-export const GitBranchInfoSchema = z.object({
-  name: z.string().min(1),
-  isCurrent: z.boolean(),
-  lastActivityAt: z.string().optional(),
-});
-
 export const GitListBranchesRequest = z.object({ projectId: z.string().uuid() });
 export const GitListBranchesResponse = z.object({
   branches: z.array(GitBranchInfoSchema),
@@ -144,6 +139,26 @@ export const GitCreateBranchRequest = z.object({
   name: z.string().min(1),
 });
 export const GitCreateBranchResponse = z.object({ ok: z.literal(true) });
+
+export const GitStatusRequest = z.object({ projectId: z.string().uuid() });
+export const GitStatusResponse = z.object({ status: GitStatusSchema });
+
+export const GitLogRequest = z.object({
+  projectId: z.string().uuid(),
+  limit: z.number().int().positive().max(200).optional(),
+});
+export const GitLogResponse = z.object({ commits: z.array(GitCommitSchema) });
+
+export const GitInitRequest = z.object({ projectId: z.string().uuid() });
+export const GitInitResponse = z.object({ ok: z.literal(true) });
+
+export const GitTurnTouchesRequest = z.object({ sessionId: z.string().min(1) });
+export const GitTurnTouchesResponse = z.object({
+  /** Absolute paths the current turn has written to since the last turn boundary. */
+  paths: z.array(z.string()),
+  /** Monotonic counter the renderer uses to invalidate stale snapshots. */
+  turnSeq: z.number().int().nonnegative(),
+});
 
 export const ThemeListRequest = z.object({}).strict();
 export const ThemeListResponse = z.object({
@@ -230,6 +245,13 @@ export const CommandSchemas = {
   "git.createBranch": {
     request: GitCreateBranchRequest,
     response: GitCreateBranchResponse,
+  },
+  "git.status": { request: GitStatusRequest, response: GitStatusResponse },
+  "git.log": { request: GitLogRequest, response: GitLogResponse },
+  "git.init": { request: GitInitRequest, response: GitInitResponse },
+  "git.turnTouches": {
+    request: GitTurnTouchesRequest,
+    response: GitTurnTouchesResponse,
   },
   "theme.list": { request: ThemeListRequest, response: ThemeListResponse },
   "theme.get": { request: ThemeGetRequest, response: ThemeGetResponse },

@@ -1,10 +1,12 @@
 import { PROTOCOL_VERSION } from "../protocol/version.js";
 import { generateToken } from "./auth.js";
+import { GitWatchManager } from "./git-watch-manager.js";
 import { MetadataStore } from "./metadata-store.js";
 import { ProviderManager } from "./provider-manager.js";
 import type { RouterContext } from "./router.js";
 import { SessionManager } from "./session-manager.js";
 import { ThemeManager } from "./themes/index.js";
+import { TurnTracker } from "./turn-tracker.js";
 import { WorkerHandle, type WorkerSpawnOptions } from "./worker-handle.js";
 import { startWsServer, type WsServerHandle } from "./ws-server.js";
 
@@ -59,11 +61,23 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     wsHandle?.broadcast(topic, payload);
   });
 
+  const gitWatchManager = new GitWatchManager(metadataStore);
+  gitWatchManager.on("event", (topic, payload) => {
+    wsHandle?.broadcast(topic, payload);
+  });
+
+  const turnTracker = new TurnTracker(sessionManager);
+  turnTracker.on("event", (topic, payload) => {
+    wsHandle?.broadcast(topic, payload);
+  });
+
   const router: RouterContext = {
     metadataStore,
     sessionManager,
     themeManager,
     providerManager,
+    gitWatchManager,
+    turnTracker,
     hostVersion: opts.hostVersion,
     protocolVersion: PROTOCOL_VERSION,
   };
@@ -76,6 +90,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     close: async () => {
       sessionManager.shutdown();
       await themeManager.shutdown();
+      await gitWatchManager.shutdown();
       await wsHandle?.close();
     },
   };
