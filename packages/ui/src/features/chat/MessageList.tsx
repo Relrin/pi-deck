@@ -29,7 +29,20 @@ export function MessageList({ sessionId }: { sessionId: string }) {
   const allMessages = useMessagesStore(useMemo(() => selectMessages(sessionId), [sessionId]));
   const messages = useMemo(() => allMessages.filter(isRenderableMessage), [allMessages]);
   const parentRef = useRef<HTMLDivElement | null>(null);
-  const [stickToBottom, setStickToBottom] = useState(true);
+  // Initialise from the saved snapshot so the stick-to-bottom layout effect below sees
+  // the right value on first commit. Without this, the effect would run with a stale
+  // `true` and unconditionally pin to the bottom — clobbering the saved-offset restore.
+  const [stickToBottom, setStickToBottom] = useState<boolean>(
+    () => useScrollPositionStore.getState().get(sessionId)?.atBottom !== false,
+  );
+  // Re-sync `stickToBottom` when `sessionId` changes by updating state during render
+  // ("adjusting state when a prop changes"). React discards the in-flight render and
+  // re-runs synchronously with the new value, so subsequent effects see it on first commit.
+  const prevSessionIdRef = useRef(sessionId);
+  if (prevSessionIdRef.current !== sessionId) {
+    prevSessionIdRef.current = sessionId;
+    setStickToBottom(useScrollPositionStore.getState().get(sessionId)?.atBottom !== false);
+  }
   const snapshotScroll = useScrollPositionStore((s) => s.snapshot);
 
   const virtualizer = useVirtualizer({
@@ -40,17 +53,22 @@ export function MessageList({ sessionId }: { sessionId: string }) {
     measureElement: (el) => el.getBoundingClientRect().height,
   });
 
-  // Restore the saved scroll position (or stick-to-bottom flag) when switching sessions.
+  // Restore the saved scroll position (or pin to bottom) when switching sessions.
+  // The "pin to bottom" path defers to `virtualizer.scrollToIndex` because raw
+  // `el.scrollTop = el.scrollHeight` lands above the true bottom with dynamic-height
+  // virtual rows: getTotalSize() is stale until measureElement reports real heights.
+  // scrollToIndex hooks into the virtualizer's measurement loop and converges.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: session-switch only
   useLayoutEffect(() => {
     const el = parentRef.current;
     if (!el) return;
     const saved = useScrollPositionStore.getState().get(sessionId);
-    if (saved?.atBottom !== false) {
-      setStickToBottom(true);
-      el.scrollTop = el.scrollHeight;
-    } else {
-      setStickToBottom(false);
+    if (saved?.atBottom === false) {
       el.scrollTop = saved.offset;
+      return;
+    }
+    if (messages.length > 0) {
+      virtualizer.scrollToIndex(messages.length - 1, { align: "end", behavior: "auto" });
     }
   }, [sessionId]);
 
@@ -83,9 +101,8 @@ export function MessageList({ sessionId }: { sessionId: string }) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on every message change
   useLayoutEffect(() => {
     if (!stickToBottom) return;
-    const el = parentRef.current;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
+    if (messages.length === 0) return;
+    virtualizer.scrollToIndex(messages.length - 1, { align: "end", behavior: "auto" });
   }, [messages, stickToBottom]);
 
   const items = virtualizer.getVirtualItems();
@@ -131,10 +148,10 @@ export function MessageList({ sessionId }: { sessionId: string }) {
         <button
           type="button"
           onClick={() => {
-            const el = parentRef.current;
-            if (!el) return;
-            el.scrollTop = el.scrollHeight;
             setStickToBottom(true);
+            if (messages.length > 0) {
+              virtualizer.scrollToIndex(messages.length - 1, { align: "end", behavior: "auto" });
+            }
           }}
           className="pid-jump-latest"
           aria-label="Jump to latest message"
