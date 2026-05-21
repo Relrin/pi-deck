@@ -1983,12 +1983,12 @@
   align-items: center;
   gap: 6px;
   padding: 3px 4px 3px 8px;
-  border-radius: 999px;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--ink-1);
+  color: var(--ink-0);
   max-width: 220px;
 }
 .pid-composer-attachment-path {
@@ -2003,7 +2003,7 @@
   width: 16px;
   height: 16px;
   padding: 0;
-  border-radius: 999px;
+  border-radius: 4px;
   background: transparent;
   border: 0;
   color: var(--ink-2);
@@ -2013,16 +2013,10 @@
   background: var(--bg-3);
   color: var(--ink-0);
 }
-/* Chips on a sent user-message bubble — no remove button, small bottom gap from text.
-   The accent border + soft fill distinguish them from the composer-staging variant so the
-   user can tell at a glance which files the agent received with the prompt. */
+/* Small bottom gap when chips sit on a sent user-message bubble. The visual treatment
+   matches the composer chips so a chip looks identical whether staged or dispatched. */
 .pid-user-attachments {
   margin-bottom: 8px;
-}
-.pid-user-attachments .pid-composer-attachment {
-  background: var(--accent-soft);
-  border-color: var(--accent-line);
-  color: var(--ink-0);
 }
 
 /* ---------- Repo file search dialog ---------- */
