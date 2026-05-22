@@ -8,9 +8,9 @@ interface Props {
 
 /**
  * Visual-only commit composer matching the design mockup. The textarea, "amend previous
- * commit" checkbox, and the three action buttons are present so the panel reads as complete;
+ * commit" checkbox, and the two action buttons are present so the panel reads as complete;
  * none of them dispatch a write yet — plan 007 is read-only. Wiring `commit` / `commit & push`
- * / `generate` lands in a later plan; until then the buttons carry an explanatory `title`.
+ * lands in a later plan; until then the buttons carry an explanatory `title`.
  */
 export function CommitComposer({ headShortSha }: Props) {
   const [message, setMessage] = useState("");
