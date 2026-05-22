@@ -19,13 +19,22 @@ import { PidLeftRail } from "./layout/PidLeftRail";
 import { PidRightPane } from "./layout/PidRightPane";
 import { PidTopBar } from "./layout/PidTopBar";
 import { installPideckDevHatch } from "./lib/dev/__pideck";
+import { useNavStore } from "./lib/useNavStore";
 import { ThemeProvider } from "./theme/ThemeProvider";
 
 export function App() {
   const initialize = useSessionsStore((s) => s.initialize);
   const projectId = useProjectsStore((s) => s.activeProjectId);
+  const activeSessionId = useSessionsStore((s) => s.activeSessionId);
+  const screen = useNavStore((s) => s.screen);
+  // The Git tab badge count only makes sense when the center column is actually showing a
+  // session. On blank / "Back to start" / editor / history routes the GitSidebar renders a
+  // placeholder, so the count badge stays hidden too.
+  const inSession = screen === "session" && Boolean(activeSessionId);
   const gitCount = useGitStore((s) =>
-    projectId ? (s.statusByProject[projectId]?.changes.length ?? undefined) : undefined,
+    projectId && inSession
+      ? (s.statusByProject[projectId]?.changes.length ?? undefined)
+      : undefined,
   );
   useSettingsHotkey();
   useNewSessionShortcut();

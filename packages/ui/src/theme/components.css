@@ -2665,19 +2665,23 @@
   flex: 1;
 }
 
-/* ---- Branch row ---- */
+/* ---- Branch row ----
+ * Padding + font-size mirror `.pid-rail-sessions-filter` so the branch trigger lines up
+ * visually with the "filter sessions…" input in the left rail and the files filter (same
+ * height, same type scale). */
 .pid-git-branch-trigger {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
-  padding: 7px 10px;
+  padding: 4px 8px;
   border-radius: var(--radius);
   background: var(--bg-2);
   border: 1px solid var(--line);
   color: var(--ink-0);
   cursor: pointer;
-  font: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
   text-align: left;
   transition:
     background-color 0.12s,
@@ -2703,7 +2707,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--font-mono);
-  font-size: var(--t-13);
+  font-size: var(--t-12);
   color: var(--ink-0);
 }
 .pid-git-branch-tracking {
@@ -3005,6 +3009,7 @@
 }
 .pid-git-commit-actions {
   display: flex;
+  justify-content: flex-end;
   gap: 6px;
   margin-top: 8px;
 }
@@ -3012,14 +3017,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 5px;
+  padding: 4px 8px;
   border-radius: var(--radius);
   background: var(--bg-2);
   border: 1px solid var(--line);
   color: var(--ink-1);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   letter-spacing: 0.04em;
   cursor: pointer;
   white-space: nowrap;
@@ -3034,7 +3039,6 @@
   border-color: var(--line-strong);
 }
 .pid-git-commit-btn-primary {
-  flex: 1;
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
