@@ -184,6 +184,21 @@
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
+}
+.pid-rail-body::-webkit-scrollbar {
+  width: 6px;
+}
+.pid-rail-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pid-rail-body::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 3px;
+}
+.pid-rail-body::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
 }
 
 .pid-rail-footer {
@@ -249,6 +264,21 @@
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
+}
+.pid-right-body::-webkit-scrollbar {
+  width: 6px;
+}
+.pid-right-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pid-right-body::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 3px;
+}
+.pid-right-body::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
 }
 
 /* ---------- Center column ---------- */
