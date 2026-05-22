@@ -1,5 +1,7 @@
+import { Icon } from "@iconify/react";
 import type { GitChange } from "@pi-deck/core/git/types.js";
 import type { MouseEvent } from "react";
+import { iconForFile } from "../../components/icons/file-icons.js";
 
 interface Props {
   change: GitChange;
@@ -26,6 +28,7 @@ const STATUS_TONE: Record<GitChange["status"], "add" | "mod" | "del" | "unt"> = 
 export function ChangeRow({ change, touched, selected, active, onToggle, onSelect }: Props) {
   const tone = STATUS_TONE[change.status];
   const parts = splitPath(change.path);
+  const fileIcon = iconForFile(change.path);
 
   // Keep the checkbox toggle independent of the row "select" action — clicking the checkbox
   // shouldn't also activate the row (which would feel like a double-tap).
@@ -51,6 +54,7 @@ export function ChangeRow({ change, touched, selected, active, onToggle, onSelec
         <span className="pid-git-row-status" aria-hidden>
           {change.status}
         </span>
+        <Icon icon={fileIcon} className="pid-git-row-fileicon" aria-hidden width={14} height={14} />
         <span className="pid-git-row-name">
           <span className="pid-git-row-filename">{parts.name}</span>
           {parts.dir ? <span className="pid-git-row-dir">{parts.dir}</span> : null}

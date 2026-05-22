@@ -2887,9 +2887,9 @@
 }
 .pid-git-row-body {
   display: grid;
-  grid-template-columns: 14px minmax(0, 1fr) auto;
+  grid-template-columns: 14px 14px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
   padding: 0;
   background: transparent;
@@ -2903,6 +2903,14 @@
   outline: 1px solid var(--accent-line);
   outline-offset: 2px;
   border-radius: 2px;
+}
+/* Multicolor file-type glyphs from material-icon-theme. The icons ship with their own brand
+ * colors (TS blue, Python yellow/green, etc.) so we don't override fill — this is the row's
+ * one bit of intentional color. */
+.pid-git-row-fileicon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 .pid-git-row-status {
   text-align: center;
