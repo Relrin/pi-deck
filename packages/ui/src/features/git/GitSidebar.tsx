@@ -67,6 +67,7 @@ export function GitSidebar() {
         branch={status.branch}
         ahead={status.ahead}
         behind={status.behind}
+        remotes={status.remotes}
       />
       <ChangesList changes={status.changes} totals={status.totals} touched={touched} />
       <CommitComposer headShortSha={headShortSha} />

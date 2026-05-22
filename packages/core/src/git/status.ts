@@ -17,7 +17,7 @@ export async function getStatus(root: string): Promise<GitStatus> {
       "--renames",
     ]);
 
-    const numstats = await readNumstat(root);
+    const [numstats, remotes] = await Promise.all([readNumstat(root), readRemotes(root)]);
     const changes = parseStatus(statusResult.stdout);
     for (const change of changes) {
       const entry = numstats.get(change.path);
@@ -36,6 +36,7 @@ export async function getStatus(root: string): Promise<GitStatus> {
       isRepo: true,
       root,
       ...branchInfo,
+      remotes,
       changes,
       totals,
     };
@@ -43,11 +44,29 @@ export async function getStatus(root: string): Promise<GitStatus> {
     if (err instanceof NotARepoError) {
       return {
         isRepo: false,
+        remotes: [],
         changes: [],
         totals: { add: 0, del: 0 },
       };
     }
     throw err;
+  }
+}
+
+/**
+ * Returns the configured remote names (`["origin", "upstream", …]`). Empty for purely-local
+ * repos. Failures (e.g. corrupt config) fall back to `[]` so the sidebar treats the repo as
+ * local rather than blocking the whole status read.
+ */
+async function readRemotes(root: string): Promise<string[]> {
+  try {
+    const { stdout } = await runGit(root, ["remote"]);
+    return stdout
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+  } catch {
+    return [];
   }
 }
 

@@ -30,6 +30,10 @@ export const GitStatusSchema = z.object({
   upstream: z.string().optional(),
   ahead: z.number().int().nonnegative().optional(),
   behind: z.number().int().nonnegative().optional(),
+  /** Names of configured remotes from `git remote` (e.g. `["origin", "upstream"]`). Empty
+   * array means the repo is purely local — no place to pull from / push to / open PRs
+   * against. The git sidebar uses this to grey out the remote-action buttons. */
+  remotes: z.array(z.string()),
   changes: z.array(GitChangeSchema),
   /** Aggregated +/- across `changes`; drives the diffbar header. */
   totals: z.object({
