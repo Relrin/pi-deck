@@ -10,6 +10,10 @@ export interface PidPanelHandleProps {
 
 export function PidPanelHandle({ side, ariaLabel, currentWidth, onResize }: PidPanelHandleProps) {
   const startXRef = useRef<number | null>(null);
+  // Each side has its own resize floor — the right pane is taller because of the git
+  // commit composer. Surface the side-specific min through `aria-valuemin` so assistive
+  // tech reads the same number that the store actually enforces on the value.
+  const minWidth = side === "right" ? RAIL_LIMITS.minRight : RAIL_LIMITS.minLeft;
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     event.preventDefault();
@@ -39,7 +43,7 @@ export function PidPanelHandle({ side, ariaLabel, currentWidth, onResize }: PidP
       aria-orientation="vertical"
       aria-label={ariaLabel}
       aria-valuenow={currentWidth}
-      aria-valuemin={RAIL_LIMITS.min}
+      aria-valuemin={minWidth}
       aria-valuemax={RAIL_LIMITS.max}
       tabIndex={0}
       onPointerDown={handlePointerDown}
