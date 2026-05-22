@@ -2,22 +2,18 @@ import { Glyph } from "../../components/glyph";
 import { PidKbd } from "../../components/kbd/PidKbd";
 import { useNavStore } from "../../lib/useNavStore";
 import { useProjectsStore } from "./useProjectsStore";
-import { useSessionsStore } from "./useSessionsStore";
 
 export function PidNewSessionButton() {
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const disabled = !activeProjectId;
-  const label = disabled ? "Open a project first" : "Create new session";
+  const label = disabled ? "Open a project first" : "New session";
 
+  // Clicking "new session" routes the user to the blank/composer screen instead of
+  // eagerly creating an empty session. The actual session is created on the first prompt
+  // submit inside PidComposerScreen — matches "intent to start" UX.
   const onClick = () => {
     if (!activeProjectId) return;
-    useSessionsStore
-      .getState()
-      .createSession(activeProjectId)
-      .then(() => {
-        useNavStore.getState().goToSession();
-      })
-      .catch(() => {});
+    useNavStore.getState().goToBlank();
   };
 
   return (

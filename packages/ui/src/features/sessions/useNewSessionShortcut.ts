@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useNavStore } from "../../lib/useNavStore";
 import { useProjectsStore } from "./useProjectsStore";
-import { useSessionsStore } from "./useSessionsStore";
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -12,8 +11,9 @@ function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 /**
- * Global Cmd/Ctrl+N hotkey: creates a new session in the active project and flips the
- * center column to the session route. No-op when no project is active.
+ * Global Cmd/Ctrl+N hotkey: routes the user to the blank/composer screen so they can start
+ * a new session from there (the session itself is created on first prompt submit). No-op
+ * when no project is active.
  *
  * Suppressed while focus is inside an editable element so the user can type the letter
  * "n" without triggering the shortcut.
@@ -28,13 +28,7 @@ export function useNewSessionShortcut(): void {
       const activeProjectId = useProjectsStore.getState().activeProjectId;
       if (!activeProjectId) return;
       event.preventDefault();
-      useSessionsStore
-        .getState()
-        .createSession(activeProjectId)
-        .then(() => {
-          useNavStore.getState().goToSession();
-        })
-        .catch(() => {});
+      useNavStore.getState().goToBlank();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);

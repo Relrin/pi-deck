@@ -1,11 +1,8 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import { beforeEach, describe, expect, test } from "bun:test";
 import { renderHook } from "../../../test/utils";
 import { useNavStore } from "../../lib/useNavStore";
 import { useNewSessionShortcut } from "./useNewSessionShortcut";
 import { useProjectsStore } from "./useProjectsStore";
-import { useSessionsStore } from "./useSessionsStore";
-
-const originalCreate = useSessionsStore.getState().createSession;
 
 function dispatchCmdN(target?: EventTarget) {
   const event = new KeyboardEvent("keydown", {
@@ -24,7 +21,7 @@ function dispatchCmdN(target?: EventTarget) {
 
 beforeEach(() => {
   useNavStore.setState({
-    screen: "blank",
+    screen: "session",
     expandedProjectsOverview: {},
     expandedProjectsRail: {},
   });
@@ -42,21 +39,12 @@ beforeEach(() => {
   });
 });
 
-afterEach(() => {
-  useSessionsStore.setState((prev) => ({ ...prev, createSession: originalCreate }));
-});
-
 describe("useNewSessionShortcut", () => {
-  test("Cmd/Ctrl+N creates a new session and flips screen", async () => {
-    const create = mock((_id: string) => Promise.resolve());
-    useSessionsStore.setState((prev) => ({ ...prev, createSession: create }));
-
+  test("Cmd/Ctrl+N routes to the blank/composer screen", () => {
     renderHook(() => useNewSessionShortcut());
     dispatchCmdN();
 
-    expect(create).toHaveBeenCalledWith("p-1");
-    await Promise.resolve();
-    expect(useNavStore.getState().screen).toBe("session");
+    expect(useNavStore.getState().screen).toBe("blank");
   });
 
   test("no-op when there is no active project", () => {
@@ -65,18 +53,13 @@ describe("useNewSessionShortcut", () => {
       activeProjectId: undefined,
       lastActiveSessionByProject: {},
     });
-    const create = mock((_id: string) => Promise.resolve());
-    useSessionsStore.setState((prev) => ({ ...prev, createSession: create }));
 
     renderHook(() => useNewSessionShortcut());
     dispatchCmdN();
-    expect(create).not.toHaveBeenCalled();
+    expect(useNavStore.getState().screen).toBe("session");
   });
 
   test("suppressed when target is a textarea", () => {
-    const create = mock((_id: string) => Promise.resolve());
-    useSessionsStore.setState((prev) => ({ ...prev, createSession: create }));
-
     renderHook(() => useNewSessionShortcut());
     const textarea = document.createElement("textarea");
     document.body.appendChild(textarea);
@@ -84,6 +67,6 @@ describe("useNewSessionShortcut", () => {
     dispatchCmdN(textarea);
     document.body.removeChild(textarea);
 
-    expect(create).not.toHaveBeenCalled();
+    expect(useNavStore.getState().screen).toBe("session");
   });
 });
