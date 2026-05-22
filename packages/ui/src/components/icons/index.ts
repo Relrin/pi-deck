@@ -1,6 +1,8 @@
 export {
   Archive,
+  ArrowDownToLine,
   ArrowLeft,
+  ArrowUpFromLine,
   Bot,
   Box,
   Check,
@@ -16,7 +18,9 @@ export {
   Folder,
   FolderOpen,
   GitBranch,
+  GitCommitHorizontal,
   GitMerge,
+  GitPullRequestArrow,
   Image,
   Layers,
   List,

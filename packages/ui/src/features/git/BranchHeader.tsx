@@ -1,7 +1,13 @@
 import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
-import { useState } from "react";
+import { type ComponentType, useState } from "react";
 import { Glyph } from "../../components/glyph/index.js";
-import { Check, GitMerge } from "../../components/icons/index.js";
+import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Check,
+  GitMerge,
+  GitPullRequestArrow,
+} from "../../components/icons/index.js";
 import { useGitStore } from "./useGitStore.js";
 
 interface Props {
@@ -73,16 +79,16 @@ export function BranchHeader({ projectId, branch, ahead, behind }: Props) {
       </RadixDropdown.Root>
 
       <div className="pid-git-branch-actions">
-        <BranchAction glyph="pull" label="pull" />
-        <BranchAction glyph="arrow-right" label="push" />
-        <BranchAction glyph="merge" label="open pr" />
+        <BranchAction icon={ArrowDownToLine} label="pull" />
+        <BranchAction icon={ArrowUpFromLine} label="push" />
+        <BranchAction icon={GitPullRequestArrow} label="open pr" />
       </div>
     </div>
   );
 }
 
 interface ActionProps {
-  glyph: "pull" | "arrow-right" | "merge";
+  icon: ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
   label: string;
 }
 
@@ -91,7 +97,7 @@ interface ActionProps {
  * here so the visual rhythm of the branch row matches the design. Clicking is a no-op with a
  * tooltip explaining why.
  */
-function BranchAction({ glyph, label }: ActionProps) {
+function BranchAction({ icon: Icon, label }: ActionProps) {
   return (
     <button
       type="button"
@@ -99,7 +105,7 @@ function BranchAction({ glyph, label }: ActionProps) {
       title={`${label} — coming in a later plan`}
       aria-label={`${label} (not yet implemented)`}
     >
-      <Glyph kind={glyph} size={16} />
+      <Icon size={16} aria-hidden />
       <span className="pid-git-branch-action-label">{label}</span>
     </button>
   );

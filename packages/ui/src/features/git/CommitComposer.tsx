@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Glyph } from "../../components/glyph/index.js";
+import { ArrowUpFromLine, GitCommitHorizontal } from "../../components/icons/index.js";
 
 interface Props {
   /** Short SHA of HEAD; rendered after the "amend" checkbox like in the screenshot. */
@@ -47,7 +47,7 @@ export function CommitComposer({ headShortSha }: Props) {
           className="pid-git-commit-btn pid-git-commit-btn-primary"
           title="Commit — coming in a later plan"
         >
-          <Glyph kind="commit" size={12} />
+          <GitCommitHorizontal size={12} aria-hidden />
           commit
         </button>
         <button
@@ -55,7 +55,7 @@ export function CommitComposer({ headShortSha }: Props) {
           className="pid-git-commit-btn pid-git-commit-btn-primary"
           title="Commit & push — coming in a later plan"
         >
-          <Glyph kind="arrow-right" size={12} />
+          <ArrowUpFromLine size={12} aria-hidden />
           commit & push
         </button>
       </div>

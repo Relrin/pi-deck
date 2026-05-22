@@ -16,6 +16,8 @@
     "@fontsource-variable/geist": "^5.2.8",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@fontsource/instrument-serif": "^5.2.8",
+    "@iconify-json/material-icon-theme": "1.2.64",
+    "@iconify/react": "6.0.2",
     "@lobehub/icons": "5.8.0",
     "@pi-deck/core": "workspace:*",
     "@radix-ui/react-context-menu": "2.2.16",
