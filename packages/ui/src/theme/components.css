@@ -192,6 +192,39 @@
   margin-left: 2px;
 }
 
+/* ---------- Section labels & count tag (small primitives) ---------- */
+/* Used by section headers in the right pane (e.g. "CHANGES", "COMMIT") and feature heads
+ * elsewhere. Slightly bumped one notch inside `.pid-rightpane` so the legibility holds at
+ * the right pane's content width. */
+.pid-mono-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.pid-rightpane .pid-mono-label {
+  font-size: 11px;
+}
+
+/* Square-bordered count chip that sits next to a `.pid-mono-label`, e.g. the "7" beside
+ * "CHANGES" in the git tab. Tight padding + crisp 2px corner radius — the chip primitive in
+ * `.pid-chip` uses a pill shape, so this is its right-angled sibling. */
+.pid-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 5px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  line-height: 1;
+}
+
 /* ---------- Mock data banner ---------- */
 .pid-banner {
   display: flex;
