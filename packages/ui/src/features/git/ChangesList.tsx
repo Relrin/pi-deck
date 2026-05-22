@@ -9,13 +9,43 @@ interface Props {
   touched: Set<string>;
 }
 
+/**
+ * Locale-aware natural-order collator: handles digit runs ("file2" < "file10"), folds case
+ * ("README" interleaves with "readme"), and respects the user's UI locale via `undefined`.
+ * One instance is shared by every `ChangesList` render — `Intl.Collator` is expensive to
+ * construct, cheap to call.
+ */
+const PATH_COLLATOR = new Intl.Collator(undefined, {
+  numeric: true,
+  sensitivity: "base",
+});
+
+/**
+ * Sort the change rows like GitHub's PR file list:
+ *   1. tracked changes first, untracked (`?`) sink to the bottom — untracked rows are
+ *      conceptually "pending decision" and clustering them avoids interleaving them with
+ *      real edits.
+ *   2. inside each group, natural path order — `src/bar.ts` next to `src/baz/...` etc.
+ */
+function sortChanges(changes: GitChange[]): GitChange[] {
+  return [...changes].sort((a, b) => {
+    if (a.untracked !== b.untracked) return a.untracked ? 1 : -1;
+    return PATH_COLLATOR.compare(a.path, b.path);
+  });
+}
+
 export function ChangesList({ changes, totals, touched }: Props) {
+  // Sort once per change-set so we don't re-key React rows during unrelated re-renders.
+  // `changes` is a fresh array from the store on every status refresh, so the memo bottoms
+  // out at the worst-case "sort 100 paths" cost — ~0.1ms on a modern engine.
+  const sortedChanges = useMemo(() => sortChanges(changes), [changes]);
+
   // Local "what would be staged" mirror. No write side-effects yet (plan 007 is read-only) —
   // the checkboxes simply track intent so the UI feels responsive when the user clicks them.
   // Wiring to `git add` lands with the commit pipeline in a later plan.
-  const allPaths = useMemo(() => changes.map((c) => c.path), [changes]);
+  const allPaths = useMemo(() => sortedChanges.map((c) => c.path), [sortedChanges]);
   const [selected, setSelected] = useState<Set<string>>(() => new Set(allPaths));
-  const [activePath, setActivePath] = useState<string | undefined>(changes[0]?.path);
+  const [activePath, setActivePath] = useState<string | undefined>(sortedChanges[0]?.path);
 
   // Reconcile selection when the change set itself changes (files staged in another terminal,
   // a new untracked file dropped in). New paths come in pre-selected; removed paths drop out.
@@ -66,11 +96,11 @@ export function ChangesList({ changes, totals, touched }: Props) {
 
       <DiffBarTotals totals={totals} />
 
-      {changes.length === 0 ? (
+      {sortedChanges.length === 0 ? (
         <div className="pid-git-empty">working tree clean</div>
       ) : (
         <div className="pid-git-rows">
-          {changes.map((c) => (
+          {sortedChanges.map((c) => (
             <ChangeRow
               key={`${c.path}:${c.status}`}
               change={c}
