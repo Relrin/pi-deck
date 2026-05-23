@@ -2871,8 +2871,6 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--bg-3) transparent;
 }
 .pid-git-rows::-webkit-scrollbar {
   width: 6px;
