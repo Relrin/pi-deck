@@ -47,7 +47,7 @@ export function PidRightPane({
         </button>
       </div>
 
-      <div className="pid-right-body" role="tabpanel">
+      <div className="pid-right-body" role="tabpanel" data-tab={tab}>
         {tab === "git" ? git : context}
       </div>
     </aside>

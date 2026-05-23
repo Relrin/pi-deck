@@ -2633,10 +2633,16 @@
 }
 
 /* ---------- Git sidebar (right pane "Git" tab) ---------- */
+/* Four-region flex column: branch header (top) · changes header · scrolling
+ * file rows · commit composer (bottom). Only `.pid-git-rows` scrolls, so the
+ * commit composer stays pinned to the bottom of the tab regardless of how
+ * many files are changed. */
 .pid-git {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  flex: 1 1 auto;
+  height: 100%;
 }
 .pid-git-placeholder {
   padding: 16px 14px;
@@ -2663,6 +2669,17 @@
 }
 .pid-git-section-spacer {
   flex: 1;
+}
+
+/* The changes section grows to fill the middle of the sidebar and hands its
+ * own vertical scroll to `.pid-git-rows`. The head + diffbar stay pinned at
+ * the top of the section. */
+.pid-git-section.pid-git-changes {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-bottom: 0;
 }
 
 /* ---- Branch row ----
@@ -2851,6 +2868,24 @@
   display: flex;
   flex-direction: column;
   margin: 0 -14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
+}
+.pid-git-rows::-webkit-scrollbar {
+  width: 6px;
+}
+.pid-git-rows::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pid-git-rows::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 3px;
+}
+.pid-git-rows::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
 }
 .pid-git-empty {
   padding: 8px 0;

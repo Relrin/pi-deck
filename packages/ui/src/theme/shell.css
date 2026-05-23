@@ -267,6 +267,14 @@
   scrollbar-width: thin;
   scrollbar-color: var(--bg-3) transparent;
 }
+/* Git tab manages its own internal scroll (file rows) so the commit composer
+ * can stay pinned at the bottom. Hide outer overflow + become a flex column
+ * so `.pid-git` can fill the height. Context tab keeps the default behaviour. */
+.pid-right-body[data-tab="git"] {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 .pid-right-body::-webkit-scrollbar {
   width: 6px;
 }
