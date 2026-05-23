@@ -2375,6 +2375,16 @@
 }
 /* Scrollbar matches the model picker's thin track for visual consistency with
    other scrollable surfaces in the app. */
+/* Chat-body scrollbar — matches `.pid-right-body` in shell.css. Modern Chromium honours
+   the standardized `scrollbar-width` + `scrollbar-color` properties, which give us the
+   native thin scrollbar widget complete with default up/down arrow buttons on Windows
+   (where the screenshot in the bug report came from). The `::-webkit-scrollbar-*` block
+   below is kept for older Chromium versions / WebKit fallback — newer Chromium prefers
+   the standardized properties when both are present. */
+.pid-chat-body {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
+}
 .pid-chat-body::-webkit-scrollbar {
   width: 6px;
 }
@@ -2871,6 +2881,14 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+}
+/* Git changes-list scrollbar — same treatment as `.pid-chat-body` and `.pid-right-body`:
+   standardized `scrollbar-width` + `scrollbar-color` so modern Chromium renders the
+   native thin widget (with up/down chevron buttons on Windows), with the legacy
+   `::-webkit-scrollbar-*` block kept as a fallback for older Chromium / pure WebKit. */
+.pid-git-rows {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
 }
 .pid-git-rows::-webkit-scrollbar {
   width: 6px;

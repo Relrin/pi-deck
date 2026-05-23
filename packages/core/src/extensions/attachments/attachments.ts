@@ -38,9 +38,9 @@ export interface AttachmentsController {
  * Why `input` and not `before_agent_start`: a custom message returned from
  * `before_agent_start` is delivered to the LLM as a SECOND consecutive user-role message
  * after the user's typed prompt, and most chat-tuned models ignore or misinterpret the
- * trailing message (Kimi K2.5 reliably reports "no files attached"). `input.transform`
- * lets us fold the attachment block into the same user turn, so the LLM sees one message
- * containing both the question and the attached content.
+ * trailing message. The `input.transform` lets us fold the attachment block
+ * into the same user turn, so the LLM sees one message containing both the question
+ * and the attached content.
  *
  * The plugin is intentionally self-contained:
  * - All ambient state lives on the returned controller, not on module globals.
