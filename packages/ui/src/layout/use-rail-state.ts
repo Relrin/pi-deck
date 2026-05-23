@@ -42,24 +42,7 @@ export const useRailState = create<RailState>()(
     }),
     {
       name: "pi-deck:rails",
-      version: 3,
-      // v1 → v2 added leftVisible/rightVisible. Default both to true so existing
-      // users see no change on upgrade.
-      // v2 → v3 raised the right-pane min from 200 → 280 to fit the git commit composer.
-      // Bump any persisted rightWidth that's below the new floor.
-      migrate: (persisted, version) => {
-        const next = (persisted ?? {}) as Partial<RailState>;
-        if (version < 2) {
-          next.leftVisible = true;
-          next.rightVisible = true;
-        }
-        if (version < 3) {
-          if (typeof next.rightWidth === "number" && next.rightWidth < MIN_RIGHT_WIDTH) {
-            next.rightWidth = MIN_RIGHT_WIDTH;
-          }
-        }
-        return next as RailState;
-      },
+      version: 1,
     },
   ),
 );
@@ -67,13 +50,8 @@ export const useRailState = create<RailState>()(
 /**
  * Side-specific resize limits. The left rail floors at 200px (sessions / files filter input
  * width); the right pane floors at 280px (git commit composer button row).
- *
- * `min` is kept as a back-compat alias for the lowest of the two floors so existing code
- * that doesn't care which side it's on still compiles. Prefer `minLeft` / `minRight` for new
- * code.
  */
 export const RAIL_LIMITS = {
-  min: MIN_LEFT_WIDTH,
   minLeft: MIN_LEFT_WIDTH,
   minRight: MIN_RIGHT_WIDTH,
   max: MAX_WIDTH,
