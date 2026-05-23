@@ -41,7 +41,7 @@ export const useRailState = create<RailState>()(
       toggleRight: () => set((s) => ({ rightVisible: !s.rightVisible })),
     }),
     {
-      name: "pi-deck:rails",
+      name: "pi-deck:rails:v1",
       version: 1,
     },
   ),

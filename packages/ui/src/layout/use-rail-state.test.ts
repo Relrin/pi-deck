@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { RAIL_DEFAULTS, useRailState } from "./use-rail-state";
 
-const STORAGE_KEY = "pi-deck:rails";
+const STORAGE_KEY = "pi-deck:rails:v1";
 
 function resetRailState() {
   useRailState.setState({
