@@ -42,6 +42,8 @@ beforeEach(() => {
     },
     loadingByProject: {},
     errorByProject: {},
+    archivedSessions: [],
+    archivedLoaded: true,
   }));
 });
 
@@ -67,5 +69,80 @@ describe("PidSessionsList", () => {
     fireEvent.click(screen.getByRole("button", { name: /Hello row/ }));
     expect(activate).toHaveBeenCalledWith("row-1");
     expect(useNavStore.getState().screen).toBe("session");
+  });
+
+  test("archived sessions render in the ARCHIVE group, not their project group", () => {
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      sessionsByProject: {
+        "p-1": [
+          {
+            id: "row-1",
+            projectId: "p-1",
+            title: "Live row",
+            lastActivityAt: "2026-05-16T11:50:00Z",
+          },
+          {
+            id: "row-2",
+            projectId: "p-1",
+            title: "Old archived row",
+            lastActivityAt: "2026-05-10T11:50:00Z",
+            archived: true,
+          },
+        ],
+      },
+      archivedSessions: [
+        {
+          id: "row-2",
+          projectId: "p-1",
+          title: "Old archived row",
+          lastActivityAt: "2026-05-10T11:50:00Z",
+          archived: true,
+        },
+      ],
+      archivedLoaded: true,
+    }));
+    // Expand both the project block and the archive block so all rows render.
+    useNavStore.setState({
+      screen: "blank",
+      expandedProjectsOverview: {},
+      expandedProjectsRail: { "p-1": true, __archive__: true },
+    });
+
+    render(<PidSessionsList />);
+
+    // Live row only — the archived one is filtered out of its project group.
+    const liveMatches = screen.getAllByText("Live row");
+    expect(liveMatches.length).toBe(1);
+    // Archived row appears under the synthetic ARCHIVE group instead. The "archive" label
+    // sits in `.pid-rail-project-name`; use the class to disambiguate from "archived" text
+    // inside the row title.
+    expect(document.querySelector(".pid-rail-project-name")?.textContent).toBeTruthy();
+    expect(
+      [...document.querySelectorAll(".pid-rail-project-name")].some(
+        (el) => el.textContent === "archive",
+      ),
+    ).toBe(true);
+    expect(screen.getAllByText("Old archived row").length).toBe(1);
+  });
+
+  test("renders branch line in mono under the title when session.branch is set", () => {
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      sessionsByProject: {
+        "p-1": [
+          {
+            id: "row-1",
+            projectId: "p-1",
+            title: "Branchy row",
+            branch: "pi/branchy",
+            lastActivityAt: "2026-05-16T11:50:00Z",
+          },
+        ],
+      },
+    }));
+
+    render(<PidSessionsList />);
+    expect(screen.getByText("pi/branchy")).toBeInTheDocument();
   });
 });

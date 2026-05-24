@@ -30,10 +30,15 @@ export interface SessionsStoreState {
   sessionsByProject: Record<string, SessionSummary[]>;
   loadingByProject: Record<string, boolean>;
   errorByProject: Record<string, string | undefined>;
+  /** Archived sessions across every project. Loaded eagerly so the ARCHIVE rail group
+   * can render its count even before any project block is expanded. */
+  archivedSessions: SessionSummary[];
+  archivedLoaded: boolean;
 
   initialize: () => Promise<void>;
   refreshSessions: (projectId: string) => Promise<void>;
   loadProjectSessions: (projectId: string) => Promise<void>;
+  loadArchivedSessions: () => Promise<void>;
   createSession: (
     projectId: string,
     opts?: {
@@ -44,6 +49,9 @@ export interface SessionsStoreState {
   ) => Promise<void>;
   activateSession: (id: string) => Promise<void>;
   deactivateSession: (id: string) => Promise<void>;
+  archiveSession: (id: string) => Promise<void>;
+  unarchiveSession: (id: string) => Promise<void>;
+  deleteSession: (id: string) => Promise<void>;
   sendPrompt: (
     text: string,
     opts?: {
@@ -64,6 +72,45 @@ export interface SessionsStoreState {
 /** Dedupes concurrent loadProjectSessions calls without leaking into store state. */
 const projectFetches = new Map<string, Promise<void>>();
 
+/**
+ * Compute the new + previous slice when a session flips its archived flag. The row is
+ * also shuffled between the per-project cache and the archivedSessions list so the rail
+ * updates immediately without waiting for a refresh round-trip.
+ */
+function archivedFlagPatch(
+  state: SessionsStoreState,
+  sessionId: string,
+  archived: boolean,
+): { next: Partial<SessionsStoreState>; previous: Partial<SessionsStoreState> } {
+  let target: SessionSummary | undefined;
+  const sessionsByProject: Record<string, SessionSummary[]> = {};
+  for (const [pid, list] of Object.entries(state.sessionsByProject)) {
+    sessionsByProject[pid] = list.map((s) => {
+      if (s.id !== sessionId) return s;
+      target = { ...s, archived };
+      return target;
+    });
+  }
+  if (!target) {
+    const fromArchive = state.archivedSessions.find((s) => s.id === sessionId);
+    if (fromArchive) target = { ...fromArchive, archived };
+  }
+  const sessions = state.sessions.map((s) => (s.id === sessionId ? { ...s, archived } : s));
+  const archivedSessions = archived
+    ? target
+      ? [...state.archivedSessions.filter((s) => s.id !== sessionId), target]
+      : state.archivedSessions
+    : state.archivedSessions.filter((s) => s.id !== sessionId);
+  return {
+    next: { sessions, sessionsByProject, archivedSessions },
+    previous: {
+      sessions: state.sessions,
+      sessionsByProject: state.sessionsByProject,
+      archivedSessions: state.archivedSessions,
+    },
+  };
+}
+
 export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
   status: "idle",
   client: undefined,
@@ -76,6 +123,8 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
   sessionsByProject: {},
   loadingByProject: {},
   errorByProject: {},
+  archivedSessions: [],
+  archivedLoaded: false,
 
   initialize: async () => {
     if (get().client) return;
@@ -203,6 +252,68 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       useProjectsStore.getState().setLastActiveSession(projectId, session.id);
     } catch (err) {
       useToastStore.getState().push(humanizeError(err, "Failed to create session"), "error");
+      throw err;
+    }
+  },
+
+  loadArchivedSessions: async () => {
+    const client = get().client;
+    if (!client) return;
+    try {
+      const { sessions } = await client.call("session.listArchived", {});
+      set({ archivedSessions: sessions, archivedLoaded: true });
+    } catch (err) {
+      useToastStore
+        .getState()
+        .push(humanizeError(err, "Failed to load archived sessions"), "error");
+    }
+  },
+
+  archiveSession: async (id) => {
+    const client = get().client;
+    if (!client) return;
+    const { next, previous } = archivedFlagPatch(get(), id, true);
+    set(next);
+    try {
+      await client.call("session.archive", { sessionId: id });
+    } catch (err) {
+      set(previous);
+      useToastStore.getState().push(humanizeError(err, "Failed to archive session"), "error");
+    }
+  },
+
+  unarchiveSession: async (id) => {
+    const client = get().client;
+    if (!client) return;
+    const { next, previous } = archivedFlagPatch(get(), id, false);
+    set(next);
+    try {
+      await client.call("session.unarchive", { sessionId: id });
+    } catch (err) {
+      set(previous);
+      useToastStore.getState().push(humanizeError(err, "Failed to unarchive session"), "error");
+    }
+  },
+
+  deleteSession: async (id) => {
+    const client = get().client;
+    if (!client) return;
+    try {
+      await client.call("session.delete", { sessionId: id });
+      set((state) => {
+        const sessionsByProject: Record<string, SessionSummary[]> = {};
+        for (const [pid, list] of Object.entries(state.sessionsByProject)) {
+          sessionsByProject[pid] = list.filter((s) => s.id !== id);
+        }
+        return {
+          sessions: state.sessions.filter((s) => s.id !== id),
+          sessionsByProject,
+          archivedSessions: state.archivedSessions.filter((s) => s.id !== id),
+          activeSessionId: state.activeSessionId === id ? undefined : state.activeSessionId,
+        };
+      });
+    } catch (err) {
+      useToastStore.getState().push(humanizeError(err, "Failed to delete session"), "error");
       throw err;
     }
   },

@@ -148,6 +148,100 @@ describe("useSessionsStore — updateSessionMetadata", () => {
   });
 });
 
+describe("useSessionsStore — archive/unarchive/delete", () => {
+  const session = {
+    id: "sess-arch-1",
+    projectId: "proj-1",
+    title: "Maybe archive",
+    lastActivityAt: "2026-05-20T10:00:00Z",
+  };
+
+  test("archiveSession optimistically flips the flag and shuffles into archivedSessions", async () => {
+    let archiveCalls = 0;
+    const client = mockClient({
+      "session.archive": () => {
+        archiveCalls += 1;
+        return { ok: true };
+      },
+    });
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      client: client as never,
+      sessions: [session],
+      sessionsByProject: { "proj-1": [session] },
+      archivedSessions: [],
+      archivedLoaded: true,
+    }));
+
+    await useSessionsStore.getState().archiveSession("sess-arch-1");
+
+    expect(archiveCalls).toBe(1);
+    const state = useSessionsStore.getState();
+    expect(state.archivedSessions.map((s) => s.id)).toEqual(["sess-arch-1"]);
+    expect(state.archivedSessions[0]?.archived).toBe(true);
+    expect(state.sessionsByProject["proj-1"]?.[0]?.archived).toBe(true);
+  });
+
+  test("archiveSession rolls back when the server call fails", async () => {
+    const client = mockClient({
+      "session.archive": () => {
+        throw new Error("server down");
+      },
+    });
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      client: client as never,
+      sessions: [session],
+      sessionsByProject: { "proj-1": [session] },
+      archivedSessions: [],
+    }));
+
+    await useSessionsStore.getState().archiveSession("sess-arch-1");
+
+    const state = useSessionsStore.getState();
+    expect(state.archivedSessions).toEqual([]);
+    expect(state.sessionsByProject["proj-1"]?.[0]?.archived).toBeFalsy();
+    expect(useToastStore.getState().toasts.length).toBe(1);
+  });
+
+  test("unarchiveSession moves the row back out of archivedSessions", async () => {
+    const archived = { ...session, archived: true };
+    const client = mockClient({ "session.unarchive": () => ({ ok: true }) });
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      client: client as never,
+      sessions: [archived],
+      sessionsByProject: { "proj-1": [archived] },
+      archivedSessions: [archived],
+    }));
+
+    await useSessionsStore.getState().unarchiveSession("sess-arch-1");
+
+    const state = useSessionsStore.getState();
+    expect(state.archivedSessions).toEqual([]);
+    expect(state.sessionsByProject["proj-1"]?.[0]?.archived).toBe(false);
+  });
+
+  test("deleteSession removes the row from everywhere and clears activeSessionId if matched", async () => {
+    const client = mockClient({ "session.delete": () => ({ ok: true }) });
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      client: client as never,
+      sessions: [session],
+      sessionsByProject: { "proj-1": [session] },
+      archivedSessions: [],
+      activeSessionId: "sess-arch-1",
+    }));
+
+    await useSessionsStore.getState().deleteSession("sess-arch-1");
+
+    const state = useSessionsStore.getState();
+    expect(state.sessions).toEqual([]);
+    expect(state.sessionsByProject["proj-1"]).toEqual([]);
+    expect(state.activeSessionId).toBeUndefined();
+  });
+});
+
 describe("useSessionsStore — sendPrompt", () => {
   test("marks turn in flight, appends optimistic user message on ack", async () => {
     const client = mockClient({ "session.prompt": () => ({}) });

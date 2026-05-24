@@ -958,7 +958,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 12px 5px 22px;
+  padding: 6px 12px 6px 22px;
   background: none;
   border: 0;
   width: 100%;
@@ -985,8 +985,22 @@
   background: var(--ink-3);
   flex: 0 0 auto;
 }
-.pid-rail-row-title {
+.pid-rail-row-main {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+.pid-rail-row-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.pid-rail-row-branch {
+  font-family: var(--font-mono);
+  font-size: var(--t-11, 11px);
+  color: var(--ink-3);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -2362,6 +2376,12 @@
   align-items: center;
   gap: 5px;
   color: var(--ink-1);
+}
+.pid-chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
 }
 
 /* Chat body — log-style rows */

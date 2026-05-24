@@ -103,6 +103,22 @@ export const SessionPromptResponse = z.object({
 export const SessionCancelRequest = z.object({ sessionId: z.string().min(1) });
 export const SessionCancelResponse = z.object({ ok: z.literal(true) });
 
+export const SessionArchiveRequest = z.object({ sessionId: z.string().min(1) });
+export const SessionArchiveResponse = z.object({ ok: z.literal(true) });
+
+export const SessionUnarchiveRequest = z.object({ sessionId: z.string().min(1) });
+export const SessionUnarchiveResponse = z.object({ ok: z.literal(true) });
+
+export const SessionDeleteRequest = z.object({ sessionId: z.string().min(1) });
+export const SessionDeleteResponse = z.object({ ok: z.literal(true) });
+
+/** Returns archived sessions across every project so the rail's ARCHIVE group can render
+ * without waiting for each project block to be expanded. */
+export const SessionListArchivedRequest = z.object({}).strict();
+export const SessionListArchivedResponse = z.object({
+  sessions: z.array(SessionSummarySchema),
+});
+
 export const SessionSetModelRequest = z.object({
   sessionId: z.string().min(1),
   modelRef: SessionModelRefSchema,
@@ -321,6 +337,13 @@ export const CommandSchemas = {
   "session.deactivate": { request: SessionDeactivateRequest, response: SessionDeactivateResponse },
   "session.prompt": { request: SessionPromptRequest, response: SessionPromptResponse },
   "session.cancel": { request: SessionCancelRequest, response: SessionCancelResponse },
+  "session.archive": { request: SessionArchiveRequest, response: SessionArchiveResponse },
+  "session.unarchive": { request: SessionUnarchiveRequest, response: SessionUnarchiveResponse },
+  "session.delete": { request: SessionDeleteRequest, response: SessionDeleteResponse },
+  "session.listArchived": {
+    request: SessionListArchivedRequest,
+    response: SessionListArchivedResponse,
+  },
   "session.setModel": { request: SessionSetModelRequest, response: SessionSetModelResponse },
   "session.setThinkingLevel": {
     request: SessionSetThinkingLevelRequest,

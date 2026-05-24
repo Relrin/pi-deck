@@ -46,7 +46,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     return new WorkerHandle(spawnOpts);
   };
 
-  const sessionManager = new SessionManager({ spawnWorker, providerManager });
+  const sessionManager = new SessionManager({ spawnWorker, providerManager, metadataStore });
   sessionManager.on("event", (topic, payload) => {
     wsHandle?.broadcast(topic, payload);
   });

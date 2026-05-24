@@ -38,6 +38,10 @@ export const SessionSummarySchema = z.object({
   /** Agent permission mode picked on the composer; defaults to "plan" when absent. */
   agentMode: AgentModeSchema.optional(),
   lastActivityAt: z.string().datetime(),
+  /** Git branch snapshot captured at session creation; absent when project isn't a git repo. */
+  branch: z.string().optional(),
+  /** True once the user archived the session; absent is treated as `false` by consumers. */
+  archived: z.boolean().optional(),
 });
 
 export type SessionSummary = z.infer<typeof SessionSummarySchema>;

@@ -7,6 +7,7 @@ import {
   DefaultResourceLoader,
   getAgentDir,
   ModelRegistry,
+  SessionManager as PiSessionManager,
   SettingsManager,
 } from "@earendil-works/pi-coding-agent";
 import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/session.js";
@@ -18,6 +19,35 @@ import { EVENT_SESSION_TOOL_APPROVAL_REQUESTED } from "../protocol/events.js";
 import { validateAndChdir } from "./cwd.js";
 
 export type EventEmitter = (topic: string, payload: unknown) => void;
+
+export interface HistoryToolCall {
+  id: string;
+  name: string;
+  input: unknown;
+  partialResult?: unknown;
+  result?: unknown;
+  status: "pending" | "running" | "done" | "error" | "cancelled";
+  errorText?: string;
+  startedAt: number;
+  endedAt?: number;
+}
+
+export type HistoryMessage =
+  | { kind: "user"; id: string; text: string; createdAt: number }
+  | {
+      kind: "assistant";
+      id: string;
+      text: string;
+      toolCallIds: string[];
+      createdAt: number;
+      remoteTimestamp?: number;
+      model?: string;
+    };
+
+export interface HistorySnapshot {
+  messages: HistoryMessage[];
+  toolCalls: HistoryToolCall[];
+}
 
 export interface AgentBridge {
   session: AgentSession;
@@ -35,6 +65,8 @@ export interface AgentBridge {
   setEditAllowlist: (paths: string[]) => void;
   /** Resolve a pending tool-call approval (allow / deny). */
   resolveApproval: (approvalId: string, decision: ApprovalDecision, reason?: string) => void;
+  /** Snapshot of all past messages + tool calls so the renderer can re-paint a resumed chat. */
+  getHistory: () => HistorySnapshot;
   dispose: () => void;
 }
 
@@ -110,11 +142,25 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
   // no-ops.
   await resourceLoader.reload();
 
+  // Resume from a persisted session file when we have one — otherwise pi creates a brand
+  // new session (with a fresh sessionId) on every rehydrate and the renderer's id goes
+  // stale ("Unknown session" on the next call). When the file doesn't exist anymore (user
+  // wiped pi's session dir, for instance) we fall back to a fresh session.
+  let sessionManager: PiSessionManager | undefined;
+  if (params.sessionFile) {
+    try {
+      sessionManager = PiSessionManager.open(params.sessionFile);
+    } catch {
+      sessionManager = undefined;
+    }
+  }
+
   const { session } = await createAgentSession({
     cwd: params.projectPath,
     authStorage,
     modelRegistry,
     resourceLoader,
+    ...(sessionManager ? { sessionManager } : {}),
     ...(model ? { model } : {}),
     ...(thinkingLevel ? { thinkingLevel } : {}),
   });
@@ -173,12 +219,101 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     resolveApproval: (approvalId, decision, reason) => {
       agentModeController.resolveApproval(approvalId, decision, reason);
     },
+    getHistory: () => buildHistorySnapshot(session),
     dispose: () => {
       unsubscribe();
       agentModeController.dispose();
       session.dispose();
     },
   };
+}
+
+/**
+ * Walk pi's persisted session messages and reshape them into the renderer's
+ * MessageEntry / ToolCallEntry vocabulary. Called once on activate so the chat view
+ * can paint the prior conversation without waiting for a new turn.
+ */
+function buildHistorySnapshot(session: AgentSession): HistorySnapshot {
+  const messages: HistoryMessage[] = [];
+  const toolCalls: HistoryToolCall[] = [];
+  // The agent state holds the resolved transcript pi will hand to the next LLM call —
+  // identical to what was shown live in the previous run.
+  const piMessages = (session.agent.state.messages ?? []) as unknown[];
+  for (const raw of piMessages) {
+    if (typeof raw !== "object" || raw === null) continue;
+    const m = raw as {
+      role?: string;
+      content?: unknown;
+      timestamp?: number;
+      model?: string;
+      toolCallId?: string;
+      toolName?: string;
+      isError?: boolean;
+    };
+    const ts = typeof m.timestamp === "number" ? m.timestamp : Date.now();
+    if (m.role === "user") {
+      messages.push({
+        kind: "user",
+        id: `u-hist-${ts}-${messages.length}`,
+        text: extractUserText(m.content),
+        createdAt: ts,
+      });
+      continue;
+    }
+    if (m.role === "assistant") {
+      const blocks = Array.isArray(m.content) ? (m.content as unknown[]) : [];
+      let text = "";
+      const ids: string[] = [];
+      for (const block of blocks) {
+        if (typeof block !== "object" || block === null) continue;
+        const b = block as {
+          type?: string;
+          text?: string;
+          id?: string;
+          name?: string;
+          arguments?: unknown;
+        };
+        if (b.type === "text" && typeof b.text === "string") {
+          text += b.text;
+        } else if (b.type === "toolCall" && typeof b.id === "string") {
+          ids.push(b.id);
+          toolCalls.push({
+            id: b.id,
+            name: typeof b.name === "string" ? b.name : "",
+            input: b.arguments,
+            // A bare toolCall in history without a matching toolResult means the previous
+            // run was killed mid-call; render it as cancelled rather than leaving it
+            // perpetually "running" in the rebuilt UI.
+            status: "cancelled",
+            startedAt: ts,
+          });
+        }
+      }
+      messages.push({
+        kind: "assistant",
+        id: `a-hist-${ts}-${messages.length}`,
+        text,
+        toolCallIds: ids,
+        createdAt: ts,
+        remoteTimestamp: ts,
+        model: typeof m.model === "string" ? m.model : undefined,
+      });
+      continue;
+    }
+    if (m.role === "toolResult" && typeof m.toolCallId === "string") {
+      const idx = toolCalls.findIndex((t) => t.id === m.toolCallId);
+      if (idx === -1) continue;
+      const existing = toolCalls[idx];
+      if (!existing) continue;
+      toolCalls[idx] = {
+        ...existing,
+        result: m.content,
+        status: m.isError ? "error" : "done",
+        endedAt: ts,
+      };
+    }
+  }
+  return { messages, toolCalls };
 }
 
 function forwardEvent(event: AgentSessionEvent, emit: EventEmitter, session: AgentSession): void {

@@ -40,6 +40,15 @@ interface MessagesStoreState {
   endTurn: (sessionId: string, cancelled: boolean | undefined) => void;
   markTurnInFlight: (sessionId: string, value: boolean) => void;
   clearSession: (sessionId: string) => void;
+  /**
+   * Replace the chat transcript + tool-call cache for a session with the snapshot the
+   * host emits after activating a resumed session. Idempotent — repeated emissions on
+   * the same session simply re-seed with the same data.
+   */
+  loadHistory: (
+    sessionId: string,
+    payload: { messages: MessageEntry[]; toolCalls: Record<string, ToolCallEntry> },
+  ) => void;
 }
 
 const emptySession = (): SessionMessageState => ({
@@ -394,6 +403,19 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
       delete next[sessionId];
       return { bySession: next };
     }),
+
+  loadHistory: (sessionId, payload) =>
+    set((state) => ({
+      bySession: {
+        ...state.bySession,
+        [sessionId]: {
+          messages: payload.messages,
+          toolCalls: payload.toolCalls,
+          // History never describes an in-flight turn — by definition it's settled work.
+          isTurnInFlight: false,
+        },
+      },
+    })),
 }));
 
 function extractErrorText(result: unknown): string | undefined {

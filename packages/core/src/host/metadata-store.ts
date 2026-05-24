@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
-import { type Project, ProjectSchema, type ProjectSummary } from "../domain/project.js";
+import {
+  type Project,
+  ProjectSchema,
+  type ProjectSummary,
+  type SessionMetadata,
+} from "../domain/project.js";
 
 export class MetadataStore {
   private readonly projectsDir: string;
@@ -86,6 +91,53 @@ export class MetadataStore {
     if (project.sessionIds.includes(sessionId)) return;
     const updated: Project = { ...project, sessionIds: [...project.sessionIds, sessionId] };
     await this.writeProject(updated);
+  }
+
+  async upsertSession(projectId: string, meta: SessionMetadata): Promise<void> {
+    const project = await this.readProject(projectId);
+    if (!project) throw new Error(`Project ${projectId} not found`);
+    const sessions = { ...(project.sessions ?? {}), [meta.id]: meta };
+    const sessionIds = project.sessionIds.includes(meta.id)
+      ? project.sessionIds
+      : [...project.sessionIds, meta.id];
+    await this.writeProject({ ...project, sessionIds, sessions });
+  }
+
+  async patchSession(
+    projectId: string,
+    sessionId: string,
+    patch: Partial<SessionMetadata>,
+  ): Promise<void> {
+    const project = await this.readProject(projectId);
+    if (!project) return;
+    const existing = project.sessions?.[sessionId];
+    if (!existing) return;
+    const next: SessionMetadata = { ...existing, ...patch, id: sessionId };
+    const sessions = { ...(project.sessions ?? {}), [sessionId]: next };
+    await this.writeProject({ ...project, sessions });
+  }
+
+  async renameSessionId(projectId: string, oldId: string, newId: string): Promise<void> {
+    if (oldId === newId) return;
+    const project = await this.readProject(projectId);
+    if (!project) return;
+    const sessionIds = project.sessionIds.map((id) => (id === oldId ? newId : id));
+    const sessions = { ...(project.sessions ?? {}) };
+    const meta = sessions[oldId];
+    if (meta) {
+      delete sessions[oldId];
+      sessions[newId] = { ...meta, id: newId };
+    }
+    await this.writeProject({ ...project, sessionIds, sessions });
+  }
+
+  async deleteSession(projectId: string, sessionId: string): Promise<void> {
+    const project = await this.readProject(projectId);
+    if (!project) return;
+    const sessionIds = project.sessionIds.filter((id) => id !== sessionId);
+    const sessions = { ...(project.sessions ?? {}) };
+    delete sessions[sessionId];
+    await this.writeProject({ ...project, sessionIds, sessions });
   }
 
   private async listProjectIds(): Promise<string[]> {

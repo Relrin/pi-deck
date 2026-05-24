@@ -9,6 +9,7 @@ export const EVENT_SESSION_TOOL_CALL_START = "session.tool.call.start" as const;
 export const EVENT_SESSION_TOOL_CALL_UPDATE = "session.tool.call.update" as const;
 export const EVENT_SESSION_TOOL_CALL_END = "session.tool.call.end" as const;
 export const EVENT_SESSION_TURN_END = "session.turn.end" as const;
+export const EVENT_SESSION_HISTORY_LOADED = "session.history.loaded" as const;
 export const EVENT_SESSION_WORKER_EXIT = "session.worker.exit" as const;
 export const EVENT_SESSION_AGENT_EVENT = "session.agent.event" as const;
 export const EVENT_SESSION_MODEL_CHANGED = "session.model.changed" as const;
@@ -93,6 +94,52 @@ export const SessionWorkerExitPayload = z.object({
   signal: z.string().nullable(),
 });
 
+/**
+ * Snapshot of past session messages + tool calls, broadcast by the host after `activate`
+ * resumes a session from its pi sessionFile. The renderer's messages store REPLACES the
+ * session's contents with this payload so re-opening a saved session shows the prior
+ * conversation. Always emitted on activate — fresh sessions just carry empty arrays.
+ */
+export const SessionHistoryToolCall = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  input: z.unknown(),
+  partialResult: z.unknown().optional(),
+  result: z.unknown().optional(),
+  status: z.enum(["pending", "running", "done", "error", "cancelled"]),
+  errorText: z.string().optional(),
+  startedAt: z.number(),
+  endedAt: z.number().optional(),
+});
+
+export const SessionHistoryUserMessage = z.object({
+  kind: z.literal("user"),
+  id: z.string().min(1),
+  text: z.string(),
+  createdAt: z.number(),
+});
+
+export const SessionHistoryAssistantMessage = z.object({
+  kind: z.literal("assistant"),
+  id: z.string().min(1),
+  text: z.string(),
+  toolCallIds: z.array(z.string()),
+  createdAt: z.number(),
+  remoteTimestamp: z.number().optional(),
+  model: z.string().optional(),
+});
+
+export const SessionHistoryMessage = z.discriminatedUnion("kind", [
+  SessionHistoryUserMessage,
+  SessionHistoryAssistantMessage,
+]);
+
+export const SessionHistoryLoadedPayload = z.object({
+  sessionId: z.string(),
+  messages: z.array(SessionHistoryMessage),
+  toolCalls: z.array(SessionHistoryToolCall),
+});
+
 export const SessionAgentEventPayload = z.object({
   sessionId: z.string(),
   event: z.unknown(),
@@ -172,6 +219,7 @@ export const EventSchemas = {
   [EVENT_SESSION_TOOL_CALL_UPDATE]: SessionToolCallUpdatePayload,
   [EVENT_SESSION_TOOL_CALL_END]: SessionToolCallEndPayload,
   [EVENT_SESSION_TURN_END]: SessionTurnEndPayload,
+  [EVENT_SESSION_HISTORY_LOADED]: SessionHistoryLoadedPayload,
   [EVENT_SESSION_WORKER_EXIT]: SessionWorkerExitPayload,
   [EVENT_SESSION_AGENT_EVENT]: SessionAgentEventPayload,
   [EVENT_SESSION_MODEL_CHANGED]: SessionModelChangedPayload,

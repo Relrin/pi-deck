@@ -1,13 +1,23 @@
 import { useEffect } from "react";
+import { PidChip } from "../../components/chip/PidChip";
 import { Glyph } from "../../components/glyph";
-import { useRailExpanded } from "../../lib/useNavStore";
+import { useNavStore, useRailExpanded } from "../../lib/useNavStore";
 import { PidNewSessionButton } from "./PidNewSessionButton";
 import { PidProjectSwitcher } from "./PidProjectSwitcher";
 import { PidSessionRow } from "./PidSessionRow";
 import { useProjectsStore } from "./useProjectsStore";
 import { useSessionsStore } from "./useSessionsStore";
 
+const ARCHIVE_KEY = "__archive__";
+
 export function PidSessionsList() {
+  // Load the cross-project archived list once so the ARCHIVE group can render its count
+  // without waiting for individual project blocks to expand.
+  useEffect(() => {
+    const { archivedLoaded, loadArchivedSessions, client } = useSessionsStore.getState();
+    if (!archivedLoaded && client) void loadArchivedSessions();
+  }, []);
+
   return (
     <div className="pid-rail-sessions">
       <div className="pid-rail-sessions-actions">
@@ -21,6 +31,7 @@ export function PidSessionsList() {
       </div>
       <div className="pid-rail-sessions-body">
         <ProjectsListing />
+        <ArchiveBlock />
       </div>
     </div>
   );
@@ -67,11 +78,48 @@ function ProjectBlock({ projectId }: ProjectBlockProps) {
 
   if (!project) return null;
 
+  // Archived sessions live in the synthetic ARCHIVE group at the bottom; filter them out
+  // of their original project so the same row doesn't render twice.
+  const visible = sessions?.filter((s) => !s.archived);
+
   return (
     <div className="pid-rail-project">
-      <PidProjectSwitcher project={project} count={sessions?.length} />
-      {expanded && sessions
-        ? sessions.map((session) => (
+      <PidProjectSwitcher project={project} count={visible?.length} />
+      {expanded && visible
+        ? visible.map((session) => (
+            <PidSessionRow
+              key={session.id}
+              session={session}
+              active={session.id === activeSessionId}
+            />
+          ))
+        : null}
+    </div>
+  );
+}
+
+function ArchiveBlock() {
+  const archived = useSessionsStore((s) => s.archivedSessions);
+  const activeSessionId = useSessionsStore((s) => s.activeSessionId);
+  const expanded = useNavStore((s) => s.expandedProjectsRail[ARCHIVE_KEY] ?? false);
+  const toggle = () => useNavStore.getState().toggleRailProject(ARCHIVE_KEY);
+
+  if (archived.length === 0) return null;
+
+  return (
+    <div className="pid-rail-project">
+      <button
+        type="button"
+        className="pid-rail-project-header"
+        aria-expanded={expanded}
+        onClick={toggle}
+      >
+        <Glyph kind={expanded ? "chevron-down" : "chevron-right"} size={12} />
+        <span className="pid-rail-project-name">archive</span>
+        <PidChip>{String(archived.length)}</PidChip>
+      </button>
+      {expanded
+        ? archived.map((session) => (
             <PidSessionRow
               key={session.id}
               session={session}

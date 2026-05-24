@@ -59,6 +59,8 @@ function toSummary(record: SessionRecord) {
     thinkingLevel: record.thinkingLevel,
     agentMode: record.agentMode,
     lastActivityAt: record.lastActivityAt,
+    branch: record.branch,
+    archived: record.archived,
   };
 }
 
@@ -86,6 +88,7 @@ const handlers: { [C in CommandName]: CommandHandler } = {
   },
   "session.list": async (ctx, payload) => {
     const parsed = CommandSchemas["session.list"].request.parse(payload);
+    await ctx.sessionManager.rehydrateProject(parsed.projectId);
     const records = ctx.sessionManager.list(parsed.projectId);
     return { sessions: records.map(toSummary) };
   },
@@ -128,6 +131,26 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     const parsed = CommandSchemas["session.cancel"].request.parse(payload);
     await ctx.sessionManager.cancel(parsed.sessionId);
     return { ok: true as const };
+  },
+  "session.archive": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.archive"].request.parse(payload);
+    await ctx.sessionManager.archive(parsed.sessionId);
+    return { ok: true as const };
+  },
+  "session.unarchive": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.unarchive"].request.parse(payload);
+    await ctx.sessionManager.unarchive(parsed.sessionId);
+    return { ok: true as const };
+  },
+  "session.delete": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.delete"].request.parse(payload);
+    await ctx.sessionManager.delete(parsed.sessionId);
+    ctx.turnTracker.forget(parsed.sessionId);
+    return { ok: true as const };
+  },
+  "session.listArchived": async (ctx) => {
+    await ctx.sessionManager.rehydrateAll();
+    return { sessions: ctx.sessionManager.listArchived().map(toSummary) };
   },
   "session.setModel": async (ctx, payload) => {
     const parsed = CommandSchemas["session.setModel"].request.parse(payload);

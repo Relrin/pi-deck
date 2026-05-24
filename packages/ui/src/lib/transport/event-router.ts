@@ -8,6 +8,7 @@ import {
   EVENT_HOST_ERROR,
   EVENT_PROVIDER_CHANGED,
   EVENT_SESSION_AGENT_EVENT,
+  EVENT_SESSION_HISTORY_LOADED,
   EVENT_SESSION_MESSAGE_DELTA,
   EVENT_SESSION_MODEL_CHANGED,
   EVENT_SESSION_TOOL_CALL_END,
@@ -21,6 +22,7 @@ import {
 } from "@pi-deck/core/protocol/events.js";
 import { useToastStore } from "../../features/_status/useToastStore.js";
 import { resetHighlighter } from "../../features/chat/messages/code-highlight.js";
+import type { MessageEntry, ToolCallEntry } from "../../features/chat/types.js";
 import { useMessagesStore } from "../../features/chat/useMessagesStore.js";
 import { useUsageStore } from "../../features/chat/useUsageStore.js";
 import { useGitStore } from "../../features/git/useGitStore.js";
@@ -136,6 +138,22 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
     }
     case EVENT_SESSION_WORKER_EXIT: {
       useMessagesStore.getState().markTurnInFlight(sessionId, false);
+      return;
+    }
+    case EVENT_SESSION_HISTORY_LOADED: {
+      // Wire payload carries arrays; the store wants a MessageEntry[] plus a
+      // Record<callId, ToolCallEntry>. Shape-conformity is enforced upstream by zod, so we
+      // cast through `unknown` rather than re-validating per field here.
+      const rawMessages = Array.isArray(payload.messages) ? (payload.messages as unknown[]) : [];
+      const rawToolCalls = Array.isArray(payload.toolCalls) ? (payload.toolCalls as unknown[]) : [];
+      const toolCalls: Record<string, ToolCallEntry> = {};
+      for (const tc of rawToolCalls as ToolCallEntry[]) {
+        if (tc && typeof tc.id === "string") toolCalls[tc.id] = tc;
+      }
+      useMessagesStore.getState().loadHistory(sessionId, {
+        messages: rawMessages as MessageEntry[],
+        toolCalls,
+      });
       return;
     }
     case EVENT_SESSION_AGENT_EVENT: {

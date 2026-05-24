@@ -102,6 +102,11 @@ async function handleRequest(frame: { id: string; cmd: string; payload: unknown 
         sendOk(frame.id, { ok: true });
         return;
       }
+      case "getHistory": {
+        if (!bridge) throw new Error("Worker not initialized");
+        sendOk(frame.id, bridge.getHistory());
+        return;
+      }
       default:
         sendErr(frame.id, "unknown_command", `Unknown worker command: ${frame.cmd}`);
     }
