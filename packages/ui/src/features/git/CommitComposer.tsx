@@ -7,14 +7,15 @@ interface Props {
 }
 
 /**
- * Visual-only commit composer matching the design mockup. The textarea, "amend previous
- * commit" checkbox, and the two action buttons are present so the panel reads as complete;
- * none of them dispatch a write yet — plan 007 is read-only. Wiring `commit` / `commit & push`
- * lands in a later plan; until then the buttons carry an explanatory `title`.
+ * Visual-only commit composer matching the design mockup. The textarea, option checkboxes,
+ * and the two action buttons are present so the panel reads as complete; none of them
+ * dispatch a write yet — plan 007 is read-only. Wiring `commit` / `commit & push` lands in
+ * a later plan; until then the buttons carry an explanatory `title`.
  */
 export function CommitComposer({ headShortSha }: Props) {
   const [message, setMessage] = useState("");
   const [amend, setAmend] = useState(false);
+  const [force, setForce] = useState(false);
 
   return (
     <div className="pid-git-section pid-git-commit-composer">
@@ -39,6 +40,18 @@ export function CommitComposer({ headShortSha }: Props) {
         <span>amend previous commit</span>
         <span className="pid-git-commit-amend-spacer" />
         {headShortSha ? <span className="pid-git-commit-amend-sha">{headShortSha}</span> : null}
+      </label>
+
+      <label className="pid-git-commit-amend">
+        <input
+          type="checkbox"
+          checked={force}
+          onChange={(e) => setForce(e.target.checked)}
+          className="pid-git-commit-amend-check"
+        />
+        <span>force push</span>
+        <span className="pid-git-commit-amend-spacer" />
+        <span className="pid-git-commit-amend-sha">--force-with-lease</span>
       </label>
 
       <div className="pid-git-commit-actions">
