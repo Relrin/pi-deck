@@ -13,7 +13,15 @@ import {
   pullSuccessNotification,
   pushFailureNotification,
   pushSuccessNotification,
+  refreshSuccessNotification,
+  rollbackFailureNotification,
+  rollbackSuccessNotification,
+  stashFailureNotification,
+  stashPopFailureNotification,
+  stashPopSuccessNotification,
+  stashSuccessNotification,
 } from "./git-notify.js";
+import { useStagingStore } from "./useStagingStore.js";
 
 export interface GitBranchInfo {
   name: string;
@@ -64,6 +72,19 @@ interface GitStoreState {
   openPr: (projectId: string) => Promise<void>;
   undoLastCommit: (projectId: string) => Promise<void>;
   viewCommitOnRemote: (projectId: string, sha: string) => Promise<void>;
+  /** Re-read git state from disk (status, branches, commits, and hunks if loaded). Used
+   * by the changes-toolbar refresh button when the user has run git commands externally. */
+  refreshAll: (projectId: string) => Promise<void>;
+  /** Restore the selected paths to HEAD via `git checkout` (or remove via `git clean` for
+   * untracked entries). Caller passes the already-classified path sets. */
+  rollback: (
+    projectId: string,
+    paths: { tracked: string[]; untracked: string[] },
+  ) => Promise<boolean>;
+  /** Stash the listed paths (empty/omitted = whole working tree). */
+  stash: (projectId: string, paths?: string[]) => Promise<boolean>;
+  /** Apply and drop the latest stash entry. */
+  stashPop: (projectId: string) => Promise<boolean>;
 }
 
 const inflight = new Map<string, Promise<void>>();
@@ -459,6 +480,91 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       window.open(url, "_blank", "noopener");
     } catch (err) {
       useToastStore.getState().push(humanizeError(err, "Failed to resolve commit URL"), "error");
+    }
+  },
+
+  refreshAll: async (projectId) => {
+    const client = useSessionsStore.getState().client;
+    if (!client) return;
+    await Promise.all([get().refreshStatus(projectId), get().refresh(projectId)]);
+    void get().refreshCommits(projectId);
+    // Refresh hunks too when the user is currently viewing the hunk grouping — otherwise
+    // they'd see stale line ranges until the next external watcher event.
+    if (get().hunksByProject[projectId]) void get().refreshHunks(projectId);
+    useNotificationStore.getState().push(refreshSuccessNotification(projectId));
+  },
+
+  rollback: async (projectId, paths) => {
+    const client = useSessionsStore.getState().client;
+    if (!client) return false;
+    const notify = useNotificationStore.getState();
+    const total = paths.tracked.length + paths.untracked.length;
+    if (total === 0) {
+      notify.push(rollbackFailureNotification(projectId, "No files selected."));
+      return false;
+    }
+    try {
+      await client.call("git.checkoutPaths", { projectId, ...paths });
+      // Clear the staging selection so the now-rolled-back files don't linger as "checked"
+      // entries pointing at paths that may no longer exist.
+      useStagingStore.getState().resetProject(projectId);
+      void get().refreshStatus(projectId);
+      notify.push(rollbackSuccessNotification(projectId, { fileCount: total }));
+      return true;
+    } catch (err) {
+      notify.push(rollbackFailureNotification(projectId, humanizeError(err, "Rollback failed")));
+      return false;
+    }
+  },
+
+  stash: async (projectId, paths) => {
+    const client = useSessionsStore.getState().client;
+    if (!client) return false;
+    const notify = useNotificationStore.getState();
+    try {
+      const outcome = await client.call("git.stash", {
+        projectId,
+        paths,
+        // No explicit paths = "snapshot the whole working tree" — include untracked too so
+        // a stash actually saves the user's net dirty state, not just tracked edits.
+        includeUntracked: !paths || paths.length === 0,
+      });
+      if (!outcome.ok) {
+        notify.push(stashFailureNotification(projectId, outcome.reason, outcome.stderr));
+        return false;
+      }
+      useStagingStore.getState().resetProject(projectId);
+      void get().refreshStatus(projectId);
+      const popAction = {
+        id: "pop",
+        label: "apply",
+        variant: "secondary" as const,
+        onSelect: () => void get().stashPop(projectId),
+      };
+      notify.push(stashSuccessNotification(projectId, { selectedCount: paths?.length }, popAction));
+      return true;
+    } catch (err) {
+      notify.push(stashFailureNotification(projectId, "unknown", humanizeError(err, "")));
+      return false;
+    }
+  },
+
+  stashPop: async (projectId) => {
+    const client = useSessionsStore.getState().client;
+    if (!client) return false;
+    const notify = useNotificationStore.getState();
+    try {
+      const outcome = await client.call("git.stashPop", { projectId });
+      if (!outcome.ok) {
+        notify.push(stashPopFailureNotification(projectId, outcome.reason, outcome.stderr));
+        return false;
+      }
+      void get().refreshStatus(projectId);
+      notify.push(stashPopSuccessNotification(projectId));
+      return true;
+    } catch (err) {
+      notify.push(stashPopFailureNotification(projectId, "unknown", humanizeError(err, "")));
+      return false;
     }
   },
 }));

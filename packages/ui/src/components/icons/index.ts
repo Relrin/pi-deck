@@ -1,5 +1,6 @@
 export {
   Archive,
+  ArchiveRestore,
   ArrowDownToLine,
   ArrowLeft,
   ArrowUpFromLine,
@@ -34,6 +35,7 @@ export {
   PanelRight,
   Paperclip,
   Plus,
+  RefreshCw,
   Search,
   Send,
   Settings,
@@ -42,6 +44,7 @@ export {
   Square,
   SquareCheck,
   Terminal,
+  Undo2,
   User,
   X,
 } from "lucide-react";

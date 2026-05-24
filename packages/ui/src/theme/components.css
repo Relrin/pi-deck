@@ -2805,6 +2805,68 @@
   color: inherit;
 }
 
+/* Working-tree toolbar (refresh / rollback / stash / apply). Single grouped pill: the
+ * left pair handles read/restore, then a hairline divider, then the right pair handles
+ * stash/unstash. Background matches the section panel so the row feels embedded. */
+.pid-git-changes-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 2px 3px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.pid-git-changes-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 20px;
+  border-radius: calc(var(--radius) - 1px);
+  background: transparent;
+  border: 0;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    background-color 0.12s,
+    color 0.12s;
+}
+.pid-git-changes-toolbar-btn:hover:not(:disabled) {
+  background: var(--bg-3, var(--bg-1));
+  color: var(--ink-0);
+}
+.pid-git-changes-toolbar-btn:disabled {
+  color: var(--ink-3);
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* Hairline divider between the two action pairs. Sized off the button height so it stays
+ * proportional regardless of icon-scale tweaks down the line. */
+.pid-git-changes-toolbar-sep {
+  width: 1px;
+  /* Scaled down with the button — keeps the divider proportional inside the slimmer pill. */
+  height: 14px;
+  margin: 0 2px;
+  background: var(--line);
+  flex-shrink: 0;
+}
+
+/* Secondary controls row sits below the diffbar — group picker pinned left, stage all
+ * pinned right via the flex spacer. */
+.pid-git-changes-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  min-width: 0;
+}
+.pid-git-changes-controls-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ---- Changes header (group picker + stage all + diffbar with totals) ---- */
 .pid-git-group-trigger {
   display: inline-flex;

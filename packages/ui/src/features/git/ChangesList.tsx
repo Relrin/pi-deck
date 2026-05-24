@@ -2,6 +2,7 @@ import type { GitChange, GitHunk } from "@pi-deck/core/git/types.js";
 import { type MouseEvent, useMemo, useState } from "react";
 import { Folder } from "../../components/icons/index.js";
 import { ChangeRow } from "./ChangeRow.js";
+import { ChangesToolbar } from "./ChangesToolbar.js";
 import { GroupModeMenu } from "./GroupModeMenu.js";
 import { type GroupMode, useGroupModeStore } from "./useGroupModeStore.js";
 import { useStagingStore } from "./useStagingStore.js";
@@ -53,21 +54,22 @@ export function ChangesList({ projectId, changes, totals, touched, hunksByPath }
   const groupMode = useGroupModeStore((s) => s.mode);
   const setGroupMode = useGroupModeStore((s) => s.setMode);
 
-  // Staging selection lives in a shared store so CommitComposer can read which paths to
-  // `git add` before committing. The store auto-defaults to "everything selected" when
-  // its per-project entry is empty, which matches the prior local-state behavior.
+  // Staging selection lives in a shared store so CommitComposer + the changes toolbar
+  // can read which paths the user wants to act on. Default is empty (nothing checked) —
+  // users opt in explicitly via the checkboxes or "stage all".
   const selectedRecord = useStagingStore((s) => s.selectedByProject[projectId]);
   const toggleStaging = useStagingStore((s) => s.toggle);
   const selectAllStaging = useStagingStore((s) => s.selectAll);
   const syncedSelected = useMemo(() => {
     const result = new Set<string>();
+    if (!selectedRecord) return result;
     for (const p of allPaths) {
-      if (!selectedRecord || selectedRecord.size === 0 || selectedRecord.has(p)) result.add(p);
+      if (selectedRecord.has(p)) result.add(p);
     }
     return result;
   }, [allPaths, selectedRecord]);
 
-  const toggle = (path: string) => toggleStaging(projectId, path, allPaths);
+  const toggle = (path: string) => toggleStaging(projectId, path);
   const stageAll = () => selectAllStaging(projectId, allPaths);
 
   const rowProps = {
@@ -84,7 +86,17 @@ export function ChangesList({ projectId, changes, totals, touched, hunksByPath }
         <span className="pid-mono-label">changes</span>
         <span className="pid-tag">{changes.length}</span>
         <span className="pid-git-section-spacer" />
+        <ChangesToolbar projectId={projectId} />
+      </div>
+
+      <DiffBarTotals totals={totals} />
+
+      {/* Group picker and stage-all live BELOW the diffbar per the design — picker pinned
+       * left, stage-all pinned right. Putting them here (instead of in the section head)
+       * keeps the working-tree toolbar visually distinct from view/selection controls. */}
+      <div className="pid-git-changes-controls">
         <GroupModeMenu mode={groupMode} onChange={setGroupMode} />
+        <span className="pid-git-changes-controls-spacer" />
         <button
           type="button"
           className="pid-git-changes-stage-all"
@@ -94,8 +106,6 @@ export function ChangesList({ projectId, changes, totals, touched, hunksByPath }
           stage all
         </button>
       </div>
-
-      <DiffBarTotals totals={totals} />
 
       {sortedChanges.length === 0 ? (
         <div className="pid-git-empty">working tree clean</div>

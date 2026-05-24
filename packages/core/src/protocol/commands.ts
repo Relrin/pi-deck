@@ -221,6 +221,34 @@ export const GitCommitUrlRequest = z.object({
 });
 export const GitCommitUrlResponse = z.object({ url: z.string().min(1) });
 
+export const GitCheckoutPathsRequest = z.object({
+  projectId: z.string().uuid(),
+  /** Tracked paths to restore via `git checkout HEAD --`. */
+  tracked: z.array(z.string().min(1)),
+  /** Untracked paths to remove via `git clean -f --` (no HEAD entry to restore to). */
+  untracked: z.array(z.string().min(1)),
+});
+export const GitCheckoutPathsResponse = z.object({ ok: z.literal(true) });
+
+const StashFailureReason = z.enum(["no_changes", "unknown"]);
+export const GitStashRequest = z.object({
+  projectId: z.string().uuid(),
+  message: z.string().optional(),
+  paths: z.array(z.string().min(1)).optional(),
+  includeUntracked: z.boolean().optional(),
+});
+export const GitStashResponse = z.discriminatedUnion("ok", [
+  z.object({ ok: z.literal(true), stderr: z.string() }),
+  z.object({ ok: z.literal(false), reason: StashFailureReason, stderr: z.string() }),
+]);
+
+const StashPopFailureReason = z.enum(["empty_stack", "conflict", "unknown"]);
+export const GitStashPopRequest = z.object({ projectId: z.string().uuid() });
+export const GitStashPopResponse = z.discriminatedUnion("ok", [
+  z.object({ ok: z.literal(true), stderr: z.string() }),
+  z.object({ ok: z.literal(false), reason: StashPopFailureReason, stderr: z.string() }),
+]);
+
 export const GitInitRequest = z.object({ projectId: z.string().uuid() });
 export const GitInitResponse = z.object({ ok: z.literal(true) });
 
@@ -333,6 +361,9 @@ export const CommandSchemas = {
   },
   "git.openPrUrl": { request: GitOpenPrUrlRequest, response: GitOpenPrUrlResponse },
   "git.commitUrl": { request: GitCommitUrlRequest, response: GitCommitUrlResponse },
+  "git.checkoutPaths": { request: GitCheckoutPathsRequest, response: GitCheckoutPathsResponse },
+  "git.stash": { request: GitStashRequest, response: GitStashResponse },
+  "git.stashPop": { request: GitStashPopRequest, response: GitStashPopResponse },
   "git.init": { request: GitInitRequest, response: GitInitResponse },
   "git.turnTouches": {
     request: GitTurnTouchesRequest,

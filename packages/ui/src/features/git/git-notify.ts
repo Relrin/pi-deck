@@ -9,6 +9,10 @@ export const notifyIds = {
   push: (projectId: string) => `git.push:${projectId}`,
   pull: (projectId: string) => `git.pull:${projectId}`,
   openPr: (projectId: string) => `git.openPr:${projectId}`,
+  rollback: (projectId: string) => `git.rollback:${projectId}`,
+  stash: (projectId: string) => `git.stash:${projectId}`,
+  stashPop: (projectId: string) => `git.stashPop:${projectId}`,
+  refresh: (projectId: string) => `git.refresh:${projectId}`,
 };
 
 const DURATION = 8000;
@@ -164,6 +168,124 @@ export function pullFailureNotification(
       ? { label: "view log", onSelect: () => openLogWindow(input.stderr) }
       : undefined,
     durationMs: DURATION,
+  };
+}
+
+export interface RollbackInput {
+  fileCount: number;
+}
+
+export function rollbackSuccessNotification(
+  projectId: string,
+  input: RollbackInput,
+): NotificationInput {
+  const n = input.fileCount;
+  return {
+    id: notifyIds.rollback(projectId),
+    kind: "success",
+    title: "Files rolled back",
+    tag: "Rollback",
+    body: `${n} file${n === 1 ? "" : "s"} restored to HEAD.`,
+    durationMs: DURATION,
+  };
+}
+
+export function rollbackFailureNotification(projectId: string, message: string): NotificationInput {
+  return {
+    id: notifyIds.rollback(projectId),
+    kind: "error",
+    title: "Rollback failed",
+    tag: "Rollback",
+    body: message,
+    durationMs: DURATION,
+  };
+}
+
+export interface StashSuccessInput {
+  /** How many files the user explicitly selected — undefined means "everything". */
+  selectedCount?: number;
+}
+
+export function stashSuccessNotification(
+  projectId: string,
+  input: StashSuccessInput,
+  popAction: NotificationAction,
+): NotificationInput {
+  const body =
+    input.selectedCount !== undefined
+      ? `${input.selectedCount} file${input.selectedCount === 1 ? "" : "s"} moved to the stash.`
+      : "Working tree stashed.";
+  return {
+    id: notifyIds.stash(projectId),
+    kind: "success",
+    title: "Changes stashed",
+    tag: "Stash",
+    body,
+    actions: [popAction],
+    durationMs: DURATION,
+  };
+}
+
+export function stashFailureNotification(
+  projectId: string,
+  reason: "no_changes" | "unknown",
+  stderr: string,
+): NotificationInput {
+  const body =
+    reason === "no_changes"
+      ? "Nothing to stash — working tree matches HEAD."
+      : "Stash failed. Open the log for details.";
+  return {
+    id: notifyIds.stash(projectId),
+    kind: "error",
+    title: "Stash failed",
+    tag: "Stash",
+    body,
+    footnote: stderr ? { label: "view log", onSelect: () => openLogWindow(stderr) } : undefined,
+    durationMs: DURATION,
+  };
+}
+
+export function stashPopSuccessNotification(projectId: string): NotificationInput {
+  return {
+    id: notifyIds.stashPop(projectId),
+    kind: "success",
+    title: "Stash applied",
+    tag: "Apply",
+    body: "Latest stash entry restored and dropped.",
+    durationMs: DURATION,
+  };
+}
+
+export function stashPopFailureNotification(
+  projectId: string,
+  reason: "empty_stack" | "conflict" | "unknown",
+  stderr: string,
+): NotificationInput {
+  const body =
+    reason === "empty_stack"
+      ? "No stash entries to apply."
+      : reason === "conflict"
+        ? "Merge conflict while applying the stash — resolve in your editor, then commit."
+        : "Stash pop failed. Open the log for details.";
+  return {
+    id: notifyIds.stashPop(projectId),
+    kind: "error",
+    title: "Apply stash failed",
+    tag: "Apply",
+    body,
+    footnote: stderr ? { label: "view log", onSelect: () => openLogWindow(stderr) } : undefined,
+    durationMs: DURATION,
+  };
+}
+
+export function refreshSuccessNotification(projectId: string): NotificationInput {
+  return {
+    id: notifyIds.refresh(projectId),
+    kind: "info",
+    title: "Git state refreshed",
+    body: "Working tree, branches, and recent commits re-read from disk.",
+    durationMs: 3000,
   };
 }
 

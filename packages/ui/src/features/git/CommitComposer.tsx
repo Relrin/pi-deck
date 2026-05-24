@@ -17,9 +17,9 @@ export function CommitComposer({ projectId, headShortSha }: Props) {
 
   const commit = useGitStore((s) => s.commit);
   const push = useGitStore((s) => s.push);
-  // Pull the latest changes list directly from the status snapshot so the "default = all"
-  // sentinel in useStagingStore can resolve correctly even when the user has never clicked
-  // a checkbox (which is the most common case).
+  // Pull the latest changes list directly from the status snapshot so we can intersect
+  // it with the user's checkbox selection — paths that have since been removed (a file
+  // committed elsewhere, a path reverted) get filtered out before we hit `git add`.
   const changes = useGitStore((s) => s.statusByProject[projectId]?.changes);
   const stagingRecord = useStagingStore((s) => s.selectedByProject[projectId]);
   const resetStaging = useStagingStore((s) => s.resetProject);
@@ -28,23 +28,17 @@ export function CommitComposer({ projectId, headShortSha }: Props) {
 
   const runCommit = async (alsoPush: boolean) => {
     if (!canSubmit) return;
-    // Resolve the actual paths to stage: every checked file (or all of them while the
-    // selection is still in its "empty = default-all" state). Untracked files are included
-    // — `git add` happily picks them up.
+    // Resolve the actual paths to stage from the user's explicit selection. Untracked
+    // files are included — `git add` picks them up just fine.
     const allPaths = changes?.map((c) => c.path) ?? [];
-    const selectedPaths = allPaths.filter(
-      (p) => !stagingRecord || stagingRecord.size === 0 || stagingRecord.has(p),
-    );
+    const selectedPaths = stagingRecord ? allPaths.filter((p) => stagingRecord.has(p)) : [];
 
     setBusy(alsoPush ? "commit-push" : "commit");
     try {
       const result = await commit(projectId, {
         message: message.trim(),
         amend,
-        // Skip the explicit `paths` payload when amending — the user is rewriting the
-        // existing commit and we don't want to pull in unrelated working-tree changes
-        // unless they opted in by checking specific files.
-        paths: amend && selectedPaths.length === allPaths.length ? undefined : selectedPaths,
+        paths: selectedPaths.length > 0 ? selectedPaths : undefined,
       });
       if (!result) return;
       // Clear the composer on success so the next commit doesn't accidentally reuse the

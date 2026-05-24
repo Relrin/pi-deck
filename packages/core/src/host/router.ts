@@ -1,5 +1,6 @@
 import {
   checkoutBranch,
+  checkoutPaths,
   createBranch,
   currentBranch,
   GitNotFoundError,
@@ -9,6 +10,8 @@ import {
   commit as gitCommit,
   pull as gitPull,
   push as gitPush,
+  stash as gitStash,
+  stashPop as gitStashPop,
   initRepo,
   listBranches,
   listProjectFiles,
@@ -307,6 +310,49 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
     try {
       return await getCommitUrl(project.path, parsed.sha, parsed.remote);
+    } catch (err) {
+      mapGitError(err);
+    }
+  },
+  "git.checkoutPaths": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.checkoutPaths"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      await checkoutPaths(project.path, {
+        tracked: parsed.tracked,
+        untracked: parsed.untracked,
+      });
+      void ctx.gitWatchManager.getOrLoad(parsed.projectId);
+      return { ok: true as const };
+    } catch (err) {
+      mapGitError(err);
+    }
+  },
+  "git.stash": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.stash"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const outcome = await gitStash(project.path, {
+        message: parsed.message,
+        paths: parsed.paths,
+        includeUntracked: parsed.includeUntracked,
+      });
+      void ctx.gitWatchManager.getOrLoad(parsed.projectId);
+      return outcome;
+    } catch (err) {
+      mapGitError(err);
+    }
+  },
+  "git.stashPop": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.stashPop"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const outcome = await gitStashPop(project.path);
+      void ctx.gitWatchManager.getOrLoad(parsed.projectId);
+      return outcome;
     } catch (err) {
       mapGitError(err);
     }

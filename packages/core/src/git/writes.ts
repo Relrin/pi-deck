@@ -169,5 +169,109 @@ export async function resetSoftHeadParent(root: string): Promise<void> {
   await runGit(root, ["reset", "--soft", "HEAD^"]);
 }
 
+/**
+ * Discard working-tree edits to `paths`, restoring each to its HEAD content. For
+ * untracked paths (which have no HEAD entry) we fall back to `git clean -f --` so the
+ * file is removed — that's the user's intent when they "rollback" an untracked file in
+ * the changes list.
+ *
+ * Splitting the two `git` invocations means a typo in one tracked path doesn't prevent
+ * the untracked cleanup from running, and vice versa. The two sets are passed in
+ * pre-classified by the caller — the renderer already knows from `GitChange.untracked`.
+ */
+export async function checkoutPaths(
+  root: string,
+  paths: { tracked: string[]; untracked: string[] },
+): Promise<void> {
+  if (paths.tracked.length > 0) {
+    await runGit(root, ["checkout", "HEAD", "--", ...paths.tracked]);
+  }
+  if (paths.untracked.length > 0) {
+    await runGit(root, ["clean", "-f", "--", ...paths.untracked]);
+  }
+}
+
+export interface StashOptions {
+  /** Optional message attached to the stash entry. When omitted git auto-generates one. */
+  message?: string;
+  /** When set, only these paths are stashed (`git stash push -- <paths>`). Empty/omitted
+   * means stash everything that's currently dirty. Stashing arbitrary untracked files
+   * needs `--include-untracked`, which we set automatically when any untracked path is
+   * named so the user doesn't have to know that flag. */
+  paths?: string[];
+  /** When true, also stash untracked files in the working tree. Use when no `paths` are
+   * specified but the user wants a complete snapshot. */
+  includeUntracked?: boolean;
+}
+
+export type StashOutcome =
+  | { ok: true; stderr: string }
+  | { ok: false; reason: StashFailureReason; stderr: string };
+
+export type StashFailureReason = "no_changes" | "unknown";
+
+/**
+ * Stash the working tree (or just `opts.paths`). Returns a structured outcome so the
+ * "nothing to stash" case gets its own friendly notification instead of bouncing as a raw
+ * git error.
+ */
+export async function stash(root: string, opts: StashOptions = {}): Promise<StashOutcome> {
+  const args = ["stash", "push"];
+  if (opts.includeUntracked || (opts.paths && opts.paths.length > 0)) {
+    args.push("--include-untracked");
+  }
+  if (opts.message) args.push("-m", opts.message);
+  if (opts.paths && opts.paths.length > 0) args.push("--", ...opts.paths);
+  try {
+    const { stderr, stdout } = await runGit(root, args);
+    // `git stash push` exits 0 even when there are no changes — it prints
+    // "No local changes to save" to stdout. Surface that as a soft failure so the toast
+    // doesn't lie about having stashed anything.
+    if (/no local changes to save/i.test(stdout) || /no local changes to save/i.test(stderr)) {
+      return { ok: false, reason: "no_changes", stderr: stdout || stderr };
+    }
+    return { ok: true, stderr };
+  } catch (err) {
+    if (err instanceof GitCommandError) {
+      const haystack = `${err.stdout} ${err.stderr}`.toLowerCase();
+      if (haystack.includes("no local changes")) {
+        return { ok: false, reason: "no_changes", stderr: err.stderr };
+      }
+      return { ok: false, reason: "unknown", stderr: err.stderr };
+    }
+    throw err;
+  }
+}
+
+export type StashPopOutcome =
+  | { ok: true; stderr: string }
+  | { ok: false; reason: StashPopFailureReason; stderr: string };
+
+export type StashPopFailureReason = "empty_stack" | "conflict" | "unknown";
+
+/**
+ * Apply and drop the latest stash entry. `git stash pop` exits non-zero in two distinct
+ * scenarios we care about — empty stash list and merge conflicts during apply — so we
+ * classify them up front rather than leaking raw git output to the user.
+ */
+export async function stashPop(root: string): Promise<StashPopOutcome> {
+  try {
+    const { stderr } = await runGit(root, ["stash", "pop"]);
+    return { ok: true, stderr };
+  } catch (err) {
+    if (err instanceof GitCommandError) {
+      const haystack = `${err.stdout} ${err.stderr}`.toLowerCase();
+      if (haystack.includes("no stash entries") || haystack.includes("nothing to apply")) {
+        return { ok: false, reason: "empty_stack", stderr: err.stderr };
+      }
+      if (haystack.includes("conflict") || haystack.includes("could not apply")) {
+        return { ok: false, reason: "conflict", stderr: err.stderr };
+      }
+      return { ok: false, reason: "unknown", stderr: err.stderr };
+    }
+    throw err;
+  }
+}
+
 /** Re-export so the router can `instanceof`-check without importing from runner.js too. */
 export { NotARepoError };
