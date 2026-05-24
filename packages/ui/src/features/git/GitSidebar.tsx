@@ -85,6 +85,7 @@ export function GitSidebar() {
         remotes={status.remotes}
       />
       <ChangesList
+        projectId={projectId}
         changes={status.changes}
         totals={status.totals}
         touched={touched}

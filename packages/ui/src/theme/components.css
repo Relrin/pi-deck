@@ -3411,7 +3411,7 @@
   width: 18px;
   height: 18px;
   margin-top: 2px;
-  border-radius: 50%;
+  border-radius: 5px;
   color: var(--bg-1);
 }
 .pid-notification-icon[data-kind="success"] {

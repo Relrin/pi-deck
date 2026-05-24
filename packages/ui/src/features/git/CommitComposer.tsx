@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowUpFromLine, GitCommitHorizontal, Loader2 } from "../../components/icons/index.js";
 import { useGitStore } from "./useGitStore.js";
+import { useStagingStore } from "./useStagingStore.js";
 
 interface Props {
   projectId: string;
@@ -16,19 +17,43 @@ export function CommitComposer({ projectId, headShortSha }: Props) {
 
   const commit = useGitStore((s) => s.commit);
   const push = useGitStore((s) => s.push);
+  // Pull the latest changes list directly from the status snapshot so the "default = all"
+  // sentinel in useStagingStore can resolve correctly even when the user has never clicked
+  // a checkbox (which is the most common case).
+  const changes = useGitStore((s) => s.statusByProject[projectId]?.changes);
+  const stagingRecord = useStagingStore((s) => s.selectedByProject[projectId]);
+  const resetStaging = useStagingStore((s) => s.resetProject);
 
   const canSubmit = message.trim().length > 0 && busy === undefined;
 
   const runCommit = async (alsoPush: boolean) => {
     if (!canSubmit) return;
+    // Resolve the actual paths to stage: every checked file (or all of them while the
+    // selection is still in its "empty = default-all" state). Untracked files are included
+    // — `git add` happily picks them up.
+    const allPaths = changes?.map((c) => c.path) ?? [];
+    const selectedPaths = allPaths.filter(
+      (p) => !stagingRecord || stagingRecord.size === 0 || stagingRecord.has(p),
+    );
+
     setBusy(alsoPush ? "commit-push" : "commit");
     try {
-      const result = await commit(projectId, { message: message.trim(), amend });
+      const result = await commit(projectId, {
+        message: message.trim(),
+        amend,
+        // Skip the explicit `paths` payload when amending — the user is rewriting the
+        // existing commit and we don't want to pull in unrelated working-tree changes
+        // unless they opted in by checking specific files.
+        paths: amend && selectedPaths.length === allPaths.length ? undefined : selectedPaths,
+      });
       if (!result) return;
       // Clear the composer on success so the next commit doesn't accidentally reuse the
       // previous message. Reset amend too — it's a one-shot intent, not a sticky pref.
+      // Resetting the staging selection means any new working-tree changes that come in
+      // after this commit are pre-checked again instead of starting unselected.
       setMessage("");
       setAmend(false);
+      resetStaging(projectId);
       if (alsoPush) {
         await push(projectId, { forceWithLease: force });
         // Force-with-lease was a one-shot opt-in for this push; clear it once consumed.

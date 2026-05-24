@@ -4,8 +4,10 @@ import { Folder } from "../../components/icons/index.js";
 import { ChangeRow } from "./ChangeRow.js";
 import { GroupModeMenu } from "./GroupModeMenu.js";
 import { type GroupMode, useGroupModeStore } from "./useGroupModeStore.js";
+import { useStagingStore } from "./useStagingStore.js";
 
 interface Props {
+  projectId: string;
   changes: GitChange[];
   totals: { add: number; del: number };
   touched: Set<string>;
@@ -39,44 +41,34 @@ function sortChanges(changes: GitChange[]): GitChange[] {
   });
 }
 
-export function ChangesList({ changes, totals, touched, hunksByPath }: Props) {
+export function ChangesList({ projectId, changes, totals, touched, hunksByPath }: Props) {
   // Sort once per change-set so we don't re-key React rows during unrelated re-renders.
   // `changes` is a fresh array from the store on every status refresh, so the memo bottoms
   // out at the worst-case "sort 100 paths" cost — ~0.1ms on a modern engine.
   const sortedChanges = useMemo(() => sortChanges(changes), [changes]);
 
-  // Local "what would be staged" mirror. No write side-effects yet (plan 007 is read-only) —
-  // the checkboxes simply track intent so the UI feels responsive when the user clicks them.
-  // Wiring to `git add` lands with the commit pipeline in a later plan.
   const allPaths = useMemo(() => sortedChanges.map((c) => c.path), [sortedChanges]);
-  const [selected, setSelected] = useState<Set<string>>(() => new Set(allPaths));
   const [activePath, setActivePath] = useState<string | undefined>(sortedChanges[0]?.path);
 
   const groupMode = useGroupModeStore((s) => s.mode);
   const setGroupMode = useGroupModeStore((s) => s.setMode);
 
-  // Reconcile selection when the change set itself changes (files staged in another terminal,
-  // a new untracked file dropped in). New paths come in pre-selected; removed paths drop out.
+  // Staging selection lives in a shared store so CommitComposer can read which paths to
+  // `git add` before committing. The store auto-defaults to "everything selected" when
+  // its per-project entry is empty, which matches the prior local-state behavior.
+  const selectedRecord = useStagingStore((s) => s.selectedByProject[projectId]);
+  const toggleStaging = useStagingStore((s) => s.toggle);
+  const selectAllStaging = useStagingStore((s) => s.selectAll);
   const syncedSelected = useMemo(() => {
-    const next = new Set<string>();
+    const result = new Set<string>();
     for (const p of allPaths) {
-      if (selected.has(p) || !selected.size) next.add(p);
+      if (!selectedRecord || selectedRecord.size === 0 || selectedRecord.has(p)) result.add(p);
     }
-    return next;
-  }, [allPaths, selected]);
+    return result;
+  }, [allPaths, selectedRecord]);
 
-  const toggle = (path: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(path)) next.delete(path);
-      else next.add(path);
-      return next;
-    });
-  };
-
-  const stageAll = () => {
-    setSelected(new Set(allPaths));
-  };
+  const toggle = (path: string) => toggleStaging(projectId, path, allPaths);
+  const stageAll = () => selectAllStaging(projectId, allPaths);
 
   const rowProps = {
     touched,
