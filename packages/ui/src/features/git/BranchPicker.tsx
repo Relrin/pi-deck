@@ -17,9 +17,12 @@ interface Props {
 
 export function BranchPicker({ projectId, branch, ahead, behind, upstream }: Props) {
   const branches = useGitStore((s) => s.branchesByProject[projectId]);
+  const branchesError = useGitStore((s) => s.errorByProject[projectId]);
+  const branchesLoading = useGitStore((s) => s.loadingByProject[projectId] ?? false);
   const checkout = useGitStore((s) => s.checkout);
   const createBranch = useGitStore((s) => s.createBranch);
   const copyBranchName = useGitStore((s) => s.copyBranchName);
+  const refreshBranches = useGitStore((s) => s.refresh);
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -30,17 +33,20 @@ export function BranchPicker({ projectId, branch, ahead, behind, upstream }: Pro
   const aheadLabel = ahead && ahead > 0 ? `↑${ahead}` : undefined;
   const behindLabel = behind && behind > 0 ? `↓${behind}` : undefined;
 
-  // Reset transient UI state on close so the next open starts clean.
+  // Reset transient UI state on close so the next open starts clean. Also kick a refresh
+  // every time we open — defends against stale lists if the initial mount-time fetch
+  // hadn't completed (or had failed) by the time the user clicked the trigger.
   useEffect(() => {
     if (open) {
       setQuery("");
       setCreateValue("");
+      void refreshBranches(projectId);
       // Search input gets focus instead of the menu's default first-item-focus — same
       // trick the intro PidBranchPicker uses to keep keyboard typing alive.
       const id = setTimeout(() => inputRef.current?.focus(), 0);
       return () => clearTimeout(id);
     }
-  }, [open]);
+  }, [open, projectId, refreshBranches]);
 
   const allBranches = useMemo(() => branches ?? [], [branches]);
 
@@ -180,7 +186,7 @@ export function BranchPicker({ projectId, branch, ahead, behind, upstream }: Pro
             <div className="pid-branch-picker-section-head">Recent</div>
             {filtered.length === 0 ? (
               <div className="pid-branch-picker-empty">
-                {allBranches.length === 0 ? "No branches" : "No matches"}
+                {emptyMessage(allBranches.length, branchesLoading, branchesError, trimmedQuery)}
               </div>
             ) : (
               filtered.map((b) => (
@@ -220,6 +226,24 @@ export function BranchPicker({ projectId, branch, ahead, behind, upstream }: Pro
       </RadixDropdown.Portal>
     </RadixDropdown.Root>
   );
+}
+
+/**
+ * Resolve the right one-liner for the empty state. Splitting it out keeps the JSX above
+ * focused on layout and gives us one place to tune the wording for each path —
+ * loading, error, "no matches under this filter", or genuinely empty repo.
+ */
+function emptyMessage(
+  total: number,
+  loading: boolean,
+  error: string | undefined,
+  query: string,
+): string {
+  if (error) return `Failed to load branches: ${error}`;
+  if (loading && total === 0) return "Loading branches…";
+  if (total === 0) return "No branches yet.";
+  if (query) return `No branches match "${query}".`;
+  return "No branches.";
 }
 
 interface BranchRowProps {
