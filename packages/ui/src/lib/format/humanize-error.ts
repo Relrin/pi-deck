@@ -18,9 +18,19 @@ export function humanizeError(err: unknown, fallback = "Something went wrong"): 
 
 const NOISE_PREFIXES = [/^Error:\s+/i, /^TypeError:\s+/i, /^ProtocolError:\s+/i, /^RpcError:\s+/i];
 
+/**
+ * Node's `child_process.execFile` prepends its own `Command failed: <full command line>`
+ * line to thrown errors. For git invocations that includes our `-c core.fsmonitor=false …`
+ * shell flags, which is both noisy and pointless to surface to the user. Strip the entire
+ * preamble (up to the first newline, or end of string if there isn't one) so the rest of
+ * the message — the actual git diagnostic — can speak for itself.
+ */
+const COMMAND_FAILED_PREAMBLE = /^Command failed:[^\n]*\n?/;
+
 function cleanMessage(raw: string): string {
   let msg = raw.trim();
+  msg = msg.replace(COMMAND_FAILED_PREAMBLE, "");
   for (const re of NOISE_PREFIXES) msg = msg.replace(re, "");
   if (msg.length > 200) msg = `${msg.slice(0, 199)}…`;
-  return msg;
+  return msg.trim();
 }

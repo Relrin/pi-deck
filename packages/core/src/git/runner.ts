@@ -25,6 +25,10 @@ export class GitCommandError extends Error {
     message: string,
     public readonly exitCode: number,
     public readonly stderr: string,
+    /** git prints "nothing to commit, working tree clean" to STDOUT, not stderr — we keep
+     * stdout around so callers (writes.ts) can detect those soft-failure cases and rewrite
+     * the message into something user-facing. */
+    public readonly stdout: string = "",
   ) {
     super(message);
     this.name = "GitCommandError";
@@ -96,10 +100,14 @@ export async function runGit(
     };
     if (e.code === "ENOENT") throw new GitNotFoundError();
     const stderr = (e.stderr ?? "").toString().trim();
+    const stdout = (e.stdout ?? "").toString().trim();
     if ((opts.detectNotARepo ?? true) && /not a git repository/i.test(stderr)) {
       throw new NotARepoError(stderr || "Project path is not a git repository");
     }
     const exitCode = typeof e.code === "number" ? e.code : 1;
-    throw new GitCommandError(stderr || e.message, exitCode, stderr);
+    // Prefer stderr → stdout (e.g. "nothing to commit") → Node exec preamble. Node's
+    // default "Command failed: git -c ..." string is verbose and command-line-leaking, so
+    // we only fall back to it when git itself produced no output we can surface.
+    throw new GitCommandError(stderr || stdout || e.message, exitCode, stderr, stdout);
   }
 }

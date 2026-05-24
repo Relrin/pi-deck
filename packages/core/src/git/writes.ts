@@ -33,7 +33,30 @@ export async function commit(root: string, opts: CommitOptions): Promise<CommitR
   }
   const args = ["commit", "-m", message];
   if (opts.amend) args.splice(1, 0, "--amend");
-  await runGit(root, args);
+  try {
+    await runGit(root, args);
+  } catch (err) {
+    if (err instanceof GitCommandError) {
+      // `git commit` with nothing staged writes its diagnostic to STDOUT (not stderr) and
+      // exits non-zero, so the runner's default "stderr || stdout || exec" message ends up
+      // showing the raw output. Detect the common cases and rewrite into something the
+      // user-facing toast can render verbatim.
+      const haystack = `${err.stdout} ${err.stderr}`.toLowerCase();
+      if (
+        haystack.includes("nothing to commit") ||
+        haystack.includes("nothing added to commit") ||
+        haystack.includes("no changes added to commit")
+      ) {
+        throw new GitCommandError(
+          "Nothing to commit — stage some files first.",
+          err.exitCode,
+          err.stderr,
+          err.stdout,
+        );
+      }
+    }
+    throw err;
+  }
   // Resolve the freshly-written HEAD so the renderer can render "you just committed X".
   const { stdout } = await runGit(root, ["log", "-n1", "--format=%H%x1f%h%x1f%s"]);
   const [sha = "", shortSha = "", subject = ""] = stdout.trim().split("\x1f");

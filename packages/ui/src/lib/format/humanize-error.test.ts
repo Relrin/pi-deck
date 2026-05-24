@@ -36,4 +36,22 @@ describe("humanizeError", () => {
     expect(humanizeError(new Error(long)).length).toBeLessThanOrEqual(200);
     expect(humanizeError(new Error(long)).endsWith("…")).toBe(true);
   });
+
+  test("strips Node's exec `Command failed:` preamble", () => {
+    // Single-line failure (no stderr captured) — preamble is the entire message, so the
+    // cleaned message goes empty and we fall back to the supplied default rather than
+    // showing nothing.
+    expect(
+      humanizeError(
+        new Error("Command failed: git -c core.fsmonitor=false commit"),
+        "Commit failed",
+      ),
+    ).toBe("Commit failed");
+    // Multi-line failure — preamble line goes, real stderr stays.
+    expect(
+      humanizeError(
+        new Error("Command failed: git push origin master\nremote: pre-receive hook failed"),
+      ),
+    ).toBe("remote: pre-receive hook failed");
+  });
 });

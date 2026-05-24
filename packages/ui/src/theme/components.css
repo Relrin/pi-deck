@@ -3384,6 +3384,7 @@
   pointer-events: auto;
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr) 18px;
+  align-items: start;
   gap: 10px;
   padding: 10px 12px 12px;
   background: var(--bg-1);
@@ -3396,11 +3397,12 @@
   font-family: var(--font-mono);
 }
 .pid-notification[data-kind="success"] {
-  border-color: color-mix(in oklch, var(--add) 35%, var(--line) 65%);
+  background: color-mix(in oklch, var(--add) 6%, var(--bg-1) 94%);
+  border-color: color-mix(in oklch, var(--add) 45%, var(--line) 55%);
 }
 .pid-notification[data-kind="error"] {
-  border-color: color-mix(in oklch, var(--del) 35%, var(--line) 65%);
-  background: color-mix(in oklch, var(--del-soft) 60%, var(--bg-1) 40%);
+  background: color-mix(in oklch, var(--del) 6%, var(--bg-1) 94%);
+  border-color: color-mix(in oklch, var(--del) 45%, var(--line) 55%);
 }
 .pid-notification-icon {
   display: inline-flex;
@@ -3434,7 +3436,10 @@
   min-width: 0;
 }
 .pid-notification-title {
-  flex: 1;
+  /* Title sits at its natural width so the chip can hug it (the mockup wants the chip
+   * "nearby" the title, not pushed to the far right of the header). Title ellipses if
+   * it would otherwise force the chip outside the card. */
+  flex: 0 1 auto;
   min-width: 0;
   font-size: var(--t-13);
   font-weight: 600;
@@ -3444,6 +3449,7 @@
   white-space: nowrap;
 }
 .pid-notification-tag {
+  flex: 0 0 auto;
   padding: 1px 6px;
   border-radius: 3px;
   font-size: 9.5px;
@@ -3535,10 +3541,12 @@
   text-decoration: underline;
 }
 .pid-notification-close {
+  /* Center vertically against the full card height, not just the title row — matches the
+   * mockup which places the X mid-way down the card. */
+  align-self: center;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: 2px;
   width: 18px;
   height: 18px;
   border-radius: 4px;
