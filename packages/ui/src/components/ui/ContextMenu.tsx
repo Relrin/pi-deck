@@ -1,6 +1,5 @@
 import * as RadixContextMenu from "@radix-ui/react-context-menu";
 import type { ReactNode } from "react";
-import { Glyph, type GlyphKind } from "../glyph/index.js";
 
 export interface ContextMenuActionItem {
   kind?: "action";
@@ -8,8 +7,7 @@ export interface ContextMenuActionItem {
   onSelect: () => void;
   danger?: boolean;
   disabled?: boolean;
-  /** Glyph kind rendered in the left icon column. */
-  icon?: GlyphKind;
+  icon?: ReactNode;
   /** Right-aligned shortcut hint shown next to the label. Display only. */
   shortcut?: string;
 }
@@ -56,7 +54,7 @@ export function ContextMenu({ items, children }: ContextMenuProps) {
                 data-danger={item.danger || undefined}
               >
                 <span className="pid-context-menu-icon" aria-hidden>
-                  {item.icon ? <Glyph kind={item.icon} size={12} /> : null}
+                  {item.icon ?? null}
                 </span>
                 <span className="pid-context-menu-label">{item.label}</span>
                 {item.shortcut ? (

@@ -41,11 +41,7 @@ export type GlyphKind =
   | "cmd"
   | "send"
   | "attach"
-  | "upload"
-  | "archive"
-  | "trash"
-  | "rename"
-  | "package";
+  | "upload";
 
 // Each entry is the inner SVG markup for a 14x14 viewBox
 export const GLYPH_PRIMITIVES: Record<GlyphKind, ReactElement> = {
@@ -332,39 +328,6 @@ export const GLYPH_PRIMITIVES: Record<GlyphKind, ReactElement> = {
       <line x1="7" y1="2.5" x2="7" y2="9.5" />
       <path d="M4 5.5 L7 2.5 L10 5.5" />
       <line x1="2.5" y1="11.5" x2="11.5" y2="11.5" />
-    </>
-  ),
-  // Archive: a lid over a box with a center pull-tab.
-  archive: (
-    <>
-      <rect x="2" y="3" width="10" height="2.5" />
-      <rect x="3" y="5.5" width="8" height="6" />
-      <line x1="5.5" y1="8" x2="8.5" y2="8" />
-    </>
-  ),
-  // Trash: bin body with a lid bar above and a handle.
-  trash: (
-    <>
-      <line x1="2.5" y1="4" x2="11.5" y2="4" />
-      <path d="M5.5 4 L5.5 2.5 L8.5 2.5 L8.5 4" />
-      <path d="M3.5 4 L4.5 11.5 L9.5 11.5 L10.5 4" />
-      <line x1="6" y1="6.5" x2="6" y2="10" />
-      <line x1="8" y1="6.5" x2="8" y2="10" />
-    </>
-  ),
-  rename: (
-    <>
-      <path d="M10 2.5 L11.5 4 L4.5 11 L2.5 11.5 L3 9.5 Z" />
-      <line x1="8.5" y1="4" x2="10" y2="5.5" />
-    </>
-  ),
-  // Package: a closed cardboard box with a strap running across the lid (lucide
-  // Package). Used for "archive" actions where the box metaphor reads better than a bin.
-  package: (
-    <>
-      <rect x="2.5" y="4.5" width="9" height="7" />
-      <line x1="2.5" y1="6.5" x2="11.5" y2="6.5" />
-      <line x1="7" y1="4.5" x2="7" y2="11.5" />
     </>
   ),
 };

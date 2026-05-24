@@ -1,10 +1,15 @@
 import type { SessionSummary } from "@pi-deck/core/domain/session.js";
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { ConfirmDialog } from "../../components/dialogs/ConfirmDialog.js";
+import { Package, Pencil, Trash2 } from "../../components/icons/index.js";
 import { ContextMenu, type ContextMenuItem } from "../../components/ui/ContextMenu.js";
 import { relativeTime } from "../../lib/format/relative-time";
 import { useNavStore } from "../../lib/useNavStore";
 import { useSessionsStore } from "./useSessionsStore";
+
+// Lucide icons render at 24px by default; the context menu wants compact 12px-ish glyphs
+// to sit alongside `var(--t-12)` mono labels.
+const MENU_ICON_SIZE = 14;
 
 export interface PidSessionRowProps {
   session: SessionSummary;
@@ -27,7 +32,7 @@ export function PidSessionRow({ session, active }: PidSessionRowProps) {
   const menuItems: ContextMenuItem[] = [
     {
       label: "Rename",
-      icon: "rename",
+      icon: <Pencil size={MENU_ICON_SIZE} aria-hidden />,
       shortcut: "F2",
       onSelect: () => setEditing(true),
     },
@@ -35,21 +40,21 @@ export function PidSessionRow({ session, active }: PidSessionRowProps) {
     session.archived
       ? {
           label: "Unarchive",
-          icon: "package",
+          icon: <Package size={MENU_ICON_SIZE} aria-hidden />,
           onSelect: () => {
             void useSessionsStore.getState().unarchiveSession(session.id);
           },
         }
       : {
           label: "Archive",
-          icon: "package",
+          icon: <Package size={MENU_ICON_SIZE} aria-hidden />,
           onSelect: () => {
             void useSessionsStore.getState().archiveSession(session.id);
           },
         },
     {
       label: "Delete",
-      icon: "trash",
+      icon: <Trash2 size={MENU_ICON_SIZE} aria-hidden />,
       danger: true,
       onSelect: () => setConfirmOpen(true),
     },
