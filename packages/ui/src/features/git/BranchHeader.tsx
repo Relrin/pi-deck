@@ -1,14 +1,11 @@
-import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import { type ComponentType, useState } from "react";
-import { Glyph } from "../../components/glyph/index.js";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
-  Check,
-  GitMerge,
   GitPullRequestArrow,
   Loader2,
 } from "../../components/icons/index.js";
+import { BranchPicker } from "./BranchPicker.js";
 import { useGitStore } from "./useGitStore.js";
 
 interface Props {
@@ -18,23 +15,20 @@ interface Props {
   behind: number | undefined;
   /** Configured remotes (`["origin", …]`). Empty → repo is purely local. */
   remotes: string[];
+  /** Upstream ref name (e.g. `origin/pi/auto-mcp-discover`). Threaded through to the
+   * BranchPicker for the "tracks" row in its header. */
+  upstream: string | undefined;
 }
 
-export function BranchHeader({ projectId, branch, ahead, behind, remotes }: Props) {
-  const branches = useGitStore((s) => s.branchesByProject[projectId]);
-  const checkout = useGitStore((s) => s.checkout);
+export function BranchHeader({ projectId, branch, ahead, behind, remotes, upstream }: Props) {
   const pull = useGitStore((s) => s.pull);
   const push = useGitStore((s) => s.push);
   const openPr = useGitStore((s) => s.openPr);
-  const [open, setOpen] = useState(false);
   // In-flight tracking lets the row spin its own icon (and disables the button) without
   // needing a global "git busy" flag. Each action keys its own flag; pull and push can
   // both be in flight at once in principle, though in practice users hit them serially.
   const [busy, setBusy] = useState<Record<string, boolean>>({});
 
-  const list = branches ?? [];
-  const aheadLabel = ahead && ahead > 0 ? `↑${ahead}` : undefined;
-  const behindLabel = behind && behind > 0 ? `↓${behind}` : undefined;
   // All three remote-side actions (pull / push / open PR) require *something* to talk to.
   // If `git remote` came back empty, the repo is local-only and the row stays disabled.
   const hasRemote = remotes.length > 0;
@@ -52,54 +46,13 @@ export function BranchHeader({ projectId, branch, ahead, behind, remotes }: Prop
   return (
     <div className="pid-git-section pid-git-branch">
       <div className="pid-mono-label pid-git-section-label">branch</div>
-      <RadixDropdown.Root open={open} onOpenChange={setOpen}>
-        <RadixDropdown.Trigger asChild>
-          <button
-            type="button"
-            className="pid-git-branch-trigger"
-            aria-label="Select branch"
-            disabled={!branch}
-          >
-            <Glyph kind="branch" size={14} />
-            <span className="pid-git-branch-name">{branch ?? "detached"}</span>
-            <span className="pid-git-branch-tracking">
-              {aheadLabel ? <span data-tone="add">{aheadLabel}</span> : null}
-              {behindLabel ? <span data-tone="del">{behindLabel}</span> : null}
-            </span>
-            <Glyph kind="chevron-down" size={10} className="pid-git-branch-chev" />
-          </button>
-        </RadixDropdown.Trigger>
-        <RadixDropdown.Portal>
-          <RadixDropdown.Content
-            align="start"
-            sideOffset={6}
-            className="pid-picker-menu pid-git-branch-menu"
-          >
-            {list.length === 0 ? (
-              <div className="pid-model-menu-empty">No branches</div>
-            ) : (
-              list.map((b) => {
-                const isCurrent = b.name === branch;
-                return (
-                  <RadixDropdown.Item
-                    key={b.name}
-                    className="pid-picker-menu-item"
-                    data-active={isCurrent || undefined}
-                    onSelect={() => {
-                      if (!isCurrent) void checkout(projectId, b.name);
-                    }}
-                  >
-                    <span className="pid-picker-menu-item-check" aria-hidden>
-                      {isCurrent ? <Check size={12} /> : <GitMerge size={12} />}
-                    </span>
-                    <span className="pid-picker-menu-item-label">{b.name}</span>
-                  </RadixDropdown.Item>
-                );
-              })
-            )}
-          </RadixDropdown.Content>
-        </RadixDropdown.Portal>
-      </RadixDropdown.Root>
+      <BranchPicker
+        projectId={projectId}
+        branch={branch}
+        ahead={ahead}
+        behind={behind}
+        upstream={upstream}
+      />
 
       <div className="pid-git-branch-actions">
         <BranchAction

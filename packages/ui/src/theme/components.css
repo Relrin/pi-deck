@@ -2805,6 +2805,262 @@
   color: inherit;
 }
 
+.pid-branch-picker {
+  z-index: 50;
+  width: var(--radix-dropdown-menu-trigger-width);
+  min-width: 280px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.45),
+    0 1px 2px rgba(0, 0, 0, 0.25);
+  font-family: var(--font-mono);
+  color: var(--ink-1);
+  overflow: hidden;
+}
+.pid-branch-picker-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  background: color-mix(in oklch, var(--accent) 7%, var(--bg-1) 93%);
+  border-bottom: 1px solid var(--line);
+}
+.pid-branch-picker-head-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pid-branch-picker-eyebrow {
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+}
+.pid-branch-picker-head-spacer {
+  flex: 1;
+}
+.pid-branch-picker-head-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius);
+  background: transparent;
+  border: 0;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    background-color 0.12s,
+    color 0.12s;
+}
+.pid-branch-picker-head-btn:hover:not(:disabled) {
+  /* The header strip is already accent-tinted (≈7% accent over bg-1), so plain `--bg-2`
+   * vanished against that background — the user couldn't tell the button was being
+   * hovered. Bumping to a stronger accent mix (~22%) gives the button a clear lift while
+   * keeping it readable against the eyebrow + branch name text. */
+  background: color-mix(in oklch, var(--accent) 22%, var(--bg-1) 78%);
+  color: var(--ink-0);
+}
+.pid-branch-picker-head-btn:disabled {
+  color: var(--ink-3);
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.pid-branch-picker-head-name {
+  font-size: var(--t-13);
+  font-weight: 600;
+  color: var(--ink-0);
+  word-break: break-all;
+}
+.pid-branch-picker-head-upstream {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+  word-break: break-all;
+}
+
+.pid-branch-picker-search {
+  padding: 10px 12px;
+}
+.pid-branch-picker-search-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Padding matches `.pid-git-branch-trigger` (4px 8px) so the search field, the trigger
+   * above the popover, and the footer create-input below all share the same height. */
+  padding: 4px 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  transition:
+    border-color 0.12s,
+    background-color 0.12s;
+}
+.pid-branch-picker-search-pill:focus-within {
+  border-color: var(--accent);
+  background: var(--bg-1);
+}
+.pid-branch-picker-search-icon {
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+.pid-branch-picker-search-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  padding: 0;
+}
+.pid-branch-picker-search-input::placeholder {
+  color: var(--ink-3);
+}
+
+/* List section. The scroll cap stops the popover from growing past ~280px on repos with
+ * hundreds of branches. */
+.pid-branch-picker-list {
+  padding: 4px 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.pid-branch-picker-section-head {
+  padding: 6px 12px 4px;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.pid-branch-picker-empty {
+  padding: 10px 12px;
+  font-size: var(--t-12);
+  color: var(--ink-3);
+  font-style: italic;
+}
+.pid-branch-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 12px;
+  font-size: var(--t-12);
+  color: var(--ink-1);
+  cursor: pointer;
+  outline: none;
+}
+.pid-branch-row[data-highlighted] {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+.pid-branch-row[data-current] {
+  color: var(--ink-0);
+}
+.pid-branch-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  color: var(--ink-3);
+}
+.pid-branch-row-icon[data-tone="current"] {
+  color: var(--accent);
+}
+.pid-branch-row-icon[data-tone="merged"] {
+  color: var(--info, var(--ink-2));
+}
+/* Hollow dot for non-current, non-merged branches — drawn with a ring so the row reads
+ * as "selectable" without competing visually with the current/merged glyphs. */
+.pid-branch-row-icon-dot {
+  border: 1px solid var(--line-strong, var(--line));
+  border-radius: 50%;
+  background: transparent;
+  width: 8px;
+  height: 8px;
+}
+.pid-branch-row-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.pid-branch-row[data-current] .pid-branch-row-name {
+  font-weight: 600;
+}
+.pid-branch-row-merged {
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  color: var(--info, var(--ink-2));
+  font-weight: 600;
+}
+.pid-branch-row-time {
+  font-size: 10px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* Footer is its own inline input — "+ new branch from <default>" is the placeholder,
+ * typed text becomes the new branch name, Enter creates. The pill mirrors the search pill
+ * above so the popover's two inputs read as a matched pair. */
+.pid-branch-picker-footer {
+  border-top: 1px solid var(--line);
+  padding: 10px 12px;
+}
+.pid-branch-picker-create-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  transition:
+    border-color 0.12s,
+    background-color 0.12s;
+}
+.pid-branch-picker-create-pill:focus-within {
+  border-color: var(--accent);
+  background: var(--bg-1);
+}
+.pid-branch-picker-create-plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+.pid-branch-picker-create-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  padding: 0;
+}
+.pid-branch-picker-create-input::placeholder {
+  color: var(--ink-3);
+}
+.pid-branch-picker-create-kbd {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+
 /* Working-tree toolbar (refresh / rollback / stash / apply). Single grouped pill: the
  * left pair handles read/restore, then a hairline divider, then the right pair handles
  * stash/unstash. Background matches the section panel so the row feels embedded. */

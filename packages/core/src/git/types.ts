@@ -77,5 +77,9 @@ export const GitBranchInfoSchema = z.object({
   isCurrent: z.boolean(),
   /** ISO-8601 committer date of the branch tip. */
   lastActivityAt: z.string().optional(),
+  /** True when the branch is reachable from the repo's default branch (main / master).
+   * Undefined when we couldn't determine a default — in that case the picker hides the
+   * "merged" badge rather than guessing. */
+  merged: z.boolean().optional(),
 });
 export type GitBranchInfo = z.infer<typeof GitBranchInfoSchema>;

@@ -83,6 +83,7 @@ export function GitSidebar() {
         ahead={status.ahead}
         behind={status.behind}
         remotes={status.remotes}
+        upstream={status.upstream}
       />
       <ChangesList
         projectId={projectId}

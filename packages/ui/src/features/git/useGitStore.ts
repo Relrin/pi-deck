@@ -2,6 +2,7 @@ import type { GitCommit, GitHunk, GitStatus } from "@pi-deck/core/git/types.js";
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { createElement } from "react";
 import { create } from "zustand";
+import { writeClipboard } from "../../lib/clipboard.js";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { useToastStore } from "../_status/useToastStore.js";
@@ -85,6 +86,8 @@ interface GitStoreState {
   stash: (projectId: string, paths?: string[]) => Promise<boolean>;
   /** Apply and drop the latest stash entry. */
   stashPop: (projectId: string) => Promise<boolean>;
+  /** Copy a branch name to the system clipboard and push a small confirmation toast. */
+  copyBranchName: (name: string) => Promise<void>;
 }
 
 const inflight = new Map<string, Promise<void>>();
@@ -565,6 +568,17 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
     } catch (err) {
       notify.push(stashPopFailureNotification(projectId, "unknown", humanizeError(err, "")));
       return false;
+    }
+  },
+
+  copyBranchName: async (name) => {
+    if (!name) return;
+    try {
+      await writeClipboard(name);
+      // Simple text toast — the rich notification stack is reserved for stateful git ops.
+      useToastStore.getState().push(`Copied "${name}" to clipboard`, "info");
+    } catch (err) {
+      useToastStore.getState().push(humanizeError(err, "Copy failed"), "error");
     }
   },
 }));
