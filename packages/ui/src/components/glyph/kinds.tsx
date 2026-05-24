@@ -43,11 +43,11 @@ export type GlyphKind =
   | "attach"
   | "upload"
   | "archive"
-  | "trash";
+  | "trash"
+  | "rename"
+  | "package";
 
-// Each entry is the inner SVG markup for a 14x14 viewBox. Paths ported from
-// plans/design-mockup/html-css-mockup/glyphs.jsx with mockup-specific keys
-// (panel-l, chevron-d, cross, dot3, circle-dot) mapped to the canonical kinds.
+// Each entry is the inner SVG markup for a 14x14 viewBox
 export const GLYPH_PRIMITIVES: Record<GlyphKind, ReactElement> = {
   sessions: (
     <>
@@ -350,6 +350,21 @@ export const GLYPH_PRIMITIVES: Record<GlyphKind, ReactElement> = {
       <path d="M3.5 4 L4.5 11.5 L9.5 11.5 L10.5 4" />
       <line x1="6" y1="6.5" x2="6" y2="10" />
       <line x1="8" y1="6.5" x2="8" y2="10" />
+    </>
+  ),
+  rename: (
+    <>
+      <path d="M10 2.5 L11.5 4 L4.5 11 L2.5 11.5 L3 9.5 Z" />
+      <line x1="8.5" y1="4" x2="10" y2="5.5" />
+    </>
+  ),
+  // Package: a closed cardboard box with a strap running across the lid (lucide
+  // Package). Used for "archive" actions where the box metaphor reads better than a bin.
+  package: (
+    <>
+      <rect x="2.5" y="4.5" width="9" height="7" />
+      <line x1="2.5" y1="6.5" x2="11.5" y2="6.5" />
+      <line x1="7" y1="4.5" x2="7" y2="11.5" />
     </>
   ),
 };

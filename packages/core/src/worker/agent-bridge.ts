@@ -38,6 +38,7 @@ export type HistoryMessage =
       kind: "assistant";
       id: string;
       text: string;
+      isComplete: true;
       toolCallIds: string[];
       createdAt: number;
       remoteTimestamp?: number;
@@ -293,6 +294,7 @@ function buildHistorySnapshot(session: AgentSession): HistorySnapshot {
         kind: "assistant",
         id: `a-hist-${ts}-${messages.length}`,
         text,
+        isComplete: true,
         toolCallIds: ids,
         createdAt: ts,
         remoteTimestamp: ts,

@@ -222,6 +222,51 @@ describe("useSessionsStore — archive/unarchive/delete", () => {
     expect(state.sessionsByProject["proj-1"]?.[0]?.archived).toBe(false);
   });
 
+  test("renameSession optimistically updates and persists via session.rename", async () => {
+    let renameCalls = 0;
+    let receivedTitle = "";
+    const client = mockClient({
+      "session.rename": (input) => {
+        renameCalls += 1;
+        receivedTitle = (input as { title: string }).title;
+        return { ok: true };
+      },
+    });
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      client: client as never,
+      sessions: [session],
+      sessionsByProject: { "proj-1": [session] },
+      archivedSessions: [],
+    }));
+
+    await useSessionsStore.getState().renameSession("sess-arch-1", "  Renamed  ");
+
+    expect(renameCalls).toBe(1);
+    expect(receivedTitle).toBe("Renamed");
+    expect(useSessionsStore.getState().sessions[0]?.title).toBe("Renamed");
+    expect(useSessionsStore.getState().sessionsByProject["proj-1"]?.[0]?.title).toBe("Renamed");
+  });
+
+  test("renameSession rolls back when the server rejects", async () => {
+    const client = mockClient({
+      "session.rename": () => {
+        throw new Error("nope");
+      },
+    });
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      client: client as never,
+      sessions: [session],
+      sessionsByProject: { "proj-1": [session] },
+    }));
+
+    await useSessionsStore.getState().renameSession("sess-arch-1", "Renamed");
+
+    expect(useSessionsStore.getState().sessions[0]?.title).toBe(session.title);
+    expect(useToastStore.getState().toasts.length).toBe(1);
+  });
+
   test("deleteSession removes the row from everywhere and clears activeSessionId if matched", async () => {
     const client = mockClient({ "session.delete": () => ({ ok: true }) });
     useSessionsStore.setState((prev) => ({

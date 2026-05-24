@@ -405,17 +405,22 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
     }),
 
   loadHistory: (sessionId, payload) =>
-    set((state) => ({
-      bySession: {
-        ...state.bySession,
-        [sessionId]: {
-          messages: payload.messages,
-          toolCalls: payload.toolCalls,
-          // History never describes an in-flight turn — by definition it's settled work.
-          isTurnInFlight: false,
+    set((state) => {
+      const messages: MessageEntry[] = payload.messages.map((m) =>
+        m.kind === "assistant" ? { ...m, isComplete: true } : m,
+      );
+      return {
+        bySession: {
+          ...state.bySession,
+          [sessionId]: {
+            messages,
+            toolCalls: payload.toolCalls,
+            // History never describes an in-flight turn — by definition it's settled work.
+            isTurnInFlight: false,
+          },
         },
-      },
-    })),
+      };
+    }),
 }));
 
 function extractErrorText(result: unknown): string | undefined {

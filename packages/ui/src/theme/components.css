@@ -122,8 +122,12 @@
   color: var(--accent-ink);
 }
 .pid-icon-btn[data-variant="danger"] {
-  background: var(--del);
-  color: var(--accent-ink);
+  background: transparent;
+  color: var(--del);
+}
+.pid-icon-btn[data-variant="danger"]:hover {
+  background: var(--del-soft);
+  color: var(--del);
 }
 .pid-icon-btn[data-active="true"] {
   background: var(--accent-soft);
@@ -1004,6 +1008,86 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+.pid-rail-row-rename {
+  display: flex;
+  width: 100%;
+}
+.pid-rail-row-rename-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  color: var(--ink-0);
+  font: inherit;
+  padding: 1px 4px;
+  outline: none;
+}
+
+/* ---------- Context menu (right-click on rail rows etc.) ---------- */
+.pid-context-menu {
+  z-index: 50;
+  min-width: 11rem;
+  padding: 4px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.35);
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-0);
+}
+.pid-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+.pid-context-menu-item[data-highlighted] {
+  background: var(--bg-2);
+}
+.pid-context-menu-item[data-disabled] {
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+.pid-context-menu-item[data-danger] {
+  color: var(--del);
+}
+.pid-context-menu-item[data-danger][data-highlighted] {
+  background: var(--del-soft);
+}
+.pid-context-menu-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  flex: 0 0 auto;
+  color: inherit;
+}
+.pid-context-menu-label {
+  flex: 1;
+  white-space: nowrap;
+}
+.pid-context-menu-shortcut {
+  margin-left: auto;
+  padding-left: 12px;
+  font-size: var(--t-11, 11px);
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+.pid-context-menu-item[data-danger] .pid-context-menu-shortcut {
+  color: var(--del);
+  opacity: 0.7;
+}
+.pid-context-menu-separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--line);
 }
 .pid-rail-row-meta {
   font-family: var(--font-mono);
@@ -2376,12 +2460,6 @@
   align-items: center;
   gap: 5px;
   color: var(--ink-1);
-}
-.pid-chat-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex: 0 0 auto;
 }
 
 /* Chat body — log-style rows */

@@ -52,6 +52,7 @@ export interface SessionsStoreState {
   archiveSession: (id: string) => Promise<void>;
   unarchiveSession: (id: string) => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
+  renameSession: (id: string, title: string) => Promise<void>;
   sendPrompt: (
     text: string,
     opts?: {
@@ -292,6 +293,38 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     } catch (err) {
       set(previous);
       useToastStore.getState().push(humanizeError(err, "Failed to unarchive session"), "error");
+    }
+  },
+
+  renameSession: async (id, title) => {
+    const client = get().client;
+    if (!client) return;
+    const trimmed = title.trim();
+    if (!trimmed) return;
+    // Snapshot prior state so we can roll back if the server rejects the rename.
+    const prevSessions = get().sessions;
+    const prevByProject = get().sessionsByProject;
+    const prevArchived = get().archivedSessions;
+    const apply = (lists: SessionSummary[]) =>
+      lists.map((s) => (s.id === id ? { ...s, title: trimmed } : s));
+    const nextByProject: Record<string, SessionSummary[]> = {};
+    for (const [pid, list] of Object.entries(prevByProject)) {
+      nextByProject[pid] = apply(list);
+    }
+    set({
+      sessions: apply(prevSessions),
+      sessionsByProject: nextByProject,
+      archivedSessions: apply(prevArchived),
+    });
+    try {
+      await client.call("session.rename", { sessionId: id, title: trimmed });
+    } catch (err) {
+      set({
+        sessions: prevSessions,
+        sessionsByProject: prevByProject,
+        archivedSessions: prevArchived,
+      });
+      useToastStore.getState().push(humanizeError(err, "Failed to rename session"), "error");
     }
   },
 

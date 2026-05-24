@@ -324,3 +324,79 @@ describe("useMessagesStore — session isolation", () => {
     expect(useMessagesStore.getState().bySession.b?.messages.length).toBe(1);
   });
 });
+
+describe("useMessagesStore — loadHistory", () => {
+  beforeEach(reset);
+
+  test("replaces the session's messages + toolCalls with the snapshot", () => {
+    useMessagesStore
+      .getState()
+      .appendUserMessage(SID, { messageId: "stale", text: "stale", createdAt: 1 });
+    useMessagesStore.getState().loadHistory(SID, {
+      messages: [
+        { kind: "user", id: "u-hist", text: "old prompt", createdAt: 100 },
+        {
+          kind: "assistant",
+          id: "a-hist",
+          text: "old reply",
+          isComplete: true,
+          toolCallIds: [],
+          createdAt: 200,
+        },
+      ],
+      toolCalls: {},
+    });
+    const session = useMessagesStore.getState().bySession[SID];
+    expect(session?.messages.map((m) => m.id)).toEqual(["u-hist", "a-hist"]);
+    expect(session?.isTurnInFlight).toBe(false);
+  });
+
+  test("new assistant delta after loadHistory APPENDS instead of overwriting the historical reply", () => {
+    // Regression: when the worker forgets `isComplete`, the historical assistant message
+    // matches `lastIncompleteAssistantIdx` and the next streamed delta replaces its text —
+    // user perceives "talking to themselves" because their old bot answer becomes the new
+    // bot answer. loadHistory must defensively force `isComplete: true`.
+    const historicalAssistant = {
+      kind: "assistant" as const,
+      id: "a-hist",
+      // Simulate a wire payload that forgot the flag; the store should patch it.
+      text: "preserved historical reply",
+      toolCallIds: [],
+      createdAt: 200,
+    };
+    // Cast through `unknown` so the test can pass an ill-formed assistant entry
+    // (missing `isComplete`) to validate the defensive fill in `loadHistory`.
+    type LoadHistoryArg = Parameters<
+      ReturnType<typeof useMessagesStore.getState>["loadHistory"]
+    >[1];
+    useMessagesStore.getState().loadHistory(SID, {
+      messages: [
+        { kind: "user", id: "u-hist", text: "old prompt", createdAt: 100 },
+        historicalAssistant,
+      ] as unknown as LoadHistoryArg["messages"],
+      toolCalls: {},
+    });
+
+    // A live streamed assistant reply arrives.
+    useMessagesStore
+      .getState()
+      .appendUserMessage(SID, { messageId: "u-live", text: "new prompt", createdAt: 1000 });
+    useMessagesStore.getState().appendAssistantDelta(
+      SID,
+      {},
+      {
+        role: "assistant",
+        content: [{ type: "text", text: "fresh reply" }],
+        timestamp: 2000,
+      },
+    );
+
+    const msgs = useMessagesStore.getState().bySession[SID]?.messages ?? [];
+    expect(msgs).toHaveLength(4);
+    expect(msgs[1]?.kind).toBe("assistant");
+    expect((msgs[1] as { text: string }).text).toBe("preserved historical reply");
+    expect((msgs[1] as { isComplete?: boolean }).isComplete).toBe(true);
+    expect(msgs[3]?.kind).toBe("assistant");
+    expect((msgs[3] as { text: string }).text).toBe("fresh reply");
+  });
+});

@@ -112,6 +112,12 @@ export const SessionUnarchiveResponse = z.object({ ok: z.literal(true) });
 export const SessionDeleteRequest = z.object({ sessionId: z.string().min(1) });
 export const SessionDeleteResponse = z.object({ ok: z.literal(true) });
 
+export const SessionRenameRequest = z.object({
+  sessionId: z.string().min(1),
+  title: z.string().min(1).max(200),
+});
+export const SessionRenameResponse = z.object({ ok: z.literal(true) });
+
 /** Returns archived sessions across every project so the rail's ARCHIVE group can render
  * without waiting for each project block to be expanded. */
 export const SessionListArchivedRequest = z.object({}).strict();
@@ -340,6 +346,7 @@ export const CommandSchemas = {
   "session.archive": { request: SessionArchiveRequest, response: SessionArchiveResponse },
   "session.unarchive": { request: SessionUnarchiveRequest, response: SessionUnarchiveResponse },
   "session.delete": { request: SessionDeleteRequest, response: SessionDeleteResponse },
+  "session.rename": { request: SessionRenameRequest, response: SessionRenameResponse },
   "session.listArchived": {
     request: SessionListArchivedRequest,
     response: SessionListArchivedResponse,

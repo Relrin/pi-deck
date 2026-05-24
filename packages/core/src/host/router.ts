@@ -148,6 +148,11 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     ctx.turnTracker.forget(parsed.sessionId);
     return { ok: true as const };
   },
+  "session.rename": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.rename"].request.parse(payload);
+    await ctx.sessionManager.rename(parsed.sessionId, parsed.title);
+    return { ok: true as const };
+  },
   "session.listArchived": async (ctx) => {
     await ctx.sessionManager.rehydrateAll();
     return { sessions: ctx.sessionManager.listArchived().map(toSummary) };

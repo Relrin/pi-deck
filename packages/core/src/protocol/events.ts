@@ -123,6 +123,7 @@ export const SessionHistoryAssistantMessage = z.object({
   kind: z.literal("assistant"),
   id: z.string().min(1),
   text: z.string(),
+  isComplete: z.literal(true),
   toolCallIds: z.array(z.string()),
   createdAt: z.number(),
   remoteTimestamp: z.number().optional(),

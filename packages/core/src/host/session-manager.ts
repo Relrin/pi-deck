@@ -343,6 +343,16 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     }
   }
 
+  async rename(sessionId: string, title: string): Promise<void> {
+    const record = this.sessions.get(sessionId);
+    if (!record) throw new Error(`Unknown session ${sessionId}`);
+    const trimmed = title.trim();
+    if (!trimmed) throw new Error("Session title cannot be empty");
+    if (record.title === trimmed) return;
+    record.title = trimmed;
+    await this.patchMetadata(record, { title: trimmed });
+  }
+
   async archive(sessionId: string): Promise<void> {
     const record = this.sessions.get(sessionId);
     if (!record) throw new Error(`Unknown session ${sessionId}`);
