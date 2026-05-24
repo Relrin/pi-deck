@@ -2676,9 +2676,16 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
+  /* Narrow right-pane widths used to push `stage all` past the panel edge. min-width:0
+   * lets the flex children honor their own shrink rules — the group trigger absorbs the
+   * squeeze (see its own ellipsis rule) while the fixed-width "stage all" stays put. */
+  min-width: 0;
 }
 .pid-git-section-spacer {
   flex: 1;
+  /* The spacer is allowed to disappear before anything else; otherwise it would hold the
+   * row at its natural width and clip the trailing button. */
+  min-width: 0;
 }
 
 /* The changes section grows to fill the middle of the sidebar and hands its
@@ -2798,23 +2805,136 @@
   color: inherit;
 }
 
-/* ---- Changes header (stage all + filter icon + diffbar with totals) ---- */
-.pid-git-changes-icon {
+/* ---- Changes header (group picker + stage all + diffbar with totals) ---- */
+.pid-git-group-trigger {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 22px;
+  gap: 5px;
   height: 22px;
+  padding: 0 7px;
   border-radius: var(--radius);
   background: transparent;
   border: 0;
   color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
   cursor: pointer;
+  white-space: nowrap;
+  /* When the right pane is narrow the trigger shrinks before "stage all" gets clipped;
+   * the inner label clips with an ellipsis so the longest mode ("change type") degrades
+   * gracefully to "group: change…" rather than pushing trailing buttons off-screen. */
+  min-width: 0;
+  overflow: hidden;
 }
-.pid-git-changes-icon:hover {
+.pid-git-group-trigger-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pid-git-group-trigger:hover,
+.pid-git-group-trigger[data-state="open"] {
   background: var(--bg-2);
   color: var(--ink-0);
 }
+.pid-git-group-trigger-label {
+  color: var(--ink-3);
+}
+.pid-git-group-trigger-value {
+  color: var(--ink-1);
+}
+.pid-git-group-trigger:hover .pid-git-group-trigger-value,
+.pid-git-group-trigger[data-state="open"] .pid-git-group-trigger-value {
+  color: var(--ink-0);
+}
+/* Highlight the whole trigger — icon, label, and value — when a non-default mode is
+ * selected. The leading icon picks up the tint via `currentColor`; the inner spans
+ * inherit so the explicit `--ink-1` / `--ink-3` rules above no longer apply. */
+.pid-git-group-trigger[data-non-default] {
+  color: var(--accent);
+}
+.pid-git-group-trigger[data-non-default] .pid-git-group-trigger-label,
+.pid-git-group-trigger[data-non-default] .pid-git-group-trigger-value {
+  color: inherit;
+}
+
+/* Group picker dropdown (Radix RadioGroup; one radio dot per row, two-line content). */
+.pid-git-group-menu {
+  z-index: 50;
+  min-width: 240px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 6px;
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.35),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-1);
+}
+.pid-git-group-menu-header {
+  padding: 4px 8px 6px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.pid-git-group-menu-item {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  outline: none;
+  cursor: pointer;
+}
+.pid-git-group-menu-item[data-highlighted] {
+  background: var(--bg-2);
+}
+.pid-git-group-menu-item[data-active] {
+  background: var(--accent-soft);
+}
+.pid-git-group-menu-dot {
+  position: relative;
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-top: 4px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+}
+.pid-git-group-menu-item[data-active] .pid-git-group-menu-dot {
+  border-color: var(--accent);
+}
+.pid-git-group-menu-item[data-active] .pid-git-group-menu-dot::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.pid-git-group-menu-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.pid-git-group-menu-label {
+  color: var(--ink-0);
+  font-weight: 600;
+  font-size: var(--t-13);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.pid-git-group-menu-sub {
+  color: var(--ink-3);
+  font-size: 10.5px;
+  letter-spacing: 0;
+}
+
 .pid-git-changes-stage-all {
   background: transparent;
   border: 0;
@@ -2825,6 +2945,10 @@
   cursor: pointer;
   padding: 2px 4px;
   border-radius: var(--radius);
+  white-space: nowrap;
+  /* Anchor "stage all" at its natural width — the group trigger to the left shrinks first
+   * so this button always stays inside the panel edge. */
+  flex-shrink: 0;
 }
 .pid-git-changes-stage-all:hover {
   color: var(--ink-0);
@@ -3033,6 +3157,107 @@
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 0 2px var(--bg-1);
+}
+
+/* ---- Grouped views (Change type / Folder section headers, Hunk sub-rows) ---- */
+.pid-git-rowgroup {
+  display: contents;
+}
+.pid-git-rowgroup-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.pid-git-rowgroup-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  color: var(--ink-3);
+}
+.pid-git-rowgroup-head[data-tone="add"] .pid-git-rowgroup-glyph {
+  color: var(--add);
+}
+.pid-git-rowgroup-head[data-tone="mod"] .pid-git-rowgroup-glyph {
+  color: var(--mod);
+}
+.pid-git-rowgroup-head[data-tone="del"] .pid-git-rowgroup-glyph {
+  color: var(--del);
+}
+.pid-git-rowgroup-label {
+  color: var(--ink-1);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--t-12);
+}
+.pid-git-rowgroup-sep {
+  color: var(--ink-3);
+}
+.pid-git-rowgroup-count {
+  color: var(--ink-3);
+  font-size: 10.5px;
+}
+.pid-git-rowgroup-spacer {
+  flex: 1;
+}
+.pid-git-rowgroup-counts {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.pid-git-rowgroup-counts span[data-tone="add"] {
+  color: var(--add);
+}
+.pid-git-rowgroup-counts span[data-tone="del"] {
+  color: var(--del);
+}
+
+/* Hunk-mode sub-rows under each file. Indented so the file row remains the visual anchor;
+ * the `└` tree glyph carries the parent-child relation without needing a vertical rule. */
+.pid-git-hunk-group {
+  display: contents;
+}
+.pid-git-hunk-row {
+  padding-left: 28px;
+  min-height: 24px;
+}
+.pid-git-hunk-row .pid-git-row-body {
+  grid-template-columns: 12px 18px minmax(0, 1fr) auto;
+}
+.pid-git-hunk-tree {
+  color: var(--ink-3);
+  font-size: 11px;
+  line-height: 1;
+}
+.pid-git-hunk-tag {
+  color: var(--info);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+.pid-git-hunk-meta {
+  color: var(--ink-2);
+  font-size: 10.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.pid-git-hunk-row[data-active="true"] .pid-git-hunk-meta {
+  color: var(--ink-0);
 }
 
 /* ---- Commit composer (visual chrome; write ops land later) ---- */

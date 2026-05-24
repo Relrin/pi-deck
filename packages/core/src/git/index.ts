@@ -1,6 +1,7 @@
 export * from "./branches.js";
 export * from "./detect.js";
 export * from "./files.js";
+export * from "./hunks.js";
 export * from "./init.js";
 export * from "./log.js";
 export * from "./runner.js";

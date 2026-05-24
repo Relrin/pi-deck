@@ -3,6 +3,7 @@ import {
   createBranch,
   currentBranch,
   GitNotFoundError,
+  getDiffHunks,
   initRepo,
   listBranches,
   listProjectFiles,
@@ -213,6 +214,17 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     try {
       const commits = await getRecentCommits(project.path, parsed.limit);
       return { commits };
+    } catch (err) {
+      mapGitError(err);
+    }
+  },
+  "git.diffHunks": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.diffHunks"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const map = await getDiffHunks(project.path);
+      return { hunksByPath: Object.fromEntries(map) };
     } catch (err) {
       mapGitError(err);
     }

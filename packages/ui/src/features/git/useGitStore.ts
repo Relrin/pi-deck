@@ -1,4 +1,4 @@
-import type { GitCommit, GitStatus } from "@pi-deck/core/git/types.js";
+import type { GitCommit, GitHunk, GitStatus } from "@pi-deck/core/git/types.js";
 import { create } from "zustand";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { useToastStore } from "../_status/useToastStore.js";
@@ -20,9 +20,13 @@ interface GitStoreState {
   statusByProject: Record<string, GitStatus | undefined>;
   /** Cached `git.log` per project, newest first. */
   commitsByProject: Record<string, GitCommit[] | undefined>;
+  /** Cached `git.diffHunks` per project. Lazy — populated only when the changes list is
+   * switched to "hunk" grouping. Missing-path entries are treated as "no hunks". */
+  hunksByProject: Record<string, Record<string, GitHunk[]> | undefined>;
   /** In-flight flags for status/log; UI uses these to swap spinners for content. */
   statusLoadingByProject: Record<string, boolean>;
   commitsLoadingByProject: Record<string, boolean>;
+  hunksLoadingByProject: Record<string, boolean>;
   /** Per-session set of file paths the agent has touched. Drives the touch-dot badge. */
   touchesBySession: Record<string, string[] | undefined>;
 
@@ -33,6 +37,7 @@ interface GitStoreState {
   ensureStatus: (projectId: string) => Promise<void>;
   refreshStatus: (projectId: string) => Promise<void>;
   refreshCommits: (projectId: string, limit?: number) => Promise<void>;
+  refreshHunks: (projectId: string) => Promise<void>;
   applyStatusChanged: (projectId: string, status: GitStatus) => void;
   applyTurnTouches: (sessionId: string, paths: string[]) => void;
   initRepo: (projectId: string) => Promise<void>;
@@ -40,6 +45,7 @@ interface GitStoreState {
 
 const inflight = new Map<string, Promise<void>>();
 const statusInflight = new Map<string, Promise<void>>();
+const hunksInflight = new Map<string, Promise<void>>();
 
 export const useGitStore = create<GitStoreState>((set, get) => ({
   branchesByProject: {},
@@ -49,8 +55,10 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
 
   statusByProject: {},
   commitsByProject: {},
+  hunksByProject: {},
   statusLoadingByProject: {},
   commitsLoadingByProject: {},
+  hunksLoadingByProject: {},
   touchesBySession: {},
 
   refresh: async (projectId) => {
@@ -189,7 +197,35 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
     }
   },
 
+  refreshHunks: async (projectId) => {
+    const existing = hunksInflight.get(projectId);
+    if (existing) return existing;
+    const client = useSessionsStore.getState().client;
+    if (!client) return;
+    const run = (async () => {
+      set((state) => ({
+        hunksLoadingByProject: { ...state.hunksLoadingByProject, [projectId]: true },
+      }));
+      try {
+        const { hunksByPath } = await client.call("git.diffHunks", { projectId });
+        set((state) => ({
+          hunksByProject: { ...state.hunksByProject, [projectId]: hunksByPath },
+        }));
+      } catch {
+        // Non-fatal — the renderer falls back to "no hunks" rows.
+      } finally {
+        set((state) => ({
+          hunksLoadingByProject: { ...state.hunksLoadingByProject, [projectId]: false },
+        }));
+        hunksInflight.delete(projectId);
+      }
+    })();
+    hunksInflight.set(projectId, run);
+    return run;
+  },
+
   applyStatusChanged: (projectId, status) => {
+    const hadHunks = Boolean(get().hunksByProject[projectId]);
     set((state) => ({
       statusByProject: { ...state.statusByProject, [projectId]: status },
     }));
@@ -197,6 +233,12 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
     // pieces so the header + commits list reflect the new HEAD.
     void get().refresh(projectId);
     void get().refreshCommits(projectId);
+    // Refresh hunks in place when the user already had them loaded. We deliberately do NOT
+    // drop the cache first: clearing it would briefly show the file rows without children
+    // before the new fetch lands, which reads as a "flicker" every time the watcher fires.
+    // Leaving the old entry visible until `refreshHunks` atomically replaces it gives the
+    // sidebar a stable feel while still keeping the line ranges accurate.
+    if (hadHunks) void get().refreshHunks(projectId);
   },
 
   applyTurnTouches: (sessionId, paths) => {

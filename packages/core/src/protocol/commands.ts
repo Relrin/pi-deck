@@ -6,7 +6,12 @@ import {
   SessionSummarySchema,
   ThinkingLevelSchema,
 } from "../domain/session.js";
-import { GitBranchInfoSchema, GitCommitSchema, GitStatusSchema } from "../git/types.js";
+import {
+  GitBranchInfoSchema,
+  GitCommitSchema,
+  GitHunkSchema,
+  GitStatusSchema,
+} from "../git/types.js";
 import {
   CustomProviderInputSchema,
   ModelInfoSchema,
@@ -149,6 +154,13 @@ export const GitLogRequest = z.object({
 });
 export const GitLogResponse = z.object({ commits: z.array(GitCommitSchema) });
 
+export const GitDiffHunksRequest = z.object({ projectId: z.string().uuid() });
+export const GitDiffHunksResponse = z.object({
+  /** Hunks per file, keyed by repo-relative path. Absent entries mean "no hunks" — most
+   * commonly untracked files, which don't show up in `git diff HEAD`. */
+  hunksByPath: z.record(z.string(), z.array(GitHunkSchema)),
+});
+
 export const GitInitRequest = z.object({ projectId: z.string().uuid() });
 export const GitInitResponse = z.object({ ok: z.literal(true) });
 
@@ -248,6 +260,10 @@ export const CommandSchemas = {
   },
   "git.status": { request: GitStatusRequest, response: GitStatusResponse },
   "git.log": { request: GitLogRequest, response: GitLogResponse },
+  "git.diffHunks": {
+    request: GitDiffHunksRequest,
+    response: GitDiffHunksResponse,
+  },
   "git.init": { request: GitInitRequest, response: GitInitResponse },
   "git.turnTouches": {
     request: GitTurnTouchesRequest,

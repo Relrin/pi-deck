@@ -7,6 +7,7 @@ import { ChangesList } from "./ChangesList.js";
 import { CommitComposer } from "./CommitComposer.js";
 import { EmptyState } from "./EmptyState.js";
 import { useGitStore } from "./useGitStore.js";
+import { useGroupModeStore } from "./useGroupModeStore.js";
 import { useTurnFileTouches } from "./useTurnFileTouches.js";
 
 export function GitSidebar() {
@@ -26,6 +27,9 @@ export function GitSidebar() {
   );
   const refreshStatus = useGitStore((s) => s.refreshStatus);
   const refreshBranches = useGitStore((s) => s.refresh);
+  const refreshHunks = useGitStore((s) => s.refreshHunks);
+  const hunksByPath = useGitStore((s) => (projectId ? s.hunksByProject[projectId] : undefined));
+  const groupMode = useGroupModeStore((s) => s.mode);
 
   const inSession = screen === "session" && Boolean(activeSessionId);
 
@@ -37,6 +41,17 @@ export function GitSidebar() {
     void refreshStatus(projectId);
     void refreshBranches(projectId);
   }, [projectId, client, inSession, refreshStatus, refreshBranches]);
+
+  useEffect(() => {
+    // Hunks are expensive to compute (one extra `git diff` per refresh), so we only fetch
+    // them when the user has actually switched to the "hunk" grouping. `applyStatusChanged`
+    // drops the cached entry on every change event, so this effect re-fires and re-fetches
+    // whenever the working tree moves under us.
+    if (!projectId || !client || !inSession) return;
+    if (groupMode !== "hunk") return;
+    if (hunksByPath) return;
+    void refreshHunks(projectId);
+  }, [projectId, client, inSession, groupMode, hunksByPath, refreshHunks]);
 
   const touched = useTurnFileTouches(status?.root);
 
@@ -69,7 +84,12 @@ export function GitSidebar() {
         behind={status.behind}
         remotes={status.remotes}
       />
-      <ChangesList changes={status.changes} totals={status.totals} touched={touched} />
+      <ChangesList
+        changes={status.changes}
+        totals={status.totals}
+        touched={touched}
+        hunksByPath={hunksByPath}
+      />
       <CommitComposer headShortSha={headShortSha} />
     </div>
   );

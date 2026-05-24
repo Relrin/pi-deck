@@ -9,6 +9,7 @@ export {
   CheckCheck,
   ChevronDown,
   ChevronRight,
+  ChevronsUpDown,
   CornerDownLeft,
   Edit3,
   File,

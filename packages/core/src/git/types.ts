@@ -56,6 +56,22 @@ export const GitCommitSchema = z.object({
 });
 export type GitCommit = z.infer<typeof GitCommitSchema>;
 
+export const GitHunkSchema = z.object({
+  /** 1-based start line in the pre-image (old file). 0 for additions to an empty file. */
+  oldStart: z.number().int().nonnegative(),
+  /** Lines removed from the pre-image; equal to `del`. */
+  oldLines: z.number().int().nonnegative(),
+  /** 1-based start line in the post-image (new file). 0 when the hunk is a pure deletion. */
+  newStart: z.number().int().nonnegative(),
+  /** Lines present in the post-image; equal to `add`. */
+  newLines: z.number().int().nonnegative(),
+  /** Convenience mirror of `newLines`. */
+  add: z.number().int().nonnegative(),
+  /** Convenience mirror of `oldLines`. */
+  del: z.number().int().nonnegative(),
+});
+export type GitHunk = z.infer<typeof GitHunkSchema>;
+
 export const GitBranchInfoSchema = z.object({
   name: z.string().min(1),
   isCurrent: z.boolean(),

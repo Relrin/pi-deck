@@ -13,6 +13,9 @@ interface Props {
   active: boolean;
   onToggle: () => void;
   onSelect: () => void;
+  /** Suppress the parent-directory suffix on the filename — used in folder grouping where
+   * the dir already appears in the section header above. */
+  hidePathDir?: boolean;
 }
 
 const STATUS_TONE: Record<GitChange["status"], "add" | "mod" | "del" | "unt"> = {
@@ -25,7 +28,15 @@ const STATUS_TONE: Record<GitChange["status"], "add" | "mod" | "del" | "unt"> = 
   "?": "unt",
 };
 
-export function ChangeRow({ change, touched, selected, active, onToggle, onSelect }: Props) {
+export function ChangeRow({
+  change,
+  touched,
+  selected,
+  active,
+  onToggle,
+  onSelect,
+  hidePathDir,
+}: Props) {
   const tone = STATUS_TONE[change.status];
   const parts = splitPath(change.path);
   const fileIcon = iconForFile(change.path);
@@ -57,7 +68,7 @@ export function ChangeRow({ change, touched, selected, active, onToggle, onSelec
         <Icon icon={fileIcon} className="pid-git-row-fileicon" aria-hidden width={14} height={14} />
         <span className="pid-git-row-name">
           <span className="pid-git-row-filename">{parts.name}</span>
-          {parts.dir ? <span className="pid-git-row-dir">{parts.dir}</span> : null}
+          {parts.dir && !hidePathDir ? <span className="pid-git-row-dir">{parts.dir}</span> : null}
         </span>
         <span className="pid-git-row-counts" aria-hidden>
           {change.add > 0 ? <span data-tone="add">+{change.add}</span> : null}
