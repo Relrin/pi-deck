@@ -3366,3 +3366,228 @@
   line-height: 1.5;
   max-width: 280px;
 }
+
+/* ---- Rich notifications (git ops, future agent events) ---- */
+.pid-notifications {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  max-width: 380px;
+}
+.pid-notification {
+  position: relative;
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 18px;
+  gap: 10px;
+  padding: 10px 12px 12px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  font-family: var(--font-mono);
+}
+.pid-notification[data-kind="success"] {
+  border-color: color-mix(in oklch, var(--add) 35%, var(--line) 65%);
+}
+.pid-notification[data-kind="error"] {
+  border-color: color-mix(in oklch, var(--del) 35%, var(--line) 65%);
+  background: color-mix(in oklch, var(--del-soft) 60%, var(--bg-1) 40%);
+}
+.pid-notification-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border-radius: 50%;
+  color: var(--bg-1);
+}
+.pid-notification-icon[data-kind="success"] {
+  background: var(--add);
+}
+.pid-notification-icon[data-kind="error"] {
+  background: var(--del);
+}
+.pid-notification-icon[data-kind="info"] {
+  background: var(--info, var(--ink-2));
+}
+.pid-notification-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.pid-notification-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.pid-notification-title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--t-13);
+  font-weight: 600;
+  color: var(--ink-0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pid-notification-tag {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.pid-notification-tag[data-kind="success"] {
+  background: var(--add-soft);
+  color: var(--add);
+}
+.pid-notification-tag[data-kind="error"] {
+  background: var(--del-soft);
+  color: var(--del);
+}
+.pid-notification-body {
+  margin: 0;
+  font-size: var(--t-12);
+  color: var(--ink-1);
+  line-height: 1.4;
+  word-break: break-word;
+}
+.pid-notification-meta {
+  margin: 0;
+  font-size: 10.5px;
+  color: var(--ink-3);
+  line-height: 1.4;
+  word-break: break-word;
+}
+.pid-notification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.pid-notification-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.pid-notification-action:hover {
+  background: var(--bg-3);
+  color: var(--ink-0);
+}
+.pid-notification-action[data-variant="primary"] {
+  background: var(--add);
+  border-color: var(--add);
+  color: var(--bg-1);
+}
+.pid-notification-action[data-variant="primary"]:hover {
+  filter: brightness(1.05);
+}
+.pid-notification-action[data-variant="danger"] {
+  background: var(--del-soft);
+  border-color: color-mix(in oklch, var(--del) 45%, var(--line) 55%);
+  color: var(--del);
+}
+.pid-notification-action[data-variant="danger"]:hover {
+  background: color-mix(in oklch, var(--del) 18%, var(--bg-1) 82%);
+}
+.pid-notification-action-icon {
+  display: inline-flex;
+  align-items: center;
+}
+.pid-notification-footnote {
+  margin-top: 4px;
+  align-self: flex-start;
+  padding: 2px 0;
+  background: transparent;
+  border: 0;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.pid-notification-footnote:hover {
+  color: var(--ink-1);
+  text-decoration: underline;
+}
+.pid-notification-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: transparent;
+  border: 0;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.pid-notification-close:hover {
+  background: var(--bg-2);
+  color: var(--ink-1);
+}
+/* Sliding countdown bar — anchored to the left so the right edge retreats leftward as
+ * time runs out, matching the "from right to left" feel described in the design. */
+.pid-notification-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--ink-3);
+  transform-origin: left;
+  animation-name: pid-notification-countdown;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+.pid-notification-bar[data-kind="success"] {
+  background: var(--add);
+}
+.pid-notification-bar[data-kind="error"] {
+  background: var(--del);
+}
+@keyframes pid-notification-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Reusable spinner utility — applied to inline Lucide icons while an action is in flight
+ * (branch row pull/push, commit button, etc.). Keeps the icon on the button so users
+ * don't lose the "what am I waiting on?" affordance mid-rotation. */
+@keyframes pid-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.pid-spin {
+  animation: pid-spin 0.9s linear infinite;
+}

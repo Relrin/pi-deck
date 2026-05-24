@@ -1,0 +1,150 @@
+import { GitCommandError, NotARepoError, runGit } from "./runner.js";
+
+export interface CommitOptions {
+  message: string;
+  amend?: boolean;
+  /** Paths to `git add` immediately before the commit. If omitted, whatever is already
+   * staged gets committed. Untracked paths are added as new files. */
+  paths?: string[];
+}
+
+export interface CommitResult {
+  sha: string;
+  shortSha: string;
+  subject: string;
+}
+
+/**
+ * Stage the requested paths (if any), then commit. The amend flag rewrites HEAD; callers
+ * are expected to have warned the user that this only makes sense on un-pushed commits.
+ *
+ * Errors map to typed throws: `git_failed` for hook rejections, `NotARepoError` for the
+ * path-isn't-a-repo case (the renderer treats that as a programming bug, not a UX path).
+ */
+export async function commit(root: string, opts: CommitOptions): Promise<CommitResult> {
+  const message = opts.message.trim();
+  if (!message) {
+    throw new GitCommandError("Commit message cannot be empty", 1, "empty message");
+  }
+  if (opts.paths && opts.paths.length > 0) {
+    // `git add --` accepts file paths verbatim; the explicit `--` separator guards against
+    // path strings that begin with a dash (rare in practice but easy to defend against).
+    await runGit(root, ["add", "--", ...opts.paths]);
+  }
+  const args = ["commit", "-m", message];
+  if (opts.amend) args.splice(1, 0, "--amend");
+  await runGit(root, args);
+  // Resolve the freshly-written HEAD so the renderer can render "you just committed X".
+  const { stdout } = await runGit(root, ["log", "-n1", "--format=%H%x1f%h%x1f%s"]);
+  const [sha = "", shortSha = "", subject = ""] = stdout.trim().split("\x1f");
+  return { sha, shortSha, subject };
+}
+
+export interface PushOptions {
+  /** Default false. When true, runs `git push --force-with-lease` — the safer flavor of
+   * force push that aborts if the remote has commits the local doesn't know about. */
+  forceWithLease?: boolean;
+}
+
+export type PushOutcome =
+  | { ok: true; stderr: string }
+  | { ok: false; reason: PushFailureReason; stderr: string };
+
+export type PushFailureReason =
+  | "non_fast_forward"
+  | "no_upstream"
+  | "auth_failed"
+  | "rejected"
+  | "unknown";
+
+/**
+ * Push the current branch to its upstream. Returns a structured outcome instead of
+ * throwing on push-level failures because the renderer needs to discriminate between
+ * "non-fast-forward" (offer pull --rebase / force push) and the other failure modes.
+ *
+ * `GIT_TERMINAL_PROMPT=0` ensures missing-credentials fails fast instead of hanging on a
+ * terminal prompt that nothing's reading — `runGit` would still time out, but cleanly
+ * bouncing the operation makes the toast actionable.
+ */
+export async function push(root: string, opts: PushOptions = {}): Promise<PushOutcome> {
+  const args = ["push"];
+  if (opts.forceWithLease) args.push("--force-with-lease");
+  try {
+    const { stderr } = await runGit(root, args, {
+      timeoutMs: 60_000,
+      env: { GIT_TERMINAL_PROMPT: "0" },
+    });
+    return { ok: true, stderr };
+  } catch (err) {
+    if (err instanceof GitCommandError) {
+      return { ok: false, reason: classifyPushFailure(err.stderr), stderr: err.stderr };
+    }
+    throw err;
+  }
+}
+
+function classifyPushFailure(stderr: string): PushFailureReason {
+  const s = stderr.toLowerCase();
+  if (s.includes("non-fast-forward") || s.includes("fetch first") || s.includes("rejected")) {
+    return s.includes("non-fast-forward") || s.includes("fetch first")
+      ? "non_fast_forward"
+      : "rejected";
+  }
+  if (s.includes("no upstream") || s.includes("set-upstream") || s.includes("has no upstream")) {
+    return "no_upstream";
+  }
+  if (
+    s.includes("authentication") ||
+    s.includes("could not read") ||
+    s.includes("permission denied")
+  ) {
+    return "auth_failed";
+  }
+  return "unknown";
+}
+
+export interface PullOptions {
+  /** Default true — match the way most teams configure their pull behavior these days. */
+  rebase?: boolean;
+}
+
+export type PullOutcome =
+  | { ok: true; stderr: string }
+  | { ok: false; reason: PullFailureReason; stderr: string };
+
+export type PullFailureReason = "conflict" | "no_upstream" | "auth_failed" | "unknown";
+
+export async function pull(root: string, opts: PullOptions = {}): Promise<PullOutcome> {
+  const rebase = opts.rebase ?? true;
+  const args = ["pull"];
+  args.push(rebase ? "--rebase" : "--no-rebase");
+  try {
+    const { stderr } = await runGit(root, args, {
+      timeoutMs: 60_000,
+      env: { GIT_TERMINAL_PROMPT: "0" },
+    });
+    return { ok: true, stderr };
+  } catch (err) {
+    if (err instanceof GitCommandError) {
+      return { ok: false, reason: classifyPullFailure(err.stderr), stderr: err.stderr };
+    }
+    throw err;
+  }
+}
+
+function classifyPullFailure(stderr: string): PullFailureReason {
+  const s = stderr.toLowerCase();
+  if (s.includes("conflict") || s.includes("could not apply")) return "conflict";
+  if (s.includes("no tracking") || s.includes("there is no tracking")) return "no_upstream";
+  if (s.includes("authentication") || s.includes("permission denied")) return "auth_failed";
+  return "unknown";
+}
+
+/** Soft reset to HEAD^. Used by the "undo" action on the commit-success notification —
+ * the working tree and index are preserved, only the commit object is unwound. */
+export async function resetSoftHeadParent(root: string): Promise<void> {
+  await runGit(root, ["reset", "--soft", "HEAD^"]);
+}
+
+/** Re-export so the router can `instanceof`-check without importing from runner.js too. */
+export { NotARepoError };

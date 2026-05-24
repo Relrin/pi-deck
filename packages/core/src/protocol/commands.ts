@@ -161,6 +161,66 @@ export const GitDiffHunksResponse = z.object({
   hunksByPath: z.record(z.string(), z.array(GitHunkSchema)),
 });
 
+export const GitCommitRequest = z.object({
+  projectId: z.string().uuid(),
+  message: z.string().min(1),
+  amend: z.boolean().optional(),
+  /** Paths to stage immediately before committing. Empty / omitted = commit whatever's
+   * already staged. */
+  paths: z.array(z.string().min(1)).optional(),
+});
+export const GitCommitResponse = z.object({
+  sha: z.string().min(7),
+  shortSha: z.string().min(4),
+  subject: z.string(),
+});
+
+const PushFailureReason = z.enum([
+  "non_fast_forward",
+  "no_upstream",
+  "auth_failed",
+  "rejected",
+  "unknown",
+]);
+export const GitPushRequest = z.object({
+  projectId: z.string().uuid(),
+  forceWithLease: z.boolean().optional(),
+});
+export const GitPushResponse = z.discriminatedUnion("ok", [
+  z.object({ ok: z.literal(true), stderr: z.string() }),
+  z.object({ ok: z.literal(false), reason: PushFailureReason, stderr: z.string() }),
+]);
+
+const PullFailureReason = z.enum(["conflict", "no_upstream", "auth_failed", "unknown"]);
+export const GitPullRequest = z.object({
+  projectId: z.string().uuid(),
+  rebase: z.boolean().optional(),
+});
+export const GitPullResponse = z.discriminatedUnion("ok", [
+  z.object({ ok: z.literal(true), stderr: z.string() }),
+  z.object({ ok: z.literal(false), reason: PullFailureReason, stderr: z.string() }),
+]);
+
+export const GitResetSoftHeadParentRequest = z.object({ projectId: z.string().uuid() });
+export const GitResetSoftHeadParentResponse = z.object({ ok: z.literal(true) });
+
+export const GitOpenPrUrlRequest = z.object({
+  projectId: z.string().uuid(),
+  remote: z.string().min(1).optional(),
+});
+export const GitOpenPrUrlResponse = z.object({
+  url: z.string().min(1),
+  branch: z.string().min(1),
+  remote: z.string().min(1),
+});
+
+export const GitCommitUrlRequest = z.object({
+  projectId: z.string().uuid(),
+  sha: z.string().min(7),
+  remote: z.string().min(1).optional(),
+});
+export const GitCommitUrlResponse = z.object({ url: z.string().min(1) });
+
 export const GitInitRequest = z.object({ projectId: z.string().uuid() });
 export const GitInitResponse = z.object({ ok: z.literal(true) });
 
@@ -264,6 +324,15 @@ export const CommandSchemas = {
     request: GitDiffHunksRequest,
     response: GitDiffHunksResponse,
   },
+  "git.commit": { request: GitCommitRequest, response: GitCommitResponse },
+  "git.push": { request: GitPushRequest, response: GitPushResponse },
+  "git.pull": { request: GitPullRequest, response: GitPullResponse },
+  "git.resetSoftHeadParent": {
+    request: GitResetSoftHeadParentRequest,
+    response: GitResetSoftHeadParentResponse,
+  },
+  "git.openPrUrl": { request: GitOpenPrUrlRequest, response: GitOpenPrUrlResponse },
+  "git.commitUrl": { request: GitCommitUrlRequest, response: GitCommitUrlResponse },
   "git.init": { request: GitInitRequest, response: GitInitResponse },
   "git.turnTouches": {
     request: GitTurnTouchesRequest,

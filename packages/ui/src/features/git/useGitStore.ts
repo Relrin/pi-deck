@@ -1,8 +1,19 @@
 import type { GitCommit, GitHunk, GitStatus } from "@pi-deck/core/git/types.js";
+import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { createElement } from "react";
 import { create } from "zustand";
 import { humanizeError } from "../../lib/format/humanize-error.js";
+import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { useToastStore } from "../_status/useToastStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
+import {
+  commitFailureNotification,
+  commitSuccessNotification,
+  pullFailureNotification,
+  pullSuccessNotification,
+  pushFailureNotification,
+  pushSuccessNotification,
+} from "./git-notify.js";
 
 export interface GitBranchInfo {
   name: string;
@@ -41,6 +52,18 @@ interface GitStoreState {
   applyStatusChanged: (projectId: string, status: GitStatus) => void;
   applyTurnTouches: (sessionId: string, paths: string[]) => void;
   initRepo: (projectId: string) => Promise<void>;
+
+  /** Stage `paths` (if provided) and commit with `message`. Pushes a success or failure
+   * notification; the success variant carries view/undo/push actions. */
+  commit: (
+    projectId: string,
+    opts: { message: string; amend?: boolean; paths?: string[] },
+  ) => Promise<{ sha: string; shortSha: string; subject: string } | undefined>;
+  push: (projectId: string, opts?: { forceWithLease?: boolean }) => Promise<boolean>;
+  pull: (projectId: string, opts?: { rebase?: boolean }) => Promise<boolean>;
+  openPr: (projectId: string) => Promise<void>;
+  undoLastCommit: (projectId: string) => Promise<void>;
+  viewCommitOnRemote: (projectId: string, sha: string) => Promise<void>;
 }
 
 const inflight = new Map<string, Promise<void>>();
@@ -257,4 +280,217 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       useToastStore.getState().push(humanizeError(err, "Failed to initialise repository"), "error");
     }
   },
+
+  commit: async (projectId, opts) => {
+    const client = useSessionsStore.getState().client;
+    if (!client) return;
+    const notify = useNotificationStore.getState();
+    const statusBefore = get().statusByProject[projectId];
+    const branch = statusBefore?.branch;
+    // Sum the +/- across the files we're about to commit so the success card can show
+    // "+212 -18" without needing to wait for the post-commit numstat refresh.
+    const paths = opts.paths;
+    const involved = statusBefore?.changes.filter((c) => !paths || paths.includes(c.path)) ?? [];
+    const totals = involved.reduce((acc, c) => ({ add: acc.add + c.add, del: acc.del + c.del }), {
+      add: 0,
+      del: 0,
+    });
+    try {
+      const result = await client.call("git.commit", {
+        projectId,
+        message: opts.message,
+        amend: opts.amend,
+        paths: opts.paths,
+      });
+      notify.push(
+        commitSuccessNotification(projectId, {
+          branch,
+          shortSha: result.shortSha,
+          subject: result.subject,
+          fileCount: involved.length,
+          add: totals.add,
+          del: totals.del,
+          actions: [
+            {
+              id: "view",
+              label: "view",
+              variant: "secondary",
+              onSelect: () => void get().viewCommitOnRemote(projectId, result.sha),
+            },
+            {
+              id: "undo",
+              label: "undo",
+              variant: "secondary",
+              onSelect: () => void get().undoLastCommit(projectId),
+            },
+            {
+              id: "push",
+              label: "push",
+              variant: "primary",
+              leadingIcon: createElement(ArrowUpFromLine, { size: 11 }),
+              onSelect: () => void get().push(projectId),
+            },
+          ],
+        }),
+      );
+      // Status refresh runs eagerly so the changes list empties immediately after commit.
+      void get().refreshStatus(projectId);
+      return result;
+    } catch (err) {
+      notify.push(commitFailureNotification(projectId, humanizeError(err, "Commit failed")));
+      return undefined;
+    }
+  },
+
+  push: async (projectId, opts = {}) => {
+    const client = useSessionsStore.getState().client;
+    if (!client) return false;
+    const notify = useNotificationStore.getState();
+    const status = get().statusByProject[projectId];
+    const branch = status?.branch ?? "HEAD";
+    const remote = status?.remotes[0] ?? "origin";
+    try {
+      const outcome = await client.call("git.push", {
+        projectId,
+        forceWithLease: opts.forceWithLease,
+      });
+      if (outcome.ok) {
+        notify.push(
+          pushSuccessNotification(projectId, {
+            remote,
+            branch,
+            ahead: status?.ahead ?? 0,
+          }),
+        );
+        void get().refreshStatus(projectId);
+        return true;
+      }
+      notify.push(
+        pushFailureNotification(projectId, {
+          remote,
+          branch,
+          reason: outcome.reason,
+          stderr: outcome.stderr,
+          actions: buildPushFailureActions(projectId, outcome.reason, get),
+        }),
+      );
+      return false;
+    } catch (err) {
+      notify.push(
+        pushFailureNotification(projectId, {
+          remote,
+          branch,
+          reason: "unknown",
+          stderr: humanizeError(err, ""),
+          actions: [],
+        }),
+      );
+      return false;
+    }
+  },
+
+  pull: async (projectId, opts = {}) => {
+    const client = useSessionsStore.getState().client;
+    if (!client) return false;
+    const notify = useNotificationStore.getState();
+    const status = get().statusByProject[projectId];
+    const branch = status?.branch ?? "HEAD";
+    const remote = status?.remotes[0] ?? "origin";
+    const rebase = opts.rebase ?? true;
+    try {
+      const outcome = await client.call("git.pull", { projectId, rebase });
+      if (outcome.ok) {
+        notify.push(pullSuccessNotification(projectId, { remote, branch, rebased: rebase }));
+        void get().refreshStatus(projectId);
+        return true;
+      }
+      notify.push(
+        pullFailureNotification(projectId, {
+          remote,
+          branch,
+          reason: outcome.reason,
+          stderr: outcome.stderr,
+        }),
+      );
+      return false;
+    } catch (err) {
+      notify.push(
+        pullFailureNotification(projectId, {
+          remote,
+          branch,
+          reason: "unknown",
+          stderr: humanizeError(err, ""),
+        }),
+      );
+      return false;
+    }
+  },
+
+  openPr: async (projectId) => {
+    const client = useSessionsStore.getState().client;
+    if (!client) return;
+    try {
+      const { url } = await client.call("git.openPrUrl", { projectId });
+      // `window.open` is routed by the Electron main process to `shell.openExternal` for
+      // http(s) URLs via setWindowOpenHandler — see packages/desktop/src/main/window.ts.
+      window.open(url, "_blank", "noopener");
+    } catch (err) {
+      useToastStore.getState().push(humanizeError(err, "Failed to open PR URL"), "error");
+    }
+  },
+
+  undoLastCommit: async (projectId) => {
+    const client = useSessionsStore.getState().client;
+    if (!client) return;
+    try {
+      await client.call("git.resetSoftHeadParent", { projectId });
+      void get().refreshStatus(projectId);
+      void get().refreshCommits(projectId);
+    } catch (err) {
+      useToastStore.getState().push(humanizeError(err, "Undo failed"), "error");
+    }
+  },
+
+  viewCommitOnRemote: async (projectId, sha) => {
+    const client = useSessionsStore.getState().client;
+    if (!client) return;
+    try {
+      const { url } = await client.call("git.commitUrl", { projectId, sha });
+      window.open(url, "_blank", "noopener");
+    } catch (err) {
+      useToastStore.getState().push(humanizeError(err, "Failed to resolve commit URL"), "error");
+    }
+  },
 }));
+
+/**
+ * Compose the action buttons shown on a push-failure notification. Only the
+ * non-fast-forward case offers both "pull --rebase" and "force push"; the other failure
+ * modes either don't have a sensible retry (auth) or need a one-time setup step
+ * (no upstream) that we don't try to fix in-band.
+ */
+function buildPushFailureActions(
+  projectId: string,
+  reason: "non_fast_forward" | "no_upstream" | "auth_failed" | "rejected" | "unknown",
+  get: () => GitStoreState,
+) {
+  if (reason !== "non_fast_forward") return [];
+  return [
+    {
+      id: "pull-rebase",
+      label: "pull --rebase",
+      variant: "secondary" as const,
+      leadingIcon: createElement(ArrowDownToLine, { size: 11 }),
+      dismissAfter: false,
+      onSelect: () => void get().pull(projectId, { rebase: true }),
+    },
+    {
+      id: "force-push",
+      label: "force push",
+      variant: "danger" as const,
+      leadingIcon: createElement(ArrowUpFromLine, { size: 11 }),
+      dismissAfter: false,
+      onSelect: () => void get().push(projectId, { forceWithLease: true }),
+    },
+  ];
+}

@@ -3,11 +3,17 @@ import {
   createBranch,
   currentBranch,
   GitNotFoundError,
+  getCommitUrl,
   getDiffHunks,
+  getPrUrl,
+  commit as gitCommit,
+  pull as gitPull,
+  push as gitPush,
   initRepo,
   listBranches,
   listProjectFiles,
   NotARepoError,
+  resetSoftHeadParent,
 } from "../git/index.js";
 import { getRecentCommits } from "../git/log.js";
 import { type CommandName, CommandSchemas } from "../protocol/commands.js";
@@ -225,6 +231,82 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     try {
       const map = await getDiffHunks(project.path);
       return { hunksByPath: Object.fromEntries(map) };
+    } catch (err) {
+      mapGitError(err);
+    }
+  },
+  "git.commit": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.commit"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const result = await gitCommit(project.path, {
+        message: parsed.message,
+        amend: parsed.amend,
+        paths: parsed.paths,
+      });
+      // A fresh commit is a working-tree change — kick the watcher so the renderer
+      // refreshes status/log without an extra round-trip.
+      void ctx.gitWatchManager.getOrLoad(parsed.projectId);
+      return result;
+    } catch (err) {
+      mapGitError(err);
+    }
+  },
+  "git.push": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.push"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const outcome = await gitPush(project.path, { forceWithLease: parsed.forceWithLease });
+      // Regardless of outcome, the ahead/behind state may have moved — refresh so the
+      // branch header reflects reality even if the push itself failed.
+      void ctx.gitWatchManager.getOrLoad(parsed.projectId);
+      return outcome;
+    } catch (err) {
+      mapGitError(err);
+    }
+  },
+  "git.pull": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.pull"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const outcome = await gitPull(project.path, { rebase: parsed.rebase });
+      void ctx.gitWatchManager.getOrLoad(parsed.projectId);
+      return outcome;
+    } catch (err) {
+      mapGitError(err);
+    }
+  },
+  "git.resetSoftHeadParent": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.resetSoftHeadParent"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      await resetSoftHeadParent(project.path);
+      void ctx.gitWatchManager.getOrLoad(parsed.projectId);
+      return { ok: true as const };
+    } catch (err) {
+      mapGitError(err);
+    }
+  },
+  "git.openPrUrl": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.openPrUrl"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      return await getPrUrl(project.path, parsed.remote);
+    } catch (err) {
+      mapGitError(err);
+    }
+  },
+  "git.commitUrl": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.commitUrl"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      return await getCommitUrl(project.path, parsed.sha, parsed.remote);
     } catch (err) {
       mapGitError(err);
     }

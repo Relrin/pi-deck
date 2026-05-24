@@ -1,21 +1,43 @@
 import { useState } from "react";
-import { ArrowUpFromLine, GitCommitHorizontal } from "../../components/icons/index.js";
+import { ArrowUpFromLine, GitCommitHorizontal, Loader2 } from "../../components/icons/index.js";
+import { useGitStore } from "./useGitStore.js";
 
 interface Props {
+  projectId: string;
   /** Short SHA of HEAD; rendered after the "amend" checkbox like in the screenshot. */
   headShortSha: string | undefined;
 }
 
-/**
- * Visual-only commit composer matching the design mockup. The textarea, option checkboxes,
- * and the two action buttons are present so the panel reads as complete; none of them
- * dispatch a write yet — plan 007 is read-only. Wiring `commit` / `commit & push` lands in
- * a later plan; until then the buttons carry an explanatory `title`.
- */
-export function CommitComposer({ headShortSha }: Props) {
+export function CommitComposer({ projectId, headShortSha }: Props) {
   const [message, setMessage] = useState("");
   const [amend, setAmend] = useState(false);
   const [force, setForce] = useState(false);
+  const [busy, setBusy] = useState<"commit" | "commit-push" | undefined>(undefined);
+
+  const commit = useGitStore((s) => s.commit);
+  const push = useGitStore((s) => s.push);
+
+  const canSubmit = message.trim().length > 0 && busy === undefined;
+
+  const runCommit = async (alsoPush: boolean) => {
+    if (!canSubmit) return;
+    setBusy(alsoPush ? "commit-push" : "commit");
+    try {
+      const result = await commit(projectId, { message: message.trim(), amend });
+      if (!result) return;
+      // Clear the composer on success so the next commit doesn't accidentally reuse the
+      // previous message. Reset amend too — it's a one-shot intent, not a sticky pref.
+      setMessage("");
+      setAmend(false);
+      if (alsoPush) {
+        await push(projectId, { forceWithLease: force });
+        // Force-with-lease was a one-shot opt-in for this push; clear it once consumed.
+        setForce(false);
+      }
+    } finally {
+      setBusy(undefined);
+    }
+  };
 
   return (
     <div className="pid-git-section pid-git-commit-composer">
@@ -58,18 +80,30 @@ export function CommitComposer({ headShortSha }: Props) {
         <button
           type="button"
           className="pid-git-commit-btn pid-git-commit-btn-primary"
-          title="Commit — coming in a later plan"
+          title={canSubmit ? "Commit" : "Enter a commit message"}
+          disabled={!canSubmit}
+          onClick={() => void runCommit(false)}
         >
-          <GitCommitHorizontal size={12} aria-hidden />
+          {busy === "commit" ? (
+            <Loader2 size={12} aria-hidden className="pid-spin" />
+          ) : (
+            <GitCommitHorizontal size={12} aria-hidden />
+          )}
           commit
         </button>
         <button
           type="button"
           className="pid-git-commit-btn pid-git-commit-btn-primary"
-          title="Commit & push — coming in a later plan"
+          title={canSubmit ? "Commit & push" : "Enter a commit message"}
+          disabled={!canSubmit}
+          onClick={() => void runCommit(true)}
         >
-          <ArrowUpFromLine size={12} aria-hidden />
-          commit & push
+          {busy === "commit-push" ? (
+            <Loader2 size={12} aria-hidden className="pid-spin" />
+          ) : (
+            <ArrowUpFromLine size={12} aria-hidden />
+          )}
+          commit &amp; push
         </button>
       </div>
     </div>

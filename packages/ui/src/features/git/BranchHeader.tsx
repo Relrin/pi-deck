@@ -7,6 +7,7 @@ import {
   Check,
   GitMerge,
   GitPullRequestArrow,
+  Loader2,
 } from "../../components/icons/index.js";
 import { useGitStore } from "./useGitStore.js";
 
@@ -22,7 +23,14 @@ interface Props {
 export function BranchHeader({ projectId, branch, ahead, behind, remotes }: Props) {
   const branches = useGitStore((s) => s.branchesByProject[projectId]);
   const checkout = useGitStore((s) => s.checkout);
+  const pull = useGitStore((s) => s.pull);
+  const push = useGitStore((s) => s.push);
+  const openPr = useGitStore((s) => s.openPr);
   const [open, setOpen] = useState(false);
+  // In-flight tracking lets the row spin its own icon (and disables the button) without
+  // needing a global "git busy" flag. Each action keys its own flag; pull and push can
+  // both be in flight at once in principle, though in practice users hit them serially.
+  const [busy, setBusy] = useState<Record<string, boolean>>({});
 
   const list = branches ?? [];
   const aheadLabel = ahead && ahead > 0 ? `↑${ahead}` : undefined;
@@ -31,6 +39,15 @@ export function BranchHeader({ projectId, branch, ahead, behind, remotes }: Prop
   // If `git remote` came back empty, the repo is local-only and the row stays disabled.
   const hasRemote = remotes.length > 0;
   const disabledReason = hasRemote ? undefined : "no remote configured";
+
+  const wrap = (key: string, fn: () => Promise<unknown>) => async () => {
+    setBusy((b) => ({ ...b, [key]: true }));
+    try {
+      await fn();
+    } finally {
+      setBusy((b) => ({ ...b, [key]: false }));
+    }
+  };
 
   return (
     <div className="pid-git-section pid-git-branch">
@@ -85,30 +102,45 @@ export function BranchHeader({ projectId, branch, ahead, behind, remotes }: Prop
       </RadixDropdown.Root>
 
       <div className="pid-git-branch-actions">
-        <BranchAction icon={ArrowDownToLine} label="pull" disabledReason={disabledReason} />
-        <BranchAction icon={ArrowUpFromLine} label="push" disabledReason={disabledReason} />
-        <BranchAction icon={GitPullRequestArrow} label="open pr" disabledReason={disabledReason} />
+        <BranchAction
+          icon={ArrowDownToLine}
+          label="pull"
+          disabledReason={disabledReason}
+          busy={busy.pull}
+          onClick={wrap("pull", () => pull(projectId))}
+        />
+        <BranchAction
+          icon={ArrowUpFromLine}
+          label="push"
+          disabledReason={disabledReason}
+          busy={busy.push}
+          onClick={wrap("push", () => push(projectId))}
+        />
+        <BranchAction
+          icon={GitPullRequestArrow}
+          label="open pr"
+          disabledReason={disabledReason}
+          busy={busy.openPr}
+          onClick={wrap("openPr", () => openPr(projectId))}
+        />
       </div>
     </div>
   );
 }
 
 interface ActionProps {
-  icon: ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
+  icon: ComponentType<{ size?: number; "aria-hidden"?: boolean; className?: string }>;
   label: string;
   /** When set, the button renders disabled and uses this string as the tooltip + a11y reason. */
   disabledReason?: string;
+  busy?: boolean;
+  onClick?: () => void;
 }
 
-/**
- * Render-only branch action. Write operations land in a follow-up plan — the buttons exist
- * here so the visual rhythm of the branch row matches the design. Clicking is a no-op with a
- * tooltip explaining why; when `disabledReason` is set the button is also visually disabled.
- */
-function BranchAction({ icon: Icon, label, disabledReason }: ActionProps) {
-  const disabled = Boolean(disabledReason);
-  const tooltip = disabled ? `${label} — ${disabledReason}` : `${label} — coming in a later plan`;
-  const ariaLabel = disabled ? `${label} (${disabledReason})` : `${label} (not yet implemented)`;
+function BranchAction({ icon: Icon, label, disabledReason, busy, onClick }: ActionProps) {
+  const disabled = Boolean(disabledReason) || Boolean(busy);
+  const tooltip = disabledReason ? `${label} — ${disabledReason}` : label;
+  const ariaLabel = disabledReason ? `${label} (${disabledReason})` : label;
   return (
     <button
       type="button"
@@ -116,8 +148,13 @@ function BranchAction({ icon: Icon, label, disabledReason }: ActionProps) {
       title={tooltip}
       aria-label={ariaLabel}
       disabled={disabled}
+      onClick={onClick}
     >
-      <Icon size={16} aria-hidden />
+      {busy ? (
+        <Loader2 size={16} aria-hidden className="pid-spin" />
+      ) : (
+        <Icon size={16} aria-hidden />
+      )}
       <span className="pid-git-branch-action-label">{label}</span>
     </button>
   );

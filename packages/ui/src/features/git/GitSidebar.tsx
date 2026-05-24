@@ -90,7 +90,7 @@ export function GitSidebar() {
         touched={touched}
         hunksByPath={hunksByPath}
       />
-      <CommitComposer headShortSha={headShortSha} />
+      <CommitComposer projectId={projectId} headShortSha={headShortSha} />
     </div>
   );
 }
