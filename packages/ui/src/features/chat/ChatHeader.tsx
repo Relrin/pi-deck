@@ -1,8 +1,10 @@
 import type { SessionSummary } from "@pi-deck/core/domain/session.js";
 import { useEffect, useMemo, useState } from "react";
+import { InlineRename } from "../../components/InlineRename.js";
 import { GitBranch } from "../../components/icons/index.js";
 import { relativeTime } from "../../lib/format/relative-time.js";
 import { useGitStore } from "../git/useGitStore.js";
+import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { selectTurnInFlight, useMessagesStore } from "./useMessagesStore.js";
 
 interface ChatHeaderProps {
@@ -12,6 +14,7 @@ interface ChatHeaderProps {
 export function ChatHeader({ session }: ChatHeaderProps) {
   const isInFlight = useMessagesStore(useMemo(() => selectTurnInFlight(session.id), [session.id]));
   const branch = useGitStore((s) => s.currentBranchByProject[session.projectId]);
+  const [editing, setEditing] = useState(false);
 
   // The "Xm ago" string is computed on every render, but ticks on its own so a stalled
   // session doesn't read "just now" forever once the user is idle in the view.
@@ -30,9 +33,26 @@ export function ChatHeader({ session }: ChatHeaderProps) {
             data-running={isInFlight || undefined}
             aria-hidden
           />
-          <h2 className="pid-chat-header-title" title={session.title}>
-            {session.title}
-          </h2>
+          {editing ? (
+            <InlineRename
+              initialValue={session.title}
+              onSave={(value) => {
+                void useSessionsStore.getState().renameSession(session.id, value);
+              }}
+              onCancel={() => setEditing(false)}
+              className="pid-chat-header-title-edit"
+              inputClassName="pid-chat-header-title-input"
+              ariaLabel="Session title"
+            />
+          ) : (
+            <h2
+              className="pid-chat-header-title"
+              title={`${session.title}\nDouble-click to rename`}
+              onDoubleClick={() => setEditing(true)}
+            >
+              {session.title}
+            </h2>
+          )}
         </div>
         <div className="pid-chat-header-meta">
           {branch && (

@@ -1,13 +1,14 @@
 import type { SessionSummary } from "@pi-deck/core/domain/session.js";
-import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { ConfirmDialog } from "../../components/dialogs/ConfirmDialog.js";
+import { InlineRename } from "../../components/InlineRename.js";
 import { Package, Pencil, Trash2 } from "../../components/icons/index.js";
 import { ContextMenu, type ContextMenuItem } from "../../components/ui/ContextMenu.js";
 import { relativeTime } from "../../lib/format/relative-time";
 import { useNavStore } from "../../lib/useNavStore";
 import { useSessionsStore } from "./useSessionsStore";
 
-// Lucide icons render at 24px by default; the context menu wants compact 12px-ish glyphs
+// Lucide icons render at 24px by default; the context menu wants compact 14px-ish glyphs
 // to sit alongside `var(--t-12)` mono labels.
 const MENU_ICON_SIZE = 14;
 
@@ -33,7 +34,6 @@ export function PidSessionRow({ session, active }: PidSessionRowProps) {
     {
       label: "Rename",
       icon: <Pencil size={MENU_ICON_SIZE} aria-hidden />,
-      shortcut: "F2",
       onSelect: () => setEditing(true),
     },
     { kind: "separator" },
@@ -73,10 +73,15 @@ export function PidSessionRow({ session, active }: PidSessionRowProps) {
           <span className="pid-rail-row-status" data-tone={active ? "active" : undefined} />
           <span className="pid-rail-row-main">
             {editing ? (
-              <InlineRenameField
-                sessionId={session.id}
-                initialTitle={session.title}
-                onDone={() => setEditing(false)}
+              <InlineRename
+                initialValue={session.title}
+                onSave={(value) => {
+                  void useSessionsStore.getState().renameSession(session.id, value);
+                }}
+                onCancel={() => setEditing(false)}
+                className="pid-rail-row-rename"
+                inputClassName="pid-rail-row-rename-input"
+                ariaLabel="Session title"
               />
             ) : (
               <span className="pid-rail-row-title">{session.title}</span>
@@ -96,76 +101,5 @@ export function PidSessionRow({ session, active }: PidSessionRowProps) {
         onConfirm={() => useSessionsStore.getState().deleteSession(session.id)}
       />
     </>
-  );
-}
-
-interface InlineRenameFieldProps {
-  sessionId: string;
-  initialTitle: string;
-  onDone: () => void;
-}
-
-/**
- * Inline text editor that takes over the row's title slot during a rename. Enter / blur
- * commit, Escape cancels. The form swallows clicks so the row's onClick doesn't activate
- * the session while the user is typing.
- */
-function InlineRenameField({ sessionId, initialTitle, onDone }: InlineRenameFieldProps) {
-  const [value, setValue] = useState(initialTitle);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const committedRef = useRef(false);
-
-  useEffect(() => {
-    const el = inputRef.current;
-    if (!el) return;
-    el.focus();
-    el.select();
-  }, []);
-
-  const commit = (next: string) => {
-    if (committedRef.current) return;
-    committedRef.current = true;
-    const trimmed = next.trim();
-    if (trimmed && trimmed !== initialTitle) {
-      void useSessionsStore.getState().renameSession(sessionId, trimmed);
-    }
-    onDone();
-  };
-
-  const cancel = () => {
-    if (committedRef.current) return;
-    committedRef.current = true;
-    onDone();
-  };
-
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    commit(value);
-  };
-
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      e.stopPropagation();
-      cancel();
-    }
-  };
-
-  return (
-    <form className="pid-rail-row-rename" onSubmit={onSubmit}>
-      <input
-        ref={inputRef}
-        type="text"
-        className="pid-rail-row-rename-input"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={() => commit(value)}
-        onKeyDown={onKeyDown}
-        // Swallow click so the outer row's onClick doesn't fire activateSession while the
-        // user is positioning the caret inside the rename field.
-        onClick={(e) => e.stopPropagation()}
-        aria-label="Session title"
-      />
-    </form>
   );
 }

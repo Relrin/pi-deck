@@ -2445,6 +2445,27 @@
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+  cursor: text;
+}
+.pid-chat-header-title-edit {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+.pid-chat-header-title-input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0 4px;
+  background: var(--bg-2);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--ink-0);
+  /* Match the h2 so the row doesn't jump height when toggling into edit mode. */
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1.2;
+  outline: none;
 }
 .pid-chat-header-meta {
   display: flex;
