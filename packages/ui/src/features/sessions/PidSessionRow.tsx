@@ -6,6 +6,7 @@ import { Package, Pencil, Trash2 } from "../../components/icons/index.js";
 import { ContextMenu, type ContextMenuItem } from "../../components/ui/ContextMenu.js";
 import { relativeTime } from "../../lib/format/relative-time";
 import { useNavStore } from "../../lib/useNavStore";
+import { useMessagesStore } from "../chat/useMessagesStore.js";
 import { useSessionsStore } from "./useSessionsStore";
 
 // Lucide icons render at 24px by default; the context menu wants compact 14px-ish glyphs
@@ -20,6 +21,11 @@ export interface PidSessionRowProps {
 export function PidSessionRow({ session, active }: PidSessionRowProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+  // The session is "live" while its worker is mid-turn (prompt sent, no turn-end yet).
+  // Only the active session can ever be in flight — but we still key by session id so the
+  // selector cost stays per-row and the rendered dot follows the right session if the user
+  // switches focus mid-turn.
+  const live = useMessagesStore((s) => s.bySession[session.id]?.isTurnInFlight ?? false);
 
   const onClick = () => {
     if (editing) return;
@@ -70,7 +76,11 @@ export function PidSessionRow({ session, active }: PidSessionRowProps) {
           onClick={onClick}
           title={session.title}
         >
-          <span className="pid-rail-row-status" data-tone={active ? "active" : undefined} />
+          <span
+            className="pid-rail-row-marker"
+            data-state={active ? "active" : "idle"}
+            aria-hidden
+          />
           <span className="pid-rail-row-main">
             {editing ? (
               <InlineRename
@@ -88,7 +98,16 @@ export function PidSessionRow({ session, active }: PidSessionRowProps) {
             )}
             {session.branch ? <span className="pid-rail-row-branch">{session.branch}</span> : null}
           </span>
-          <span className="pid-rail-row-meta">{relativeTime(session.lastActivityAt)}</span>
+          {live ? (
+            <span
+              className="pid-rail-row-live"
+              role="status"
+              aria-label="Session is running"
+              title="Running"
+            />
+          ) : (
+            <span className="pid-rail-row-meta">{relativeTime(session.lastActivityAt)}</span>
+          )}
         </button>
       </ContextMenu>
       <ConfirmDialog

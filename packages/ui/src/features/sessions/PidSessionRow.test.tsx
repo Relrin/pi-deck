@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { fireEvent, render, screen } from "../../../test/utils";
 import { useNavStore } from "../../lib/useNavStore";
+import { useMessagesStore } from "../chat/useMessagesStore";
 import { PidSessionRow } from "./PidSessionRow";
 import { useSessionsStore } from "./useSessionsStore";
 
@@ -25,6 +26,7 @@ beforeEach(() => {
     ...prev,
     activeSessionId: undefined,
   }));
+  useMessagesStore.setState({ bySession: {} });
 });
 
 afterEach(() => {
@@ -63,5 +65,46 @@ describe("PidSessionRow", () => {
       "aria-current",
       "true",
     );
+  });
+
+  test("renders the lifecycle marker filled when active, hollow otherwise", () => {
+    const { rerender } = render(<PidSessionRow session={baseSession} active={true} />);
+    let marker = screen
+      .getByRole("button", { name: /My session/ })
+      .querySelector(".pid-rail-row-marker");
+    expect(marker?.getAttribute("data-state")).toBe("active");
+
+    rerender(<PidSessionRow session={baseSession} active={false} />);
+    marker = screen
+      .getByRole("button", { name: /My session/ })
+      .querySelector(".pid-rail-row-marker");
+    expect(marker?.getAttribute("data-state")).toBe("idle");
+  });
+
+  test("replaces the timestamp with a live dot when the session's turn is in flight", () => {
+    useMessagesStore.setState({
+      bySession: {
+        "sess-1": { messages: [], toolCalls: {}, isTurnInFlight: true },
+      },
+    });
+    render(<PidSessionRow session={baseSession} active={true} />);
+    const live = screen.getByRole("status", { name: /running/i });
+    expect(live).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /My session/ }).querySelector(".pid-rail-row-meta"),
+    ).toBeNull();
+  });
+
+  test("shows the relative timestamp when not in flight", () => {
+    useMessagesStore.setState({
+      bySession: {
+        "sess-1": { messages: [], toolCalls: {}, isTurnInFlight: false },
+      },
+    });
+    render(<PidSessionRow session={baseSession} active={true} />);
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /My session/ }).querySelector(".pid-rail-row-meta"),
+    ).not.toBeNull();
   });
 });
