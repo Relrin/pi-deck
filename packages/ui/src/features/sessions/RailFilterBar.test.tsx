@@ -53,15 +53,20 @@ describe("RailFilterBar", () => {
     expect(screen.queryByRole("dialog", { name: /Filter sessions/i })).toBeNull();
   });
 
-  test("dirty badge shows the active filter count", () => {
+  test("trigger button stays visually neutral even when filters are dirty", () => {
     render(<RailFilterBar query="" onQueryChange={() => {}} />);
+    const trigger = screen.getByRole("button", { name: /Sort, group, and filter sessions/i });
+    expect(trigger).not.toHaveAttribute("data-dirty");
     expect(document.querySelector(".pid-rail-filterbar-trigger-badge")).toBeNull();
 
     act(() => {
       useSessionsFilterStore.getState().setSince("1d");
       useSessionsFilterStore.getState().setSort("created");
     });
-    expect(document.querySelector(".pid-rail-filterbar-trigger-badge")?.textContent).toBe("2");
+    // No badge, no data-dirty — the dirty signal stays inside the popover (per-section
+    // dots, summary text in accent, footer "N active" label).
+    expect(trigger).not.toHaveAttribute("data-dirty");
+    expect(document.querySelector(".pid-rail-filterbar-trigger-badge")).toBeNull();
   });
 
   test("reset is disabled when every section is at its default", () => {
