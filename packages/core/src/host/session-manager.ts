@@ -1,5 +1,9 @@
 import { EventEmitter } from "node:events";
 import { unlink } from "node:fs/promises";
+import {
+  type SessionInfo as PiSessionInfo,
+  SessionManager as PiSessionManager,
+} from "@earendil-works/pi-coding-agent";
 import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/session.js";
 import type { ApprovalDecision } from "../extensions/agent-mode/index.js";
 import { currentBranch } from "../git/branches.js";
@@ -47,6 +51,7 @@ export interface SessionManagerOptions {
   spawnWorker: () => WorkerHandle;
   providerManager?: ProviderManager;
   metadataStore?: MetadataStore;
+  listPiSessions?: (cwd: string) => Promise<PiSessionInfo[]>;
 }
 
 export type SessionManagerEvents = {
@@ -71,6 +76,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
   private readonly spawnWorker: () => WorkerHandle;
   private readonly providerManager?: ProviderManager;
   private readonly metadataStore?: MetadataStore;
+  private readonly listPiSessions: (cwd: string) => Promise<PiSessionInfo[]>;
   private readonly rehydratedProjects = new Set<string>();
   private nextLocalId = 1;
 
@@ -79,6 +85,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     this.spawnWorker = opts.spawnWorker;
     this.providerManager = opts.providerManager;
     this.metadataStore = opts.metadataStore;
+    this.listPiSessions = opts.listPiSessions ?? ((cwd) => PiSessionManager.list(cwd));
   }
 
   list(projectId: string): SessionRecord[] {
@@ -126,7 +133,61 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
         archived: meta.archived,
       });
     }
+    // Then look for sessions pi has stamped for this project's cwd (typically created via
+    // the `pi` CLI in a terminal) that pi-deck hasn't claimed yet. Adopt them so the rail
+    // shows them alongside sessions we created ourselves.
+    await this.discoverPiSessions(projectId, project.path);
     this.rehydratedProjects.add(projectId);
+  }
+
+  /**
+   * Walk pi's session directory for the given cwd and merge any sessions we don't already
+   * know about into both the in-memory map AND pi-deck's persisted metadata. Subsequent
+   * launches treat them like any other session (rename, archive, delete all work).
+   *
+   * pi's `id` is the canonical key — pi-deck stamps the same id on its own sessions after
+   * the worker reports it (see `activate` below), so by the time we get here we can dedupe
+   * cleanly via `this.sessions.has(id)`. Non-fatal on any error so a missing or unreadable
+   * pi session dir can't bring down project rehydration.
+   */
+  private async discoverPiSessions(projectId: string, projectPath: string): Promise<void> {
+    let infos: PiSessionInfo[];
+    try {
+      infos = await this.listPiSessions(projectPath);
+    } catch {
+      return;
+    }
+    for (const info of infos) {
+      if (this.sessions.has(info.id)) continue;
+      const createdAt = info.created.toISOString();
+      const lastActivityAt = info.modified.toISOString();
+      const title = derivePiSessionTitle(info);
+      const record: SessionRecord = {
+        id: info.id,
+        projectId,
+        projectPath,
+        title,
+        createdAt,
+        lastActivityAt,
+        sessionFile: info.path,
+        archived: false,
+      };
+      this.sessions.set(info.id, record);
+      if (this.metadataStore) {
+        try {
+          await this.metadataStore.upsertSession(projectId, {
+            id: info.id,
+            title,
+            createdAt,
+            lastActivityAt,
+            sessionFile: info.path,
+            archived: false,
+          });
+        } catch {
+          // Persistence is best-effort; the in-memory record still surfaces in the rail.
+        }
+      }
+    }
   }
 
   /** Rehydrate every known project so `listArchived()` returns a complete view. */
@@ -470,4 +531,28 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       }
     });
   }
+}
+
+const PI_SESSION_TITLE_MAX = 60;
+
+/**
+ * Pick a sensible display title for a session pi-deck discovered (i.e. it wasn't created
+ * via pi-deck so we don't have a user-typed title). Preference order:
+ *
+ *   1. pi's stored display name (set via `/name` or `session_info` entries)
+ *   2. the first user message, trimmed to a one-line preview
+ *   3. a generic "Untitled session" so the rail never shows a blank row
+ *
+ * The first-message fallback collapses whitespace and truncates to a fixed width so a
+ * paragraph-long opening prompt doesn't blow out the rail.
+ */
+function derivePiSessionTitle(info: PiSessionInfo): string {
+  if (info.name?.trim()) return info.name.trim();
+  const first = (info.firstMessage ?? "").replace(/\s+/g, " ").trim();
+  if (first) {
+    return first.length > PI_SESSION_TITLE_MAX
+      ? `${first.slice(0, PI_SESSION_TITLE_MAX - 1).trimEnd()}…`
+      : first;
+  }
+  return "Untitled session";
 }
