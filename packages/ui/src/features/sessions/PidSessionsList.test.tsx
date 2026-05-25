@@ -216,6 +216,91 @@ describe("PidSessionsList", () => {
     expect(screen.queryByText("Session 8")).toBeNull();
   });
 
+  test("sorts session rows by lastActivityAt, newest first", () => {
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      sessionsByProject: {
+        "p-1": [
+          {
+            id: "old",
+            projectId: "p-1",
+            title: "Older session",
+            lastActivityAt: "2026-05-10T10:00:00Z",
+          },
+          {
+            id: "newest",
+            projectId: "p-1",
+            title: "Newest session",
+            lastActivityAt: "2026-05-20T10:00:00Z",
+          },
+          {
+            id: "middle",
+            projectId: "p-1",
+            title: "Middle session",
+            lastActivityAt: "2026-05-15T10:00:00Z",
+          },
+        ],
+      },
+    }));
+    useNavStore.setState({
+      screen: "blank",
+      expandedProjectsOverview: {},
+      expandedProjectsRail: { "p-1": true },
+    });
+
+    render(<PidSessionsList />);
+
+    const titles = [...document.querySelectorAll(".pid-rail-row-title")].map(
+      (el) => el.textContent,
+    );
+    expect(titles).toEqual(["Newest session", "Middle session", "Older session"]);
+  });
+
+  test("bumpLastActivity moves the bumped session to the top of the rail", () => {
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      sessionsByProject: {
+        "p-1": [
+          {
+            id: "a",
+            projectId: "p-1",
+            title: "A",
+            lastActivityAt: "2026-05-20T10:00:00Z",
+          },
+          {
+            id: "b",
+            projectId: "p-1",
+            title: "B",
+            lastActivityAt: "2026-05-19T10:00:00Z",
+          },
+          {
+            id: "c",
+            projectId: "p-1",
+            title: "C",
+            lastActivityAt: "2026-05-18T10:00:00Z",
+          },
+        ],
+      },
+    }));
+    useNavStore.setState({
+      screen: "blank",
+      expandedProjectsOverview: {},
+      expandedProjectsRail: { "p-1": true },
+    });
+
+    const { rerender } = render(<PidSessionsList />);
+    expect(
+      [...document.querySelectorAll(".pid-rail-row-title")].map((el) => el.textContent),
+    ).toEqual(["A", "B", "C"]);
+
+    // Bump "C" — it should now sort to the very top.
+    useSessionsStore.getState().bumpLastActivity("c");
+    rerender(<PidSessionsList />);
+    expect(
+      [...document.querySelectorAll(".pid-rail-row-title")].map((el) => el.textContent),
+    ).toEqual(["C", "A", "B"]);
+  });
+
   test("no overflow toggle when the list fits within the cap", () => {
     const sessions = Array.from({ length: 3 }, (_, i) => ({
       id: `row-${i + 1}`,

@@ -68,6 +68,13 @@ export interface SessionsStoreState {
   setActiveSessionId: (id: string | undefined) => void;
   /** Merge backend-pushed updates (e.g. title rename) into the local sessions list. */
   updateSessionMetadata: (sessionId: string, partial: Partial<SessionSummary>) => void;
+  /**
+   * Stamp a session's `lastActivityAt` with the current wall clock. Drives the
+   * "most-recent-first" sort in the rail so activating or prompting a session pops it to
+   * the top without waiting for a server round-trip — the host applies the same update on
+   * its side so a later `session.list` refresh re-confirms the order.
+   */
+  bumpLastActivity: (sessionId: string) => void;
 }
 
 /** Dedupes concurrent loadProjectSessions calls without leaking into store state. */
@@ -357,6 +364,9 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     try {
       await client.call("session.activate", { sessionId: id });
       set({ activeSessionId: id });
+      // Host stamps lastActivityAt on activate too — mirror it locally so the row hops to
+      // the top of the rail's recency sort immediately.
+      get().bumpLastActivity(id);
       const projectId = useProjectsStore.getState().activeProjectId;
       if (projectId) useProjectsStore.getState().setLastActiveSession(projectId, id);
     } catch (err) {
@@ -394,6 +404,10 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         attachments: opts?.attachments,
         images: opts?.messageImages,
       });
+      // Host bumps lastActivityAt on prompt too. Mirror locally so the rail re-sorts now;
+      // the next session.list refresh (scheduled on turn.end) confirms the order from the
+      // server.
+      get().bumpLastActivity(id);
     } catch (err) {
       useMessagesStore.getState().markTurnInFlight(id, false);
       useToastStore.getState().push(humanizeError(err, "Failed to send prompt"), "error");
@@ -422,4 +436,20 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     set((state) => ({
       sessions: state.sessions.map((s) => (s.id === sessionId ? { ...s, ...partial } : s)),
     })),
+
+  bumpLastActivity: (sessionId) =>
+    set((state) => {
+      const now = new Date().toISOString();
+      const apply = (s: SessionSummary): SessionSummary =>
+        s.id === sessionId ? { ...s, lastActivityAt: now } : s;
+      const sessionsByProject: Record<string, SessionSummary[]> = {};
+      for (const [pid, list] of Object.entries(state.sessionsByProject)) {
+        sessionsByProject[pid] = list.map(apply);
+      }
+      return {
+        sessions: state.sessions.map(apply),
+        sessionsByProject,
+        archivedSessions: state.archivedSessions.map(apply),
+      };
+    }),
 }));

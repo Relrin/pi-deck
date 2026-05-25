@@ -14,6 +14,13 @@ const ARCHIVE_KEY = "__archive__";
 // "N MORE" toggle.
 const RAIL_VISIBLE_CAP = 5;
 
+function sortByRecency(sessions: SessionSummary[]): SessionSummary[] {
+  return [...sessions].sort((a, b) => {
+    if (a.lastActivityAt === b.lastActivityAt) return 0;
+    return a.lastActivityAt < b.lastActivityAt ? 1 : -1;
+  });
+}
+
 export function PidSessionsList() {
   // Load the cross-project archived list once so the ARCHIVE group can render its count
   // without waiting for individual project blocks to expand.
@@ -83,8 +90,9 @@ function ProjectBlock({ projectId }: ProjectBlockProps) {
   if (!project) return null;
 
   // Archived sessions live in the synthetic ARCHIVE group at the bottom; filter them out
-  // of their original project so the same row doesn't render twice.
-  const visible = sessions?.filter((s) => !s.archived);
+  // of their original project so the same row doesn't render twice. Then sort newest-first
+  // so the rail's top row is always the most recently active session.
+  const visible = sessions ? sortByRecency(sessions.filter((s) => !s.archived)) : undefined;
 
   return (
     <div className="pid-rail-project">
@@ -154,6 +162,8 @@ function ArchiveBlock() {
 
   if (archived.length === 0) return null;
 
+  const sortedArchived = sortByRecency(archived);
+
   return (
     <div className="pid-rail-project">
       <button
@@ -176,7 +186,9 @@ function ArchiveBlock() {
           </svg>
         </span>
       </button>
-      {expanded ? <RailRowList sessions={archived} activeSessionId={activeSessionId} /> : null}
+      {expanded ? (
+        <RailRowList sessions={sortedArchived} activeSessionId={activeSessionId} />
+      ) : null}
     </div>
   );
 }
