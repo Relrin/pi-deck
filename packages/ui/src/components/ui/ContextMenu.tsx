@@ -29,7 +29,10 @@ export function ContextMenu({ items, children }: ContextMenuProps) {
     <RadixContextMenu.Root>
       <RadixContextMenu.Trigger asChild>{children}</RadixContextMenu.Trigger>
       <RadixContextMenu.Portal>
-        <RadixContextMenu.Content className="pid-context-menu">
+        <RadixContextMenu.Content
+          className="pid-context-menu"
+          onCloseAutoFocus={(event) => event.preventDefault()}
+        >
           {items.map((item, idx) => {
             if (item.kind === "separator") {
               // Derive a stable key from adjacent action labels so React doesn't recreate

@@ -38,6 +38,7 @@ export function InlineRename({
   const [value, setValue] = useState(initialValue);
   const inputRef = useRef<HTMLInputElement>(null);
   const committedRef = useRef(false);
+  const interactedRef = useRef(false);
 
   useEffect(() => {
     const el = inputRef.current;
@@ -65,15 +66,24 @@ export function InlineRename({
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    interactedRef.current = true;
     commit(value);
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    interactedRef.current = true;
     if (e.key === "Escape") {
       e.preventDefault();
       e.stopPropagation();
       cancel();
     }
+  };
+
+  const onBlur = () => {
+    // Ignore the synthetic blur that comes from focus-restoration races on mount; only
+    // commit when the user has truly interacted with the field.
+    if (!interactedRef.current) return;
+    commit(value);
   };
 
   return (
@@ -83,12 +93,18 @@ export function InlineRename({
         type="text"
         className={inputClassName}
         value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={() => commit(value)}
+        onChange={(e) => {
+          interactedRef.current = true;
+          setValue(e.target.value);
+        }}
+        onBlur={onBlur}
         onKeyDown={onKeyDown}
         // Swallow click so the surrounding row / title doesn't re-trigger its own onClick
         // (activate session, open menu, etc.) while the user is positioning the caret.
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          interactedRef.current = true;
+          e.stopPropagation();
+        }}
         onDoubleClick={(e) => e.stopPropagation()}
         aria-label={ariaLabel}
       />
