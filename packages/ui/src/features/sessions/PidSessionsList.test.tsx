@@ -443,6 +443,156 @@ describe("PidSessionsList", () => {
     expect(screen.getByText("Diff heatmap")).toBeInTheDocument();
   });
 
+  test("group=flat renders a single ungrouped list, no project headers", () => {
+    useProjectsStore.setState({
+      projects: [
+        {
+          id: "p-1",
+          path: "/p/1",
+          displayName: "Alpha",
+          lastOpenedAt: "2026-05-16T12:00:00Z",
+        },
+        {
+          id: "p-2",
+          path: "/p/2",
+          displayName: "Beta",
+          lastOpenedAt: "2026-05-15T12:00:00Z",
+        },
+      ],
+      activeProjectId: "p-1",
+      lastActiveSessionByProject: {},
+    });
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      sessionsByProject: {
+        "p-1": [
+          {
+            id: "a1",
+            projectId: "p-1",
+            title: "Alpha first",
+            lastActivityAt: "2026-05-20T10:00:00Z",
+          },
+        ],
+        "p-2": [
+          {
+            id: "b1",
+            projectId: "p-2",
+            title: "Beta first",
+            lastActivityAt: "2026-05-19T10:00:00Z",
+          },
+        ],
+      },
+    }));
+
+    useSessionsFilterStore.getState().setGroup("flat");
+    render(<PidSessionsList />);
+
+    // No project headers rendered in flat mode.
+    expect(document.querySelectorAll(".pid-rail-project-name").length).toBe(0);
+
+    // All non-archived sessions appear, sorted by recency.
+    const titles = [...document.querySelectorAll(".pid-rail-row-title")].map(
+      (el) => el.textContent,
+    );
+    expect(titles).toEqual(["Alpha first", "Beta first"]);
+  });
+
+  test("group=flat respects the Project filter (hides sessions of unselected projects)", () => {
+    useProjectsStore.setState({
+      projects: [
+        {
+          id: "p-1",
+          path: "/p/1",
+          displayName: "Alpha",
+          lastOpenedAt: "2026-05-16T12:00:00Z",
+        },
+        {
+          id: "p-2",
+          path: "/p/2",
+          displayName: "Beta",
+          lastOpenedAt: "2026-05-15T12:00:00Z",
+        },
+      ],
+      activeProjectId: "p-1",
+      lastActiveSessionByProject: {},
+    });
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      sessionsByProject: {
+        "p-1": [
+          {
+            id: "a1",
+            projectId: "p-1",
+            title: "Alpha row",
+            lastActivityAt: "2026-05-20T10:00:00Z",
+          },
+        ],
+        "p-2": [
+          {
+            id: "b1",
+            projectId: "p-2",
+            title: "Beta row",
+            lastActivityAt: "2026-05-19T10:00:00Z",
+          },
+        ],
+      },
+    }));
+
+    useSessionsFilterStore.getState().setGroup("flat");
+    useSessionsFilterStore.getState().setProject({ kind: "subset", ids: ["p-1"] });
+    render(<PidSessionsList />);
+
+    expect(screen.getByText("Alpha row")).toBeInTheDocument();
+    expect(screen.queryByText("Beta row")).toBeNull();
+  });
+
+  test("group=flat hides archived sessions from the main list (archive bucket stays separate)", () => {
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      sessionsByProject: {
+        "p-1": [
+          {
+            id: "live",
+            projectId: "p-1",
+            title: "Live row",
+            lastActivityAt: "2026-05-20T10:00:00Z",
+          },
+          {
+            id: "old",
+            projectId: "p-1",
+            title: "Archived row",
+            lastActivityAt: "2026-05-15T10:00:00Z",
+            archived: true,
+          },
+        ],
+      },
+      archivedSessions: [
+        {
+          id: "old",
+          projectId: "p-1",
+          title: "Archived row",
+          lastActivityAt: "2026-05-15T10:00:00Z",
+          archived: true,
+        },
+      ],
+      archivedLoaded: true,
+    }));
+    useNavStore.setState({
+      screen: "blank",
+      expandedProjectsOverview: {},
+      expandedProjectsRail: { __archive__: false },
+    });
+
+    useSessionsFilterStore.getState().setGroup("flat");
+    render(<PidSessionsList />);
+
+    // Live row in the flat list.
+    expect(screen.getByText("Live row")).toBeInTheDocument();
+    // Archived row not duplicated into the flat list (still reachable inside the archive
+    // bucket, which is collapsed here).
+    expect(screen.queryByText("Archived row")).toBeNull();
+  });
+
   test("no overflow toggle when the list fits within the cap", () => {
     const sessions = Array.from({ length: 3 }, (_, i) => ({
       id: `row-${i + 1}`,

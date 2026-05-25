@@ -18,7 +18,11 @@ export const ALL_SINCE: readonly SessionsSince[] = ["1d", "7d", "14d", "30d", "a
 export type SessionsSort = "recent" | "created" | "branch" | "status";
 export const ALL_SORT: readonly SessionsSort[] = ["recent", "created", "branch", "status"];
 
-/** Grouping dimension. Only "workspace" is wired today; the rest are no-ops. */
+/**
+ * Grouping dimension. `workspace` (group by project) and `flat` (single ungrouped list)
+ * are wired; `branch` and `status` accept the selection for forward-compat but currently
+ * fall back to workspace grouping in the rail.
+ */
 export type SessionsGroup = "workspace" | "branch" | "status" | "flat";
 export const ALL_GROUP: readonly SessionsGroup[] = ["workspace", "branch", "status", "flat"];
 

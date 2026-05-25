@@ -1,5 +1,5 @@
 import type { SessionSummary } from "@pi-deck/core/domain/session.js";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavStore, useRailExpanded } from "../../lib/useNavStore";
 import { PidNewSessionButton } from "./PidNewSessionButton";
 import { PidProjectSwitcher } from "./PidProjectSwitcher";
@@ -95,11 +95,23 @@ export function PidSessionsList() {
         <RailFilterBar query={query} onQueryChange={setQuery} />
       </div>
       <div className="pid-rail-sessions-body">
-        <ProjectsListing query={query} />
+        <SessionsBody query={query} />
         <ArchiveBlock query={query} />
       </div>
     </div>
   );
+}
+
+/**
+ * Top-level switcher that picks between the workspace-grouped layout (project headers +
+ * per-project session rows) and the flat layout (one continuous list, no headers) based on
+ * the user's `group` filter choice. Archive remains its own collapsible bucket in both
+ * modes since archival is an explicit lifecycle action, not a grouping criterion.
+ */
+function SessionsBody({ query }: { query: string }) {
+  const group = useSessionsFilterStore((s) => s.group);
+  if (group === "flat") return <FlatListing query={query} />;
+  return <ProjectsListing query={query} />;
 }
 
 function ProjectsListing({ query }: { query: string }) {
@@ -126,6 +138,63 @@ function ProjectsListing({ query }: { query: string }) {
       ))}
     </>
   );
+}
+
+/**
+ * Renders every visible project's sessions in a single flat list — no per-project header,
+ * no expand/collapse. Applies the same since/search/sort filters as the workspace layout.
+ *
+ * The grouped layout loads each project's sessions lazily on expand; flat mode has nowhere
+ * to "expand" so we eagerly trigger `loadProjectSessions` for any visible project we
+ * haven't fetched yet. The store dedups in-flight fetches.
+ */
+function FlatListing({ query }: { query: string }) {
+  const projects = useProjectsStore((s) => s.projects);
+  const projectSelection = useSessionsFilterStore((s) => s.project);
+  const sessionsByProject = useSessionsStore((s) => s.sessionsByProject);
+  const activeSessionId = useSessionsStore((s) => s.activeSessionId);
+  const sort = useSessionsFilterStore((s) => s.sort);
+  const since = useSessionsFilterStore((s) => s.since);
+
+  // Memoised so the effect below sees a stable reference (and only fires when the visible
+  // project set actually changes), instead of every render where map() produces a new array.
+  const visibleProjectIds = useMemo(
+    () =>
+      projectSelection.kind === "all"
+        ? projects.map((p) => p.id)
+        : projects.filter((p) => projectSelection.ids.includes(p.id)).map((p) => p.id),
+    [projects, projectSelection],
+  );
+
+  useEffect(() => {
+    const store = useSessionsStore.getState();
+    for (const id of visibleProjectIds) {
+      if (store.sessionsByProject[id] !== undefined) continue;
+      if (store.loadingByProject[id]) continue;
+      void store.loadProjectSessions(id).catch(() => {});
+    }
+  }, [visibleProjectIds]);
+
+  if (visibleProjectIds.length === 0) {
+    return (
+      <div className="pid-overview-empty" style={{ padding: "12px 14px" }}>
+        {projects.length === 0 ? "no projects" : "no projects match the filter"}
+      </div>
+    );
+  }
+
+  let combined: SessionSummary[] = [];
+  for (const id of visibleProjectIds) {
+    const list = sessionsByProject[id];
+    if (list) combined = combined.concat(list.filter((s) => !s.archived));
+  }
+  combined = applySinceFilter(combined, since);
+  combined = applySearchFilter(combined, query);
+  combined = sortSessions(combined, sort);
+
+  if (combined.length === 0) return null;
+
+  return <RailRowList sessions={combined} activeSessionId={activeSessionId} />;
 }
 
 interface ProjectBlockProps {
