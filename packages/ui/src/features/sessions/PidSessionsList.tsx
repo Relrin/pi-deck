@@ -1,6 +1,5 @@
 import type { SessionSummary } from "@pi-deck/core/domain/session.js";
 import { useEffect, useState } from "react";
-import { PidChip } from "../../components/chip/PidChip";
 import { Glyph } from "../../components/glyph";
 import { useNavStore, useRailExpanded } from "../../lib/useNavStore";
 import { PidNewSessionButton } from "./PidNewSessionButton";
@@ -26,13 +25,13 @@ export function PidSessionsList() {
   return (
     <div className="pid-rail-sessions">
       <div className="pid-rail-sessions-actions">
+        <PidNewSessionButton />
+      </div>
+      <div className="pid-rail-sessions-actions">
         <span className="pid-rail-sessions-filter">
           <Glyph kind="search" size={12} />
           <span>filter sessions…</span>
         </span>
-      </div>
-      <div className="pid-rail-sessions-actions">
-        <PidNewSessionButton />
       </div>
       <div className="pid-rail-sessions-body">
         <ProjectsListing />
@@ -163,9 +162,19 @@ function ArchiveBlock() {
         aria-expanded={expanded}
         onClick={toggle}
       >
-        <Glyph kind={expanded ? "chevron-down" : "chevron-right"} size={12} />
+        <span className="pid-rail-project-sq" aria-hidden />
         <span className="pid-rail-project-name">archive</span>
-        <PidChip>{String(archived.length)}</PidChip>
+        <span className="pid-rail-project-count">{archived.length}</span>
+        <span className="pid-rail-project-caret" aria-hidden>
+          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden focusable="false">
+            <title>{expanded ? "Expanded" : "Collapsed"}</title>
+            {expanded ? (
+              <path d="M 1.5 3 L 8.5 3 L 5 7.5 Z" fill="currentColor" />
+            ) : (
+              <path d="M 7 1.5 L 7 8.5 L 2.5 5 Z" fill="currentColor" />
+            )}
+          </svg>
+        </span>
       </button>
       {expanded ? <RailRowList sessions={archived} activeSessionId={activeSessionId} /> : null}
     </div>

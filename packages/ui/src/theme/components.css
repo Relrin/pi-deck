@@ -936,8 +936,8 @@
 .pid-rail-project-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 8px;
+  padding: 6px 14px;
   background: none;
   border: 0;
   width: 100%;
@@ -952,11 +952,41 @@
 .pid-rail-project-header:hover {
   color: var(--ink-0);
 }
+.pid-rail-project-header[data-active="true"] {
+  color: var(--ink-0);
+}
+.pid-rail-project-sq {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  background: var(--ink-3);
+}
+.pid-rail-project-header[data-active="true"] .pid-rail-project-sq {
+  background: var(--accent);
+}
 .pid-rail-project-name {
   flex: 1;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+.pid-rail-project-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--ink-3);
+}
+.pid-rail-project-caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  height: 10px;
+  color: var(--ink-3);
+  line-height: 1;
+}
+.pid-rail-project-caret svg {
+  display: block;
 }
 .pid-rail-row {
   display: flex;
