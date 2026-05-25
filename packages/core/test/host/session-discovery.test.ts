@@ -62,6 +62,15 @@ describe("SessionManager.rehydrateProject — pi session discovery", () => {
     expect(list[0]?.lastActivityAt).toBe(discovered.modified.toISOString());
   });
 
+  test("branch falls back to undefined when the project path isn't a git repo", async () => {
+    // /work/foo doesn't exist on the filesystem, so `currentBranch` rejects and discovery
+    // leaves the field empty rather than throwing. The rail simply omits the branch line.
+    const project = await store.openOrCreateProject("/work/foo");
+    const mgr = makeManager(async () => [makePiSession()]);
+    await mgr.rehydrateProject(project.id);
+    expect(mgr.list(project.id)[0]?.branch).toBeUndefined();
+  });
+
   test("persists adopted sessions into the project's metadata for next launch", async () => {
     const project = await store.openOrCreateProject("/work/foo");
     const mgr = makeManager(async () => [makePiSession()]);

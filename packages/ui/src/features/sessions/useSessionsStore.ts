@@ -364,9 +364,9 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     try {
       await client.call("session.activate", { sessionId: id });
       set({ activeSessionId: id });
-      // Host stamps lastActivityAt on activate too — mirror it locally so the row hops to
-      // the top of the rail's recency sort immediately.
-      get().bumpLastActivity(id);
+      // Intentionally NOT bumping lastActivityAt: opening an old session should keep its
+      // position in the rail until the user actually sends a prompt. The bump happens in
+      // `sendPrompt` instead.
       const projectId = useProjectsStore.getState().activeProjectId;
       if (projectId) useProjectsStore.getState().setLastActiveSession(projectId, id);
     } catch (err) {

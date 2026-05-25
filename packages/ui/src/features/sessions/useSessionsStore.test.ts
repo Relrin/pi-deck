@@ -109,6 +109,30 @@ describe("useSessionsStore — activateSession", () => {
     expect(useSessionsStore.getState().activeSessionId).toBe("sess-1");
     expect(useProjectsStore.getState().lastActiveSessionByProject["proj-1"]).toBe("sess-1");
   });
+
+  test("does NOT bump lastActivityAt — opening an old session keeps its rail position", async () => {
+    const client = mockClient({ "session.activate": () => ({}) });
+    const originalTs = "2026-04-01T10:00:00Z";
+    useSessionsStore.setState({
+      client: client as never,
+      sessionsByProject: {
+        "proj-1": [
+          {
+            id: "sess-old",
+            projectId: "proj-1",
+            title: "Old session",
+            lastActivityAt: originalTs,
+          },
+        ],
+      },
+    });
+    useProjectsStore.setState({ activeProjectId: "proj-1" });
+
+    await useSessionsStore.getState().activateSession("sess-old");
+    expect(useSessionsStore.getState().sessionsByProject["proj-1"]?.[0]?.lastActivityAt).toBe(
+      originalTs,
+    );
+  });
 });
 
 describe("useSessionsStore — setActiveSessionId", () => {

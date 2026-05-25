@@ -111,16 +111,21 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       this.rehydratedProjects.add(projectId);
       return;
     }
+
     const project = await this.metadataStore.readProject(projectId);
     if (!project) {
       this.rehydratedProjects.add(projectId);
       return;
     }
+
+    const projectBranch = await this.resolveCurrentBranch(project.path);
     const persisted = project.sessions ?? {};
     for (const id of project.sessionIds) {
       if (this.sessions.has(id)) continue;
       const meta = persisted[id];
       if (!meta) continue;
+
+      const branch = meta.branch ?? projectBranch;
       this.sessions.set(id, {
         id,
         projectId,
@@ -129,15 +134,38 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
         createdAt: meta.createdAt,
         lastActivityAt: meta.lastActivityAt,
         sessionFile: meta.sessionFile,
-        branch: meta.branch,
+        branch,
         archived: meta.archived,
       });
+
+      // Backfill on disk so subsequent rehydrates short-circuit
+      if (!meta.branch && projectBranch) {
+        try {
+          await this.metadataStore.patchSession(projectId, id, { branch: projectBranch });
+        } catch {
+          // ignore
+        }
+      }
     }
     // Then look for sessions pi has stamped for this project's cwd (typically created via
     // the `pi` CLI in a terminal) that pi-deck hasn't claimed yet. Adopt them so the rail
     // shows them alongside sessions we created ourselves.
-    await this.discoverPiSessions(projectId, project.path);
+    await this.discoverPiSessions(projectId, project.path, projectBranch);
     this.rehydratedProjects.add(projectId);
+  }
+
+  /**
+   * Read the project's current git branch, swallowing any error (not a repo, git missing,
+   * deleted directory). Centralised so both the rehydrate path and the discover path can
+   * share one git call per project.
+   */
+  private async resolveCurrentBranch(projectPath: string): Promise<string | undefined> {
+    try {
+      const b = await currentBranch(projectPath);
+      return b || undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   /**
@@ -150,13 +178,21 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
    * cleanly via `this.sessions.has(id)`. Non-fatal on any error so a missing or unreadable
    * pi session dir can't bring down project rehydration.
    */
-  private async discoverPiSessions(projectId: string, projectPath: string): Promise<void> {
+  private async discoverPiSessions(
+    projectId: string,
+    projectPath: string,
+    projectBranch: string | undefined,
+  ): Promise<void> {
     let infos: PiSessionInfo[];
     try {
       infos = await this.listPiSessions(projectPath);
     } catch {
       return;
     }
+    // For sessions created in a terminal `pi` run we no longer know which branch was
+    // checked out at the time. The caller passes the project's *current* branch, which we
+    // stamp onto the adopted record — better than a blank line, and consistent with
+    // pi-deck's own create flow which also snapshots the branch via `currentBranch`.
     for (const info of infos) {
       if (this.sessions.has(info.id)) continue;
       const createdAt = info.created.toISOString();
@@ -170,6 +206,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
         createdAt,
         lastActivityAt,
         sessionFile: info.path,
+        branch: projectBranch,
         archived: false,
       };
       this.sessions.set(info.id, record);
@@ -181,6 +218,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
             createdAt,
             lastActivityAt,
             sessionFile: info.path,
+            branch: projectBranch,
             archived: false,
           });
         } catch {
@@ -283,7 +321,9 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       }
     }
     record.sessionFile = init.sessionFile;
-    record.lastActivityAt = new Date().toISOString();
+    // Intentionally do NOT bump lastActivityAt here. Opening an old session shouldn't move
+    // its row to the top of the rail — only sending a new prompt counts as activity. The
+    // bump lives in `prompt()` below.
 
     // Tell the renderer what was already in this session (empty for a brand-new one,
     // populated for a resumed one) so the chat view can repaint the prior conversation.
