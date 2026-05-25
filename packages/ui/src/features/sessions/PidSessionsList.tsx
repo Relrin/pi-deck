@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import type { SessionSummary } from "@pi-deck/core/domain/session.js";
+import { useEffect, useState } from "react";
 import { PidChip } from "../../components/chip/PidChip";
 import { Glyph } from "../../components/glyph";
 import { useNavStore, useRailExpanded } from "../../lib/useNavStore";
@@ -9,6 +10,10 @@ import { useProjectsStore } from "./useProjectsStore";
 import { useSessionsStore } from "./useSessionsStore";
 
 const ARCHIVE_KEY = "__archive__";
+
+// How many rows a project / archive block renders before collapsing the tail behind an
+// "N MORE" toggle.
+const RAIL_VISIBLE_CAP = 5;
 
 export function PidSessionsList() {
   // Load the cross-project archived list once so the ARCHIVE group can render its count
@@ -85,16 +90,60 @@ function ProjectBlock({ projectId }: ProjectBlockProps) {
   return (
     <div className="pid-rail-project">
       <PidProjectSwitcher project={project} count={visible?.length} />
-      {expanded && visible
-        ? visible.map((session) => (
-            <PidSessionRow
-              key={session.id}
-              session={session}
-              active={session.id === activeSessionId}
-            />
-          ))
-        : null}
+      {expanded && visible ? (
+        <RailRowList sessions={visible} activeSessionId={activeSessionId} />
+      ) : null}
     </div>
+  );
+}
+
+interface RailRowListProps {
+  sessions: SessionSummary[];
+  activeSessionId: string | undefined;
+}
+
+/**
+ * Renders up to `RAIL_VISIBLE_CAP` session rows, with an "N MORE" / "SHOW LESS" toggle row
+ * underneath when the list overflows. The toggle keeps the currently-active session visible
+ * even when collapsed — otherwise opening a session that lives past the cap would make its
+ * own row disappear from the rail.
+ */
+function RailRowList({ sessions, activeSessionId }: RailRowListProps) {
+  const [showAll, setShowAll] = useState(false);
+  const overflow = sessions.length - RAIL_VISIBLE_CAP;
+
+  let visible: SessionSummary[];
+  if (showAll || overflow <= 0) {
+    visible = sessions;
+  } else {
+    const head = sessions.slice(0, RAIL_VISIBLE_CAP);
+    // If the active session is hidden in the collapsed tail, expand it into the visible
+    // slice so users can always see the row they're currently in.
+    const activeInTail =
+      activeSessionId && sessions.slice(RAIL_VISIBLE_CAP).find((s) => s.id === activeSessionId);
+    visible = activeInTail ? [...head, activeInTail] : head;
+  }
+
+  return (
+    <>
+      {visible.map((session) => (
+        <PidSessionRow key={session.id} session={session} active={session.id === activeSessionId} />
+      ))}
+      {overflow > 0 ? (
+        <button
+          type="button"
+          className="pid-rail-overflow"
+          aria-expanded={showAll}
+          onClick={() => setShowAll((v) => !v)}
+        >
+          <span className="pid-rail-overflow-rule" />
+          <span className="pid-rail-overflow-label">
+            {showAll ? "show less" : `${overflow} more`}
+          </span>
+          <span className="pid-rail-overflow-rule" />
+        </button>
+      ) : null}
+    </>
   );
 }
 
@@ -118,15 +167,7 @@ function ArchiveBlock() {
         <span className="pid-rail-project-name">archive</span>
         <PidChip>{String(archived.length)}</PidChip>
       </button>
-      {expanded
-        ? archived.map((session) => (
-            <PidSessionRow
-              key={session.id}
-              session={session}
-              active={session.id === activeSessionId}
-            />
-          ))
-        : null}
+      {expanded ? <RailRowList sessions={archived} activeSessionId={activeSessionId} /> : null}
     </div>
   );
 }

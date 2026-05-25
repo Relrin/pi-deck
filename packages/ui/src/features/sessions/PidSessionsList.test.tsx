@@ -145,4 +145,95 @@ describe("PidSessionsList", () => {
     render(<PidSessionsList />);
     expect(screen.getByText("pi/branchy")).toBeInTheDocument();
   });
+
+  test("collapses sessions past the 5-row cap behind an N MORE toggle", () => {
+    const sessions = Array.from({ length: 8 }, (_, i) => ({
+      id: `row-${i + 1}`,
+      projectId: "p-1",
+      title: `Session ${i + 1}`,
+      lastActivityAt: "2026-05-16T11:50:00Z",
+    }));
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      sessionsByProject: { "p-1": sessions },
+    }));
+    useNavStore.setState({
+      screen: "blank",
+      expandedProjectsOverview: {},
+      expandedProjectsRail: { "p-1": true },
+    });
+
+    render(<PidSessionsList />);
+
+    // First 5 rows visible; rows 6-8 hidden behind the toggle.
+    expect(screen.getByText("Session 1")).toBeInTheDocument();
+    expect(screen.getByText("Session 5")).toBeInTheDocument();
+    expect(screen.queryByText("Session 6")).toBeNull();
+    expect(screen.queryByText("Session 8")).toBeNull();
+
+    const toggle = screen.getByRole("button", { name: /3 more/i });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(toggle);
+
+    // Expanded: every row visible, toggle flips to "show less".
+    expect(screen.getByText("Session 6")).toBeInTheDocument();
+    expect(screen.getByText("Session 8")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /show less/i })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+
+    // Clicking again re-collapses.
+    fireEvent.click(screen.getByRole("button", { name: /show less/i }));
+    expect(screen.queryByText("Session 6")).toBeNull();
+  });
+
+  test("keeps an active session visible even when it's past the cap", () => {
+    const sessions = Array.from({ length: 8 }, (_, i) => ({
+      id: `row-${i + 1}`,
+      projectId: "p-1",
+      title: `Session ${i + 1}`,
+      lastActivityAt: "2026-05-16T11:50:00Z",
+    }));
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      sessionsByProject: { "p-1": sessions },
+      activeSessionId: "row-7",
+    }));
+    useNavStore.setState({
+      screen: "blank",
+      expandedProjectsOverview: {},
+      expandedProjectsRail: { "p-1": true },
+    });
+
+    render(<PidSessionsList />);
+
+    // Active row (row-7) is in the collapsed tail but should still be rendered so the
+    // focused row never vanishes from the rail.
+    expect(screen.getByText("Session 7")).toBeInTheDocument();
+    expect(screen.queryByText("Session 6")).toBeNull();
+    expect(screen.queryByText("Session 8")).toBeNull();
+  });
+
+  test("no overflow toggle when the list fits within the cap", () => {
+    const sessions = Array.from({ length: 3 }, (_, i) => ({
+      id: `row-${i + 1}`,
+      projectId: "p-1",
+      title: `Session ${i + 1}`,
+      lastActivityAt: "2026-05-16T11:50:00Z",
+    }));
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      sessionsByProject: { "p-1": sessions },
+    }));
+    useNavStore.setState({
+      screen: "blank",
+      expandedProjectsOverview: {},
+      expandedProjectsRail: { "p-1": true },
+    });
+
+    render(<PidSessionsList />);
+    expect(screen.queryByRole("button", { name: /more|show less/i })).toBeNull();
+  });
 });

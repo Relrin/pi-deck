@@ -1075,6 +1075,46 @@
   outline: none;
 }
 
+/* "N MORE" / "SHOW LESS" delimiter */
+.pid-rail-overflow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 14px 8px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  user-select: none;
+}
+.pid-rail-overflow-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.pid-rail-overflow-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.pid-rail-overflow:hover .pid-rail-overflow-label {
+  color: var(--ink-1);
+}
+.pid-rail-overflow:hover .pid-rail-overflow-rule {
+  background: var(--line-strong);
+}
+.pid-rail-overflow:focus-visible {
+  outline: none;
+}
+.pid-rail-overflow:focus-visible .pid-rail-overflow-label {
+  color: var(--accent);
+}
+.pid-rail-overflow:focus-visible .pid-rail-overflow-rule {
+  background: var(--accent-line);
+}
+
 /* ---------- Context menu (right-click on rail rows etc.) ---------- */
 .pid-context-menu {
   z-index: 50;
