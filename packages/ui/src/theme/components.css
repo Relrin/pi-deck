@@ -924,6 +924,303 @@
   font-family: var(--font-mono);
   font-size: var(--t-12);
 }
+.pid-rail-sessions-filter-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--ink-0);
+  font: inherit;
+  padding: 0;
+}
+.pid-rail-sessions-filter-input::placeholder {
+  color: var(--ink-3);
+}
+.pid-rail-filterbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+.pid-rail-filterbar-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.pid-rail-filterbar-trigger:hover {
+  color: var(--ink-0);
+  border-color: var(--line-strong);
+}
+.pid-rail-filterbar-trigger[data-active="true"] {
+  color: var(--ink-0);
+}
+.pid-rail-filterbar-trigger[data-dirty="true"] {
+  color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.pid-rail-filterbar-trigger-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: 7px;
+  background: var(--accent);
+  color: var(--bg-0);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- Sessions filter popover ---------- */
+.pid-sessions-filter-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  /* Right-anchored at the trigger; the width is content-sized via min/max so the popover
+     stays tighter than the rail width while still accommodating long project names. */
+  min-width: 200px;
+  max-width: 232px;
+  z-index: 40;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+  font-family: var(--font-mono);
+}
+.pid-sessions-filter-list {
+  padding: 2px 0;
+}
+.pid-sessions-filter-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 10px;
+}
+.pid-sessions-filter-section-header {
+  display: grid;
+  grid-template-columns: 56px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--ink-1);
+}
+.pid-sessions-filter-section-header:hover {
+  background: var(--bg-3);
+}
+.pid-sessions-filter-section[data-open] .pid-sessions-filter-section-header {
+  background: var(--bg-3);
+}
+.pid-sessions-filter-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-1);
+}
+.pid-sessions-filter-section-summary {
+  font-size: 11px;
+  color: var(--ink-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pid-sessions-filter-section-summary[data-dirty="true"] {
+  color: var(--accent);
+}
+.pid-sessions-filter-section-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.pid-sessions-filter-section-caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  color: var(--ink-3);
+}
+.pid-sessions-filter-section-body {
+  background: var(--bg-3);
+  padding: 4px 0 6px;
+}
+
+.pid-sessions-filter-option {
+  display: grid;
+  grid-template-columns: 44px 14px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 10px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.pid-sessions-filter-option:hover {
+  background: var(--bg-2);
+}
+.pid-sessions-filter-option[data-checked] {
+  color: var(--ink-0);
+}
+.pid-sessions-filter-option > :first-child {
+  /* Reserve the leading 52px column so options align under their section's summary text. */
+  grid-column: 2;
+}
+.pid-sessions-filter-option-check {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid var(--ink-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-ink);
+}
+.pid-sessions-filter-option-check[data-checked] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.pid-sessions-filter-option-check[data-mixed] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.pid-sessions-filter-option-check-dash {
+  width: 5px;
+  height: 1.5px;
+  background: var(--accent);
+}
+.pid-sessions-filter-option-radio {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--ink-3);
+  background: transparent;
+  display: inline-block;
+  box-sizing: border-box;
+}
+.pid-sessions-filter-option-radio[data-checked] {
+  border-color: var(--accent);
+  background: radial-gradient(var(--accent) 38%, transparent 42%);
+}
+.pid-sessions-filter-option-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pid-sessions-filter-option-tone {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+.pid-sessions-filter-option-count {
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+.pid-sessions-filter-project {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pid-sessions-filter-project-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 10px 4px 54px;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-inset);
+  color: var(--ink-3);
+}
+.pid-sessions-filter-project-search input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--ink-0);
+  font: inherit;
+  font-size: 11px;
+}
+.pid-sessions-filter-project-search input::placeholder {
+  color: var(--ink-3);
+}
+.pid-sessions-filter-project-all {
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2px;
+}
+.pid-sessions-filter-project-list {
+  max-height: 168px;
+  overflow-y: auto;
+}
+.pid-sessions-filter-empty {
+  padding: 8px 10px 8px 58px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.pid-sessions-filter-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--line);
+  font-size: 10px;
+}
+.pid-sessions-filter-footer-status {
+  flex: 1;
+  color: var(--ink-3);
+}
+.pid-sessions-filter-footer-reset,
+.pid-sessions-filter-footer-done {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  padding: 2px 4px;
+}
+.pid-sessions-filter-footer-reset {
+  color: var(--ink-1);
+}
+.pid-sessions-filter-footer-reset:disabled {
+  color: var(--ink-3);
+  cursor: default;
+}
+.pid-sessions-filter-footer-done {
+  color: var(--accent);
+}
 .pid-rail-sessions-body {
   flex: 1;
   overflow-y: auto;

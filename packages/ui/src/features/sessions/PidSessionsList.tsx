@@ -1,11 +1,12 @@
 import type { SessionSummary } from "@pi-deck/core/domain/session.js";
 import { useEffect, useState } from "react";
-import { Glyph } from "../../components/glyph";
 import { useNavStore, useRailExpanded } from "../../lib/useNavStore";
 import { PidNewSessionButton } from "./PidNewSessionButton";
 import { PidProjectSwitcher } from "./PidProjectSwitcher";
 import { PidSessionRow } from "./PidSessionRow";
+import { RailFilterBar } from "./RailFilterBar";
 import { useProjectsStore } from "./useProjectsStore";
+import { useSessionsFilterStore } from "./useSessionsFilterStore";
 import { useSessionsStore } from "./useSessionsStore";
 
 const ARCHIVE_KEY = "__archive__";
@@ -14,14 +15,70 @@ const ARCHIVE_KEY = "__archive__";
 // "N MORE" toggle.
 const RAIL_VISIBLE_CAP = 5;
 
-function sortByRecency(sessions: SessionSummary[]): SessionSummary[] {
-  return [...sessions].sort((a, b) => {
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function sortSessions(
+  sessions: SessionSummary[],
+  dimension: "recent" | "created" | "branch" | "status",
+): SessionSummary[] {
+  const cmpStr = (a: string | undefined, b: string | undefined): number => {
+    if (a === b) return 0;
+    if (a === undefined) return 1;
+    if (b === undefined) return -1;
+    return a < b ? -1 : 1;
+  };
+  const cmpRecency = (a: SessionSummary, b: SessionSummary): number => {
     if (a.lastActivityAt === b.lastActivityAt) return 0;
     return a.lastActivityAt < b.lastActivityAt ? 1 : -1;
+  };
+  const next = [...sessions];
+  switch (dimension) {
+    case "recent":
+      next.sort(cmpRecency);
+      break;
+    case "created":
+      // Fall back to lastActivityAt when older persisted sessions lack a createdAt stamp.
+      next.sort((a, b) => {
+        const aKey = a.createdAt ?? a.lastActivityAt;
+        const bKey = b.createdAt ?? b.lastActivityAt;
+        if (aKey === bKey) return 0;
+        return aKey < bKey ? 1 : -1;
+      });
+      break;
+    case "branch":
+      // Branchless sessions sink to the bottom; ties resolve by recency.
+      next.sort((a, b) => cmpStr(a.branch, b.branch) || cmpRecency(a, b));
+      break;
+    case "status":
+      // No real status field yet — keep recency until the backend exposes one.
+      next.sort(cmpRecency);
+      break;
+  }
+  return next;
+}
+
+/** Return only sessions whose lastActivityAt is within `since` of now. `all` short-circuits. */
+function applySinceFilter(sessions: SessionSummary[], since: string): SessionSummary[] {
+  if (since === "all") return sessions;
+  const days = Number.parseInt(since, 10);
+  if (!Number.isFinite(days)) return sessions;
+  const cutoff = Date.now() - days * MS_PER_DAY;
+  return sessions.filter((s) => Date.parse(s.lastActivityAt) >= cutoff);
+}
+
+/** Plain-substring search over a row's title and branch line. Empty query short-circuits. */
+function applySearchFilter(sessions: SessionSummary[], query: string): SessionSummary[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return sessions;
+  return sessions.filter((s) => {
+    if (s.title.toLowerCase().includes(q)) return true;
+    if (s.branch?.toLowerCase().includes(q)) return true;
+    return false;
   });
 }
 
 export function PidSessionsList() {
+  const [query, setQuery] = useState("");
   // Load the cross-project archived list once so the ARCHIVE group can render its count
   // without waiting for individual project blocks to expand.
   useEffect(() => {
@@ -35,32 +92,37 @@ export function PidSessionsList() {
         <PidNewSessionButton />
       </div>
       <div className="pid-rail-sessions-actions">
-        <span className="pid-rail-sessions-filter">
-          <Glyph kind="search" size={12} />
-          <span>filter sessions…</span>
-        </span>
+        <RailFilterBar query={query} onQueryChange={setQuery} />
       </div>
       <div className="pid-rail-sessions-body">
-        <ProjectsListing />
-        <ArchiveBlock />
+        <ProjectsListing query={query} />
+        <ArchiveBlock query={query} />
       </div>
     </div>
   );
 }
 
-function ProjectsListing() {
+function ProjectsListing({ query }: { query: string }) {
   const projects = useProjectsStore((s) => s.projects);
-  if (projects.length === 0) {
+  const projectSelection = useSessionsFilterStore((s) => s.project);
+  // Project filter hides whole project blocks. `kind: "all"` is the default and the most
+  // common case, so we keep the original list ref to avoid an unnecessary copy.
+  const visibleProjects =
+    projectSelection.kind === "all"
+      ? projects
+      : projects.filter((p) => projectSelection.ids.includes(p.id));
+
+  if (visibleProjects.length === 0) {
     return (
       <div className="pid-overview-empty" style={{ padding: "12px 14px" }}>
-        no projects
+        {projects.length === 0 ? "no projects" : "no projects match the filter"}
       </div>
     );
   }
   return (
     <>
-      {projects.map((project) => (
-        <ProjectBlock key={project.id} projectId={project.id} />
+      {visibleProjects.map((project) => (
+        <ProjectBlock key={project.id} projectId={project.id} query={query} />
       ))}
     </>
   );
@@ -68,14 +130,17 @@ function ProjectsListing() {
 
 interface ProjectBlockProps {
   projectId: string;
+  query: string;
 }
 
-function ProjectBlock({ projectId }: ProjectBlockProps) {
+function ProjectBlock({ projectId, query }: ProjectBlockProps) {
   const project = useProjectsStore((s) => s.projects.find((p) => p.id === projectId));
   const expanded = useRailExpanded(projectId);
   const sessions = useSessionsStore((s) => s.sessionsByProject[projectId]);
   const loading = useSessionsStore((s) => s.loadingByProject[projectId] ?? false);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
+  const sort = useSessionsFilterStore((s) => s.sort);
+  const since = useSessionsFilterStore((s) => s.since);
 
   useEffect(() => {
     if (!expanded) return;
@@ -90,9 +155,15 @@ function ProjectBlock({ projectId }: ProjectBlockProps) {
   if (!project) return null;
 
   // Archived sessions live in the synthetic ARCHIVE group at the bottom; filter them out
-  // of their original project so the same row doesn't render twice. Then sort newest-first
-  // so the rail's top row is always the most recently active session.
-  const visible = sessions ? sortByRecency(sessions.filter((s) => !s.archived)) : undefined;
+  // of their original project so the same row doesn't render twice. Then apply the user's
+  // since cut-off, then the search query, then sort.
+  let visible: SessionSummary[] | undefined;
+  if (sessions) {
+    visible = sessions.filter((s) => !s.archived);
+    visible = applySinceFilter(visible, since);
+    visible = applySearchFilter(visible, query);
+    visible = sortSessions(visible, sort);
+  }
 
   return (
     <div className="pid-rail-project">
@@ -154,15 +225,20 @@ function RailRowList({ sessions, activeSessionId }: RailRowListProps) {
   );
 }
 
-function ArchiveBlock() {
+function ArchiveBlock({ query }: { query: string }) {
   const archived = useSessionsStore((s) => s.archivedSessions);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
   const expanded = useNavStore((s) => s.expandedProjectsRail[ARCHIVE_KEY] ?? false);
   const toggle = () => useNavStore.getState().toggleRailProject(ARCHIVE_KEY);
+  const sort = useSessionsFilterStore((s) => s.sort);
+  const since = useSessionsFilterStore((s) => s.since);
 
   if (archived.length === 0) return null;
 
-  const sortedArchived = sortByRecency(archived);
+  let sortedArchived = applySinceFilter(archived, since);
+  sortedArchived = applySearchFilter(sortedArchived, query);
+  sortedArchived = sortSessions(sortedArchived, sort);
+  if (sortedArchived.length === 0) return null;
 
   return (
     <div className="pid-rail-project">
@@ -174,7 +250,7 @@ function ArchiveBlock() {
       >
         <span className="pid-rail-project-sq" aria-hidden />
         <span className="pid-rail-project-name">archive</span>
-        <span className="pid-rail-project-count">{archived.length}</span>
+        <span className="pid-rail-project-count">{sortedArchived.length}</span>
         <span className="pid-rail-project-caret" aria-hidden>
           <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden focusable="false">
             <title>{expanded ? "Expanded" : "Collapsed"}</title>

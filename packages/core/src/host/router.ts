@@ -58,6 +58,7 @@ function toSummary(record: SessionRecord) {
     modelRef: record.modelRef,
     thinkingLevel: record.thinkingLevel,
     agentMode: record.agentMode,
+    createdAt: record.createdAt,
     lastActivityAt: record.lastActivityAt,
     branch: record.branch,
     archived: record.archived,

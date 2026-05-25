@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import userEvent from "@testing-library/user-event";
 import { fireEvent, render, screen } from "../../../test/utils";
 import { useNavStore } from "../../lib/useNavStore";
 import { PidSessionsList } from "./PidSessionsList";
 import { useProjectsStore } from "./useProjectsStore";
+import { useSessionsFilterStore } from "./useSessionsFilterStore";
 import { useSessionsStore } from "./useSessionsStore";
 
 const originalActivate = useSessionsStore.getState().activateSession;
@@ -45,6 +47,11 @@ beforeEach(() => {
     archivedSessions: [],
     archivedLoaded: true,
   }));
+  // Tests below use hardcoded dates ("2026-05-16") that fall outside the default 7-day
+  // "since" window from today's clock. Reset to defaults, then disable the cutoff so the
+  // fixtures stay reachable.
+  useSessionsFilterStore.getState().reset();
+  useSessionsFilterStore.getState().setSince("all");
 });
 
 afterEach(() => {
@@ -299,6 +306,141 @@ describe("PidSessionsList", () => {
     expect(
       [...document.querySelectorAll(".pid-rail-row-title")].map((el) => el.textContent),
     ).toEqual(["C", "A", "B"]);
+  });
+
+  test("filter store: Since cutoff hides rows older than the threshold", () => {
+    // "today" is 2026-05-25 per the test environment. Use lastActivityAt values that
+    // straddle the 1-day cutoff so the test is deterministic without mocking the clock.
+    const recent = new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 1h ago
+    const stale = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(); // 5d ago
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      sessionsByProject: {
+        "p-1": [
+          { id: "fresh", projectId: "p-1", title: "Fresh row", lastActivityAt: recent },
+          { id: "old", projectId: "p-1", title: "Stale row", lastActivityAt: stale },
+        ],
+      },
+    }));
+    useNavStore.setState({
+      screen: "blank",
+      expandedProjectsOverview: {},
+      expandedProjectsRail: { "p-1": true },
+    });
+
+    // 1d window: only the fresh row survives.
+    useSessionsFilterStore.getState().setSince("1d");
+    render(<PidSessionsList />);
+    expect(screen.getByText("Fresh row")).toBeInTheDocument();
+    expect(screen.queryByText("Stale row")).toBeNull();
+  });
+
+  test("filter store: Project subset hides project blocks not in the selection", () => {
+    useProjectsStore.setState({
+      projects: [
+        {
+          id: "p-1",
+          path: "/p/1",
+          displayName: "Proj 1",
+          lastOpenedAt: "2026-05-16T12:00:00Z",
+        },
+        {
+          id: "p-2",
+          path: "/p/2",
+          displayName: "Proj 2",
+          lastOpenedAt: "2026-05-15T12:00:00Z",
+        },
+      ],
+      activeProjectId: "p-1",
+      lastActiveSessionByProject: {},
+    });
+
+    // Hide p-2 by selecting only p-1.
+    useSessionsFilterStore.getState().setProject({ kind: "subset", ids: ["p-1"] });
+    render(<PidSessionsList />);
+
+    expect(screen.queryByText("Proj 1")).toBeInTheDocument();
+    expect(screen.queryByText("Proj 2")).toBeNull();
+  });
+
+  test("filter store: Sort=created reorders rows by createdAt, falling back to lastActivityAt", () => {
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      sessionsByProject: {
+        "p-1": [
+          // Active recently but created earliest.
+          {
+            id: "old-created",
+            projectId: "p-1",
+            title: "Old creation",
+            createdAt: "2026-04-01T10:00:00Z",
+            lastActivityAt: "2026-05-20T10:00:00Z",
+          },
+          // Active less recently but created latest.
+          {
+            id: "new-created",
+            projectId: "p-1",
+            title: "New creation",
+            createdAt: "2026-05-19T10:00:00Z",
+            lastActivityAt: "2026-05-15T10:00:00Z",
+          },
+        ],
+      },
+    }));
+    useNavStore.setState({
+      screen: "blank",
+      expandedProjectsOverview: {},
+      expandedProjectsRail: { "p-1": true },
+    });
+
+    useSessionsFilterStore.getState().setSort("created");
+    render(<PidSessionsList />);
+
+    const titles = [...document.querySelectorAll(".pid-rail-row-title")].map(
+      (el) => el.textContent,
+    );
+    expect(titles).toEqual(["New creation", "Old creation"]);
+  });
+
+  test("filter store: search query filters by title or branch substring", async () => {
+    useSessionsStore.setState((prev) => ({
+      ...prev,
+      sessionsByProject: {
+        "p-1": [
+          {
+            id: "row-a",
+            projectId: "p-1",
+            title: "Auth refactor",
+            branch: "pi/auth-rebuild",
+            lastActivityAt: "2026-05-16T11:50:00Z",
+          },
+          {
+            id: "row-b",
+            projectId: "p-1",
+            title: "Diff heatmap",
+            branch: "pi/diff",
+            lastActivityAt: "2026-05-16T11:50:00Z",
+          },
+        ],
+      },
+    }));
+    useNavStore.setState({
+      screen: "blank",
+      expandedProjectsOverview: {},
+      expandedProjectsRail: { "p-1": true },
+    });
+
+    const user = userEvent.setup();
+    render(<PidSessionsList />);
+
+    // No query: both visible.
+    expect(screen.getByText("Auth refactor")).toBeInTheDocument();
+    expect(screen.getByText("Diff heatmap")).toBeInTheDocument();
+
+    // Type "heat" into the filter input — only the matching row stays.
+    await user.type(screen.getByLabelText("Filter sessions") as HTMLInputElement, "heat");
+    expect(screen.queryByText("Auth refactor")).toBeNull();
+    expect(screen.getByText("Diff heatmap")).toBeInTheDocument();
   });
 
   test("no overflow toggle when the list fits within the cap", () => {
