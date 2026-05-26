@@ -42,10 +42,10 @@ export function ContextUsageIndicator({ sessionId }: ContextUsageIndicatorProps)
         <button
           type="button"
           aria-label={`Context usage: ${percent}%`}
-          className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1.5 py-1 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-panel-hover)] hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          className="pid-context-usage"
         >
           <Ring percent={percent} active={!!usage?.context} />
-          <span className="font-mono tabular-nums">{percent}%</span>
+          <span className="pid-context-usage-percent">{percent}%</span>
         </button>
       </RadixTooltip.Trigger>
       <RadixTooltip.Portal>
