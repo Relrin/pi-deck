@@ -1,8 +1,16 @@
 import type { GitBranchInfo } from "@pi-deck/core/git/types.js";
 import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Glyph } from "../../components/glyph/index.js";
-import { Check, Copy, CornerDownLeft, Plus, Search, Star } from "../../components/icons/index.js";
+import {
+  Check,
+  ChevronDown,
+  Copy,
+  CornerDownLeft,
+  GitBranch,
+  Plus,
+  Search,
+  Star,
+} from "../../components/icons/index.js";
 import { relativeTime } from "../../lib/format/relative-time.js";
 import { useGitStore } from "./useGitStore.js";
 
@@ -121,13 +129,13 @@ export function BranchPicker({ projectId, branch, ahead, behind, upstream }: Pro
           aria-label="Select branch"
           disabled={!branch}
         >
-          <Glyph kind="branch" size={14} />
+          <GitBranch size={14} />
           <span className="pid-git-branch-name">{branch ?? "detached"}</span>
           <span className="pid-git-branch-tracking">
             {aheadLabel ? <span data-tone="add">{aheadLabel}</span> : null}
             {behindLabel ? <span data-tone="del">{behindLabel}</span> : null}
           </span>
-          <Glyph kind="chevron-down" size={10} className="pid-git-branch-chev" />
+          <ChevronDown size={10} className="pid-git-branch-chev" />
         </button>
       </RadixDropdown.Trigger>
       <RadixDropdown.Portal>
@@ -158,7 +166,7 @@ export function BranchPicker({ projectId, branch, ahead, behind, upstream }: Pro
             <div className="pid-branch-picker-head-name">{branch ?? "detached"}</div>
             {upstream ? (
               <div className="pid-branch-picker-head-upstream">
-                <Glyph kind="branch" size={11} />
+                <GitBranch size={11} />
                 <span>{upstream}</span>
               </div>
             ) : null}

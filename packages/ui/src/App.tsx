@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { TooltipProvider } from "./components/ui/Tooltip";
 import { NotificationCenter } from "./features/_status/NotificationCenter";
-import { Toaster } from "./features/_status/Toaster";
 import { GitSidebar } from "./features/git/GitSidebar";
 import { useGitStore } from "./features/git/useGitStore";
 import { PidSessionsList } from "./features/sessions/PidSessionsList";
@@ -74,7 +73,6 @@ export function App() {
           bottom={<PidFooter />}
         />
         <PidSettingsView />
-        <Toaster />
         <NotificationCenter />
       </TooltipProvider>
     </ThemeProvider>

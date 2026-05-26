@@ -3,6 +3,7 @@ import type { ModelInfo, ProviderSummary } from "@pi-deck/core/providers/types.j
 import * as RadixDialog from "@radix-ui/react-dialog";
 import { useEffect, useMemo, useState } from "react";
 import { PidIconButton } from "../../components/buttons/PidIconButton";
+import { X } from "../../components/icons/index.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { AddCustomProviderDialog } from "./AddCustomProviderDialog.js";
 import { AuthenticateProviderDialog } from "./AuthenticateProviderDialog.js";
@@ -100,7 +101,7 @@ export function ModelPicker({
             <div className="pid-modal-header">
               <RadixDialog.Title className="pid-modal-title">Select model</RadixDialog.Title>
               <PidIconButton
-                kind="close"
+                icon={<X size={14} />}
                 label="Close model picker"
                 onClick={() => onOpenChange(false)}
               />

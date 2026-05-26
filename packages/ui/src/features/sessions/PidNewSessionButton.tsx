@@ -1,4 +1,4 @@
-import { Glyph } from "../../components/glyph";
+import { Plus } from "../../components/icons/index.js";
 import { PidKbd } from "../../components/kbd/PidKbd";
 import { useNavStore } from "../../lib/useNavStore";
 import { useProjectsStore } from "./useProjectsStore";
@@ -25,7 +25,7 @@ export function PidNewSessionButton() {
       aria-label={label}
       title={label}
     >
-      <Glyph kind="plus" size={12} />
+      <Plus size={12} />
       <span className="pid-rail-new-label">new session</span>
       <PidKbd keys={["Mod", "N"]} />
     </button>

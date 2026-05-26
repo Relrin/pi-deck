@@ -1,7 +1,7 @@
 import type { ThinkingLevel } from "@pi-deck/core/domain/session.js";
 import type { ModelInfo } from "@pi-deck/core/providers/types.js";
 import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
-import { Glyph } from "../../components/glyph";
+import { Check, Sparkles } from "../../components/icons/index.js";
 import { useProvidersStore } from "../models/useProvidersStore.js";
 
 interface ThinkingLevelPickerProps {
@@ -35,7 +35,7 @@ export function ThinkingLevelPicker({ sessionId, model, level }: ThinkingLevelPi
           data-variant={current !== "off" ? "accent" : undefined}
           aria-label={`Thinking: ${current}`}
         >
-          <Glyph kind="sparkle" size={10} />
+          <Sparkles size={10} />
           thinking · {current}
         </button>
       </RadixDropdown.Trigger>
@@ -59,7 +59,7 @@ export function ThinkingLevelPicker({ sessionId, model, level }: ThinkingLevelPi
                 style={{ color: "var(--ink-1)" }}
               >
                 <span style={{ width: 12, display: "inline-flex", color: "var(--accent)" }}>
-                  {active ? <Glyph kind="check" size={12} /> : null}
+                  {active ? <Check size={12} /> : null}
                 </span>
                 {l.label}
               </RadixDropdown.Item>

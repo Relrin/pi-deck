@@ -1,29 +1,18 @@
-import { type ButtonHTMLAttributes, forwardRef } from "react";
-import { Glyph, type GlyphKind } from "../glyph";
+import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from "react";
 import type { PidButtonVariant } from "./PidButton";
 
 export interface PidIconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  kind: GlyphKind;
+  /** The icon element to render (e.g. `<X size={14} />`). */
+  icon: ReactNode;
   /** Required accessible label (the button has no visible text). */
   label: string;
   variant?: PidButtonVariant;
   active?: boolean;
-  /** Optional explicit glyph size; defaults to 14px. */
-  glyphSize?: number;
 }
 
 export const PidIconButton = forwardRef<HTMLButtonElement, PidIconButtonProps>(
   function PidIconButton(
-    {
-      kind,
-      label,
-      variant = "default",
-      active = false,
-      glyphSize,
-      className,
-      type = "button",
-      ...rest
-    },
+    { icon, label, variant = "default", active = false, className, type = "button", ...rest },
     ref,
   ) {
     const classes = ["pid-icon-btn", className].filter(Boolean).join(" ");
@@ -37,7 +26,7 @@ export const PidIconButton = forwardRef<HTMLButtonElement, PidIconButtonProps>(
         data-active={active || undefined}
         {...rest}
       >
-        <Glyph kind={kind} size={glyphSize} />
+        {icon}
       </button>
     );
   },

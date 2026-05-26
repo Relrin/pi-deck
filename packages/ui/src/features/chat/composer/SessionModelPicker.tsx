@@ -4,8 +4,7 @@ import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import Fuse from "fuse.js";
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Glyph } from "../../../components/glyph/index.js";
-import { Check, Search } from "../../../components/icons/index.js";
+import { Check, ChevronDown, Search } from "../../../components/icons/index.js";
 import { ProviderIcon } from "../../models/icons/index.js";
 import { useProvidersStore } from "../../models/useProvidersStore.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore.js";
@@ -257,7 +256,7 @@ export function SessionModelPicker({ sessionId }: SessionModelPickerProps) {
             </span>
           )}
           <span className="pid-picker-trigger-label">{activeLabel}</span>
-          <Glyph kind="chevron-down" size={10} className="pid-picker-trigger-chev" />
+          <ChevronDown size={10} className="pid-picker-trigger-chev" />
         </button>
       </RadixDropdown.Trigger>
       <RadixDropdown.Portal>

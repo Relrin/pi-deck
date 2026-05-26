@@ -30,8 +30,10 @@ export const SUMMARY_TRUNCATE_MAX = 60;
 /** Time window (ms) used by `useMessagesStore` to dedup near-duplicate user messages. */
 export const USER_MESSAGE_DEDUP_WINDOW_MS = 10_000;
 
-/** Toast auto-dismiss timeout (ms). */
-export const TOAST_DISMISS_MS = 8_000;
+/** Default auto-dismiss timeout (ms) for notifications pushed via the simple
+ * `error/info/success` helpers on `useNotificationStore`. Rich notifications can override
+ * this per push via `durationMs`. */
+export const NOTIFICATION_DEFAULT_MS = 8_000;
 
 /** Max number of edits shown before EditRenderer collapses with a "show all N edits" toggle. */
 export const EDIT_RENDERER_COLLAPSED_EDITS = 3;

@@ -56,7 +56,6 @@ export function SessionEffortPicker({ sessionId }: SessionEffortPickerProps) {
 
   return (
     <PidChipPicker
-      icon="sliders"
       triggerLeading={null}
       header="Effort"
       ariaLabel="Select thinking effort"

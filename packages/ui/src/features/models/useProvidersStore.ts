@@ -6,7 +6,7 @@ import type {
 } from "@pi-deck/core/providers/types.js";
 import { create } from "zustand";
 import { humanizeError } from "../../lib/format/humanize-error.js";
-import { useToastStore } from "../_status/useToastStore.js";
+import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 
 export interface ProvidersStoreState {
@@ -60,7 +60,7 @@ export const useProvidersStore = create<ProvidersStoreState>((set, get) => ({
       const res = await client.call("provider.list", {});
       set({ providers: res.providers, defaultModel: res.defaultModel });
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Failed to load providers"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to load providers"));
     } finally {
       set({ loadingProviders: false });
     }
@@ -78,7 +78,7 @@ export const useProvidersStore = create<ProvidersStoreState>((set, get) => ({
         modelsByProvider: { ...s.modelsByProvider, [providerId]: res.models },
       }));
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Failed to load models"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to load models"));
     } finally {
       set((s) => ({
         loadingModelsByProvider: { ...s.loadingModelsByProvider, [providerId]: false },
@@ -140,7 +140,7 @@ export const useProvidersStore = create<ProvidersStoreState>((set, get) => ({
     try {
       await client.call("session.setModel", { sessionId, modelRef, thinkingLevel });
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Failed to switch model"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to switch model"));
       throw err;
     }
   },
@@ -162,7 +162,7 @@ export const useProvidersStore = create<ProvidersStoreState>((set, get) => ({
     try {
       await client.call("session.setThinkingLevel", { sessionId, level });
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Failed to set thinking level"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to set thinking level"));
       throw err;
     }
   },

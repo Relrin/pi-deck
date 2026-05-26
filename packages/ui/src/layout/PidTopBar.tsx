@@ -1,6 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { Glyph, type GlyphKind } from "../components/glyph";
-import { PanelBottom, PanelLeft, PanelRight, Settings } from "../components/icons";
+import { ArrowLeft, PanelBottom, PanelLeft, PanelRight, Settings } from "../components/icons";
 import { Tooltip } from "../components/ui/Tooltip";
 import { useSettingsStore } from "../features/settings/useSettingsStore";
 import {
@@ -13,13 +12,12 @@ import { useNavStore } from "../lib/useNavStore";
 import { useRailState } from "./use-rail-state";
 
 interface PlaceholderButtonProps {
-  kind: GlyphKind;
   label: string;
   tooltip: string;
-  icon?: ReactNode;
+  icon: ReactNode;
 }
 
-function PlaceholderButton({ kind, label, tooltip, icon }: PlaceholderButtonProps) {
+function PlaceholderButton({ label, tooltip, icon }: PlaceholderButtonProps) {
   return (
     <Tooltip content={tooltip}>
       <button
@@ -29,7 +27,7 @@ function PlaceholderButton({ kind, label, tooltip, icon }: PlaceholderButtonProp
         aria-disabled
         onClick={(event) => event.preventDefault()}
       >
-        {icon ?? <Glyph kind={kind} />}
+        {icon}
       </button>
     </Tooltip>
   );
@@ -69,9 +67,7 @@ function BackToStartButton() {
         aria-label="Back to start"
         onClick={() => useNavStore.getState().goToBlank()}
       >
-        <span style={{ display: "inline-flex", transform: "rotate(180deg)" }}>
-          <Glyph kind="arrow-right" />
-        </span>
+        <ArrowLeft size={14} />
       </button>
     </Tooltip>
   );
@@ -144,7 +140,6 @@ export function PidTopBar() {
           icon={<PanelLeft size={14} />}
         />
         <PlaceholderButton
-          kind="panel-bottom"
           label="Toggle bottom panel (coming soon)"
           tooltip="Toggle bottom panel — coming soon"
           icon={<PanelBottom size={14} />}

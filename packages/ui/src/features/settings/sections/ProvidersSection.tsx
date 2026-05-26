@@ -2,6 +2,7 @@ import type { ProviderSummary } from "@pi-deck/core/providers/types.js";
 import { useEffect, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
 import { PidChip } from "../../../components/chip/PidChip";
+import { Plus } from "../../../components/icons/index.js";
 import { AddCustomProviderDialog } from "../../models/AddCustomProviderDialog.js";
 import { AuthenticateProviderDialog } from "../../models/AuthenticateProviderDialog.js";
 import { ProviderAvatar } from "../../models/icons";
@@ -68,7 +69,7 @@ export function ProvidersSection() {
               writes these to <code>~/.pi/agent/models.json</code>.
             </p>
           </div>
-          <PidButton glyph="plus" longLabel onClick={() => setAddOpen(true)}>
+          <PidButton icon={<Plus size={14} />} longLabel onClick={() => setAddOpen(true)}>
             Add custom
           </PidButton>
         </div>

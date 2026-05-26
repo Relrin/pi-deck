@@ -58,7 +58,6 @@ export function PidEffortPicker() {
 
   return (
     <PidChipPicker
-      icon="sliders"
       triggerLeading={null}
       header="Effort"
       ariaLabel="Select thinking effort"

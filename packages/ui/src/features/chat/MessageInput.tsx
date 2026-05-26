@@ -11,7 +11,7 @@ import {
 import { Folder, Send, Square, X } from "../../components/icons/index.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
 import { useAutoGrowTextarea } from "../../lib/useAutoGrowTextarea.js";
-import { useToastStore } from "../_status/useToastStore.js";
+import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { PidAttachmentsPicker } from "../intro/PidAttachmentsPicker.js";
 import { PidRepoFileSearchDialog } from "../intro/PidRepoFileSearchDialog.js";
 import { useAttachmentsHotkeys } from "../intro/useAttachmentsHotkeys.js";
@@ -111,7 +111,7 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   const chooseFiles = useCallback(async () => {
     const picker = window.bridge?.openFiles;
     if (!picker) {
-      useToastStore.getState().push("File picker unavailable in this build", "error");
+      useNotificationStore.getState().error("File picker unavailable in this build");
       return;
     }
     const paths = await picker();
@@ -122,7 +122,7 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   const chooseFolder = useCallback(async () => {
     const picker = window.bridge?.openDirectory;
     if (!picker) {
-      useToastStore.getState().push("Folder picker unavailable in this build", "error");
+      useNotificationStore.getState().error("Folder picker unavailable in this build");
       return;
     }
     const path = await picker();

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
-import { useToastStore } from "../_status/useToastStore";
+import { useNotificationStore } from "../_status/useNotificationStore";
 import { useSessionsStore } from "../sessions/useSessionsStore";
 import { useGitStore } from "./useGitStore";
 
@@ -31,7 +31,7 @@ beforeEach(() => {
     isRefreshing: false,
     client: undefined,
   });
-  useToastStore.setState({ toasts: [] });
+  useNotificationStore.setState({ notifications: [] });
 });
 
 describe("useGitStore.createBranch", () => {
@@ -71,7 +71,7 @@ describe("useGitStore.createBranch", () => {
     ]);
   });
 
-  test("on failure pushes a toast and re-throws", async () => {
+  test("on failure pushes a notification and re-throws", async () => {
     const client = mockClient({
       "git.createBranch": () => {
         throw new Error("fatal: a branch named 'feat/x' already exists");
@@ -82,9 +82,9 @@ describe("useGitStore.createBranch", () => {
     await expect(useGitStore.getState().createBranch("proj-1", "feat/x")).rejects.toThrow(
       "fatal: a branch named 'feat/x' already exists",
     );
-    const toasts = useToastStore.getState().toasts;
-    expect(toasts.length).toBe(1);
-    expect(toasts[0]?.kind).toBe("error");
+    const notifications = useNotificationStore.getState().notifications;
+    expect(notifications.length).toBe(1);
+    expect(notifications[0]?.kind).toBe("error");
     expect(useGitStore.getState().currentBranchByProject["proj-1"]).toBeUndefined();
   });
 
@@ -92,6 +92,6 @@ describe("useGitStore.createBranch", () => {
     // client is already undefined from beforeEach.
     await useGitStore.getState().createBranch("proj-1", "feat/x");
     expect(useGitStore.getState().currentBranchByProject["proj-1"]).toBeUndefined();
-    expect(useToastStore.getState().toasts).toEqual([]);
+    expect(useNotificationStore.getState().notifications).toEqual([]);
   });
 });

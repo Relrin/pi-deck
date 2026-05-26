@@ -1,6 +1,6 @@
 import type { ProviderSummary } from "@pi-deck/core/providers/types.js";
 import { PidButton } from "../../components/buttons/PidButton";
-import { Glyph } from "../../components/glyph";
+import { ChevronRight, Plus } from "../../components/icons/index.js";
 import { ProviderIcon } from "./icons";
 
 interface ProviderListProps {
@@ -43,7 +43,7 @@ export function ProviderList({ providers, selectedId, onSelect, onAddCustom }: P
       <div style={{ padding: "10px 12px" }}>
         <PidButton
           variant="ghost"
-          glyph="plus"
+          icon={<Plus size={14} />}
           longLabel
           onClick={onAddCustom}
           aria-label="Add custom provider"
@@ -75,7 +75,7 @@ function ProviderRow({
       <ProviderIcon iconKey={provider.iconKey} />
       <span className="pid-provider-row-name">{provider.name}</span>
       <span className="pid-provider-row-status" data-state={provider.authState} aria-hidden />
-      {active && <Glyph kind="chevron-right" size={12} />}
+      {active && <ChevronRight size={12} />}
     </button>
   );
 }

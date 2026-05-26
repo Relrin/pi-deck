@@ -5,7 +5,6 @@ import { create } from "zustand";
 import { writeClipboard } from "../../lib/clipboard.js";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../_status/useNotificationStore.js";
-import { useToastStore } from "../_status/useToastStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import {
   commitFailureNotification,
@@ -161,7 +160,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       void get().refresh(projectId);
       void get().refreshStatus(projectId);
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Failed to checkout branch"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to checkout branch"));
       throw err;
     }
   },
@@ -178,7 +177,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       }));
       void get().refresh(projectId);
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Failed to create branch"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to create branch"));
       throw err;
     }
   },
@@ -301,7 +300,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       await client.call("git.init", { projectId });
       await Promise.all([get().refreshStatus(projectId), get().refresh(projectId)]);
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Failed to initialise repository"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to initialise repository"));
     }
   },
 
@@ -459,7 +458,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       // http(s) URLs via setWindowOpenHandler — see packages/desktop/src/main/window.ts.
       window.open(url, "_blank", "noopener");
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Failed to open PR URL"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to open PR URL"));
     }
   },
 
@@ -471,7 +470,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       void get().refreshStatus(projectId);
       void get().refreshCommits(projectId);
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Undo failed"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Undo failed"));
     }
   },
 
@@ -482,7 +481,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       const { url } = await client.call("git.commitUrl", { projectId, sha });
       window.open(url, "_blank", "noopener");
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Failed to resolve commit URL"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to resolve commit URL"));
     }
   },
 
@@ -575,10 +574,9 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
     if (!name) return;
     try {
       await writeClipboard(name);
-      // Simple text toast — the rich notification stack is reserved for stateful git ops.
-      useToastStore.getState().push(`Copied "${name}" to clipboard`, "info");
+      useNotificationStore.getState().info(`Copied "${name}" to clipboard`);
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Copy failed"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Copy failed"));
     }
   },
 }));

@@ -1,6 +1,6 @@
 import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import type { ReactNode } from "react";
-import { Glyph, type GlyphKind } from "../glyph/index.js";
+import { Check, ChevronDown } from "../icons/index.js";
 
 export interface PidChipPickerOption {
   value: string;
@@ -14,17 +14,14 @@ export interface PidChipPickerOption {
 
 export interface PidChipPickerFooterAction {
   label: string;
-  icon?: GlyphKind;
+  icon?: ReactNode;
   onSelect: () => void;
 }
 
 export interface PidChipPickerProps {
-  icon: GlyphKind;
-  /**
-   * Replace the default Glyph in the trigger with a custom node — used to render the
-   * `π` brand mark on the model chip or a level-aware signal icon on the effort chip.
-   * Falls back to `<Glyph kind={icon} />` when omitted.
-   */
+  /** Trigger icon. */
+  icon?: ReactNode;
+  /** Replace the default trigger icon with a custom node */
   triggerLeading?: ReactNode;
   /** Override the chip's visible label; defaults to the active option's label/value. */
   triggerLabel?: string;
@@ -60,9 +57,9 @@ export function PidChipPicker({
     <RadixDropdown.Root>
       <RadixDropdown.Trigger asChild disabled={disabled}>
         <button type="button" className="pid-picker-trigger" aria-label={ariaLabel}>
-          {triggerLeading === undefined ? <Glyph kind={icon} size={12} /> : triggerLeading}
+          {triggerLeading === undefined ? (icon ?? null) : triggerLeading}
           <span className="pid-picker-trigger-label">{labelText}</span>
-          <Glyph kind="chevron-down" size={10} className="pid-picker-trigger-chev" />
+          <ChevronDown size={10} className="pid-picker-trigger-chev" />
         </button>
       </RadixDropdown.Trigger>
       <RadixDropdown.Portal>
@@ -85,7 +82,7 @@ export function PidChipPicker({
                 data-active={isActive || undefined}
               >
                 <span className="pid-picker-menu-item-check" aria-hidden>
-                  {isActive ? <Glyph kind="check" size={12} /> : null}
+                  {isActive ? <Check size={12} /> : null}
                 </span>
                 <span className="pid-picker-menu-item-label">{opt.label ?? opt.value}</span>
                 {opt.sub != null && <span className="pid-picker-menu-item-sub">{opt.sub}</span>}
@@ -100,7 +97,7 @@ export function PidChipPicker({
                 className="pid-picker-menu-item pid-picker-menu-footer"
               >
                 <span className="pid-picker-menu-item-check" aria-hidden>
-                  {footerAction.icon ? <Glyph kind={footerAction.icon} size={12} /> : null}
+                  {footerAction.icon ?? null}
                 </span>
                 <span className="pid-picker-menu-item-label">{footerAction.label}</span>
               </RadixDropdown.Item>

@@ -1,6 +1,5 @@
 import { type ReactNode, useState } from "react";
-import { Glyph } from "../components/glyph";
-import { Files, List, Settings } from "../components/icons";
+import { Files, List, Settings, Terminal } from "../components/icons";
 import { Tooltip } from "../components/ui/Tooltip";
 import { useSettingsStore } from "../features/settings/useSettingsStore";
 import { isMacOs } from "../lib/platform";
@@ -69,7 +68,7 @@ export function PidLeftRail({ sessions, files, initialTab = "sessions" }: PidLef
             aria-disabled
             onClick={(event) => event.preventDefault()}
           >
-            <Glyph kind="terminal" />
+            <Terminal size={14} aria-hidden />
           </button>
         </Tooltip>
       </div>

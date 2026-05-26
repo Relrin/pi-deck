@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import type { ProtocolClient } from "../../lib/transport/protocol-client.js";
-import { useToastStore } from "../_status/useToastStore.js";
+import { useNotificationStore } from "../_status/useNotificationStore.js";
 
 interface ProjectsStoreState {
   projects: ProjectSummary[];
@@ -43,7 +43,7 @@ export const useProjectsStore = create<ProjectsStoreState>()(
           set({ activeProjectId: project.id });
           return project;
         } catch (err) {
-          useToastStore.getState().push(humanizeError(err, "Failed to open project"), "error");
+          useNotificationStore.getState().error(humanizeError(err, "Failed to open project"));
           return undefined;
         }
       },
@@ -65,7 +65,7 @@ export const useProjectsStore = create<ProjectsStoreState>()(
         try {
           await get().loadProjects(client);
         } catch (err) {
-          useToastStore.getState().push(humanizeError(err, "Failed to load projects"), "error");
+          useNotificationStore.getState().error(humanizeError(err, "Failed to load projects"));
         }
         const id = get().activeProjectId;
         if (!id) return;

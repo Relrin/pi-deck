@@ -20,7 +20,7 @@ import {
   EVENT_THEME_CHANGED,
   TokenUsage,
 } from "@pi-deck/core/protocol/events.js";
-import { useToastStore } from "../../features/_status/useToastStore.js";
+import { useNotificationStore } from "../../features/_status/useNotificationStore.js";
 import { resetHighlighter } from "../../features/chat/messages/code-highlight.js";
 import type { MessageEntry, ToolCallEntry } from "../../features/chat/types.js";
 import { useMessagesStore } from "../../features/chat/useMessagesStore.js";
@@ -157,18 +157,18 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
       return;
     }
     case EVENT_SESSION_AGENT_EVENT: {
-      // The bridge forwards every pi event raw; surface prompt errors as toasts so the user
-      // sees auth/model/config failures instead of a silent "Stop" button.
+      // The bridge forwards every pi event raw; surface prompt errors as notifications so
+      // the user sees auth/model/config failures instead of a silent "Stop" button.
       const event = payload.event as { type?: string; message?: string } | undefined;
       if (event?.type === "prompt_error") {
-        useToastStore.getState().push(event.message ?? "pi reported a prompt error", "error");
+        useNotificationStore.getState().error(event.message ?? "pi reported a prompt error");
         useMessagesStore.getState().markTurnInFlight(sessionId, false);
       }
       return;
     }
     case EVENT_HOST_ERROR: {
       const msg = typeof payload.message === "string" ? payload.message : "Host error";
-      useToastStore.getState().push(msg, "error");
+      useNotificationStore.getState().error(msg);
       return;
     }
     default:

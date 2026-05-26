@@ -1,6 +1,6 @@
 import { Anthropic, Cerebras, Gemini, Groq, OpenAI, OpenRouter } from "@lobehub/icons";
 import type { ReactNode } from "react";
-import { Glyph } from "../../../components/glyph";
+import { Settings } from "../../../components/icons/index.js";
 
 interface IconProps {
   size?: number;
@@ -16,8 +16,8 @@ interface IconProps {
  *  - `<Brand.Avatar>` is a filled brand-coloured tile, used in the settings provider list
  *    where the larger 18px row benefits from the brand colour.
  *
- * The "custom" fallback uses our existing dot-grid `<Glyph kind="settings">` so user-added
- * OpenAI-compatible endpoints (LM Studio, Ollama, …) get a neutral marker.
+ * The "custom" fallback uses Lucide's `Settings` icon so user-added OpenAI-compatible
+ * endpoints (LM Studio, Ollama, ...) get a neutral marker.
  *
  * To add a new built-in provider:
  * 1. Append its entry to `BUILT_IN_PROVIDERS` in
@@ -27,7 +27,7 @@ interface IconProps {
  */
 
 const Custom = ({ size = 16, className }: IconProps) => (
-  <Glyph kind="settings" size={size} className={className} />
+  <Settings size={size} className={className} />
 );
 
 export const PROVIDER_ICONS: Record<string, (props: IconProps) => ReactNode> = {

@@ -1,7 +1,7 @@
 import { ChevronDown, Folder, FolderOpen } from "../../components/icons/index.js";
 import { type DropdownItem, DropdownMenu } from "../../components/ui/DropdownMenu.js";
 import { humanizeError } from "../../lib/format/humanize-error.js";
-import { useToastStore } from "../_status/useToastStore.js";
+import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { useProjectsStore } from "./useProjectsStore.js";
 import { useSessionsStore } from "./useSessionsStore.js";
 
@@ -39,9 +39,7 @@ export function ProjectSwitcher() {
           openByPath(client, project.path)
             .then(() => onProjectSwitched(project.id))
             .catch((err) => {
-              useToastStore
-                .getState()
-                .push(humanizeError(err, "Failed to switch project"), "error");
+              useNotificationStore.getState().error(humanizeError(err, "Failed to switch project"));
             });
         },
       }),
@@ -61,7 +59,7 @@ export function ProjectSwitcher() {
             if (project) return onProjectSwitched(project.id);
           })
           .catch((err) => {
-            useToastStore.getState().push(humanizeError(err, "Failed to open folder"), "error");
+            useNotificationStore.getState().error(humanizeError(err, "Failed to open folder"));
           });
       },
       separatorBefore: projects.length > 0,

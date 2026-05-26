@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { NOTIFICATION_DEFAULT_MS } from "../../lib/ui-constants.js";
 
 export type NotificationKind = "success" | "error" | "info";
 
@@ -47,18 +48,33 @@ export type NotificationInput = Omit<Notification, "id" | "createdAt"> & {
   id?: string;
 };
 
+/** Options accepted by the simple `error/info/success` shortcut methods. */
+export interface SimpleNotificationOptions {
+  /** Optional body sentence under the title. */
+  body?: string;
+  /** Override default duration. `0` keeps the notification until dismissed by the user. */
+  durationMs?: number;
+  /** Caller-provided id — lets a retry replace the previous notification in place. */
+  id?: string;
+}
+
 interface NotificationStoreState {
   notifications: Notification[];
   /** Pushes (or replaces, when `input.id` matches an existing entry) a notification.
    * Returns the resolved id so callers can dismiss programmatically. */
   push: (input: NotificationInput) => string;
+  /** Shortcut for one-line error nudges — the common case after the toast→notification
+   * migration. Defaults `durationMs` to `NOTIFICATION_DEFAULT_MS`. */
+  error: (title: string, opts?: SimpleNotificationOptions) => string;
+  info: (title: string, opts?: SimpleNotificationOptions) => string;
+  success: (title: string, opts?: SimpleNotificationOptions) => string;
   dismiss: (id: string) => void;
   dismissAll: () => void;
 }
 
 const MAX = 4;
 
-export const useNotificationStore = create<NotificationStoreState>((set) => ({
+export const useNotificationStore = create<NotificationStoreState>((set, get) => ({
   notifications: [],
   push: (input) => {
     const id = input.id ?? `n-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -90,6 +106,30 @@ export const useNotificationStore = create<NotificationStoreState>((set) => ({
     });
     return id;
   },
+  error: (title, opts) =>
+    get().push({
+      id: opts?.id,
+      kind: "error",
+      title,
+      body: opts?.body,
+      durationMs: opts?.durationMs ?? NOTIFICATION_DEFAULT_MS,
+    }),
+  info: (title, opts) =>
+    get().push({
+      id: opts?.id,
+      kind: "info",
+      title,
+      body: opts?.body,
+      durationMs: opts?.durationMs ?? NOTIFICATION_DEFAULT_MS,
+    }),
+  success: (title, opts) =>
+    get().push({
+      id: opts?.id,
+      kind: "success",
+      title,
+      body: opts?.body,
+      durationMs: opts?.durationMs ?? NOTIFICATION_DEFAULT_MS,
+    }),
   dismiss: (id) =>
     set((state) => ({ notifications: state.notifications.filter((n) => n.id !== id) })),
   dismissAll: () => set({ notifications: [] }),

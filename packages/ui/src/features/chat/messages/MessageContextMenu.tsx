@@ -3,7 +3,7 @@ import { type ReactNode, useState } from "react";
 import { getSelectionText, writeClipboard } from "../../../lib/clipboard.js";
 import { cn } from "../../../lib/cn.js";
 import { stripMarkdown } from "../../../lib/markdown-strip.js";
-import { useToastStore } from "../../_status/useToastStore.js";
+import { useNotificationStore } from "../../_status/useNotificationStore.js";
 import { useDraftStore } from "../useDraftStore.js";
 
 const CONTENT_CLASSES =
@@ -34,16 +34,16 @@ interface MessageContextMenuProps {
 export function MessageContextMenu({ rawText, children }: MessageContextMenuProps) {
   const [selectionAtOpen, setSelectionAtOpen] = useState("");
   const insertIntoDraft = useDraftStore((s) => s.insertIntoDraft);
-  const push = useToastStore((s) => s.push);
+  const notifyError = useNotificationStore((s) => s.error);
 
   const hasSelection = selectionAtOpen.trim().length > 0;
 
   const onCopyText = () => {
-    writeClipboard(stripMarkdown(rawText)).catch(() => push("Failed to copy", "error"));
+    writeClipboard(stripMarkdown(rawText)).catch(() => notifyError("Failed to copy"));
   };
 
   const onCopyAsMarkdown = () => {
-    writeClipboard(rawText).catch(() => push("Failed to copy", "error"));
+    writeClipboard(rawText).catch(() => notifyError("Failed to copy"));
   };
 
   const onAttach = () => {

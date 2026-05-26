@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { useToastStore } from "../_status/useToastStore";
+import { useNotificationStore } from "../_status/useNotificationStore";
 import { useMessagesStore } from "../chat/useMessagesStore";
 import { useProjectsStore } from "./useProjectsStore";
 import { useSessionsStore } from "./useSessionsStore";
@@ -38,7 +38,7 @@ beforeEach(() => {
     activeProjectId: undefined,
     lastActiveSessionByProject: {},
   });
-  useToastStore.setState({ toasts: [] });
+  useNotificationStore.setState({ notifications: [] });
   useMessagesStore.setState({ bySession: {} });
 });
 
@@ -53,7 +53,7 @@ describe("useSessionsStore — refresh", () => {
     expect(useSessionsStore.getState().isRefreshing).toBe(false);
   });
 
-  test("error pushes a toast and still resolves isRefreshing", async () => {
+  test("error pushes a notification and still resolves isRefreshing", async () => {
     const client = mockClient({
       "session.list": () => {
         throw new Error("boom");
@@ -62,8 +62,8 @@ describe("useSessionsStore — refresh", () => {
     useSessionsStore.setState({ client: client as never });
     await useSessionsStore.getState().refreshSessions("proj-1");
     expect(useSessionsStore.getState().isRefreshing).toBe(false);
-    expect(useToastStore.getState().toasts.length).toBe(1);
-    expect(useToastStore.getState().toasts[0]?.kind).toBe("error");
+    expect(useNotificationStore.getState().notifications.length).toBe(1);
+    expect(useNotificationStore.getState().notifications[0]?.kind).toBe("error");
   });
 });
 
@@ -86,7 +86,7 @@ describe("useSessionsStore — createSession", () => {
     expect(useProjectsStore.getState().lastActiveSessionByProject["proj-1"]).toBe("sess-new");
   });
 
-  test("backend error surfaces a toast and re-throws", async () => {
+  test("backend error surfaces a notification and re-throws", async () => {
     const client = mockClient({
       "session.create": () => {
         throw new Error("nope");
@@ -95,7 +95,7 @@ describe("useSessionsStore — createSession", () => {
     useSessionsStore.setState({ client: client as never });
 
     await expect(useSessionsStore.getState().createSession("proj-1")).rejects.toThrow();
-    expect(useToastStore.getState().toasts.length).toBe(1);
+    expect(useNotificationStore.getState().notifications.length).toBe(1);
   });
 });
 
@@ -225,7 +225,7 @@ describe("useSessionsStore — archive/unarchive/delete", () => {
     const state = useSessionsStore.getState();
     expect(state.archivedSessions).toEqual([]);
     expect(state.sessionsByProject["proj-1"]?.[0]?.archived).toBeFalsy();
-    expect(useToastStore.getState().toasts.length).toBe(1);
+    expect(useNotificationStore.getState().notifications.length).toBe(1);
   });
 
   test("unarchiveSession moves the row back out of archivedSessions", async () => {
@@ -288,7 +288,7 @@ describe("useSessionsStore — archive/unarchive/delete", () => {
     await useSessionsStore.getState().renameSession("sess-arch-1", "Renamed");
 
     expect(useSessionsStore.getState().sessions[0]?.title).toBe(session.title);
-    expect(useToastStore.getState().toasts.length).toBe(1);
+    expect(useNotificationStore.getState().notifications.length).toBe(1);
   });
 
   test("deleteSession removes the row from everywhere and clears activeSessionId if matched", async () => {
@@ -323,7 +323,7 @@ describe("useSessionsStore — sendPrompt", () => {
     expect(msgs.some((m) => m.kind === "user" && m.text === "hello")).toBe(true);
   });
 
-  test("error resets isTurnInFlight, surfaces a toast and re-throws", async () => {
+  test("error resets isTurnInFlight, surfaces a notification and re-throws", async () => {
     const client = mockClient({
       "session.prompt": () => {
         throw new Error("rate-limited");
@@ -333,6 +333,6 @@ describe("useSessionsStore — sendPrompt", () => {
 
     await expect(useSessionsStore.getState().sendPrompt("hi")).rejects.toThrow();
     expect(useMessagesStore.getState().bySession["sess-1"]?.isTurnInFlight).toBe(false);
-    expect(useToastStore.getState().toasts.length).toBe(1);
+    expect(useNotificationStore.getState().notifications.length).toBe(1);
   });
 });

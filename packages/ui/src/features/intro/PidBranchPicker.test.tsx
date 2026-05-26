@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { render, screen, userEvent } from "../../../test/utils";
-import { useToastStore } from "../_status/useToastStore";
+import { useNotificationStore } from "../_status/useNotificationStore";
 import { useGitStore } from "../git/useGitStore";
 import { useSessionsStore } from "../sessions/useSessionsStore";
 import { PidBranchPicker } from "./PidBranchPicker";
@@ -34,7 +34,7 @@ beforeEach(() => {
     isRefreshing: false,
     client: undefined,
   });
-  useToastStore.setState({ toasts: [] });
+  useNotificationStore.setState({ notifications: [] });
 });
 
 describe("PidBranchPicker", () => {

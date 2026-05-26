@@ -10,7 +10,7 @@ import { humanizeError } from "../../lib/format/humanize-error.js";
 import { routeEvent } from "../../lib/transport/event-router.js";
 import { ProtocolClient } from "../../lib/transport/protocol-client.js";
 import { type ConnectionStatus, WsClient } from "../../lib/transport/ws-client.js";
-import { useToastStore } from "../_status/useToastStore.js";
+import { useNotificationStore } from "../_status/useNotificationStore.js";
 import type { UserMessageImage } from "../chat/types.js";
 import { useMessagesStore } from "../chat/useMessagesStore.js";
 import { useProvidersStore } from "../models/useProvidersStore.js";
@@ -179,7 +179,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         }
       }
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Failed to load workspace"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to load workspace"));
     }
   },
 
@@ -195,7 +195,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         errorByProject: { ...state.errorByProject, [projectId]: undefined },
       }));
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Failed to load sessions"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to load sessions"));
     } finally {
       set({ isRefreshing: false });
     }
@@ -259,7 +259,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       });
       useProjectsStore.getState().setLastActiveSession(projectId, session.id);
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Failed to create session"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to create session"));
       throw err;
     }
   },
@@ -271,9 +271,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       const { sessions } = await client.call("session.listArchived", {});
       set({ archivedSessions: sessions, archivedLoaded: true });
     } catch (err) {
-      useToastStore
-        .getState()
-        .push(humanizeError(err, "Failed to load archived sessions"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to load archived sessions"));
     }
   },
 
@@ -286,7 +284,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       await client.call("session.archive", { sessionId: id });
     } catch (err) {
       set(previous);
-      useToastStore.getState().push(humanizeError(err, "Failed to archive session"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to archive session"));
     }
   },
 
@@ -299,7 +297,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       await client.call("session.unarchive", { sessionId: id });
     } catch (err) {
       set(previous);
-      useToastStore.getState().push(humanizeError(err, "Failed to unarchive session"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to unarchive session"));
     }
   },
 
@@ -331,7 +329,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         sessionsByProject: prevByProject,
         archivedSessions: prevArchived,
       });
-      useToastStore.getState().push(humanizeError(err, "Failed to rename session"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to rename session"));
     }
   },
 
@@ -353,7 +351,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         };
       });
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Failed to delete session"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to delete session"));
       throw err;
     }
   },
@@ -370,7 +368,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       const projectId = useProjectsStore.getState().activeProjectId;
       if (projectId) useProjectsStore.getState().setLastActiveSession(projectId, id);
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Failed to open session"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to open session"));
     }
   },
 
@@ -410,7 +408,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       get().bumpLastActivity(id);
     } catch (err) {
       useMessagesStore.getState().markTurnInFlight(id, false);
-      useToastStore.getState().push(humanizeError(err, "Failed to send prompt"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to send prompt"));
       throw err;
     }
   },
@@ -422,7 +420,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     try {
       await client.call("session.cancel", { sessionId: id });
     } catch (err) {
-      useToastStore.getState().push(humanizeError(err, "Failed to cancel"), "error");
+      useNotificationStore.getState().error(humanizeError(err, "Failed to cancel"));
     }
   },
 

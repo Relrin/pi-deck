@@ -1,8 +1,14 @@
 import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import Fuse from "fuse.js";
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Glyph } from "../../components/glyph/index.js";
-import { Check, CornerDownLeft, GitMerge, Plus, Search } from "../../components/icons/index.js";
+import {
+  Check,
+  ChevronDown,
+  CornerDownLeft,
+  GitMerge,
+  Plus,
+  Search,
+} from "../../components/icons/index.js";
 import { useGitStore } from "../git/useGitStore.js";
 
 interface Props {
@@ -109,7 +115,7 @@ export function PidBranchPicker({ projectId }: Props) {
         <button type="button" className="pid-picker-trigger" aria-label="Select branch">
           <GitMerge size={12} aria-hidden />
           <span className="pid-picker-trigger-label">{currentBranch || "none"}</span>
-          <Glyph kind="chevron-down" size={10} className="pid-picker-trigger-chev" />
+          <ChevronDown size={10} className="pid-picker-trigger-chev" />
         </button>
       </RadixDropdown.Trigger>
       <RadixDropdown.Portal>

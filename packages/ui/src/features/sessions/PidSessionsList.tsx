@@ -1,5 +1,6 @@
 import type { SessionSummary } from "@pi-deck/core/domain/session.js";
 import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronRight } from "../../components/icons/index.js";
 import { useNavStore, useRailExpanded } from "../../lib/useNavStore";
 import { PidNewSessionButton } from "./PidNewSessionButton";
 import { PidProjectSwitcher } from "./PidProjectSwitcher";
@@ -321,14 +322,7 @@ function ArchiveBlock({ query }: { query: string }) {
         <span className="pid-rail-project-name">archive</span>
         <span className="pid-rail-project-count">{sortedArchived.length}</span>
         <span className="pid-rail-project-caret" aria-hidden>
-          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden focusable="false">
-            <title>{expanded ? "Expanded" : "Collapsed"}</title>
-            {expanded ? (
-              <path d="M 1.5 3 L 8.5 3 L 5 7.5 Z" fill="currentColor" />
-            ) : (
-              <path d="M 7 1.5 L 7 8.5 L 2.5 5 Z" fill="currentColor" />
-            )}
-          </svg>
+          {expanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
         </span>
       </button>
       {expanded ? (

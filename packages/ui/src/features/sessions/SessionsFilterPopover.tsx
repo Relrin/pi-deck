@@ -1,5 +1,5 @@
 import { type ReactNode, useMemo, useState } from "react";
-import { Glyph } from "../../components/glyph";
+import { Check, ChevronDown, ChevronRight, Search } from "../../components/icons/index.js";
 import { useProjectsStore } from "./useProjectsStore";
 import {
   ALL_STATUSES,
@@ -214,7 +214,7 @@ function AccordionSection({
         </span>
         {dirty ? <span className="pid-sessions-filter-section-dot" aria-hidden /> : null}
         <span className="pid-sessions-filter-section-caret" aria-hidden>
-          <Glyph kind={open ? "chevron-down" : "chevron-right"} size={9} />
+          {open ? <ChevronDown size={9} /> : <ChevronRight size={9} />}
         </span>
       </button>
       {open ? <div className="pid-sessions-filter-section-body">{children}</div> : null}
@@ -238,7 +238,7 @@ function FilterCheckbox({ label, tone, checked, onChange }: FilterCheckboxProps)
       onClick={onChange}
     >
       <span className="pid-sessions-filter-option-check" data-checked={checked || undefined}>
-        {checked ? <Glyph kind="check" size={8} /> : null}
+        {checked ? <Check size={8} /> : null}
       </span>
       <span className="pid-sessions-filter-option-label">
         {tone ? (
@@ -304,7 +304,7 @@ function ProjectPicker() {
   return (
     <div className="pid-sessions-filter-project">
       <div className="pid-sessions-filter-project-search">
-        <Glyph kind="search" size={10} />
+        <Search size={10} />
         <input
           type="text"
           placeholder="filter project…"
@@ -326,7 +326,7 @@ function ProjectPicker() {
             data-checked={allState === "all" || undefined}
             data-mixed={allState === "some" || undefined}
           >
-            {allState === "all" ? <Glyph kind="check" size={8} /> : null}
+            {allState === "all" ? <Check size={8} /> : null}
             {allState === "some" ? (
               <span className="pid-sessions-filter-option-check-dash" />
             ) : null}

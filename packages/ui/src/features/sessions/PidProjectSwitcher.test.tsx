@@ -41,21 +41,25 @@ describe("PidProjectSwitcher", () => {
     expect(screen.getByText("7")).toBeInTheDocument();
   });
 
-  test("caret SVG title flips with the expanded state", () => {
+  test("caret icon flips with the expanded state", () => {
     const { rerender } = render(<PidProjectSwitcher project={project} count={3} />);
+    // Expanded: Lucide ChevronDown (class includes `lucide-chevron-down`).
     expect(
-      screen.getByRole("button", { name: /Proj X/ }).querySelector(".pid-rail-project-caret title")
-        ?.textContent,
-    ).toBe("Expanded");
+      screen
+        .getByRole("button", { name: /Proj X/ })
+        .querySelector(".pid-rail-project-caret .lucide-chevron-down"),
+    ).not.toBeNull();
     useNavStore.setState((prev) => ({
       ...prev,
       expandedProjectsRail: { "p-x": false },
     }));
     rerender(<PidProjectSwitcher project={project} count={3} />);
+    // Collapsed: Lucide ChevronRight.
     expect(
-      screen.getByRole("button", { name: /Proj X/ }).querySelector(".pid-rail-project-caret title")
-        ?.textContent,
-    ).toBe("Collapsed");
+      screen
+        .getByRole("button", { name: /Proj X/ })
+        .querySelector(".pid-rail-project-caret .lucide-chevron-right"),
+    ).not.toBeNull();
   });
 
   test("square lights up (data-active=true) when this project hosts the active session", () => {

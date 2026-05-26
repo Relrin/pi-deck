@@ -1,5 +1,4 @@
 import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from "react";
-import { Glyph, type GlyphKind } from "../glyph";
 
 export type PidButtonVariant = "default" | "primary" | "ghost" | "danger";
 export type PidButtonSize = "sm" | "md";
@@ -7,8 +6,8 @@ export type PidButtonSize = "sm" | "md";
 export interface PidButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: PidButtonVariant;
   size?: PidButtonSize;
-  /** Optional leading glyph rendered before children. */
-  glyph?: GlyphKind;
+  /** Optional leading icon rendered before children. */
+  icon?: ReactNode;
   /** True when the label is a sentence — switches to UI font, sentence case. */
   longLabel?: boolean;
   /** Visually marks the button as the active option in a segmented group. */
@@ -20,7 +19,7 @@ export const PidButton = forwardRef<HTMLButtonElement, PidButtonProps>(function 
   {
     variant = "default",
     size = "sm",
-    glyph,
+    icon,
     longLabel = false,
     active = false,
     className,
@@ -42,7 +41,7 @@ export const PidButton = forwardRef<HTMLButtonElement, PidButtonProps>(function 
       data-active={active || undefined}
       {...rest}
     >
-      {glyph ? <Glyph kind={glyph} /> : null}
+      {icon ?? null}
       {children}
     </button>
   );

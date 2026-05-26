@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Glyph } from "../../components/glyph";
+import { Search, Sliders } from "../../components/icons/index.js";
 import { SessionsFilterPopover } from "./SessionsFilterPopover";
 
 export function RailFilterBar({
@@ -25,7 +25,7 @@ export function RailFilterBar({
   return (
     <div ref={wrapperRef} className="pid-rail-filterbar">
       <span className="pid-rail-sessions-filter">
-        <Glyph kind="search" size={12} />
+        <Search size={12} />
         <input
           type="text"
           className="pid-rail-sessions-filter-input"
@@ -43,7 +43,7 @@ export function RailFilterBar({
         aria-label="Sort, group, and filter sessions"
         onClick={() => setOpen((v) => !v)}
       >
-        <Glyph kind="sliders" size={12} />
+        <Sliders size={12} />
       </button>
       {open ? <SessionsFilterPopover onClose={() => setOpen(false)} /> : null}
     </div>

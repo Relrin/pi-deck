@@ -14,7 +14,7 @@ import { PidKbd } from "../../components/kbd/PidKbd";
 import { Tooltip } from "../../components/ui/Tooltip";
 import { useAutoGrowTextarea } from "../../lib/useAutoGrowTextarea";
 import { useNavStore } from "../../lib/useNavStore";
-import { useToastStore } from "../_status/useToastStore";
+import { useNotificationStore } from "../_status/useNotificationStore";
 import { ImagePreviewDialog } from "../chat/composer/ImagePreviewDialog";
 import { useImagePaste } from "../chat/composer/useImagePaste";
 import type { UserMessageImage } from "../chat/types";
@@ -78,7 +78,7 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
     const trimmed = text.trim();
     if (!trimmed) return;
     if (!activeProjectId) {
-      useToastStore.getState().push("Open a project first", "error");
+      useNotificationStore.getState().error("Open a project first");
       return;
     }
     const store = useSessionsStore.getState();

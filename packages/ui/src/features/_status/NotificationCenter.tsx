@@ -1,12 +1,12 @@
 import { useEffect } from "react";
-import { Check, X } from "../../components/icons/index.js";
+import { Check, Info, X } from "../../components/icons/index.js";
 import { type Notification, useNotificationStore } from "./useNotificationStore.js";
 
 /**
- * Stacked rich notifications anchored to the bottom-right. Independent of the simpler
- * `Toaster` (which still handles plain-text error nudges) — this one is what git ops,
- * and later session/agent events, post into when they want a structured card with
- * actions and a countdown bar.
+ * Stacked rich notifications anchored to the bottom-right. The single notification
+ * surface — used both for plain-text error nudges (via the `error/info/success`
+ * shortcuts on `useNotificationStore`) and for structured cards with tags, actions,
+ * and a countdown bar (via `push`).
  */
 export function NotificationCenter() {
   const notifications = useNotificationStore((s) => s.notifications);
@@ -46,7 +46,13 @@ function NotificationCard({ notification, onDismiss }: CardProps) {
   return (
     <div className="pid-notification" data-kind={kind} role={kind === "error" ? "alert" : "status"}>
       <span className="pid-notification-icon" aria-hidden data-kind={kind}>
-        {kind === "success" ? <Check size={12} /> : <X size={12} />}
+        {kind === "success" ? (
+          <Check size={12} />
+        ) : kind === "info" ? (
+          <Info size={12} />
+        ) : (
+          <X size={12} />
+        )}
       </span>
       <div className="pid-notification-content">
         <div className="pid-notification-head">

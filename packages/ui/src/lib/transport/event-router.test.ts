@@ -10,7 +10,7 @@ import {
   EVENT_SESSION_USER_MESSAGE,
   EVENT_SESSION_WORKER_EXIT,
 } from "@pi-deck/core/protocol/events.js";
-import { useToastStore } from "../../features/_status/useToastStore";
+import { useNotificationStore } from "../../features/_status/useNotificationStore";
 import { useMessagesStore } from "../../features/chat/useMessagesStore";
 import { useUsageStore } from "../../features/chat/useUsageStore";
 import { routeEvent } from "./event-router";
@@ -19,7 +19,7 @@ const SID = "session-x";
 
 beforeEach(() => {
   useMessagesStore.setState({ bySession: {} });
-  useToastStore.setState({ toasts: [] });
+  useNotificationStore.setState({ notifications: [] });
   useUsageStore.setState({ bySession: {} });
 });
 
@@ -88,14 +88,14 @@ describe("routeEvent — routing", () => {
     expect(useMessagesStore.getState().bySession[SID]?.isTurnInFlight).toBe(false);
   });
 
-  test("agent prompt_error surfaces a toast and clears in-flight", () => {
+  test("agent prompt_error surfaces a notification and clears in-flight", () => {
     useMessagesStore.getState().markTurnInFlight(SID, true);
     routeEvent(EVENT_SESSION_AGENT_EVENT, {
       sessionId: SID,
       event: { type: "prompt_error", message: "auth failed" },
     });
-    expect(useToastStore.getState().toasts.length).toBe(1);
-    expect(useToastStore.getState().toasts[0]?.kind).toBe("error");
+    expect(useNotificationStore.getState().notifications.length).toBe(1);
+    expect(useNotificationStore.getState().notifications[0]?.kind).toBe("error");
     expect(useMessagesStore.getState().bySession[SID]?.isTurnInFlight).toBe(false);
   });
 
@@ -118,9 +118,9 @@ describe("routeEvent — routing", () => {
     expect(useUsageStore.getState().bySession[SID]).toBeUndefined();
   });
 
-  test("host error surfaces a toast", () => {
+  test("host error surfaces a notification", () => {
     routeEvent(EVENT_HOST_ERROR, { message: "transport failed" });
-    expect(useToastStore.getState().toasts[0]?.message).toBe("transport failed");
+    expect(useNotificationStore.getState().notifications[0]?.title).toBe("transport failed");
   });
 
   test("events without sessionId are ignored (except host error)", () => {
@@ -131,6 +131,6 @@ describe("routeEvent — routing", () => {
   test("unknown topics are no-ops", () => {
     routeEvent("totally.made.up.topic", { sessionId: SID });
     expect(useMessagesStore.getState().bySession).toEqual({});
-    expect(useToastStore.getState().toasts).toEqual([]);
+    expect(useNotificationStore.getState().notifications).toEqual([]);
   });
 });

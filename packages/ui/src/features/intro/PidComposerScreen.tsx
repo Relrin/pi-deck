@@ -10,12 +10,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { Archive, Folder, Send, X } from "../../components/icons/index.js";
+import { Archive, Folder, Plus, Send, X } from "../../components/icons/index.js";
 import { PidChipPicker, type PidChipPickerOption } from "../../components/picker/PidChipPicker.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
 import { useAutoGrowTextarea } from "../../lib/useAutoGrowTextarea.js";
 import { useNavStore } from "../../lib/useNavStore.js";
-import { useToastStore } from "../_status/useToastStore.js";
+import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { ImagePreviewDialog } from "../chat/composer/ImagePreviewDialog.js";
 import { useImagePaste } from "../chat/composer/useImagePaste.js";
 import type { UserMessageImage } from "../chat/types.js";
@@ -88,7 +88,7 @@ export function PidComposerScreen() {
   const chooseFiles = useCallback(async () => {
     const picker = window.bridge?.openFiles;
     if (!picker) {
-      useToastStore.getState().push("File picker unavailable in this build", "error");
+      useNotificationStore.getState().error("File picker unavailable in this build");
       return;
     }
     const paths = await picker();
@@ -99,7 +99,7 @@ export function PidComposerScreen() {
   const chooseFolder = useCallback(async () => {
     const picker = window.bridge?.openDirectory;
     if (!picker) {
-      useToastStore.getState().push("Folder picker unavailable in this build", "error");
+      useNotificationStore.getState().error("Folder picker unavailable in this build");
       return;
     }
     const path = await picker();
@@ -123,7 +123,7 @@ export function PidComposerScreen() {
 
   const openAnotherFolder = useCallback(() => {
     if (!protocolClient) {
-      useToastStore.getState().push("Host not connected", "error");
+      useNotificationStore.getState().error("Host not connected");
       return;
     }
     void openProjectFromDialog(protocolClient);
@@ -171,7 +171,7 @@ export function PidComposerScreen() {
     const trimmed = text.trim();
     if (!trimmed) return;
     if (!activeProjectId) {
-      useToastStore.getState().push("Open a project first", "error");
+      useNotificationStore.getState().error("Open a project first");
       return;
     }
     const store = useSessionsStore.getState();
@@ -262,7 +262,6 @@ export function PidComposerScreen() {
 
         <div className="pid-composer-chip-row">
           <PidChipPicker
-            icon="folder"
             triggerLeading={<Archive size={12} aria-hidden />}
             ariaLabel="Select workspace"
             value={activeProjectId ?? ""}
@@ -271,7 +270,7 @@ export function PidComposerScreen() {
             triggerLabel={activeProject?.displayName ?? "no project"}
             footerAction={{
               label: "Open another folder…",
-              icon: "plus",
+              icon: <Plus size={12} />,
               onSelect: openAnotherFolder,
             }}
           />

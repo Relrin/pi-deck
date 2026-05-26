@@ -2,7 +2,7 @@ import type { ThemeListing, ThemeSpec } from "@pi-deck/core";
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import { PidChip } from "../../components/chip/PidChip";
-import { Glyph } from "../../components/glyph";
+import { Check } from "../../components/icons/index.js";
 import type { ProtocolClient } from "../../lib/transport/protocol-client";
 
 /** Per-process cache so flipping through the grid doesn't re-fetch on every render. */
@@ -86,7 +86,7 @@ export function ThemePreviewCard({ listing, client, active, onSelect }: ThemePre
     >
       {active ? (
         <span className="pid-theme-card-check" aria-hidden>
-          <Glyph kind="check" size={10} />
+          <Check size={10} />
         </span>
       ) : null}
       <span className="pid-theme-swatch" aria-hidden>

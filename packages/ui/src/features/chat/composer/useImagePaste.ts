@@ -1,5 +1,5 @@
 import { type ClipboardEvent, type DragEvent, useCallback } from "react";
-import { useToastStore } from "../../_status/useToastStore.js";
+import { useNotificationStore } from "../../_status/useNotificationStore.js";
 import type { PromptImageDraft } from "../../intro/useIntroComposerStore.js";
 
 const IMAGE_FILTER = {
@@ -41,14 +41,14 @@ export function useImagePaste(opts: UseImagePasteOptions): UseImagePasteResult {
       const images: PromptImageDraft[] = [];
       for (const file of files) {
         if (!ALLOWED_MIMES.has(file.type)) {
-          useToastStore
+          useNotificationStore
             .getState()
-            .push(`Unsupported image type: ${file.type || "unknown"}`, "error");
+            .error(`Unsupported image type: ${file.type || "unknown"}`);
           continue;
         }
         if (file.size > maxBytes) {
           const mb = (maxBytes / (1024 * 1024)).toFixed(0);
-          useToastStore.getState().push(`Image too large — max ${mb} MB`, "error");
+          useNotificationStore.getState().error(`Image too large — max ${mb} MB`);
           continue;
         }
         try {
@@ -56,7 +56,7 @@ export function useImagePaste(opts: UseImagePasteOptions): UseImagePasteResult {
           images.push(draft);
         } catch (err) {
           const message = err instanceof Error ? err.message : "Failed to read image";
-          useToastStore.getState().push(`Couldn't attach image: ${message}`, "error");
+          useNotificationStore.getState().error(`Couldn't attach image: ${message}`);
         }
       }
       if (images.length > 0) opts.onImages(images);
@@ -110,7 +110,7 @@ export function useImagePaste(opts: UseImagePasteOptions): UseImagePasteResult {
     const picker = window.bridge?.openFile;
     const reader = window.bridge?.readImage;
     if (!picker || !reader) {
-      useToastStore.getState().push("Image picker unavailable in this build", "error");
+      useNotificationStore.getState().error("Image picker unavailable in this build");
       return;
     }
     let selected: string | undefined;
@@ -118,7 +118,7 @@ export function useImagePaste(opts: UseImagePasteOptions): UseImagePasteResult {
       selected = await picker(IMAGE_FILTER);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to open file dialog";
-      useToastStore.getState().push(message, "error");
+      useNotificationStore.getState().error(message);
       return;
     }
     if (!selected) return;
@@ -126,7 +126,7 @@ export function useImagePaste(opts: UseImagePasteOptions): UseImagePasteResult {
       const result = await reader(selected);
       if (result.byteSize > maxBytes) {
         const mb = (maxBytes / (1024 * 1024)).toFixed(0);
-        useToastStore.getState().push(`Image too large — max ${mb} MB`, "error");
+        useNotificationStore.getState().error(`Image too large — max ${mb} MB`);
         return;
       }
       const thumbnailDataUrl = await thumbnailFromBase64(result.data, result.mimeType);
@@ -142,7 +142,7 @@ export function useImagePaste(opts: UseImagePasteOptions): UseImagePasteResult {
       ]);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to read image";
-      useToastStore.getState().push(`Couldn't attach image: ${message}`, "error");
+      useNotificationStore.getState().error(`Couldn't attach image: ${message}`);
     }
   }, [maxBytes, opts.onImages]);
 

@@ -3,7 +3,7 @@ import Fuse from "fuse.js";
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Check, File, Search, X } from "../../components/icons/index.js";
 import { humanizeError } from "../../lib/format/humanize-error.js";
-import { useToastStore } from "../_status/useToastStore.js";
+import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 
@@ -41,7 +41,7 @@ export function PidRepoFileSearchDialog({ open, onClose, onSelect }: PidRepoFile
       .call("project.listFiles", { projectId: activeProjectId })
       .then((res) => setEntries(res.entries.map((e) => ({ path: e.path }))))
       .catch((err) => {
-        useToastStore.getState().push(humanizeError(err, "Failed to list project files"), "error");
+        useNotificationStore.getState().error(humanizeError(err, "Failed to list project files"));
         setEntries([]);
       })
       .finally(() => setLoading(false));

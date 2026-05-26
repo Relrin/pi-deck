@@ -1,7 +1,13 @@
 import type { AgentMode } from "@pi-deck/core/domain/session.js";
 import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import type { ComponentType } from "react";
-import { Check, CheckCheck, Map as MapIcon, ShieldCheck } from "../../components/icons/index.js";
+import {
+  Check,
+  CheckCheck,
+  ChevronDown,
+  Map as MapIcon,
+  ShieldCheck,
+} from "../../components/icons/index.js";
 import { useIntroComposerStore } from "./useIntroComposerStore.js";
 
 interface ModeEntry {
@@ -51,19 +57,7 @@ export function PidAgentModePicker() {
         <button type="button" className="pid-picker-trigger" aria-label="Agent mode">
           <ActiveIcon size={12} className="pid-picker-trigger-icon" />
           <span className="pid-picker-trigger-label">{active.label}</span>
-          <svg
-            width="10"
-            height="10"
-            viewBox="0 0 14 14"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.25}
-            className="pid-picker-trigger-chev"
-            aria-hidden
-          >
-            <title>chevron</title>
-            <path d="M3.5 5.5 L7 9 L10.5 5.5" />
-          </svg>
+          <ChevronDown size={10} className="pid-picker-trigger-chev" aria-hidden />
         </button>
       </RadixDropdown.Trigger>
       <RadixDropdown.Portal>

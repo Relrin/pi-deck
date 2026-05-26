@@ -1,7 +1,7 @@
 import type { ProjectSummary } from "@pi-deck/core/domain/project.js";
 import { useEffect } from "react";
 import { PidChip } from "../../../components/chip/PidChip";
-import { Glyph } from "../../../components/glyph";
+import { ChevronDown, ChevronRight } from "../../../components/icons/index.js";
 import { useNavStore, useOverviewExpanded } from "../../../lib/useNavStore";
 import { useSessionsStore } from "../useSessionsStore";
 import { PidSessionCard } from "./PidSessionCard";
@@ -39,7 +39,7 @@ export function ProjectSection({ project }: ProjectSectionProps) {
           aria-expanded={expanded}
           onClick={() => useNavStore.getState().toggleOverviewProject(project.id)}
         >
-          <Glyph kind={expanded ? "chevron-down" : "chevron-right"} size={12} />
+          {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           <span className="pid-overview-header-title">{project.displayName}</span>
         </button>
         {sessions !== undefined ? <PidChip>{String(count)}</PidChip> : null}
