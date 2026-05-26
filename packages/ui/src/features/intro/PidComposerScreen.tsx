@@ -13,6 +13,7 @@ import {
 import { Archive, Folder, Send, X } from "../../components/icons/index.js";
 import { PidChipPicker, type PidChipPickerOption } from "../../components/picker/PidChipPicker.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
+import { useAutoGrowTextarea } from "../../lib/useAutoGrowTextarea.js";
 import { useNavStore } from "../../lib/useNavStore.js";
 import { useToastStore } from "../_status/useToastStore.js";
 import { ImagePreviewDialog } from "../chat/composer/ImagePreviewDialog.js";
@@ -53,6 +54,9 @@ export function PidComposerScreen() {
   const [previewImage, setPreviewImage] = useState<PromptImageDraft | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const dragDepthRef = useRef(0);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useAutoGrowTextarea(textareaRef, text);
   const { onPaste, onDrop, onDragOver, chooseImage } = useImagePaste({ onImages: addImages });
   const onShellDrop = useCallback(
     (e: ReactDragEvent<HTMLElement>) => {
@@ -332,6 +336,7 @@ export function PidComposerScreen() {
           </label>
           <textarea
             id="pid-composer-input"
+            ref={textareaRef}
             className="pid-composer-input"
             placeholder="e.g. 'add a /share button to PostHeader that copies a tracked URL'"
             value={text}

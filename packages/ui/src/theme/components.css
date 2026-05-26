@@ -673,7 +673,8 @@
 .pid-intro-composer textarea {
   width: 100%;
   min-height: 72px;
-  resize: vertical;
+  /* Disable auto-resize: we manually control it */
+  resize: none;
   border: 0;
   background: transparent;
   color: var(--ink-0);

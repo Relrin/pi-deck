@@ -12,6 +12,7 @@ import { PidButton } from "../../components/buttons/PidButton";
 import { X } from "../../components/icons/index.js";
 import { PidKbd } from "../../components/kbd/PidKbd";
 import { Tooltip } from "../../components/ui/Tooltip";
+import { useAutoGrowTextarea } from "../../lib/useAutoGrowTextarea";
 import { useNavStore } from "../../lib/useNavStore";
 import { useToastStore } from "../_status/useToastStore";
 import { ImagePreviewDialog } from "../chat/composer/ImagePreviewDialog";
@@ -42,6 +43,9 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
   const [previewImage, setPreviewImage] = useState<PromptImageDraft | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const dragDepthRef = useRef(0);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useAutoGrowTextarea(textareaRef, text);
   const { onPaste, onDrop, onDragOver } = useImagePaste({ onImages: addImages });
   const onShellDrop = useCallback(
     (e: ReactDragEvent<HTMLElement>) => {
@@ -188,6 +192,7 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
         )}
         <textarea
           id="pid-intro-composer-input"
+          ref={textareaRef}
           placeholder="e.g. 'add a /share button to PostHeader that copies a tracked URL'"
           value={text}
           onChange={(e) => setText(e.target.value)}

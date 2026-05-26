@@ -10,6 +10,7 @@ import {
 } from "react";
 import { Folder, Send, Square, X } from "../../components/icons/index.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
+import { useAutoGrowTextarea } from "../../lib/useAutoGrowTextarea.js";
 import { useToastStore } from "../_status/useToastStore.js";
 import { PidAttachmentsPicker } from "../intro/PidAttachmentsPicker.js";
 import { PidRepoFileSearchDialog } from "../intro/PidRepoFileSearchDialog.js";
@@ -58,6 +59,7 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   const ref = useRef<HTMLTextAreaElement | null>(null);
   const dragDepthRef = useRef(0);
 
+  useAutoGrowTextarea(ref, text);
   const { onPaste, onDrop, onDragOver, chooseImage } = useImagePaste({ onImages: addImages });
 
   const onComposerDrop = useCallback(
@@ -288,7 +290,6 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
           placeholder={PLACEHOLDER}
           aria-label="Message"
           aria-keyshortcuts="Enter"
-          rows={3}
           className="pid-composer-input"
         />
         <div className="pid-composer-row">
