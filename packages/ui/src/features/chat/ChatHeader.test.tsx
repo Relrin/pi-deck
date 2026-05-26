@@ -40,9 +40,9 @@ describe("ChatHeader", () => {
     expect(screen.queryByLabelText("Archive session")).not.toBeInTheDocument();
   });
 
-  test("double-clicking the title swaps in the rename input", () => {
+  test("clicking the title swaps in the rename input", () => {
     render(<ChatHeader session={session} />);
-    fireEvent.doubleClick(screen.getByText("Refactor chat header"));
+    fireEvent.click(screen.getByText("Refactor chat header"));
     expect(screen.getByLabelText("Session title")).toBeInTheDocument();
   });
 
@@ -52,7 +52,7 @@ describe("ChatHeader", () => {
 
     const user = userEvent.setup();
     render(<ChatHeader session={session} />);
-    fireEvent.doubleClick(screen.getByText("Refactor chat header"));
+    fireEvent.click(screen.getByText("Refactor chat header"));
     const input = screen.getByLabelText("Session title") as HTMLInputElement;
     // user.clear + user.type goes through real keyboard events so React state updates
     // flush correctly between keystrokes — the bare fireEvent.change route doesn't

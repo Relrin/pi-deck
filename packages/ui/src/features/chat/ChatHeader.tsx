@@ -45,13 +45,13 @@ export function ChatHeader({ session }: ChatHeaderProps) {
               ariaLabel="Session title"
             />
           ) : (
-            <h2
+            <button
+              type="button"
               className="pid-chat-header-title"
-              title={`${session.title}\nDouble-click to rename`}
-              onDoubleClick={() => setEditing(true)}
+              onClick={() => setEditing(true)}
             >
               {session.title}
-            </h2>
+            </button>
           )}
         </div>
         <div className="pid-chat-header-meta">
