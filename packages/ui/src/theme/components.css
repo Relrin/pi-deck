@@ -681,6 +681,22 @@
   font-family: var(--font-ui);
   font-size: var(--t-14);
   outline: none;
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
+}
+.pid-intro-composer textarea::-webkit-scrollbar {
+  width: 6px;
+}
+.pid-intro-composer textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pid-intro-composer textarea::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 3px;
+}
+.pid-intro-composer textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
 }
 .pid-intro-composer-footer {
   display: flex;
@@ -2101,6 +2117,23 @@
   font-size: 14px;
   line-height: 1.5;
   outline: none;
+  /* Match the chat-body / model-menu scrollbar treatment — a slim track instead of the
+     native chunky widget that appears once the textarea hits its 10-row cap. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
+}
+.pid-composer-input::-webkit-scrollbar {
+  width: 6px;
+}
+.pid-composer-input::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pid-composer-input::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 3px;
+}
+.pid-composer-input::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
 }
 .pid-composer-row {
   display: flex;
