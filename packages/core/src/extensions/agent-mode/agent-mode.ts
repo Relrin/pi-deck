@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type {
+  AgentStartEvent,
+  BeforeAgentStartEvent,
+  BeforeAgentStartEventResult,
   ExtensionAPI,
   ExtensionFactory,
   ToolCallEvent,
@@ -7,6 +10,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import type { AgentMode } from "../../domain/session.js";
 import { decideToolCall } from "./decision.js";
+import { composePlanPrompt } from "./plan-prompt.js";
 
 export const APPROVAL_TIMEOUT_MS = 5 * 60_000;
 
@@ -58,6 +62,12 @@ export interface AgentModeController {
   setEditAllowlist(paths: readonly string[]): void;
   getEditAllowlist(): readonly string[];
   /**
+   * Set the per-session plan file path. The agent is allowed to write/edit this exact path
+   * in plan mode (and the system-prompt section tells it to). Computed by agent-bridge once
+   * pi-ai has assigned the session a real id.
+   */
+  setPlanFilePath(path: string): void;
+  /**
    * Resolve a pending approval. Unknown ids are a no-op so duplicate replies (e.g. from a
    * stale renderer) don't throw.
    */
@@ -95,6 +105,12 @@ export function createAgentModeExtension(options: AgentModeExtensionOptions): Ag
   let mode: AgentMode = options.initialMode ?? "plan";
   let allowlist: string[] =
     options.initialAllowlist !== undefined ? [...options.initialAllowlist] : [options.projectPath];
+  let planFilePath: string | undefined;
+  // Tracks whether the user has flipped TO plan mode while an agent loop is in flight. Reset
+  // on `agent_start` (= once per user prompt). Used to enrich the block reason so the model
+  // sees an explicit "switched mid-turn" cue rather than the generic plan-mode wording.
+  let modeChangedDuringTurn = false;
+  let agentLoopActive = false;
   const pending = new Map<string, PendingEntry>();
 
   function requestApproval(event: ToolCallEvent, reason?: string): Promise<ToolCallEventResult> {
@@ -121,6 +137,26 @@ export function createAgentModeExtension(options: AgentModeExtensionOptions): Ag
   }
 
   const factory: ExtensionFactory = (pi: ExtensionAPI) => {
+    pi.on(
+      "before_agent_start",
+      (_event: BeforeAgentStartEvent): BeforeAgentStartEventResult | undefined => {
+        if (mode !== "plan") return undefined;
+        if (!planFilePath) return undefined;
+        return { systemPrompt: composePlanPrompt(_event.systemPrompt, { planFilePath }) };
+      },
+    );
+
+    pi.on("agent_start", (_event: AgentStartEvent): undefined => {
+      agentLoopActive = true;
+      modeChangedDuringTurn = false;
+      return undefined;
+    });
+
+    pi.on("agent_end", (): undefined => {
+      agentLoopActive = false;
+      return undefined;
+    });
+
     pi.on("tool_call", async (event: ToolCallEvent): Promise<ToolCallEventResult | undefined> => {
       const decision = decideToolCall({
         mode,
@@ -128,12 +164,22 @@ export function createAgentModeExtension(options: AgentModeExtensionOptions): Ag
         input: event.input,
         editAllowlist: allowlist,
         projectPath: options.projectPath,
+        planFilePath,
         mutatingTools: options.mutatingTools,
         shellTools: options.shellTools,
       });
       if (decision.kind === "allow") return undefined;
       if (decision.kind === "block") {
-        return { block: true, reason: decision.reason };
+        // When the user just flipped to plan mode mid-turn, swap the generic block reason for
+        // an explicit "wrap up with a plan instead" cue. pi-ai surfaces `reason` to the model
+        // as a tool-result, so the next LLM step adapts without our touching the conversation.
+        const reason =
+          mode === "plan" && modeChangedDuringTurn
+            ? "The user switched to plan mode mid-turn. Stop executing, do not retry this tool, " +
+              "and wrap up the turn by producing a plan as your final message per the plan-mode " +
+              "instructions."
+            : decision.reason;
+        return { block: true, reason };
       }
       return await requestApproval(event, decision.reason);
     });
@@ -142,7 +188,16 @@ export function createAgentModeExtension(options: AgentModeExtensionOptions): Ag
   return {
     factory,
     setMode(next) {
+      const prev = mode;
       mode = next;
+      // If the user flipped TO plan while an agent loop is currently running, remember it so
+      // the next tool_call block carries the mid-turn cue. Flipping AWAY from plan or flipping
+      // mode between non-plan modes resets the flag.
+      if (agentLoopActive && next === "plan" && prev !== "plan") {
+        modeChangedDuringTurn = true;
+      } else if (next !== "plan") {
+        modeChangedDuringTurn = false;
+      }
     },
     getMode() {
       return mode;
@@ -152,6 +207,9 @@ export function createAgentModeExtension(options: AgentModeExtensionOptions): Ag
     },
     getEditAllowlist() {
       return allowlist;
+    },
+    setPlanFilePath(path) {
+      planFilePath = path;
     },
     resolveApproval(approvalId, decision, reason) {
       const entry = pending.get(approvalId);

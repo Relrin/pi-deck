@@ -168,6 +168,20 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     await ctx.sessionManager.setThinkingLevel(parsed.sessionId, parsed.level);
     return { ok: true as const };
   },
+  "session.setAgentMode": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.setAgentMode"].request.parse(payload);
+    await ctx.sessionManager.setAgentMode(parsed.sessionId, parsed.mode);
+    return { ok: true as const };
+  },
+  "session.approvePlan": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.approvePlan"].request.parse(payload);
+    const result = await ctx.sessionManager.approvePlan(
+      parsed.sessionId,
+      parsed.targetMode,
+      parsed.continuationText,
+    );
+    return { ok: true as const, promptId: result.promptId };
+  },
   "session.toolApproval": async (ctx, payload) => {
     const parsed = CommandSchemas["session.toolApproval"].request.parse(payload);
     await ctx.sessionManager.resolveApproval(

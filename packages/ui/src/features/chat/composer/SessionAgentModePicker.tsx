@@ -7,6 +7,7 @@ import {
   Map as MapIcon,
   ShieldCheck,
 } from "../../../components/icons/index.js";
+import { useSessionsStore } from "../../sessions/useSessionsStore.js";
 import { type ExecutionMode, useComposerStore } from "./useComposerStore.js";
 
 interface ModeEntry {
@@ -35,15 +36,25 @@ const MODES: ModeEntry[] = [
 const FALLBACK: ModeEntry = MODES[0] as ModeEntry;
 
 export function SessionAgentModePicker() {
-  const mode = useComposerStore((s) => s.executionMode);
+  const activeSessionId = useSessionsStore((s) => s.activeSessionId);
+  const mode = useComposerStore((s) => s.getMode(activeSessionId));
   const setMode = useComposerStore((s) => s.setMode);
   const active = MODES.find((m) => m.value === mode) ?? FALLBACK;
   const ActiveIcon = active.Icon;
 
+  // No active session = nothing to gate. Render disabled so the button doesn't dangle as a
+  // tease — the intro composer uses a different mode store (useIntroComposerStore) anyway.
+  const disabled = !activeSessionId;
+
   return (
     <RadixDropdown.Root>
       <RadixDropdown.Trigger asChild>
-        <button type="button" className="pid-picker-trigger" aria-label="Agent mode">
+        <button
+          type="button"
+          className="pid-picker-trigger"
+          aria-label="Agent mode"
+          disabled={disabled}
+        >
           <ActiveIcon size={12} className="pid-picker-trigger-icon" />
           <span className="pid-picker-trigger-label">{active.label}</span>
           <ChevronDown size={10} className="pid-picker-trigger-chev" aria-hidden />
@@ -64,7 +75,10 @@ export function SessionAgentModePicker() {
             return (
               <RadixDropdown.Item
                 key={m.value}
-                onSelect={() => setMode(m.value)}
+                onSelect={() => {
+                  if (!activeSessionId) return;
+                  void setMode(activeSessionId, m.value);
+                }}
                 className="pid-picker-menu-item pid-picker-mode-item"
                 data-active={isActive || undefined}
               >

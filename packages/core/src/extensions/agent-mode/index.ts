@@ -13,4 +13,6 @@ export {
   type DecideOptions,
   decideToolCall,
   isEditPathAllowed,
+  isPlanFileWrite,
 } from "./decision.js";
+export { type ComposePlanPromptOptions, composePlanPrompt } from "./plan-prompt.js";

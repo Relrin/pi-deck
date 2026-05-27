@@ -11,6 +11,7 @@ import { routeEvent } from "../../lib/transport/event-router.js";
 import { ProtocolClient } from "../../lib/transport/protocol-client.js";
 import { type ConnectionStatus, WsClient } from "../../lib/transport/ws-client.js";
 import { useNotificationStore } from "../_status/useNotificationStore.js";
+import { useComposerStore } from "../chat/composer/useComposerStore.js";
 import type { UserMessageImage } from "../chat/types.js";
 import { useMessagesStore } from "../chat/useMessagesStore.js";
 import { useProvidersStore } from "../models/useProvidersStore.js";
@@ -367,6 +368,13 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       // `sendPrompt` instead.
       const projectId = useProjectsStore.getState().activeProjectId;
       if (projectId) useProjectsStore.getState().setLastActiveSession(projectId, id);
+      // Seed the picker from the session's persisted mode so the trigger label is correct
+      // before the user touches it. Absent on legacy records — falls back to the store's
+      // default inside `getMode`.
+      const summary = get().sessions.find((s) => s.id === id);
+      if (summary?.agentMode) {
+        useComposerStore.getState().seed(id, summary.agentMode);
+      }
     } catch (err) {
       useNotificationStore.getState().error(humanizeError(err, "Failed to open session"));
     }

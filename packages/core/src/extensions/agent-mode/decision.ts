@@ -19,6 +19,8 @@ export interface DecideOptions {
   editAllowlist: readonly string[];
   /** Project root, used to resolve relative edit-tool paths to absolute form. */
   projectPath: string;
+  /** Absolute path of the per-session plan file. */
+  planFilePath?: string;
   mutatingTools?: ReadonlySet<string>;
   shellTools?: ReadonlySet<string>;
 }
@@ -32,6 +34,9 @@ export function decideToolCall(opts: DecideOptions): AgentModeDecision {
   const shell = opts.shellTools ?? DEFAULT_SHELL_TOOLS;
 
   if (opts.mode === "plan" && mutating.has(opts.toolName)) {
+    if (isPlanFileWrite(opts.toolName, opts.input, opts.planFilePath, opts.projectPath)) {
+      return { kind: "allow" };
+    }
     return {
       kind: "block",
       reason:
@@ -87,4 +92,23 @@ function extractEditPath(input: unknown): string | undefined {
   if (typeof input !== "object" || input === null) return undefined;
   const candidate = (input as { path?: unknown }).path;
   return typeof candidate === "string" && candidate.length > 0 ? candidate : undefined;
+}
+
+/**
+ * The agent is allowed to write/edit ONE specific file — the per-session
+ * plan file — so it can persist the plan it just produced. Match is exact (after resolving
+ * both sides to absolute form via the same helper used by `isEditPathAllowed`); sibling paths
+ * or backups like `<plan>.bak` are NOT covered.
+ */
+export function isPlanFileWrite(
+  toolName: string,
+  input: unknown,
+  planFilePath: string | undefined,
+  projectPath: string,
+): boolean {
+  if (!planFilePath) return false;
+  if (toolName !== "edit" && toolName !== "write") return false;
+  const target = extractEditPath(input);
+  if (!target) return false;
+  return absolutize(target, projectPath) === absolutize(planFilePath, projectPath);
 }

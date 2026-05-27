@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AgentModeSchema } from "./session.js";
 
 /**
  * Per-session metadata persisted alongside its project. Lets the rail render
@@ -13,6 +14,8 @@ export const SessionMetadataSchema = z.object({
   branch: z.string().optional(),
   /** Pi session file path, captured after the worker reports it. */
   sessionFile: z.string().optional(),
+  /** Last permission mode the user set for this session. Restored on rehydrate. */
+  agentMode: AgentModeSchema.optional(),
 });
 
 export type SessionMetadata = z.infer<typeof SessionMetadataSchema>;

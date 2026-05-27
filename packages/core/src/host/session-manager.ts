@@ -38,7 +38,7 @@ export interface SessionRecord {
   /** Structured model selection, persisted via ProviderManager. */
   modelRef?: SessionModelRef;
   thinkingLevel?: ThinkingLevel;
-  /** Agent permission mode set on the composer; not enforced by the agent loop yet. */
+  /** Agent permission mode set on the composer. */
   agentMode?: AgentMode;
   /** Git branch snapshot taken when the session was created. */
   branch?: string;
@@ -134,6 +134,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
         createdAt: meta.createdAt,
         lastActivityAt: meta.lastActivityAt,
         sessionFile: meta.sessionFile,
+        agentMode: meta.agentMode,
         branch,
         archived: meta.archived,
       });
@@ -367,6 +368,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     if (opts?.agentMode && opts.agentMode !== record.agentMode) {
       record.agentMode = opts.agentMode;
       await worker.request("setAgentMode", { mode: opts.agentMode });
+      void this.patchMetadata(record, { agentMode: opts.agentMode });
     }
 
     if (opts?.attachments) {
@@ -388,6 +390,46 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     record.lastActivityAt = new Date().toISOString();
     void this.patchMetadata(record, { lastActivityAt: record.lastActivityAt });
     return result;
+  }
+
+  /**
+   * Set the session's permission mode without sending a prompt. Persists onto the record
+   * (and metadata) so a restart restores it, and forwards to the live worker when one is
+   * running. Idempotent — setting the same mode is a no-op besides the metadata touch.
+   *
+   * Intentionally does NOT auto-activate the worker. If the session is dormant, the new
+   * mode rides along on the next `activate` via init params (see `record.agentMode`).
+   */
+  async setAgentMode(sessionId: string, mode: AgentMode): Promise<void> {
+    const record = this.sessions.get(sessionId);
+    if (!record) throw new Error(`Unknown session ${sessionId}`);
+    if (record.agentMode === mode) return;
+    record.agentMode = mode;
+    if (record.worker?.isAlive) {
+      await record.worker.request("setAgentMode", { mode });
+    }
+    await this.patchMetadata(record, { agentMode: mode });
+  }
+
+  /**
+   * Approve the current plan: flip the session into an executing mode and immediately send
+   * a continuation prompt. The continuation becomes a real user turn in the transcript so
+   * the transition is visible — no hidden state. Returns the auto-generated promptId so the
+   * renderer can correlate the resulting events.
+   */
+  async approvePlan(
+    sessionId: string,
+    targetMode: Extract<AgentMode, "ask" | "accept-edits">,
+    continuationText?: string,
+  ): Promise<{ promptId: string }> {
+    const record = this.sessions.get(sessionId);
+    if (!record) throw new Error(`Unknown session ${sessionId}`);
+    await this.setAgentMode(sessionId, targetMode);
+    const text =
+      continuationText?.trim() ||
+      "The plan above is approved. Please proceed with execution, updating the plan file by " +
+        "checking off each item as you finish it.";
+    return this.prompt(sessionId, text, { agentMode: targetMode });
   }
 
   /** Resolve a pending tool-call approval requested by the agent-mode plugin. */
@@ -518,6 +560,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
         archived: record.archived,
         branch: record.branch,
         sessionFile: record.sessionFile,
+        agentMode: record.agentMode,
       });
     } catch {
       // Persistence is best-effort; an i/o hiccup must not break the live session.
@@ -532,6 +575,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       archived: boolean;
       branch: string | undefined;
       sessionFile: string | undefined;
+      agentMode: AgentMode | undefined;
     }>,
   ): Promise<void> {
     if (!this.metadataStore) return;

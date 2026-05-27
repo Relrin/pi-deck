@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { join as pathJoin } from "node:path";
 import {
   type AgentSession,
   type AgentSessionEvent,
@@ -165,6 +166,14 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     ...(model ? { model } : {}),
     ...(thinkingLevel ? { thinkingLevel } : {}),
   });
+
+  // Per-session plan file lives under `.pi-deck/plans/<sessionId>.md` inside the project so
+  // concurrent sessions in the same repo don't fight over a single PLAN.md. The factory hooks
+  // capture this lazily, so setting it after `createAgentSession` is fine — no early call to
+  // before_agent_start can race us (the first one fires on the next `session.prompt`).
+  agentModeController.setPlanFilePath(
+    pathJoin(params.projectPath, ".pi-deck", "plans", `${session.sessionId}.md`),
+  );
 
   const unsubscribe = session.subscribe((event: AgentSessionEvent) => {
     forwardEvent(event, emit, session);

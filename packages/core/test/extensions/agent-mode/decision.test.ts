@@ -1,8 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { isAbsolute, join, resolve, sep } from "node:path";
-import { decideToolCall, isEditPathAllowed } from "../../../src/extensions/agent-mode/decision.js";
+import {
+  decideToolCall,
+  isEditPathAllowed,
+  isPlanFileWrite,
+} from "../../../src/extensions/agent-mode/decision.js";
 
 const PROJECT = isAbsolute("/repo") ? "/repo" : resolve("C:\\repo");
+const PLAN_FILE = join(PROJECT, ".pi-deck", "plans", "abc-123.md");
 
 describe("decideToolCall", () => {
   test("plan mode blocks bash/edit/write with a stable reason", () => {
@@ -105,6 +110,51 @@ describe("decideToolCall", () => {
     expect(d.kind).toBe("approve");
   });
 
+  test("plan mode allows write to the exact plan file", () => {
+    for (const toolName of ["write", "edit"]) {
+      const d = decideToolCall({
+        mode: "plan",
+        toolName,
+        input: { path: PLAN_FILE },
+        editAllowlist: [PROJECT],
+        projectPath: PROJECT,
+        planFilePath: PLAN_FILE,
+      });
+      expect(d.kind).toBe("allow");
+    }
+  });
+
+  test("plan mode still blocks writes to sibling paths near the plan file", () => {
+    for (const sibling of [
+      `${PLAN_FILE}.bak`,
+      join(PROJECT, ".pi-deck", "plans", "other.md"),
+      join(PROJECT, ".pi-deck", "plans"),
+      join(PROJECT, "PLAN.md"),
+    ]) {
+      const d = decideToolCall({
+        mode: "plan",
+        toolName: "write",
+        input: { path: sibling },
+        editAllowlist: [PROJECT],
+        projectPath: PROJECT,
+        planFilePath: PLAN_FILE,
+      });
+      expect(d.kind).toBe("block");
+    }
+  });
+
+  test("plan mode still blocks bash even when planFilePath is set", () => {
+    const d = decideToolCall({
+      mode: "plan",
+      toolName: "bash",
+      input: { command: "echo hi >> plan.md" },
+      editAllowlist: [PROJECT],
+      projectPath: PROJECT,
+      planFilePath: PLAN_FILE,
+    });
+    expect(d.kind).toBe("block");
+  });
+
   test("custom mutating-tool set overrides the default", () => {
     const custom = new Set(["dangerous"]);
     const d = decideToolCall({
@@ -160,5 +210,26 @@ describe("isEditPathAllowed", () => {
     const root2 = join(PROJECT, "tests");
     const child = join(PROJECT, "tests", "a.test.ts");
     expect(isEditPathAllowed([root1, root2], child, PROJECT)).toBe(true);
+  });
+});
+
+describe("isPlanFileWrite", () => {
+  test("matches the exact resolved path for write/edit", () => {
+    expect(isPlanFileWrite("write", { path: PLAN_FILE }, PLAN_FILE, PROJECT)).toBe(true);
+    expect(isPlanFileWrite("edit", { path: PLAN_FILE }, PLAN_FILE, PROJECT)).toBe(true);
+  });
+
+  test("rejects non-write/edit tools", () => {
+    expect(isPlanFileWrite("bash", { path: PLAN_FILE }, PLAN_FILE, PROJECT)).toBe(false);
+    expect(isPlanFileWrite("read", { path: PLAN_FILE }, PLAN_FILE, PROJECT)).toBe(false);
+  });
+
+  test("rejects when planFilePath is absent", () => {
+    expect(isPlanFileWrite("write", { path: PLAN_FILE }, undefined, PROJECT)).toBe(false);
+  });
+
+  test("rejects paths that share a prefix but aren't the file", () => {
+    expect(isPlanFileWrite("write", { path: `${PLAN_FILE}.bak` }, PLAN_FILE, PROJECT)).toBe(false);
+    expect(isPlanFileWrite("write", { path: undefined }, PLAN_FILE, PROJECT)).toBe(false);
   });
 });

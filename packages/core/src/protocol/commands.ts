@@ -138,6 +138,37 @@ export const SessionSetThinkingLevelRequest = z.object({
 });
 export const SessionSetThinkingLevelResponse = z.object({ ok: z.literal(true) });
 
+/**
+ * Renderer → host: set the session's permission mode without sending a prompt. Used by the
+ * composer's mode picker so flipping plan/ask/accept-edits has real consequences even when
+ * no turn is in flight. The host persists the new mode and forwards to the live worker.
+ */
+export const SessionSetAgentModeRequest = z.object({
+  sessionId: z.string().min(1),
+  mode: AgentModeSchema,
+});
+export const SessionSetAgentModeResponse = z.object({ ok: z.literal(true) });
+
+/**
+ * Renderer → host: approve the current plan and transition into an executing mode. The host
+ * flips the session's mode to `targetMode`, then immediately issues a continuation prompt so
+ * the agent starts executing the plan. The continuation message becomes a normal user turn in
+ * the transcript — no hidden state.
+ */
+export const SessionApprovePlanRequest = z.object({
+  sessionId: z.string().min(1),
+  /** Mode the session transitions to after approval — typically what the user had selected
+   * before they entered plan mode, or their preferred posture for execution. */
+  targetMode: z.enum(["ask", "accept-edits"]),
+  /** Optional override for the continuation prompt text. */
+  continuationText: z.string().min(1).optional(),
+});
+export const SessionApprovePlanResponse = z.object({
+  ok: z.literal(true),
+  /** Echoed back so the renderer can correlate the auto-sent continuation with its events. */
+  promptId: z.string(),
+});
+
 /** Renderer → host call resolving a `session.tool.approval.requested` event. */
 export const SessionToolApprovalRequest = z.object({
   sessionId: z.string().min(1),
@@ -355,6 +386,14 @@ export const CommandSchemas = {
   "session.setThinkingLevel": {
     request: SessionSetThinkingLevelRequest,
     response: SessionSetThinkingLevelResponse,
+  },
+  "session.setAgentMode": {
+    request: SessionSetAgentModeRequest,
+    response: SessionSetAgentModeResponse,
+  },
+  "session.approvePlan": {
+    request: SessionApprovePlanRequest,
+    response: SessionApprovePlanResponse,
   },
   "session.toolApproval": {
     request: SessionToolApprovalRequest,

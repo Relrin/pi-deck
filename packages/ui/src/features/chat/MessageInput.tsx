@@ -36,7 +36,7 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   const isInFlight = useMessagesStore(useMemo(() => selectTurnInFlight(sessionId), [sessionId]));
   const sendPrompt = useSessionsStore((s) => s.sendPrompt);
   const cancelPrompt = useSessionsStore((s) => s.cancelPrompt);
-  const executionMode = useComposerStore((s) => s.executionMode);
+  const executionMode = useComposerStore((s) => s.getMode(sessionId));
   const pendingInsert = useDraftStore((s) => s.pendingInsert);
   const consumePendingInsert = useDraftStore((s) => s.consumePendingInsert);
 
