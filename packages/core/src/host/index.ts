@@ -1,5 +1,6 @@
 import { PROTOCOL_VERSION } from "../protocol/version.js";
 import { generateToken } from "./auth.js";
+import { FsWatchManager } from "./fs-watch-manager.js";
 import { GitWatchManager } from "./git-watch-manager.js";
 import { MetadataStore } from "./metadata-store.js";
 import { ProviderManager } from "./provider-manager.js";
@@ -66,6 +67,11 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     wsHandle?.broadcast(topic, payload);
   });
 
+  const fsWatchManager = new FsWatchManager(metadataStore);
+  fsWatchManager.on("event", (topic, payload) => {
+    wsHandle?.broadcast(topic, payload);
+  });
+
   const turnTracker = new TurnTracker(sessionManager);
   turnTracker.on("event", (topic, payload) => {
     wsHandle?.broadcast(topic, payload);
@@ -77,6 +83,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     themeManager,
     providerManager,
     gitWatchManager,
+    fsWatchManager,
     turnTracker,
     hostVersion: opts.hostVersion,
     protocolVersion: PROTOCOL_VERSION,
@@ -91,6 +98,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
       sessionManager.shutdown();
       await themeManager.shutdown();
       await gitWatchManager.shutdown();
+      await fsWatchManager.shutdown();
       await wsHandle?.close();
     },
   };

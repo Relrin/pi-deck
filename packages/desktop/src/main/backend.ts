@@ -1,6 +1,7 @@
 import { join } from "node:path";
+import { setTrashImpl } from "@pi-deck/core/fs/index.js";
 import { startHost } from "@pi-deck/core/host/index.js";
-import type { App } from "electron";
+import { type App, shell } from "electron";
 
 export interface BackendHandle {
   port: number;
@@ -9,6 +10,10 @@ export interface BackendHandle {
 }
 
 export async function startBackend(app: App): Promise<BackendHandle> {
+  setTrashImpl(async (absPath) => {
+    await shell.trashItem(absPath);
+  });
+
   const userDataDir = app.getPath("userData");
   // Co-built with main via electron-vite (multi-entry main config), so the worker
   // sits alongside index.mjs under dist/main. Anchor from app.getAppPath() because

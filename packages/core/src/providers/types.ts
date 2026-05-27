@@ -3,7 +3,7 @@ import { SessionModelRefSchema, ThinkingLevelSchema } from "../domain/session.js
 
 /**
  * pi-ai provider slugs we surface natively in the picker for v1. Other ~18 providers pi
- * supports still work via env vars, they just aren't listed here. Plan 006 — Lean v1.
+ * supports still work via env vars, they just aren't listed here.
  */
 export const BUILT_IN_PROVIDER_IDS = [
   "anthropic",

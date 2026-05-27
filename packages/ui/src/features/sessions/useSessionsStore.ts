@@ -366,12 +366,31 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       // Intentionally NOT bumping lastActivityAt: opening an old session should keep its
       // position in the rail until the user actually sends a prompt. The bump happens in
       // `sendPrompt` instead.
-      const projectId = useProjectsStore.getState().activeProjectId;
-      if (projectId) useProjectsStore.getState().setLastActiveSession(projectId, id);
+
+      // Look up the session across every cache the rail may have populated — the active
+      // project's `sessions`, the per-project `sessionsByProject` (rail groups), and the
+      // archived list. Without this lookup, switching to a session in a different project
+      // would leave `activeProjectId` pointing at the OLD workspace, desynchronising the
+      // file tree, git sidebar, branch picker, and composer model defaults.
+      const summary = findSessionAcrossProjects(get(), id);
+      const projectsStore = useProjectsStore.getState();
+      const previousProjectId = projectsStore.activeProjectId;
+      const targetProjectId = summary?.projectId ?? previousProjectId;
+
+      if (targetProjectId && targetProjectId !== previousProjectId) {
+        projectsStore.setActive(targetProjectId);
+        // Refresh the global `sessions` array so the composer + topbar see the new
+        // project's sessions, not the previous one's leftovers. Fire-and-forget: the
+        // session itself is already activated, so we don't need to await for the UI.
+        void get().refreshSessions(targetProjectId);
+      }
+      if (targetProjectId) {
+        useProjectsStore.getState().setLastActiveSession(targetProjectId, id);
+      }
+
       // Seed the picker from the session's persisted mode so the trigger label is correct
       // before the user touches it. Absent on legacy records — falls back to the store's
       // default inside `getMode`.
-      const summary = get().sessions.find((s) => s.id === id);
       if (summary?.agentMode) {
         useComposerStore.getState().seed(id, summary.agentMode);
       }
@@ -459,3 +478,26 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       };
     }),
 }));
+
+/**
+ * Look up a session by id across every cache the rail may have populated. Order matters
+ * slightly: the active-project `sessions` array is freshest (the latest `session.list`
+ * round-trip wrote it), so we check it first; falling back to `sessionsByProject` (where
+ * the rail's lazy per-project loads land), then `archivedSessions`.
+ *
+ * Returns `undefined` if the session isn't in any cache — e.g. a stale id from a project
+ * we haven't loaded yet. The caller treats this as "leave activeProjectId alone" rather
+ * than guessing.
+ */
+function findSessionAcrossProjects(
+  state: SessionsStoreState,
+  sessionId: string,
+): SessionSummary | undefined {
+  const fromActive = state.sessions.find((s) => s.id === sessionId);
+  if (fromActive) return fromActive;
+  for (const list of Object.values(state.sessionsByProject)) {
+    const found = list.find((s) => s.id === sessionId);
+    if (found) return found;
+  }
+  return state.archivedSessions.find((s) => s.id === sessionId);
+}

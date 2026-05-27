@@ -167,10 +167,6 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     ...(thinkingLevel ? { thinkingLevel } : {}),
   });
 
-  // Per-session plan file lives under `.pi-deck/plans/<sessionId>.md` inside the project so
-  // concurrent sessions in the same repo don't fight over a single PLAN.md. The factory hooks
-  // capture this lazily, so setting it after `createAgentSession` is fine — no early call to
-  // before_agent_start can race us (the first one fires on the next `session.prompt`).
   agentModeController.setPlanFilePath(
     pathJoin(params.projectPath, ".pi-deck", "plans", `${session.sessionId}.md`),
   );
@@ -328,7 +324,6 @@ function buildHistorySnapshot(session: AgentSession): HistorySnapshot {
 }
 
 function forwardEvent(event: AgentSessionEvent, emit: EventEmitter, session: AgentSession): void {
-  // Always forward the raw event for debugging and plan-004 renderer use.
   emit("agent.event", event);
 
   // Normalize the most-used events into stable topic shapes.

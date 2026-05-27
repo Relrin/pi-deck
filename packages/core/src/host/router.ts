@@ -1,4 +1,13 @@
 import {
+  FsExistsError,
+  createFile as fsCreateFile,
+  createFolder as fsCreateFolder,
+  rename as fsRename,
+  trashPaths as fsTrashPaths,
+  IllegalNameError,
+  PathEscapeError,
+} from "../fs/index.js";
+import {
   checkoutBranch,
   checkoutPaths,
   createBranch,
@@ -20,6 +29,7 @@ import {
 } from "../git/index.js";
 import { getRecentCommits } from "../git/log.js";
 import { type CommandName, CommandSchemas } from "../protocol/commands.js";
+import type { FsWatchManager } from "./fs-watch-manager.js";
 import type { GitWatchManager } from "./git-watch-manager.js";
 import type { MetadataStore } from "./metadata-store.js";
 import type { ProviderManager } from "./provider-manager.js";
@@ -33,6 +43,7 @@ export interface RouterContext {
   themeManager: ThemeManager;
   providerManager: ProviderManager;
   gitWatchManager: GitWatchManager;
+  fsWatchManager: FsWatchManager;
   turnTracker: TurnTracker;
   hostVersion: string;
   protocolVersion: number;
@@ -73,6 +84,19 @@ function mapGitError(err: unknown): never {
     throw new RouterError("not_a_repo", err.message);
   }
   throw err instanceof Error ? new RouterError("git_failed", err.message) : err;
+}
+
+function mapFsError(err: unknown): never {
+  if (err instanceof PathEscapeError) {
+    throw new RouterError("path_escape", err.message);
+  }
+  if (err instanceof IllegalNameError) {
+    throw new RouterError("illegal_name", err.message);
+  }
+  if (err instanceof FsExistsError) {
+    throw new RouterError("fs_exists", err.message);
+  }
+  throw err instanceof Error ? new RouterError("fs_failed", err.message) : err;
 }
 
 const handlers: { [C in CommandName]: CommandHandler } = {
@@ -462,6 +486,73 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     const parsed = CommandSchemas["provider.clearApiKey"].request.parse(payload);
     ctx.providerManager.clearApiKey(parsed.authJsonKey);
     return { ok: true as const };
+  },
+  "fs.tree": async (ctx, payload) => {
+    const parsed = CommandSchemas["fs.tree"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const snapshot = await ctx.fsWatchManager.getOrLoad(parsed.projectId);
+      return snapshot;
+    } catch (err) {
+      mapFsError(err);
+    }
+  },
+  "fs.createFile": async (ctx, payload) => {
+    const parsed = CommandSchemas["fs.createFile"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const path = await fsCreateFile({
+        projectRoot: project.path,
+        parentDir: parsed.parentDir,
+        name: parsed.name,
+      });
+      return { path };
+    } catch (err) {
+      mapFsError(err);
+    }
+  },
+  "fs.createFolder": async (ctx, payload) => {
+    const parsed = CommandSchemas["fs.createFolder"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const path = await fsCreateFolder({
+        projectRoot: project.path,
+        parentDir: parsed.parentDir,
+        name: parsed.name,
+      });
+      return { path };
+    } catch (err) {
+      mapFsError(err);
+    }
+  },
+  "fs.rename": async (ctx, payload) => {
+    const parsed = CommandSchemas["fs.rename"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const path = await fsRename({
+        projectRoot: project.path,
+        fromPath: parsed.fromPath,
+        toName: parsed.toName,
+      });
+      return { path };
+    } catch (err) {
+      mapFsError(err);
+    }
+  },
+  "fs.delete": async (ctx, payload) => {
+    const parsed = CommandSchemas["fs.delete"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      await fsTrashPaths({ projectRoot: project.path, paths: parsed.paths });
+      return { ok: true as const };
+    } catch (err) {
+      mapFsError(err);
+    }
   },
 };
 

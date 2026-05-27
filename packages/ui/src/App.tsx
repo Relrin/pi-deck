@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { TooltipProvider } from "./components/ui/Tooltip";
 import { NotificationCenter } from "./features/_status/NotificationCenter";
+import { PidFileTree } from "./features/files/PidFileTree";
 import { GitSidebar } from "./features/git/GitSidebar";
 import { useGitStore } from "./features/git/useGitStore";
 import { PidSessionsList } from "./features/sessions/PidSessionsList";
@@ -10,7 +11,6 @@ import { useSessionsStore } from "./features/sessions/useSessionsStore";
 import { PidSettingsView } from "./features/settings/PidSettingsView";
 import { useSettingsHotkey } from "./features/settings/useSettingsHotkey";
 import { ContextTabStub } from "./layout/_stubs/ContextTabStub";
-import { FilesTabStub } from "./layout/_stubs/FilesTabStub";
 import { PidAppShell } from "./layout/PidAppShell";
 import { PidBody } from "./layout/PidBody";
 import { PidCenterRouter } from "./layout/PidCenterRouter";
@@ -58,7 +58,7 @@ export function App() {
           top={<PidTopBar />}
           body={
             <PidBody
-              left={<PidLeftRail sessions={<PidSessionsList />} files={<FilesTabStub />} />}
+              left={<PidLeftRail sessions={<PidSessionsList />} files={<PidFileTree />} />}
               center={<PidCenterRouter />}
               right={
                 <PidRightPane

@@ -12,6 +12,8 @@ import { Folder, Send, Square, X } from "../../components/icons/index.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
 import { useAutoGrowTextarea } from "../../lib/useAutoGrowTextarea.js";
 import { useNotificationStore } from "../_status/useNotificationStore.js";
+import { PIDECK_PATHS_MIME } from "../files/dragDrop.js";
+import { useComposerPathDrop } from "../files/useComposerPathDrop.js";
 import { PidAttachmentsPicker } from "../intro/PidAttachmentsPicker.js";
 import { PidRepoFileSearchDialog } from "../intro/PidRepoFileSearchDialog.js";
 import { useAttachmentsHotkeys } from "../intro/useAttachmentsHotkeys.js";
@@ -61,24 +63,64 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
 
   useAutoGrowTextarea(ref, text);
   const { onPaste, onDrop, onDragOver, chooseImage } = useImagePaste({ onImages: addImages });
+  const pathDrop = useComposerPathDrop({
+    onAttachments: (next) => {
+      addAttachments(next);
+      for (const a of next) pushRecent(a);
+    },
+  });
 
   const onComposerDrop = useCallback(
     (e: DragEvent<HTMLElement>) => {
+      // pideck-paths drag (file-tree → composer) wins over OS-file drop — if our handler
+      // consumed it, don't fall through to the image ingest, which would try (and fail) to
+      // parse path strings as image bytes.
+      if (pathDrop.onDrop(e)) {
+        dragDepthRef.current = 0;
+        setDragOver(false);
+        return;
+      }
       dragDepthRef.current = 0;
       setDragOver(false);
       onDrop(e);
     },
-    [onDrop],
+    [onDrop, pathDrop.onDrop],
   );
-  const onComposerDragEnter = useCallback((e: DragEvent<HTMLElement>) => {
-    if (!e.dataTransfer?.types.includes("Files")) return;
-    dragDepthRef.current += 1;
-    setDragOver(true);
-  }, []);
-  const onComposerDragLeave = useCallback(() => {
-    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
-    if (dragDepthRef.current === 0) setDragOver(false);
-  }, []);
+  const onComposerDragEnter = useCallback(
+    (e: DragEvent<HTMLElement>) => {
+      // Two parallel overlays share a single visual hook — file-tree drag uses
+      // `data-pideck-paths-drag`, OS file drag uses `data-drag-over`. Either is enough to
+      // show "Drop to attach", they just route to different ingest paths on drop.
+      if (e.dataTransfer?.types.includes(PIDECK_PATHS_MIME)) {
+        pathDrop.onDragEnter(e);
+        return;
+      }
+      if (!e.dataTransfer?.types.includes("Files")) return;
+      dragDepthRef.current += 1;
+      setDragOver(true);
+    },
+    [pathDrop.onDragEnter],
+  );
+  const onComposerDragLeave = useCallback(
+    (e: DragEvent<HTMLElement>) => {
+      // The pideck-paths drag tracks its own depth so child elements (chip row, textarea)
+      // don't blink the overlay off. Defer to it when our MIME is present.
+      if (e.dataTransfer?.types.includes(PIDECK_PATHS_MIME)) {
+        pathDrop.onDragLeave(e);
+        return;
+      }
+      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+      if (dragDepthRef.current === 0) setDragOver(false);
+    },
+    [pathDrop.onDragLeave],
+  );
+  const onComposerDragOver = useCallback(
+    (e: DragEvent<HTMLElement>) => {
+      if (pathDrop.onDragOver(e)) return;
+      onDragOver(e);
+    },
+    [onDragOver, pathDrop.onDragOver],
+  );
 
   // "Attach selection to next prompt" pushes through useDraftStore; consume it into the
   // local textarea state so the user can edit before sending.
@@ -232,9 +274,10 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
       <div
         className="pid-composer-shell"
         data-drag-over={dragOver || undefined}
+        data-pideck-paths-drag={pathDrop.dragOver || undefined}
         onDragEnter={onComposerDragEnter}
         onDragLeave={onComposerDragLeave}
-        onDragOver={onDragOver}
+        onDragOver={onComposerDragOver}
         onDrop={onComposerDrop}
       >
         {hasChips && (

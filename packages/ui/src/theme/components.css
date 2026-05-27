@@ -1535,7 +1535,7 @@
   text-align: left;
 }
 
-/* ---------- Modal chrome (plan 006) ---------- */
+/* ---------- Modal chrome ---------- */
 .pid-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1596,7 +1596,7 @@
   overflow: hidden;
 }
 
-/* ---------- Model picker (plan 006) ---------- */
+/* ---------- Model picker ---------- */
 .pid-models-grid {
   display: grid;
   grid-template-columns: 220px 1fr;

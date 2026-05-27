@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "@earendil-works/pi-coding-agent": "0.74.0",
-    "chokidar": "^4.0.3",
+    "chokidar": "5.0.0",
+    "ignore": "7.0.5",
     "tree-kill": "1.2.2",
     "ws": "8.20",
     "zod": "4.3.5"

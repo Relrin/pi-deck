@@ -1,8 +1,10 @@
 import type { ThemeListing, ThemeSpec } from "@pi-deck/core";
 import type { SessionModelRef, ThinkingLevel } from "@pi-deck/core/domain/session.js";
+import type { FsNode } from "@pi-deck/core/fs/types.js";
 import type { GitStatus } from "@pi-deck/core/git/types.js";
 import {
   ContextUsage,
+  EVENT_FS_TREE_CHANGED,
   EVENT_GIT_STATUS_CHANGED,
   EVENT_GIT_TURN_TOUCHES_CHANGED,
   EVENT_HOST_ERROR,
@@ -25,6 +27,7 @@ import { resetHighlighter } from "../../features/chat/messages/code-highlight.js
 import type { MessageEntry, ToolCallEntry } from "../../features/chat/types.js";
 import { useMessagesStore } from "../../features/chat/useMessagesStore.js";
 import { useUsageStore } from "../../features/chat/useUsageStore.js";
+import { useFileTreeStore } from "../../features/files/useFileTreeStore.js";
 import { useGitStore } from "../../features/git/useGitStore.js";
 import { useProvidersStore } from "../../features/models/useProvidersStore.js";
 import { useProjectsStore } from "../../features/sessions/useProjectsStore.js";
@@ -64,6 +67,17 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
       : [];
     if (sessionId) {
       useGitStore.getState().applyTurnTouches(sessionId, paths);
+    }
+    return;
+  }
+  if (topic === EVENT_FS_TREE_CHANGED) {
+    const projectId = typeof payload.projectId === "string" ? payload.projectId : "";
+    const added = Array.isArray(payload.added) ? (payload.added as FsNode[]) : [];
+    const removed = Array.isArray(payload.removed)
+      ? (payload.removed.filter((p) => typeof p === "string") as string[])
+      : [];
+    if (projectId) {
+      useFileTreeStore.getState().applyTreeChanged(projectId, added, removed);
     }
     return;
   }

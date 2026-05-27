@@ -30,9 +30,8 @@ export const SessionSummarySchema = z.object({
   id: z.string().min(1),
   projectId: z.string().uuid(),
   title: z.string().min(1),
-  /** Legacy flat string kept for backwards-compat with plan 003/004 callers. */
   model: z.string().optional(),
-  /** Structured model selection introduced by plan 006. Authoritative when present. */
+  /** Structured model selection. Authoritative when present. */
   modelRef: SessionModelRefSchema.optional(),
   thinkingLevel: ThinkingLevelSchema.optional(),
   /** Agent permission mode picked on the composer; defaults to "plan" when absent. */

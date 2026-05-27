@@ -19,6 +19,8 @@ import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { ImagePreviewDialog } from "../chat/composer/ImagePreviewDialog.js";
 import { useImagePaste } from "../chat/composer/useImagePaste.js";
 import type { UserMessageImage } from "../chat/types.js";
+import { PIDECK_PATHS_MIME } from "../files/dragDrop.js";
+import { useComposerPathDrop } from "../files/useComposerPathDrop.js";
 import { useGitStore } from "../git/useGitStore.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
@@ -58,23 +60,6 @@ export function PidComposerScreen() {
 
   useAutoGrowTextarea(textareaRef, text);
   const { onPaste, onDrop, onDragOver, chooseImage } = useImagePaste({ onImages: addImages });
-  const onShellDrop = useCallback(
-    (e: ReactDragEvent<HTMLElement>) => {
-      dragDepthRef.current = 0;
-      setDragOver(false);
-      onDrop(e);
-    },
-    [onDrop],
-  );
-  const onShellDragEnter = useCallback((e: ReactDragEvent<HTMLElement>) => {
-    if (!e.dataTransfer?.types.includes("Files")) return;
-    dragDepthRef.current += 1;
-    setDragOver(true);
-  }, []);
-  const onShellDragLeave = useCallback(() => {
-    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
-    if (dragDepthRef.current === 0) setDragOver(false);
-  }, []);
 
   const attachAndRemember = useCallback(
     (next: PromptAttachment[]) => {
@@ -83,6 +68,54 @@ export function PidComposerScreen() {
       for (const a of next) pushRecent(a);
     },
     [addAttachments, pushRecent],
+  );
+
+  // pideck-paths drop: file-tree drag dropping onto the intro composer adds the entries
+  // to `attachments`. Independent from the OS-files (image) drop pipeline below.
+  const pathDrop = useComposerPathDrop({ onAttachments: attachAndRemember });
+
+  const onShellDrop = useCallback(
+    (e: ReactDragEvent<HTMLElement>) => {
+      if (pathDrop.onDrop(e)) {
+        dragDepthRef.current = 0;
+        setDragOver(false);
+        return;
+      }
+      dragDepthRef.current = 0;
+      setDragOver(false);
+      onDrop(e);
+    },
+    [onDrop, pathDrop.onDrop],
+  );
+  const onShellDragEnter = useCallback(
+    (e: ReactDragEvent<HTMLElement>) => {
+      if (e.dataTransfer?.types.includes(PIDECK_PATHS_MIME)) {
+        pathDrop.onDragEnter(e);
+        return;
+      }
+      if (!e.dataTransfer?.types.includes("Files")) return;
+      dragDepthRef.current += 1;
+      setDragOver(true);
+    },
+    [pathDrop.onDragEnter],
+  );
+  const onShellDragLeave = useCallback(
+    (e: ReactDragEvent<HTMLElement>) => {
+      if (e.dataTransfer?.types.includes(PIDECK_PATHS_MIME)) {
+        pathDrop.onDragLeave(e);
+        return;
+      }
+      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+      if (dragDepthRef.current === 0) setDragOver(false);
+    },
+    [pathDrop.onDragLeave],
+  );
+  const onShellDragOver = useCallback(
+    (e: ReactDragEvent<HTMLElement>) => {
+      if (pathDrop.onDragOver(e)) return;
+      onDragOver(e);
+    },
+    [onDragOver, pathDrop.onDragOver],
   );
 
   const chooseFiles = useCallback(async () => {
@@ -280,10 +313,11 @@ export function PidComposerScreen() {
         <form
           className="pid-composer-shell"
           data-drag-over={dragOver || undefined}
+          data-pideck-paths-drag={pathDrop.dragOver || undefined}
           onSubmit={onSubmit}
           onDragEnter={onShellDragEnter}
           onDragLeave={onShellDragLeave}
-          onDragOver={onDragOver}
+          onDragOver={onShellDragOver}
           onDrop={onShellDrop}
         >
           {(attachments.length > 0 || images.length > 0) && (

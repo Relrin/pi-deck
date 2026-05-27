@@ -16,8 +16,7 @@ const LABEL_CLASSES =
   "px-3 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-3)]";
 
 /**
- * Bottom-bar selector for the active model + (when supported) the thinking effort. As of
- * plan 006 this is a thin shortcut over the per-session selection in `useProvidersStore`.
+ * Bottom-bar selector for the active model + (when supported) the thinking effort.
  *
  * Built-in providers' models for the active provider are listed inline for fast switches;
  * an "Open model picker…" entry reveals the full two-column picker (same as the header).

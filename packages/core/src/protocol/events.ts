@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SessionModelRefSchema, ThinkingLevelSchema } from "../domain/session.js";
+import { FsNodeSchema } from "../fs/types.js";
 import { GitStatusSchema } from "../git/types.js";
 import { themeListingSchema } from "./theme.js";
 
@@ -20,10 +21,11 @@ export const EVENT_THEME_CHANGED = "theme.changed" as const;
 export const EVENT_PROVIDER_CHANGED = "provider.changed" as const;
 export const EVENT_GIT_STATUS_CHANGED = "git.status.changed" as const;
 export const EVENT_GIT_TURN_TOUCHES_CHANGED = "git.turnTouches.changed" as const;
+export const EVENT_FS_TREE_CHANGED = "fs.tree.changed" as const;
 
 export const SessionMessageDeltaPayload = z.object({
   sessionId: z.string(),
-  /** Raw assistantMessageEvent from pi; renderer extracts text deltas in plan 004. */
+  /** Raw assistantMessageEvent from pi; renderer extracts text deltas. */
   event: z.unknown(),
   /** Full assistant message snapshot, for convenience. */
   message: z.unknown(),
@@ -199,6 +201,18 @@ export const GitTurnTouchesChangedPayload = z.object({
 });
 
 /**
+ * Coalesced filesystem-change delta for a single project. The renderer's file-tree store
+ * applies these to its in-memory tree without re-fetching the whole walk. Renames are
+ * conveyed as (unlink + add) at both endpoints — the watcher doesn't try to detect a
+ * single-op rename because the tree shape doesn't depend on the distinction.
+ */
+export const FsTreeChangedPayload = z.object({
+  projectId: z.string().min(1),
+  added: z.array(FsNodeSchema),
+  removed: z.array(z.string()),
+});
+
+/**
  * Emitted by the agent-mode plugin when a tool call needs explicit user approval. The renderer
  * matches `toolCallId` against the live `session.tool.call.start` row to show an inline pill,
  * then calls `session.toolApproval` with the `approvalId` and the user's decision.
@@ -231,6 +245,7 @@ export const EventSchemas = {
   [EVENT_SESSION_TOOL_APPROVAL_REQUESTED]: SessionToolApprovalRequestedPayload,
   [EVENT_GIT_STATUS_CHANGED]: GitStatusChangedPayload,
   [EVENT_GIT_TURN_TOUCHES_CHANGED]: GitTurnTouchesChangedPayload,
+  [EVENT_FS_TREE_CHANGED]: FsTreeChangedPayload,
 } as const;
 
 export type EventTopic = keyof typeof EventSchemas;

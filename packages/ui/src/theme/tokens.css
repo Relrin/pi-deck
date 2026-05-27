@@ -158,8 +158,7 @@
 
 /* ---------- Compat aliases ----------
    Legacy --color-* / --radius-sm,md / --font-sans / --shadow-panel names used by
-   layout/feature components from plans 000–004. Each alias is removed as the
-   referencing file migrates to the new vocabulary (plans 005b, 006, 007, 008, 012).
+   layout/feature components
 */
 :root {
   --color-bg: var(--bg-0);

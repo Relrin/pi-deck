@@ -30,8 +30,7 @@ export function createWindow(): BrowserWindow {
     title: "pi-deck",
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden",
     // symbolColor matches --ink-0 in the dark theme; light-mode users get a slight contrast
-    // hit on the overlay symbols until nativeTheme updates are wired (out of scope; see
-    // plans/5-theme-plans/005b-app-shell.md).
+    // hit on the overlay symbols until nativeTheme updates are wired
     titleBarOverlay:
       process.platform !== "darwin"
         ? { color: "#00000000", symbolColor: "#e7e9ee", height: 44 }

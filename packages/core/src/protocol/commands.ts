@@ -6,6 +6,7 @@ import {
   SessionSummarySchema,
   ThinkingLevelSchema,
 } from "../domain/session.js";
+import { FsNodeSchema } from "../fs/types.js";
 import {
   GitBranchInfoSchema,
   GitCommitSchema,
@@ -360,6 +361,68 @@ export const ProviderSetApiKeyResponse = z.object({ ok: z.literal(true) });
 export const ProviderClearApiKeyRequest = z.object({ authJsonKey: z.string().min(1) });
 export const ProviderClearApiKeyResponse = z.object({ ok: z.literal(true) });
 
+/**
+ * Filesystem tree walk for the files-tab sidebar. The host walks the project root once on
+ * first request per project and incrementally maintains the cache via the fs watcher;
+ * subsequent calls just return the cached snapshot.
+ */
+export const FsTreeRequest = z.object({ projectId: z.string().uuid() });
+export const FsTreeResponse = z.object({
+  /** Project root absolute path (POSIX-normalised) — useful for the renderer to render
+   * a header label and for path-equality checks. */
+  root: z.string().min(1),
+  /** Top-level children of the project root. Directories carry their own children
+   * recursively; files carry no `children` array. */
+  nodes: z.array(FsNodeSchema),
+});
+
+/**
+ * Create a new empty file at `parentDir/name`. `parentDir` must resolve inside the
+ * project root or the host returns a `path_escape` RouterError.
+ */
+export const FsCreateFileRequest = z.object({
+  projectId: z.string().uuid(),
+  /** Absolute path of the directory that should host the new file. */
+  parentDir: z.string().min(1),
+  /** Basename of the new file. No path separators, null bytes, or reserved names. */
+  name: z.string().min(1),
+});
+export const FsCreateFileResponse = z.object({
+  /** Resolved absolute path (POSIX) of the newly-created file. */
+  path: z.string().min(1),
+});
+
+export const FsCreateFolderRequest = z.object({
+  projectId: z.string().uuid(),
+  parentDir: z.string().min(1),
+  name: z.string().min(1),
+});
+export const FsCreateFolderResponse = z.object({
+  path: z.string().min(1),
+});
+
+export const FsRenameRequest = z.object({
+  projectId: z.string().uuid(),
+  /** Absolute path of the source file or folder. */
+  fromPath: z.string().min(1),
+  /** New basename (parent directory is preserved). */
+  toName: z.string().min(1),
+});
+export const FsRenameResponse = z.object({
+  path: z.string().min(1),
+});
+
+/**
+ * Move the listed paths to the OS trash via Electron's `shell.trashItem`. The operation
+ * is recoverable from the user's trash on every platform — but we still gate it on a
+ * confirmation dialog on the renderer side.
+ */
+export const FsDeleteRequest = z.object({
+  projectId: z.string().uuid(),
+  paths: z.array(z.string().min(1)).min(1),
+});
+export const FsDeleteResponse = z.object({ ok: z.literal(true) });
+
 export const CommandSchemas = {
   ping: { request: PingRequest, response: PingResponse },
   "project.list": { request: ProjectListRequest, response: ProjectListResponse },
@@ -457,6 +520,11 @@ export const CommandSchemas = {
     request: ProviderClearApiKeyRequest,
     response: ProviderClearApiKeyResponse,
   },
+  "fs.tree": { request: FsTreeRequest, response: FsTreeResponse },
+  "fs.createFile": { request: FsCreateFileRequest, response: FsCreateFileResponse },
+  "fs.createFolder": { request: FsCreateFolderRequest, response: FsCreateFolderResponse },
+  "fs.rename": { request: FsRenameRequest, response: FsRenameResponse },
+  "fs.delete": { request: FsDeleteRequest, response: FsDeleteResponse },
 } as const;
 
 export type CommandName = keyof typeof CommandSchemas;
