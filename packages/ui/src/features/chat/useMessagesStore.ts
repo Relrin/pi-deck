@@ -1,6 +1,7 @@
 import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
 import { create } from "zustand";
 import { USER_MESSAGE_DEDUP_WINDOW_MS } from "../../lib/ui-constants.js";
+import { useComposerStore } from "./composer/useComposerStore.js";
 import type {
   AssistantMessageEntry,
   MessageEntry,
@@ -36,6 +37,16 @@ interface MessagesStoreState {
   applyToolCallEnd: (
     sessionId: string,
     p: { callId: string; result: unknown; isError: boolean },
+  ) => void;
+  /**
+   * Attach a pending approval to an existing tool call. Triggered by
+   * `session.tool.approval.requested`. Cleared automatically when `applyToolCallEnd` fires
+   * for the same call — the agent-mode plugin always emits an end event whether the user
+   * allowed or denied.
+   */
+  applyToolApprovalRequested: (
+    sessionId: string,
+    p: { callId: string; approvalId: string; reason?: string },
   ) => void;
   endTurn: (sessionId: string, cancelled: boolean | undefined) => void;
   markTurnInFlight: (sessionId: string, value: boolean) => void;
@@ -120,7 +131,7 @@ function findAssistantByTimestamp(messages: MessageEntry[], ts: number | undefin
   return -1;
 }
 
-function newAssistant(now: number): AssistantMessageEntry {
+function newAssistant(now: number, sessionId: string): AssistantMessageEntry {
   return {
     kind: "assistant",
     id: `a-${now}-${Math.random().toString(36).slice(2, 8)}`,
@@ -128,6 +139,11 @@ function newAssistant(now: number): AssistantMessageEntry {
     isComplete: false,
     toolCallIds: [],
     createdAt: now,
+    // Stamp the agent mode active when this bubble was created. The renderer uses this
+    // (plus a GFM-checkbox presence check) to swap the default `Markdown` renderer for a
+    // `PlanCard` with Approve / Revise affordances. Read via `.getState()` so we don't pin
+    // the composer store's value at module load time — the user can flip mode mid-turn.
+    agentModeAtTurn: useComposerStore.getState().getMode(sessionId),
   };
 }
 
@@ -246,7 +262,7 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
           model: snapshotModel ?? current.model,
         };
       } else {
-        const fresh = newAssistant(Date.now());
+        const fresh = newAssistant(Date.now(), sessionId);
         fresh.remoteTimestamp = remoteTimestamp;
         fresh.text = snapshotText;
         // Prefer the model from the snapshot; otherwise carry the last known model forward
@@ -288,7 +304,7 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
         // text delta arrived. Carry the previous turn's model so this continuation row
         // doesn't fall back to the generic "pi" label. `appendAssistantDelta` will
         // overwrite `model` from the snapshot once pi emits the first text delta.
-        current = newAssistant(Date.now());
+        current = newAssistant(Date.now(), sessionId);
         current.model = lastKnownAssistantModel(messages);
         messages.push(current);
         idx = messages.length - 1;
@@ -352,7 +368,45 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
             ...session,
             toolCalls: {
               ...session.toolCalls,
-              [callId]: { ...existing, result, status, errorText, endedAt: Date.now() },
+              [callId]: {
+                ...existing,
+                result,
+                status,
+                errorText,
+                endedAt: Date.now(),
+                // Clear any pending approval — whether the user allowed or denied, this end
+                // event is the authoritative resolution. The pill should collapse back to a
+                // standard "done"/"error" status row.
+                pendingApproval: undefined,
+              },
+            },
+          },
+        },
+      };
+    }),
+
+  applyToolApprovalRequested: (sessionId, { callId, approvalId, reason }) =>
+    set((state) => {
+      const session = state.bySession[sessionId];
+      if (!session) return state;
+      const existing = session.toolCalls[callId];
+      // A late approval event for a call we no longer know about — the user may have already
+      // cancelled the turn. Drop silently; the server-side timeout will clean up.
+      if (!existing) return state;
+      // Idempotent: re-emitting the same approval (replay) shouldn't shuffle state.
+      if (existing.pendingApproval?.approvalId === approvalId) return state;
+      return {
+        bySession: {
+          ...state.bySession,
+          [sessionId]: {
+            ...session,
+            toolCalls: {
+              ...session.toolCalls,
+              [callId]: {
+                ...existing,
+                status: "pending",
+                pendingApproval: { approvalId, ...(reason ? { reason } : {}) },
+              },
             },
           },
         },
@@ -459,4 +513,22 @@ export function selectToolCall(sessionId: string | undefined, callId: string) {
 export function selectTurnInFlight(sessionId: string | undefined) {
   return (state: MessagesStoreState): boolean =>
     sessionId ? (state.bySession[sessionId]?.isTurnInFlight ?? false) : false;
+}
+
+/**
+ * Identify the most recent assistant message in a session. Used by `PlanCard` to hide its
+ * Approve/Revise footer on stale plans — once a newer assistant turn lands, the prior plan
+ * shouldn't be re-approvable.
+ */
+export function selectLatestAssistantId(sessionId: string | undefined) {
+  return (state: MessagesStoreState): string | undefined => {
+    if (!sessionId) return undefined;
+    const msgs = state.bySession[sessionId]?.messages;
+    if (!msgs) return undefined;
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const m = msgs[i];
+      if (m && m.kind === "assistant") return m.id;
+    }
+    return undefined;
+  };
 }

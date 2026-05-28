@@ -1,11 +1,13 @@
 import { useMemo } from "react";
 import { useProvidersStore } from "../../models/useProvidersStore.js";
+import { useComposerStore } from "../composer/useComposerStore.js";
 import { ToolCallCard } from "../tools/ToolCallCard.js";
 import type { AssistantMessageEntry } from "../types.js";
-import { useMessagesStore } from "../useMessagesStore.js";
+import { selectLatestAssistantId, useMessagesStore } from "../useMessagesStore.js";
 import { Markdown } from "./Markdown.js";
 import { MessageContextMenu } from "./MessageContextMenu.js";
 import { MessageSurface } from "./MessageSurface.js";
+import { isPlanShapedMessage, PlanCard } from "./PlanCard.js";
 import { StreamingStatus } from "./StreamingStatus.js";
 import { formatMessageTime } from "./time.js";
 
@@ -32,6 +34,20 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
     return stripProviderPrefix(message.model);
   }, [message.model, modelsByProvider]);
 
+  // Plan-shape detection. Two inputs feed it:
+  // 1. `agentModeAtTurn` — stamped on bubble creation for fresh turns.
+  // 2. `sessionAgentMode` — fallback for resumed sessions where the stamp is missing because
+  //    pi's sessionFile doesn't carry per-turn mode metadata.
+  const sessionAgentMode = useComposerStore((s) => s.getMode(sessionId));
+  const isPlan = isPlanShapedMessage(message, sessionAgentMode);
+  // The Approve / Revise footer only renders on the most recent assistant turn. Stale plans
+  // (i.e. ones with a later assistant turn after them) keep the card chrome but drop the
+  // footer so users can't re-approve work that has already moved on.
+  const latestAssistantId = useMessagesStore(
+    useMemo(() => selectLatestAssistantId(sessionId), [sessionId]),
+  );
+  const isLatestAssistant = latestAssistantId === message.id;
+
   return (
     <MessageSurface
       kind="agent"
@@ -41,19 +57,32 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
     >
       <MessageContextMenu rawText={message.text}>
         <div className="select-text" data-selectable-message data-message-raw={message.text}>
-          {message.text && (
-            <div
-              role="status"
-              aria-live={message.isComplete ? undefined : "polite"}
-              aria-atomic="false"
-            >
-              <Markdown text={message.text} isComplete={message.isComplete} />
-            </div>
-          )}
+          {message.text &&
+            (isPlan ? (
+              <div
+                role="status"
+                aria-live={message.isComplete ? undefined : "polite"}
+                aria-atomic="false"
+              >
+                <PlanCard
+                  message={message}
+                  sessionId={sessionId}
+                  isLatest={isLatestAssistant && message.isComplete}
+                />
+              </div>
+            ) : (
+              <div
+                role="status"
+                aria-live={message.isComplete ? undefined : "polite"}
+                aria-atomic="false"
+              >
+                <Markdown text={message.text} isComplete={message.isComplete} />
+              </div>
+            ))}
           {message.toolCallIds.map((callId) => {
             const call = toolCalls?.[callId];
             if (!call) return null;
-            return <ToolCallCard key={callId} call={call} />;
+            return <ToolCallCard key={callId} call={call} sessionId={sessionId} />;
           })}
           {!message.isComplete && (
             <StreamingStatus

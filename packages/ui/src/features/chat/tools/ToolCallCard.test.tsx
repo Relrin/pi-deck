@@ -16,24 +16,29 @@ function call(overrides: Partial<ToolCallEntry> = {}): ToolCallEntry {
 
 describe("ToolCallCard", () => {
   test("collapsed by default for done status", () => {
-    render(<ToolCallCard call={call({ status: "done" })} />);
+    render(<ToolCallCard sessionId="s-test" call={call({ status: "done" })} />);
     const toggle = screen.getByRole("button", { expanded: false });
     expect(toggle).toBeInTheDocument();
   });
 
   test("collapsed by default for running status", () => {
-    render(<ToolCallCard call={call({ status: "running" })} />);
+    render(<ToolCallCard sessionId="s-test" call={call({ status: "running" })} />);
     expect(screen.getByRole("button", { expanded: false })).toBeInTheDocument();
   });
 
   test("collapsed by default for error status; the error text stays visible in the stat column", () => {
-    render(<ToolCallCard call={call({ status: "error", errorText: "permission denied" })} />);
+    render(
+      <ToolCallCard
+        sessionId="s-test"
+        call={call({ status: "error", errorText: "permission denied" })}
+      />,
+    );
     expect(screen.getByRole("button", { expanded: false })).toBeInTheDocument();
     expect(screen.getByText("permission denied")).toBeInTheDocument();
   });
 
   test("clicking the header toggles expanded state", () => {
-    render(<ToolCallCard call={call({ status: "done" })} />);
+    render(<ToolCallCard sessionId="s-test" call={call({ status: "done" })} />);
     const toggle = screen.getByRole("button", { expanded: false });
     fireEvent.click(toggle);
     expect(screen.getByRole("button", { expanded: true })).toBeInTheDocument();
@@ -42,6 +47,7 @@ describe("ToolCallCard", () => {
   test("summary text appears next to the name and carries a full-string title", () => {
     render(
       <ToolCallCard
+        sessionId="s-test"
         call={call({
           name: "bash",
           input: {
@@ -62,7 +68,10 @@ describe("ToolCallCard", () => {
   // call's `startedAt`, not the component's mount time.
   test("old calls remount without the highlight ring", () => {
     const { container } = render(
-      <ToolCallCard call={call({ status: "done", startedAt: Date.now() - 10_000 })} />,
+      <ToolCallCard
+        sessionId="s-test"
+        call={call({ status: "done", startedAt: Date.now() - 10_000 })}
+      />,
     );
     const row = container.querySelector(".pid-tool-row") as HTMLElement | null;
     expect(row).not.toBeNull();
@@ -72,7 +81,7 @@ describe("ToolCallCard", () => {
 
   test("freshly started calls do flash the highlight ring", () => {
     const { container } = render(
-      <ToolCallCard call={call({ status: "running", startedAt: Date.now() })} />,
+      <ToolCallCard sessionId="s-test" call={call({ status: "running", startedAt: Date.now() })} />,
     );
     const row = container.querySelector(".pid-tool-row") as HTMLElement | null;
     expect(row?.style.borderColor).toContain("accent");
@@ -85,7 +94,7 @@ describe("ToolCallCard", () => {
   // re-render via the expand toggle and then assert the eventual cleared state.
   test("highlight clears after the window even when the card re-renders mid-window", async () => {
     const { container } = render(
-      <ToolCallCard call={call({ status: "running", startedAt: Date.now() })} />,
+      <ToolCallCard sessionId="s-test" call={call({ status: "running", startedAt: Date.now() })} />,
     );
     const row = container.querySelector(".pid-tool-row") as HTMLElement | null;
     expect(row?.style.borderColor).toContain("accent");

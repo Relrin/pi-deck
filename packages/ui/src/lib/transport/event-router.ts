@@ -8,11 +8,13 @@ import {
   EVENT_GIT_STATUS_CHANGED,
   EVENT_GIT_TURN_TOUCHES_CHANGED,
   EVENT_HOST_ERROR,
+  EVENT_PLAN_FILE_CHANGED,
   EVENT_PROVIDER_CHANGED,
   EVENT_SESSION_AGENT_EVENT,
   EVENT_SESSION_HISTORY_LOADED,
   EVENT_SESSION_MESSAGE_DELTA,
   EVENT_SESSION_MODEL_CHANGED,
+  EVENT_SESSION_TOOL_APPROVAL_REQUESTED,
   EVENT_SESSION_TOOL_CALL_END,
   EVENT_SESSION_TOOL_CALL_START,
   EVENT_SESSION_TOOL_CALL_UPDATE,
@@ -30,6 +32,7 @@ import { useUsageStore } from "../../features/chat/useUsageStore.js";
 import { useFileTreeStore } from "../../features/files/useFileTreeStore.js";
 import { useGitStore } from "../../features/git/useGitStore.js";
 import { useProvidersStore } from "../../features/models/useProvidersStore.js";
+import { usePlanStore } from "../../features/plan-panel/usePlanStore.js";
 import { useProjectsStore } from "../../features/sessions/useProjectsStore.js";
 import { useSessionsStore } from "../../features/sessions/useSessionsStore.js";
 import { useThemeStore } from "../../theme/useThemeStore.js";
@@ -78,6 +81,22 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
       : [];
     if (projectId) {
       useFileTreeStore.getState().applyTreeChanged(projectId, added, removed);
+    }
+    return;
+  }
+  if (topic === EVENT_PLAN_FILE_CHANGED) {
+    const sid = typeof payload.sessionId === "string" ? payload.sessionId : "";
+    const path = typeof payload.path === "string" ? payload.path : "";
+    // `content` is intentionally nullable — the host emits `null` when the file is missing
+    // (e.g. just after an external delete or before the agent's first plan-mode write).
+    const content =
+      typeof payload.content === "string"
+        ? payload.content
+        : payload.content === null
+          ? null
+          : undefined;
+    if (sid && path && content !== undefined) {
+      usePlanStore.getState().applyPlanFileChanged(sid, path, content);
     }
     return;
   }
@@ -177,6 +196,21 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
       if (event?.type === "prompt_error") {
         useNotificationStore.getState().error(event.message ?? "pi reported a prompt error");
         useMessagesStore.getState().markTurnInFlight(sessionId, false);
+      }
+      return;
+    }
+    case EVENT_SESSION_TOOL_APPROVAL_REQUESTED: {
+      // The agent-mode plugin emits this when a mutating tool needs the user's nod (e.g. in
+      // `ask` mode, or `accept-edits` for a path outside the allowlist). We attach the pending
+      // approval to the existing tool-call entry so `<ApprovalPill>` can render inline on the
+      // tool-call card without a separate store.
+      const approvalId = typeof payload.approvalId === "string" ? payload.approvalId : "";
+      const callId = typeof payload.toolCallId === "string" ? payload.toolCallId : "";
+      const reason = typeof payload.reason === "string" ? payload.reason : undefined;
+      if (approvalId && callId) {
+        useMessagesStore
+          .getState()
+          .applyToolApprovalRequested(sessionId, { callId, approvalId, reason });
       }
       return;
     }

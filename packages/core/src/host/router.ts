@@ -32,6 +32,7 @@ import { type CommandName, CommandSchemas } from "../protocol/commands.js";
 import type { FsWatchManager } from "./fs-watch-manager.js";
 import type { GitWatchManager } from "./git-watch-manager.js";
 import type { MetadataStore } from "./metadata-store.js";
+import { PlanFileWatcher } from "./plan-file-watcher.js";
 import type { ProviderManager } from "./provider-manager.js";
 import type { SessionManager, SessionRecord } from "./session-manager.js";
 import type { ThemeManager } from "./themes/index.js";
@@ -44,6 +45,7 @@ export interface RouterContext {
   providerManager: ProviderManager;
   gitWatchManager: GitWatchManager;
   fsWatchManager: FsWatchManager;
+  planFileWatcher: PlanFileWatcher;
   turnTracker: TurnTracker;
   hostVersion: string;
   protocolVersion: number;
@@ -135,12 +137,18 @@ const handlers: { [C in CommandName]: CommandHandler } = {
   "session.activate": async (ctx, payload) => {
     const parsed = CommandSchemas["session.activate"].request.parse(payload);
     await ctx.sessionManager.activate(parsed.sessionId);
+    // Start streaming plan-file changes for this session. The watcher emits the current
+    // content (or null) immediately so a PlanPanel opened later sees state without an extra
+    // `plan.file.read` round-trip. Idempotent — repeated activations don't double-watch.
+    const record = ctx.sessionManager.get(parsed.sessionId);
+    if (record) ctx.planFileWatcher.ensure(parsed.sessionId, record.projectPath);
     return { ok: true as const };
   },
   "session.deactivate": async (ctx, payload) => {
     const parsed = CommandSchemas["session.deactivate"].request.parse(payload);
     await ctx.sessionManager.deactivate(parsed.sessionId);
     ctx.turnTracker.forget(parsed.sessionId);
+    await ctx.planFileWatcher.stop(parsed.sessionId);
     return { ok: true as const };
   },
   "session.prompt": async (ctx, payload) => {
@@ -171,6 +179,7 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     const parsed = CommandSchemas["session.delete"].request.parse(payload);
     await ctx.sessionManager.delete(parsed.sessionId);
     ctx.turnTracker.forget(parsed.sessionId);
+    await ctx.planFileWatcher.stop(parsed.sessionId);
     return { ok: true as const };
   },
   "session.rename": async (ctx, payload) => {
@@ -215,6 +224,18 @@ const handlers: { [C in CommandName]: CommandHandler } = {
       parsed.reason,
     );
     return { ok: true as const };
+  },
+  "plan.file.read": async (ctx, payload) => {
+    const parsed = CommandSchemas["plan.file.read"].request.parse(payload);
+    const record = ctx.sessionManager.get(parsed.sessionId);
+    if (!record) throw new RouterError("not_found", `Session ${parsed.sessionId} not found`);
+    const absPath = PlanFileWatcher.planFilePath(record.projectPath, parsed.sessionId);
+    const content = await PlanFileWatcher.readPlanFile(absPath);
+    // Start (or refresh) the watcher so subsequent edits stream to the renderer. Idempotent.
+    ctx.planFileWatcher.ensure(parsed.sessionId, record.projectPath);
+    // Re-derive POSIX path so the response shape matches `plan.file.changed` events.
+    const posixPath = absPath.split(/[\\/]/).join("/");
+    return { path: posixPath, content };
   },
   "project.listFiles": async (ctx, payload) => {
     const parsed = CommandSchemas["project.listFiles"].request.parse(payload);

@@ -1,6 +1,19 @@
+import type { AgentMode } from "@pi-deck/core/domain/session.js";
 import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
 
 export type ToolCallStatus = "pending" | "running" | "done" | "error" | "cancelled";
+
+/**
+ * Inline approval surfaced on a tool-call card when the agent-mode plugin needs the user's
+ * decision before letting the tool run. Set when `session.tool.approval.requested` arrives
+ * for this call; cleared when the matching `session.tool.call.end` fires (or when the user
+ * clicks Allow/Deny on the inline pill).
+ */
+export interface PendingToolApproval {
+  approvalId: string;
+  /** Optional hint from the plugin (e.g. "Edit target outside the auto-approve allowlist."). */
+  reason?: string;
+}
 
 /**
  * Per-image record attached to a user message in history. We keep only the small
@@ -25,6 +38,7 @@ export interface ToolCallEntry {
   errorText?: string;
   startedAt: number;
   endedAt?: number;
+  pendingApproval?: PendingToolApproval;
 }
 
 export interface UserMessageEntry {
@@ -53,6 +67,15 @@ export interface AssistantMessageEntry {
    * users switch models mid-session.
    */
   model?: string;
+  /**
+   * Agent mode the session was in when this assistant turn began. Stamped once on bubble
+   * creation so the UI can branch — most importantly, plan-shaped detection: an assistant
+   * message rendered as a `PlanCard` requires `agentModeAtTurn === "plan"` plus a GFM
+   * checkbox in the body. Persisted in `loadHistory` would be ideal but pi's saved
+   * sessionFile doesn't carry the mode per turn; on resume `agentModeAtTurn` is left
+   * undefined and detection falls through to the default Markdown renderer.
+   */
+  agentModeAtTurn?: AgentMode;
 }
 
 export type MessageEntry = UserMessageEntry | AssistantMessageEntry;

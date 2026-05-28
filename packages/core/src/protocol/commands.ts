@@ -179,6 +179,19 @@ export const SessionToolApprovalRequest = z.object({
 });
 export const SessionToolApprovalResponse = z.object({ ok: z.literal(true) });
 
+/**
+ * Renderer → host: read the current content of a session's plan file. Used by `PlanPanel`
+ * on first mount (or when the user reopens it after a restart) before the `plan.file.changed`
+ * stream catches up. The host also lazily starts the file watcher when this is first called,
+ * so the panel begins receiving live updates immediately afterward.
+ */
+export const PlanFileReadRequest = z.object({ sessionId: z.string().min(1) });
+export const PlanFileReadResponse = z.object({
+  path: z.string().min(1),
+  /** Markdown content, or `null` when the file does not exist yet. */
+  content: z.string().nullable(),
+});
+
 export const GitListBranchesRequest = z.object({ projectId: z.string().uuid() });
 export const GitListBranchesResponse = z.object({
   branches: z.array(GitBranchInfoSchema),
@@ -462,6 +475,7 @@ export const CommandSchemas = {
     request: SessionToolApprovalRequest,
     response: SessionToolApprovalResponse,
   },
+  "plan.file.read": { request: PlanFileReadRequest, response: PlanFileReadResponse },
   "git.listBranches": {
     request: GitListBranchesRequest,
     response: GitListBranchesResponse,

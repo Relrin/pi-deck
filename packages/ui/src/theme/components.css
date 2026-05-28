@@ -4504,3 +4504,270 @@
 .pid-spin {
   animation: pid-spin 0.9s linear infinite;
 }
+
+/* ─── Plan mode UI ────────────────────────────────────────────────────────────
+ * Custom GFM-checkbox rendering used by `CheckboxItem` / `TaskListItem`, shared by
+ * the inline `PlanCard` (in the chat transcript) and the right-rail `PlanPanel`.
+ * Icons are real Lucide squares with a quick transition so flipping a `- [ ]` to
+ * `- [x]` during execution looks like the agent stamping the item done. */
+
+.pid-plan-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  margin-left: -2px;
+  color: var(--ink-2);
+  vertical-align: -2px;
+  transition:
+    color 240ms ease,
+    transform 240ms ease;
+}
+
+.pid-plan-checkbox-checked {
+  color: var(--accent);
+  transform: scale(1.05);
+}
+
+.pid-plan-checkbox-indeterminate {
+  color: var(--accent);
+}
+
+.pid-plan-task-item {
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  padding-left: 0;
+  color: var(--ink-0);
+}
+
+.pid-plan-task-item-checked {
+  color: var(--ink-2);
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-3);
+  text-decoration-thickness: 1px;
+  opacity: 0.75;
+}
+
+/* Inline plan card — wraps a plan-shaped assistant message. */
+.pid-plan-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg-1);
+  padding: 14px 16px;
+  margin: 6px 0;
+}
+
+.pid-plan-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+}
+
+.pid-plan-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.pid-plan-card-footer-hint {
+  flex: 1;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+/* Approve & execute primary button — accent-coloured to match the destination action. */
+.pid-plan-approve {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--bg-0);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+/* No distinct hover token in the design system — the accent itself stays put on hover and
+ * we shift the foreground subtly to signal pressability. */
+.pid-plan-approve:hover {
+  filter: brightness(1.05);
+}
+
+.pid-plan-approve:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Secondary "select mode" pill next to the primary Approve button. Deliberately styled the
+ * same as the composer's agent-mode picker so the affordance reads as a *setting*, not an
+ * action — the action lives on the accent-coloured Approve button to its right. */
+.pid-plan-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-0);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pid-plan-mode-pill:hover:not(:disabled) {
+  background: var(--bg-2);
+}
+
+.pid-plan-mode-pill:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Mode-target popover triggered from Approve & execute. Mirrors `.pid-picker-menu`'s look
+ * so the user gets a consistent overlay across the composer pickers and this approval. */
+.pid-plan-approve-popover {
+  min-width: 220px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.pid-plan-approve-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--ink-0);
+  font-size: 12px;
+}
+
+.pid-plan-approve-popover-item:hover,
+.pid-plan-approve-popover-item[data-highlighted] {
+  background: var(--bg-2);
+  outline: none;
+}
+
+.pid-plan-approve-popover-item[data-active] {
+  color: var(--accent);
+}
+
+.pid-plan-approve-popover-blurb {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-2);
+  margin-top: 1px;
+}
+
+/* Right-rail plan panel surface. Stays edge-to-edge inside the right pane body. */
+.pid-plan-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.pid-plan-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.pid-plan-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+}
+
+.pid-plan-panel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 8px;
+  padding: 24px;
+  font-size: 12px;
+  color: var(--ink-2);
+  text-align: center;
+}
+
+/* ApprovalPill — inline allow/deny on a tool-call card while in `ask` mode. */
+.pid-approval-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--ink-1);
+}
+
+.pid-approval-pill-reason {
+  color: var(--ink-2);
+  margin-right: 4px;
+}
+
+.pid-approval-pill-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--ink-0);
+}
+
+.pid-approval-pill-action[data-variant="allow"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pid-approval-pill-action[data-variant="allow"]:hover {
+  background: var(--bg-1);
+}
+
+.pid-approval-pill-action[data-variant="deny"] {
+  border-color: var(--line);
+}
+
+.pid-approval-pill-action[data-variant="deny"]:hover {
+  background: var(--bg-1);
+}
+
+.pid-approval-pill-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

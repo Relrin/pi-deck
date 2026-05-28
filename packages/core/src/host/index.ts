@@ -3,6 +3,7 @@ import { generateToken } from "./auth.js";
 import { FsWatchManager } from "./fs-watch-manager.js";
 import { GitWatchManager } from "./git-watch-manager.js";
 import { MetadataStore } from "./metadata-store.js";
+import { PlanFileWatcher } from "./plan-file-watcher.js";
 import { ProviderManager } from "./provider-manager.js";
 import type { RouterContext } from "./router.js";
 import { SessionManager } from "./session-manager.js";
@@ -72,6 +73,11 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     wsHandle?.broadcast(topic, payload);
   });
 
+  const planFileWatcher = new PlanFileWatcher();
+  planFileWatcher.on("event", (topic, payload) => {
+    wsHandle?.broadcast(topic, payload);
+  });
+
   const turnTracker = new TurnTracker(sessionManager);
   turnTracker.on("event", (topic, payload) => {
     wsHandle?.broadcast(topic, payload);
@@ -84,6 +90,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     providerManager,
     gitWatchManager,
     fsWatchManager,
+    planFileWatcher,
     turnTracker,
     hostVersion: opts.hostVersion,
     protocolVersion: PROTOCOL_VERSION,
@@ -99,6 +106,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
       await themeManager.shutdown();
       await gitWatchManager.shutdown();
       await fsWatchManager.shutdown();
+      await planFileWatcher.shutdown();
       await wsHandle?.close();
     },
   };

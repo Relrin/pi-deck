@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, test } from "bun:test";
+import { useComposerStore } from "./composer/useComposerStore";
 import { useMessagesStore } from "./useMessagesStore";
 
 const SID = "session-1";
 
 function reset() {
   useMessagesStore.setState({ bySession: {} });
+  useComposerStore.setState({ bySession: {} });
 }
 
 describe("useMessagesStore — user message dedup", () => {
@@ -125,6 +127,27 @@ describe("useMessagesStore — assistant deltas", () => {
     expect(assistants).toHaveLength(2);
     if (assistants[1]?.kind !== "assistant") throw new Error("not assistant");
     expect(assistants[1].text).toBe("second turn");
+  });
+
+  test("stamps agentModeAtTurn from the composer store at bubble creation", () => {
+    // Composer flipped to plan mode before the agent's first delta arrives.
+    useComposerStore.setState({ bySession: { [SID]: "plan" } });
+    useMessagesStore.getState().appendAssistantDelta(SID, {}, delta("- [ ] step", 100));
+    const msgs = useMessagesStore.getState().bySession[SID]?.messages ?? [];
+    if (msgs[0]?.kind !== "assistant") throw new Error("not assistant");
+    expect(msgs[0].agentModeAtTurn).toBe("plan");
+  });
+
+  test("stamps agentModeAtTurn on a tool-call-first turn (no text delta yet)", () => {
+    useComposerStore.setState({ bySession: { [SID]: "ask" } });
+    useMessagesStore.getState().applyToolCallStart(SID, {
+      callId: "t-1",
+      name: "read",
+      input: { path: "/repo/x.ts" },
+    });
+    const msgs = useMessagesStore.getState().bySession[SID]?.messages ?? [];
+    if (msgs[0]?.kind !== "assistant") throw new Error("not assistant");
+    expect(msgs[0].agentModeAtTurn).toBe("ask");
   });
 });
 

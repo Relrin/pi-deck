@@ -6,6 +6,12 @@ import type {
 import type { ThemeListing, ThemeSpec } from "@pi-deck/core/protocol/theme.js";
 import type { WsClient } from "./ws-client.js";
 
+/** Decisions the renderer can return from an inline `<ApprovalPill>`. */
+export type ToolApprovalDecision = "allow" | "deny";
+
+/** Modes a session can transition to when a plan is approved. */
+export type ApprovePlanTargetMode = "ask" | "accept-edits";
+
 export class ProtocolClient {
   constructor(private readonly ws: WsClient) {}
 
@@ -15,6 +21,41 @@ export class ProtocolClient {
 
   ping(): Promise<CommandResponse<"ping">> {
     return this.call("ping", {});
+  }
+
+  /**
+   * Resolve a `session.tool.approval.requested` event. Wraps `session.toolApproval` so the
+   * `<ApprovalPill>` doesn't have to know about the underlying RPC name.
+   */
+  toolApproval(
+    sessionId: string,
+    approvalId: string,
+    decision: ToolApprovalDecision,
+    reason?: string,
+  ): Promise<CommandResponse<"session.toolApproval">> {
+    return this.call("session.toolApproval", { sessionId, approvalId, decision, reason });
+  }
+
+  /**
+   * Approve the current plan and flip the session into an executing mode. The host immediately
+   * sends a continuation prompt — the renderer renders the resulting turn through the usual
+   * `session.user.message` + `session.message.delta` flow, no special-case wiring needed.
+   */
+  approvePlan(
+    sessionId: string,
+    targetMode: ApprovePlanTargetMode,
+    continuationText?: string,
+  ): Promise<CommandResponse<"session.approvePlan">> {
+    return this.call("session.approvePlan", { sessionId, targetMode, continuationText });
+  }
+
+  /**
+   * Fetch the current contents of a session's plan file. Also starts the host-side watcher
+   * so subsequent edits stream via `plan.file.changed`. Returns `null` content when the file
+   * doesn't exist yet (e.g. before the agent's first plan-mode turn).
+   */
+  planFileRead(sessionId: string): Promise<CommandResponse<"plan.file.read">> {
+    return this.call("plan.file.read", { sessionId });
   }
 
   themes = {

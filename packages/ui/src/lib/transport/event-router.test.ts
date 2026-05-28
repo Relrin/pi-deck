@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import {
   EVENT_HOST_ERROR,
+  EVENT_PLAN_FILE_CHANGED,
   EVENT_SESSION_AGENT_EVENT,
   EVENT_SESSION_MESSAGE_DELTA,
+  EVENT_SESSION_TOOL_APPROVAL_REQUESTED,
   EVENT_SESSION_TOOL_CALL_END,
   EVENT_SESSION_TOOL_CALL_START,
   EVENT_SESSION_TOOL_CALL_UPDATE,
@@ -13,6 +15,7 @@ import {
 import { useNotificationStore } from "../../features/_status/useNotificationStore";
 import { useMessagesStore } from "../../features/chat/useMessagesStore";
 import { useUsageStore } from "../../features/chat/useUsageStore";
+import { usePlanStore } from "../../features/plan-panel/usePlanStore";
 import { routeEvent } from "./event-router";
 
 const SID = "session-x";
@@ -21,6 +24,7 @@ beforeEach(() => {
   useMessagesStore.setState({ bySession: {} });
   useNotificationStore.setState({ notifications: [] });
   useUsageStore.setState({ bySession: {} });
+  usePlanStore.setState({ bySession: {} });
 });
 
 describe("routeEvent — routing", () => {
@@ -132,5 +136,74 @@ describe("routeEvent — routing", () => {
     routeEvent("totally.made.up.topic", { sessionId: SID });
     expect(useMessagesStore.getState().bySession).toEqual({});
     expect(useNotificationStore.getState().notifications).toEqual([]);
+  });
+
+  test("plan.file.changed lands in usePlanStore for the right session", () => {
+    routeEvent(EVENT_PLAN_FILE_CHANGED, {
+      sessionId: SID,
+      path: "/repo/.pi-deck/plans/session-x.md",
+      content: "## Plan\n- [ ] step",
+    });
+    const s = usePlanStore.getState().bySession[SID];
+    expect(s?.filePath).toBe("/repo/.pi-deck/plans/session-x.md");
+    expect(s?.fileContent).toContain("step");
+    expect(s?.panelOpen).toBe(true);
+  });
+
+  test("plan.file.changed with null content (file missing) clears the panel auto-open", () => {
+    routeEvent(EVENT_PLAN_FILE_CHANGED, {
+      sessionId: SID,
+      path: "/repo/.pi-deck/plans/session-x.md",
+      content: null,
+    });
+    const s = usePlanStore.getState().bySession[SID];
+    expect(s?.fileContent).toBeNull();
+    expect(s?.panelOpen).toBe(false);
+  });
+
+  test("session.tool.approval.requested attaches pendingApproval to the existing tool call", () => {
+    routeEvent(EVENT_SESSION_TOOL_CALL_START, {
+      sessionId: SID,
+      callId: "t-1",
+      name: "write",
+      input: { path: "/etc/passwd" },
+    });
+    routeEvent(EVENT_SESSION_TOOL_APPROVAL_REQUESTED, {
+      sessionId: SID,
+      approvalId: "appr-1",
+      toolCallId: "t-1",
+      toolName: "write",
+      input: { path: "/etc/passwd" },
+      reason: "Outside allowlist",
+    });
+    const call = useMessagesStore.getState().bySession[SID]?.toolCalls["t-1"];
+    expect(call?.pendingApproval?.approvalId).toBe("appr-1");
+    expect(call?.pendingApproval?.reason).toBe("Outside allowlist");
+    expect(call?.status).toBe("pending");
+  });
+
+  test("session.tool.call.end clears pendingApproval (whether allowed or denied)", () => {
+    routeEvent(EVENT_SESSION_TOOL_CALL_START, {
+      sessionId: SID,
+      callId: "t-1",
+      name: "write",
+      input: { path: "/repo/foo.ts" },
+    });
+    routeEvent(EVENT_SESSION_TOOL_APPROVAL_REQUESTED, {
+      sessionId: SID,
+      approvalId: "appr-1",
+      toolCallId: "t-1",
+      toolName: "write",
+      input: { path: "/repo/foo.ts" },
+    });
+    routeEvent(EVENT_SESSION_TOOL_CALL_END, {
+      sessionId: SID,
+      callId: "t-1",
+      result: { ok: true },
+      isError: false,
+    });
+    const call = useMessagesStore.getState().bySession[SID]?.toolCalls["t-1"];
+    expect(call?.pendingApproval).toBeUndefined();
+    expect(call?.status).toBe("done");
   });
 });

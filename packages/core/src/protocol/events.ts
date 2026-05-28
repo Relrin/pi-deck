@@ -21,6 +21,7 @@ export const EVENT_THEME_CHANGED = "theme.changed" as const;
 export const EVENT_PROVIDER_CHANGED = "provider.changed" as const;
 export const EVENT_GIT_STATUS_CHANGED = "git.status.changed" as const;
 export const EVENT_GIT_TURN_TOUCHES_CHANGED = "git.turnTouches.changed" as const;
+export const EVENT_PLAN_FILE_CHANGED = "plan.file.changed" as const;
 export const EVENT_FS_TREE_CHANGED = "fs.tree.changed" as const;
 
 export const SessionMessageDeltaPayload = z.object({
@@ -213,6 +214,24 @@ export const FsTreeChangedPayload = z.object({
 });
 
 /**
+ * Plan-mode produces a per-session plan markdown at `${projectPath}/.pi-deck/plans/<id>.md`.
+ * A dedicated host-side watcher reads the file on every add/change/unlink and pushes the
+ * new content to the renderer so the PlanPanel updates within ~500ms — including when the
+ * agent rewrites the file in place (the general fs.tree watcher ignores content-only
+ * changes) or when the user edits it in an external editor.
+ *
+ * `content` is `null` when the file does not exist (e.g. just before the agent's first
+ * write, or right after an external delete).
+ */
+export const PlanFileChangedPayload = z.object({
+  sessionId: z.string().min(1),
+  /** Absolute, POSIX-normalised path of the plan file. */
+  path: z.string().min(1),
+  /** Markdown content, or `null` when the file is missing. */
+  content: z.string().nullable(),
+});
+
+/**
  * Emitted by the agent-mode plugin when a tool call needs explicit user approval. The renderer
  * matches `toolCallId` against the live `session.tool.call.start` row to show an inline pill,
  * then calls `session.toolApproval` with the `approvalId` and the user's decision.
@@ -246,6 +265,7 @@ export const EventSchemas = {
   [EVENT_GIT_STATUS_CHANGED]: GitStatusChangedPayload,
   [EVENT_GIT_TURN_TOUCHES_CHANGED]: GitTurnTouchesChangedPayload,
   [EVENT_FS_TREE_CHANGED]: FsTreeChangedPayload,
+  [EVENT_PLAN_FILE_CHANGED]: PlanFileChangedPayload,
 } as const;
 
 export type EventTopic = keyof typeof EventSchemas;

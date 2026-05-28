@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight } from "../../../components/icons/index.js";
 import { cn } from "../../../lib/cn.js";
 import { TOOL_CARD_HIGHLIGHT_MS } from "../../../lib/ui-constants.js";
 import type { ToolCallEntry } from "../types.js";
+import { ApprovalPill } from "./ApprovalPill.js";
 import { DefaultRenderer } from "./renderers/DefaultRenderer.js";
 import { StatusIcon } from "./StatusIcon.js";
 import { getRenderer, getSummarizer } from "./ToolRendererRegistry.js";
@@ -15,7 +16,7 @@ function statusStat(call: ToolCallEntry): { text: string; tone: "ok" | "error" }
   return undefined;
 }
 
-export function ToolCallCard({ call }: { call: ToolCallEntry }) {
+export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; sessionId: string }) {
   // Always start collapsed — the header row already shows tool name, summary, and
   // status (incl. error text in the stat column). Users click to open the detail panel.
   const [expanded, setExpanded] = useState(false);
@@ -91,6 +92,14 @@ export function ToolCallCard({ call }: { call: ToolCallEntry }) {
         <div id={`tool-call-body-${call.id}`} className="pid-tool-row-detail">
           <Renderer call={call} />
         </div>
+      )}
+      {call.pendingApproval && (
+        <ApprovalPill
+          sessionId={sessionId}
+          callId={call.id}
+          approvalId={call.pendingApproval.approvalId}
+          reason={call.pendingApproval.reason}
+        />
       )}
     </div>
   );

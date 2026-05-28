@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "../../../lib/cn.js";
+import { CheckboxItem, TaskListItem } from "../markdown/CheckboxItem.js";
 import { highlight } from "./code-highlight.js";
 
 interface MarkdownProps {
@@ -49,11 +50,39 @@ export function Markdown({ text, isComplete }: MarkdownProps) {
           p({ children }) {
             return <p className="my-1.5 leading-relaxed">{children}</p>;
           },
-          ul({ children }) {
-            return <ul className="list-disc pl-5 my-1.5 space-y-0.5">{children}</ul>;
+          ul({ children, className }) {
+            // GFM task lists arrive with className "contains-task-list" — strip the disc so
+            // the row layout reads as a checklist rather than a bulleted list.
+            const isTaskList = (className ?? "").includes("contains-task-list");
+            return (
+              <ul
+                className={cn(
+                  "pl-5 my-1.5 space-y-0.5",
+                  isTaskList ? "list-none pl-0 space-y-1" : "list-disc",
+                )}
+              >
+                {children}
+              </ul>
+            );
           },
           ol({ children }) {
             return <ol className="list-decimal pl-5 my-1.5 space-y-0.5">{children}</ol>;
+          },
+          li({ children, className }) {
+            // remark-gfm tags task list items with `className="task-list-item"`. Reroute
+            // those to our wrapper so we get the strikethrough treatment when checked.
+            if ((className ?? "").includes("task-list-item")) {
+              return <TaskListItem className={className}>{children}</TaskListItem>;
+            }
+            return <li className={className}>{children}</li>;
+          },
+          input({ type, checked, disabled, ...rest }) {
+            // Non-checkbox inputs are not expected in assistant text, but we let them
+            // through unchanged just in case (e.g. if a user pastes raw HTML).
+            if (type === "checkbox") {
+              return <CheckboxItem checked={checked} />;
+            }
+            return <input type={type} checked={checked} disabled={disabled} {...rest} />;
           },
           h1: ({ children }) => <h1 className="text-lg font-semibold mt-3 mb-1">{children}</h1>,
           h2: ({ children }) => <h2 className="text-base font-semibold mt-3 mb-1">{children}</h2>,

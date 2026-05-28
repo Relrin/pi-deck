@@ -53,6 +53,7 @@ export {
   Sparkles,
   Square,
   SquareCheck,
+  SquareMinus,
   Star,
   Terminal,
   Trash2,
