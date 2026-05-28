@@ -29,6 +29,7 @@ import {
 } from "../git/index.js";
 import { getRecentCommits } from "../git/log.js";
 import { type CommandName, CommandSchemas } from "../protocol/commands.js";
+import type { ArtefactsTracker } from "./artefacts-tracker.js";
 import type { FsWatchManager } from "./fs-watch-manager.js";
 import type { GitWatchManager } from "./git-watch-manager.js";
 import type { MetadataStore } from "./metadata-store.js";
@@ -47,6 +48,7 @@ export interface RouterContext {
   fsWatchManager: FsWatchManager;
   planFileWatcher: PlanFileWatcher;
   turnTracker: TurnTracker;
+  artefactsTracker: ArtefactsTracker;
   hostVersion: string;
   protocolVersion: number;
 }
@@ -148,6 +150,7 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     const parsed = CommandSchemas["session.deactivate"].request.parse(payload);
     await ctx.sessionManager.deactivate(parsed.sessionId);
     ctx.turnTracker.forget(parsed.sessionId);
+    ctx.artefactsTracker.forget(parsed.sessionId);
     await ctx.planFileWatcher.stop(parsed.sessionId);
     return { ok: true as const };
   },
@@ -179,6 +182,7 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     const parsed = CommandSchemas["session.delete"].request.parse(payload);
     await ctx.sessionManager.delete(parsed.sessionId);
     ctx.turnTracker.forget(parsed.sessionId);
+    ctx.artefactsTracker.forget(parsed.sessionId);
     await ctx.planFileWatcher.stop(parsed.sessionId);
     return { ok: true as const };
   },
@@ -461,6 +465,10 @@ const handlers: { [C in CommandName]: CommandHandler } = {
   "git.turnTouches": async (ctx, payload) => {
     const parsed = CommandSchemas["git.turnTouches"].request.parse(payload);
     return ctx.turnTracker.getFor(parsed.sessionId);
+  },
+  "session.artefacts.list": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.artefacts.list"].request.parse(payload);
+    return { artefacts: ctx.artefactsTracker.list(parsed.sessionId) };
   },
   "theme.list": async (ctx) => ({
     activeName: ctx.themeManager.getActiveName(),

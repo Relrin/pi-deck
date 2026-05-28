@@ -21,6 +21,7 @@ export const EVENT_THEME_CHANGED = "theme.changed" as const;
 export const EVENT_PROVIDER_CHANGED = "provider.changed" as const;
 export const EVENT_GIT_STATUS_CHANGED = "git.status.changed" as const;
 export const EVENT_GIT_TURN_TOUCHES_CHANGED = "git.turnTouches.changed" as const;
+export const EVENT_SESSION_ARTEFACTS_CHANGED = "session.artefacts.changed" as const;
 export const EVENT_PLAN_FILE_CHANGED = "plan.file.changed" as const;
 export const EVENT_FS_TREE_CHANGED = "fs.tree.changed" as const;
 
@@ -214,6 +215,26 @@ export const FsTreeChangedPayload = z.object({
 });
 
 /**
+ * Per-session "artefacts produced" snapshot. Pushed whenever a successful file-creating tool
+ * call materialises a *new* file on disk. The renderer's Context tab consumes this directly —
+ * existing files that the agent edits aren't artefacts and aren't included here.
+ *
+ * `path` is the OS-native absolute path captured at creation time; the renderer normalises to
+ * POSIX for display. `sizeBytes` is taken via `fs.stat` immediately after the call completes
+ * and isn't re-checked afterwards — artefacts represent a moment, not a live file handle.
+ */
+export const SessionArtefactsChangedPayload = z.object({
+  sessionId: z.string().min(1),
+  artefacts: z.array(
+    z.object({
+      path: z.string().min(1),
+      sizeBytes: z.number().int().nonnegative(),
+      createdAt: z.number().int().nonnegative(),
+    }),
+  ),
+});
+
+/**
  * Plan-mode produces a per-session plan markdown at `${projectPath}/.pi-deck/plans/<id>.md`.
  * A dedicated host-side watcher reads the file on every add/change/unlink and pushes the
  * new content to the renderer so the PlanPanel updates within ~500ms — including when the
@@ -264,6 +285,7 @@ export const EventSchemas = {
   [EVENT_SESSION_TOOL_APPROVAL_REQUESTED]: SessionToolApprovalRequestedPayload,
   [EVENT_GIT_STATUS_CHANGED]: GitStatusChangedPayload,
   [EVENT_GIT_TURN_TOUCHES_CHANGED]: GitTurnTouchesChangedPayload,
+  [EVENT_SESSION_ARTEFACTS_CHANGED]: SessionArtefactsChangedPayload,
   [EVENT_FS_TREE_CHANGED]: FsTreeChangedPayload,
   [EVENT_PLAN_FILE_CHANGED]: PlanFileChangedPayload,
 } as const;

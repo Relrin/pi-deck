@@ -11,6 +11,7 @@ import {
   EVENT_PLAN_FILE_CHANGED,
   EVENT_PROVIDER_CHANGED,
   EVENT_SESSION_AGENT_EVENT,
+  EVENT_SESSION_ARTEFACTS_CHANGED,
   EVENT_SESSION_HISTORY_LOADED,
   EVENT_SESSION_MESSAGE_DELTA,
   EVENT_SESSION_MODEL_CHANGED,
@@ -29,6 +30,10 @@ import { resetHighlighter } from "../../features/chat/messages/code-highlight.js
 import type { MessageEntry, ToolCallEntry } from "../../features/chat/types.js";
 import { useMessagesStore } from "../../features/chat/useMessagesStore.js";
 import { useUsageStore } from "../../features/chat/useUsageStore.js";
+import {
+  type ArtefactRecord,
+  useArtefactsStore,
+} from "../../features/context/useArtefactsStore.js";
 import { useFileTreeStore } from "../../features/files/useFileTreeStore.js";
 import { useGitStore } from "../../features/git/useGitStore.js";
 import { useProvidersStore } from "../../features/models/useProvidersStore.js";
@@ -70,6 +75,16 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
       : [];
     if (sessionId) {
       useGitStore.getState().applyTurnTouches(sessionId, paths);
+    }
+    return;
+  }
+  if (topic === EVENT_SESSION_ARTEFACTS_CHANGED) {
+    const sessionId = typeof payload.sessionId === "string" ? payload.sessionId : "";
+    const artefacts = Array.isArray(payload.artefacts)
+      ? (payload.artefacts.filter(isArtefactRecord) as ArtefactRecord[])
+      : [];
+    if (sessionId) {
+      useArtefactsStore.getState().setForSession(sessionId, artefacts);
     }
     return;
   }
@@ -242,6 +257,14 @@ async function handleThemeChanged(payload: Payload): Promise<void> {
   }
   useThemeStore.getState().applySpec(activeName, spec, themes);
   resetHighlighter();
+}
+
+function isArtefactRecord(value: unknown): value is ArtefactRecord {
+  if (!value || typeof value !== "object") return false;
+  const r = value as Record<string, unknown>;
+  return (
+    typeof r.path === "string" && typeof r.sizeBytes === "number" && typeof r.createdAt === "number"
+  );
 }
 
 // Debounce so a rapid sequence of turn.end events (multiple sessions, fast retries) collapses

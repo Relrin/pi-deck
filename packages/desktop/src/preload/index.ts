@@ -37,6 +37,9 @@ contextBridge.exposeInMainWorld("bridge", {
     ipcRenderer.invoke("bridge:openFile", opts),
   openFiles: (opts?: OpenFileOptions): Promise<string[]> =>
     ipcRenderer.invoke("bridge:openFiles", opts),
+  openPath: (path: string): Promise<string> => ipcRenderer.invoke("bridge:openPath", path),
+  showItemInFolder: (path: string): Promise<void> =>
+    ipcRenderer.invoke("bridge:showItemInFolder", path),
   readImage: (path: string): Promise<ReadImageResult> =>
     ipcRenderer.invoke("bridge:readImage", path),
 });

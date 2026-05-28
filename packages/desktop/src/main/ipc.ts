@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import type { FileFilter } from "electron";
-import { BrowserWindow, dialog, ipcMain } from "electron";
+import { BrowserWindow, dialog, ipcMain, shell } from "electron";
 
 export interface BridgeInfo {
   url: string;
@@ -63,6 +63,23 @@ export function registerBridgeIpc(info: BridgeInfo): void {
       : await dialog.showOpenDialog(options);
     if (result.canceled || result.filePaths.length === 0) return [];
     return result.filePaths;
+  });
+  // Open the given path with the OS's default application. Used by the Context tab to "open
+  // file" affordances. Returns the error string from Electron (empty string on success) so the
+  // caller can decide whether to surface it as a notification.
+  ipcMain.handle("bridge:openPath", async (_event, path: string): Promise<string> => {
+    if (typeof path !== "string" || path.length === 0) {
+      throw new Error("openPath: path is required");
+    }
+    return shell.openPath(path);
+  });
+  // Reveal the given file in the OS file manager (Explorer / Finder / xdg). Silent on success.
+  // Falls back gracefully if the file no longer exists — `showItemInFolder` is a no-op then.
+  ipcMain.handle("bridge:showItemInFolder", async (_event, path: string): Promise<void> => {
+    if (typeof path !== "string" || path.length === 0) {
+      throw new Error("showItemInFolder: path is required");
+    }
+    shell.showItemInFolder(path);
   });
   // Read an image file from disk and ship it back as base64. Only used by the composer's
   // "Attach image…" picker — the renderer is sandboxed so it can't `fs.readFile` directly.

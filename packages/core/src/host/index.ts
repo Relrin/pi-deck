@@ -1,4 +1,5 @@
 import { PROTOCOL_VERSION } from "../protocol/version.js";
+import { ArtefactsTracker } from "./artefacts-tracker.js";
 import { generateToken } from "./auth.js";
 import { FsWatchManager } from "./fs-watch-manager.js";
 import { GitWatchManager } from "./git-watch-manager.js";
@@ -83,6 +84,11 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     wsHandle?.broadcast(topic, payload);
   });
 
+  const artefactsTracker = new ArtefactsTracker(sessionManager);
+  artefactsTracker.on("event", (topic, payload) => {
+    wsHandle?.broadcast(topic, payload);
+  });
+
   const router: RouterContext = {
     metadataStore,
     sessionManager,
@@ -92,6 +98,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     fsWatchManager,
     planFileWatcher,
     turnTracker,
+    artefactsTracker,
     hostVersion: opts.hostVersion,
     protocolVersion: PROTOCOL_VERSION,
   };

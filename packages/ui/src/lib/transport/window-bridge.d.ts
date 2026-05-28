@@ -19,6 +19,14 @@ declare global {
       openDirectory?: () => Promise<string | undefined>;
       openFile?: (opts?: BridgeOpenFileOptions) => Promise<string | undefined>;
       openFiles?: (opts?: BridgeOpenFileOptions) => Promise<string[]>;
+      /**
+       * Open the file or folder at `path` with the OS's default application. Resolves with an
+       * empty string on success, or an Electron-provided error string on failure (we surface it
+       * as a notification rather than throwing).
+       */
+      openPath?: (path: string) => Promise<string>;
+      /** Reveal `path` in the OS file manager (Explorer / Finder / xdg-open --select). */
+      showItemInFolder?: (path: string) => Promise<void>;
       readImage?: (path: string) => Promise<BridgeReadImageResult>;
     };
     appVersion?: string;

@@ -16,6 +16,7 @@ export {
   Copy,
   CornerDownLeft,
   Edit3,
+  ExternalLink,
   File,
   FilePlus,
   Files,

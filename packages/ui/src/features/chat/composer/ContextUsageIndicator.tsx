@@ -1,6 +1,10 @@
-import type { ContextUsage } from "@pi-deck/core/protocol/events.js";
 import * as RadixTooltip from "@radix-ui/react-tooltip";
 import { useMemo } from "react";
+import {
+  type ContextBreakdown,
+  computeContextBreakdown,
+  formatTokens,
+} from "../../context/contextBreakdown.js";
 import { selectMessages, useMessagesStore } from "../useMessagesStore.js";
 import { selectSessionUsage, useUsageStore } from "../useUsageStore.js";
 
@@ -25,7 +29,7 @@ export function ContextUsageIndicator({ sessionId }: ContextUsageIndicatorProps)
   const messages = useMessagesStore(selectMessages(sessionId));
 
   const breakdown = useMemo(
-    () => computeBreakdown(usage?.context, messages),
+    () => computeContextBreakdown(usage?.context, messages),
     [usage?.context, messages],
   );
 
@@ -59,56 +63,6 @@ export function ContextUsageIndicator({ sessionId }: ContextUsageIndicatorProps)
       </RadixTooltip.Portal>
     </RadixTooltip.Root>
   );
-}
-
-interface Breakdown {
-  used: number;
-  contextWindow: number;
-  messages: number;
-  systemPrompt: number;
-  tools: number;
-  free: number;
-}
-
-const DEFAULT_CONTEXT_WINDOW = 200_000;
-const SYSTEM_PROMPT_FLOOR = 1_500; // ballpark — pi's base prompt + envelopes.
-const TOOLS_FLOOR = 4_500; // ballpark — pi's built-in tool definitions.
-
-function computeBreakdown(
-  ctx: ContextUsage | undefined,
-  messages: ReadonlyArray<{ kind: string; text?: string }>,
-): Breakdown {
-  const messagesTokens = estimateMessagesTokens(messages);
-  const contextWindow = ctx?.contextWindow ?? DEFAULT_CONTEXT_WINDOW;
-  const used =
-    typeof ctx?.tokens === "number" && ctx.tokens > 0
-      ? ctx.tokens
-      : messagesTokens + SYSTEM_PROMPT_FLOOR + TOOLS_FLOOR;
-
-  // Slice the aggregate by category: messages dominates; the rest is split between system
-  // prompt + tools using the floor constants, with any leftover staying in "tools".
-  const messagesBucket = Math.min(messagesTokens, used);
-  const remainder = Math.max(0, used - messagesBucket);
-  const systemPrompt = Math.min(SYSTEM_PROMPT_FLOOR, remainder);
-  const tools = Math.max(0, remainder - systemPrompt);
-  const free = Math.max(0, contextWindow - used);
-
-  return {
-    used,
-    contextWindow,
-    messages: messagesBucket,
-    systemPrompt,
-    tools,
-    free,
-  };
-}
-
-function estimateMessagesTokens(messages: ReadonlyArray<{ text?: string }>): number {
-  let chars = 0;
-  for (const m of messages) {
-    if (typeof m.text === "string") chars += m.text.length;
-  }
-  return Math.ceil(chars / 4);
 }
 
 function Ring({ percent, active }: { percent: number; active: boolean }) {
@@ -151,7 +105,7 @@ function Ring({ percent, active }: { percent: number; active: boolean }) {
   );
 }
 
-function BreakdownCard({ breakdown, percent }: { breakdown: Breakdown; percent: number }) {
+function BreakdownCard({ breakdown, percent }: { breakdown: ContextBreakdown; percent: number }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between">
@@ -204,10 +158,4 @@ function Row({
       </span>
     </div>
   );
-}
-
-function formatTokens(n: number): string {
-  if (n >= 10_000) return `${(n / 1000).toFixed(1)}k`;
-  if (n >= 1_000) return `${(n / 1000).toFixed(2)}k`;
-  return String(n);
 }

@@ -327,6 +327,22 @@ export const GitTurnTouchesResponse = z.object({
   turnSeq: z.number().int().nonnegative(),
 });
 
+/**
+ * Snapshot fetch for the Context tab's "Artefacts produced" section. The renderer also
+ * receives live updates via `session.artefacts.changed` events; this command is only used to
+ * prime the store when the tab is opened mid-session.
+ */
+export const SessionArtefactsListRequest = z.object({ sessionId: z.string().min(1) });
+export const SessionArtefactsListResponse = z.object({
+  artefacts: z.array(
+    z.object({
+      path: z.string().min(1),
+      sizeBytes: z.number().int().nonnegative(),
+      createdAt: z.number().int().nonnegative(),
+    }),
+  ),
+});
+
 export const ThemeListRequest = z.object({}).strict();
 export const ThemeListResponse = z.object({
   activeName: z.string(),
@@ -514,6 +530,10 @@ export const CommandSchemas = {
   "git.turnTouches": {
     request: GitTurnTouchesRequest,
     response: GitTurnTouchesResponse,
+  },
+  "session.artefacts.list": {
+    request: SessionArtefactsListRequest,
+    response: SessionArtefactsListResponse,
   },
   "theme.list": { request: ThemeListRequest, response: ThemeListResponse },
   "theme.get": { request: ThemeGetRequest, response: ThemeGetResponse },

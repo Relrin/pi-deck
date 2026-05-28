@@ -658,6 +658,12 @@
   text-transform: uppercase;
   pointer-events: none;
 }
+.pid-rightpane-placeholder {
+  padding: 16px 14px;
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-3);
+}
 
 /* ---------- Tab stubs (Files / Git placeholders) ---------- */
 .pid-tab-stub {
@@ -673,4 +679,169 @@
   color: var(--ink-3);
   text-align: center;
   padding: 24px;
+}
+
+/* ---------- Context tab ---------- */
+.pid-context-pane {
+  display: flex;
+  flex-direction: column;
+}
+.pid-context-section {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.pid-context-section:last-child {
+  border-bottom: none;
+}
+.pid-context-section-label {
+  margin-bottom: 8px;
+}
+.pid-context-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.pid-context-window-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.pid-context-window-percent {
+  font-family: var(--font-display, var(--font-ui));
+  font-size: 32px;
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.pid-context-window-percent.is-idle {
+  color: var(--ink-3);
+}
+.pid-context-window-totals {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+}
+.pid-context-bar {
+  display: flex;
+  height: 14px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--bg-3);
+}
+.pid-context-bar-segment {
+  height: 100%;
+  display: block;
+  transition: width 200ms ease;
+}
+/* Segment palette — each maps to a single existing token so themes pick the right hue when
+ * users switch palettes. `free` stays the bar background so the bar fades cleanly to empty. */
+.pid-context-bar-system {
+  background: var(--ink-2);
+}
+.pid-context-bar-messages {
+  background: var(--accent);
+}
+.pid-context-bar-tools {
+  background: var(--info);
+}
+.pid-context-bar-free {
+  background: transparent;
+}
+.pid-context-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+}
+.pid-context-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pid-context-swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--line);
+}
+.pid-context-swatch.pid-context-bar-free {
+  background: var(--bg-3);
+}
+.pid-context-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pid-context-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.pid-context-row:first-child {
+  border-top: none;
+}
+.pid-context-row-tag {
+  font-size: 9px;
+  flex: 0 0 auto;
+}
+.pid-context-row-icon {
+  flex: 0 0 auto;
+  color: var(--ink-2);
+}
+.pid-context-row-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-0);
+}
+.pid-context-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.pid-context-row:hover .pid-context-row-actions,
+.pid-context-row:focus-within .pid-context-row-actions {
+  opacity: 1;
+}
+.pid-context-row-action {
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 3px;
+  color: var(--ink-2);
+  cursor: pointer;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+.pid-context-row-action:hover,
+.pid-context-row-action:focus-visible {
+  background: var(--bg-2);
+  color: var(--ink-0);
+  border-color: var(--line);
+  outline: none;
+}
+.pid-context-empty {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--ink-3);
 }
