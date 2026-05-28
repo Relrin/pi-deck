@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { usePathDragStore } from "../files/usePathDragStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { ChatHeader } from "./ChatHeader.js";
 import { MessageInput } from "./MessageInput.js";
@@ -14,6 +15,7 @@ interface ChatViewProps {
 export function ChatView({ sessionId }: ChatViewProps) {
   const session = useSessionsStore((s) => s.sessions.find((x) => x.id === sessionId));
   const activate = useSessionsStore((s) => s.activateSession);
+  const isPathDrag = usePathDragStore((s) => s.isDragging);
 
   useEffect(() => {
     activate(sessionId).catch(() => {
@@ -22,7 +24,10 @@ export function ChatView({ sessionId }: ChatViewProps) {
   }, [sessionId, activate]);
 
   return (
-    <div className="flex h-full w-full flex-col bg-[var(--bg-0)] text-[var(--ink-0)] overflow-hidden">
+    <div
+      className="pid-chat-view flex h-full w-full flex-col bg-[var(--bg-0)] text-[var(--ink-0)] overflow-hidden"
+      data-path-drag-active={isPathDrag || undefined}
+    >
       {session && <ChatHeader session={session} />}
       <MessageList sessionId={sessionId} />
       <MessageInput sessionId={sessionId} />

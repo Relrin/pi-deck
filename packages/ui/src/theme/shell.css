@@ -619,10 +619,28 @@
   justify-content: flex-end;
   gap: 8px;
 }
-
-/* Composer drop-target overlay for the in-app file-tree drag (custom MIME). The OS file-drop
- * variant already has its own styling via `pid-composer-shell[data-drag-over]`; we reuse
- * the same hook so the two overlays look identical. */
+.pid-chat-view[data-path-drag-active="true"] .pid-composer-shell {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+.pid-chat-view[data-path-drag-active="true"] .pid-composer-input {
+  background: color-mix(in oklch, var(--accent-soft) 35%, transparent);
+  transition: background-color 0.12s ease;
+}
+.pid-composer-screen[data-path-drag-active="true"] .pid-composer-shell {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+.pid-composer-screen[data-path-drag-active="true"] .pid-composer-input {
+  background: color-mix(in oklch, var(--accent-soft) 35%, transparent);
+  transition: background-color 0.12s ease;
+}
 .pid-composer-shell[data-pideck-paths-drag="true"]::after {
   content: "Drop to attach";
   position: absolute;

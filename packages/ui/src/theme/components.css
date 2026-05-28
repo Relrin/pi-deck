@@ -2039,6 +2039,7 @@
   border-radius: var(--radius-lg, 8px);
   background: var(--bg-1);
   padding: 12px 14px;
+  position: relative;
 }
 .pid-composer-shell:focus-within {
   border-color: var(--accent);

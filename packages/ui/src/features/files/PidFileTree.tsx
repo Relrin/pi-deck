@@ -30,6 +30,7 @@ import type { RowStatusTone } from "./PidFileTreeRow.js";
 import { PidFileTreeRow } from "./PidFileTreeRow.js";
 import { useFileTreeKeyboard } from "./useFileTreeKeyboard.js";
 import { flattenVisible, useFileTreeStore, type VisibleRow } from "./useFileTreeStore.js";
+import { usePathDragStore } from "./usePathDragStore.js";
 
 const ROW_HEIGHT = 24;
 const VIRTUALIZER_OVERSCAN = 12;
@@ -207,6 +208,11 @@ export function PidFileTree() {
       // useful (the paths, one per line).
       const paths = rowCount > 1 && selected.has(row.path) ? [...selected] : [row.path];
       event.dataTransfer.setData("text/plain", paths.join("\n"));
+      // Light up the chat view + composer surfaces as "you can drop here" while the drag is
+      // in flight. The store self-clears on document-level dragend / drop / window-blur so
+      // we don't need a matching onDragEnd here (which can get skipped when react-virtual
+      // recycles the source row mid-scroll).
+      usePathDragStore.getState().begin();
     },
     [selected, visibleNodeTypes],
   );

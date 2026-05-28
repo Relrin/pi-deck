@@ -21,6 +21,7 @@ import { useImagePaste } from "../chat/composer/useImagePaste.js";
 import type { UserMessageImage } from "../chat/types.js";
 import { PIDECK_PATHS_MIME } from "../files/dragDrop.js";
 import { useComposerPathDrop } from "../files/useComposerPathDrop.js";
+import { usePathDragStore } from "../files/usePathDragStore.js";
 import { useGitStore } from "../git/useGitStore.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
@@ -60,6 +61,7 @@ export function PidComposerScreen() {
 
   useAutoGrowTextarea(textareaRef, text);
   const { onPaste, onDrop, onDragOver, chooseImage } = useImagePaste({ onImages: addImages });
+  const isPathDrag = usePathDragStore((s) => s.isDragging);
 
   const attachAndRemember = useCallback(
     (next: PromptAttachment[]) => {
@@ -277,7 +279,7 @@ export function PidComposerScreen() {
   };
 
   return (
-    <div className="pid-composer-screen">
+    <div className="pid-composer-screen" data-path-drag-active={isPathDrag || undefined}>
       <div className="pid-composer-screen-inner">
         <header className="pid-composer-hero">
           <div className="pid-composer-hero-mark-row">
