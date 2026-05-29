@@ -4600,38 +4600,48 @@
 
 /* Inline plan card — wraps a plan-shaped assistant message. */
 .pid-plan-card {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--bg-1);
-  padding: 14px 16px;
+  position: relative;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, var(--accent-soft) 0%, transparent 96px), var(--bg-1);
+  padding: 18px 20px 16px;
   margin: 6px 0;
+  box-shadow: 0 1px 0 var(--accent-line) inset;
 }
 
+/* "PLAN" eyebrow chip — the JSX renders a Map glyph + "Plan" label. */
 .pid-plan-card-header {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 11px;
+  gap: 5px;
+  margin: 0 0 14px;
+  padding: 3px 8px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--font-mono);
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--ink-2);
-  margin-bottom: 6px;
+  line-height: 1.2;
 }
 
 .pid-plan-card-footer {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--accent-line);
 }
 
 .pid-plan-card-footer-hint {
   flex: 1;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--ink-2);
+  letter-spacing: 0.02em;
 }
 
 /* Approve & execute primary button — accent-coloured to match the destination action. */
@@ -4639,15 +4649,16 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  border-radius: var(--radius);
   border: 1px solid var(--accent);
   background: var(--accent);
-  color: var(--bg-0);
+  color: var(--accent-ink);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: background 120ms ease;
+  transition: filter 120ms ease;
 }
 
 /* No distinct hover token in the design system — the accent itself stays put on hover and
@@ -4669,16 +4680,20 @@
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   border: 1px solid var(--line);
   background: transparent;
-  color: var(--ink-0);
+  color: var(--ink-1);
   font-size: 12px;
   cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
 }
 
 .pid-plan-mode-pill:hover:not(:disabled) {
   background: var(--bg-2);
+  color: var(--ink-0);
 }
 
 .pid-plan-mode-pill:disabled {
