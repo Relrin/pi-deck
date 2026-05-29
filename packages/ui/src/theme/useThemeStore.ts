@@ -2,7 +2,7 @@ import type { ThemeListing, ThemeSpec } from "@pi-deck/core";
 import { create } from "zustand";
 import type { ProtocolClient } from "../lib/transport/protocol-client.js";
 import { applyTheme } from "./loader.js";
-import { setShikiThemeByKind } from "./shiki-bridge.js";
+import { setShikiThemeByKind, setShikiThemeFromVSCode } from "./shiki-bridge.js";
 
 const STORAGE_KEY = "pi-deck:active-theme";
 const FALLBACK_THEME = "default-dark";
@@ -17,8 +17,15 @@ export interface ThemeStoreState {
   hydrate: (client: ProtocolClient) => Promise<void>;
   /** Ask host to switch active theme; host emits `theme.changed` which actually applies it. */
   setActive: (client: ProtocolClient, name: string) => Promise<void>;
+  /** Remove a user theme; host falls back to default if it was active. */
+  deleteTheme: (client: ProtocolClient, name: string) => Promise<void>;
   /** Apply a spec to the DOM and remember it. Called from the `theme.changed` handler. */
-  applySpec: (name: string, spec: ThemeSpec | undefined, available: ThemeListing[]) => void;
+  applySpec: (
+    name: string,
+    spec: ThemeSpec | undefined,
+    available: ThemeListing[],
+    vscodeRaw?: unknown,
+  ) => void;
 }
 
 function readStoredName(): string {
@@ -37,11 +44,21 @@ function writeStoredName(name: string): void {
   }
 }
 
-function syncShiki(spec: ThemeSpec | undefined, available: ThemeListing[], name: string): void {
+function syncShiki(
+  spec: ThemeSpec | undefined,
+  available: ThemeListing[],
+  name: string,
+  vscodeRaw: unknown,
+): void {
+  // Imported VS Code themes ship their original JSON; Shiki tokenises directly off that so
+  // syntax highlighting matches the source theme exactly. For bundled / pi-deck-format themes
+  // we fall back to a curated Shiki theme keyed by light/dark kind.
+  if (vscodeRaw !== undefined && vscodeRaw !== null) {
+    setShikiThemeFromVSCode(vscodeRaw);
+    return;
+  }
   const entry = available.find((t) => t.name === name);
   const kind = spec?.meta?.kind ?? entry?.kind ?? "dark";
-  // VS Code raw payload lives on the host; the renderer cannot see it directly. The bridge picks
-  // a bundled Shiki theme based on kind. A follow-up wires the raw payload through the protocol.
   setShikiThemeByKind(kind);
 }
 
@@ -55,8 +72,11 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => ({
     const stored = readStoredName();
     const requested = themes.some((t) => t.name === stored) ? stored : activeName;
     let spec: ThemeSpec | undefined;
+    let vscodeRaw: unknown;
     try {
-      spec = await client.themes.get(requested);
+      const fetched = await client.themes.get(requested);
+      spec = fetched.spec;
+      vscodeRaw = fetched.vscodeRaw;
     } catch {
       spec = undefined;
     }
@@ -66,17 +86,21 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => ({
       // actually switches.
       void client.themes.setActive(requested).catch(() => undefined);
     }
-    get().applySpec(requested, spec, themes);
+    get().applySpec(requested, spec, themes, vscodeRaw);
   },
 
   setActive: async (client, name) => {
     await client.themes.setActive(name);
   },
 
-  applySpec: (name, spec, available) => {
+  deleteTheme: async (client, name) => {
+    await client.themes.delete(name);
+  },
+
+  applySpec: (name, spec, available, vscodeRaw) => {
     writeStoredName(name);
     if (spec) applyTheme(spec);
-    syncShiki(spec, available, name);
+    syncShiki(spec, available, name, vscodeRaw);
     set({ activeName: name, available, activeSpec: spec });
   },
 }));

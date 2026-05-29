@@ -478,7 +478,8 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     const parsed = CommandSchemas["theme.get"].request.parse(payload);
     const theme = ctx.themeManager.get(parsed.name);
     if (!theme) throw new RouterError("not_found", `Unknown theme: ${parsed.name}`);
-    return { theme };
+    const vscodeRaw = ctx.themeManager.getVSCodeRaw(parsed.name);
+    return vscodeRaw !== undefined ? { theme, vscodeRaw } : { theme };
   },
   "theme.setActive": async (ctx, payload) => {
     const parsed = CommandSchemas["theme.setActive"].request.parse(payload);
@@ -489,6 +490,22 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     const parsed = CommandSchemas["theme.import"].request.parse(payload);
     const result = await ctx.themeManager.importFromPath(parsed.sourcePath);
     return { name: result.name };
+  },
+  "theme.delete": async (ctx, payload) => {
+    const parsed = CommandSchemas["theme.delete"].request.parse(payload);
+    try {
+      await ctx.themeManager.deleteUserTheme(parsed.name);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.startsWith("Cannot delete bundled theme")) {
+        throw new RouterError("forbidden", message);
+      }
+      if (message.startsWith("Unknown theme")) {
+        throw new RouterError("not_found", message);
+      }
+      throw err;
+    }
+    return { ok: true as const };
   },
   "provider.list": async (ctx) => ctx.providerManager.listProviders(),
   "provider.models": async (ctx, payload) => {

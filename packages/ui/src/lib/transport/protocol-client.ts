@@ -62,9 +62,9 @@ export class ProtocolClient {
     list: async (): Promise<{ activeName: string; themes: ThemeListing[] }> => {
       return this.call("theme.list", {});
     },
-    get: async (name: string): Promise<ThemeSpec> => {
+    get: async (name: string): Promise<{ spec: ThemeSpec; vscodeRaw?: unknown }> => {
       const res = await this.call("theme.get", { name });
-      return res.theme as ThemeSpec;
+      return { spec: res.theme as ThemeSpec, vscodeRaw: res.vscodeRaw };
     },
     setActive: async (name: string): Promise<void> => {
       await this.call("theme.setActive", { name });
@@ -72,6 +72,9 @@ export class ProtocolClient {
     import: async (sourcePath: string): Promise<{ name: string }> => {
       const res = await this.call("theme.import", { sourcePath });
       return { name: res.name };
+    },
+    delete: async (name: string): Promise<void> => {
+      await this.call("theme.delete", { name });
     },
   };
 }

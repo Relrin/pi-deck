@@ -350,14 +350,19 @@ export const ThemeListResponse = z.object({
 });
 
 export const ThemeGetRequest = z.object({ name: z.string().min(1) });
-/** The theme payload is round-tripped as-is; the renderer revalidates via `themeSpecSchema`. */
-export const ThemeGetResponse = z.object({ theme: z.unknown() });
+export const ThemeGetResponse = z.object({
+  theme: z.unknown(),
+  vscodeRaw: z.unknown().optional(),
+});
 
 export const ThemeSetActiveRequest = z.object({ name: z.string().min(1) });
 export const ThemeSetActiveResponse = z.object({ ok: z.literal(true) });
 
 export const ThemeImportRequest = z.object({ sourcePath: z.string().min(1) });
 export const ThemeImportResponse = z.object({ name: z.string() });
+
+export const ThemeDeleteRequest = z.object({ name: z.string().min(1) });
+export const ThemeDeleteResponse = z.object({ ok: z.literal(true) });
 
 export const ProviderListRequest = z.object({}).strict();
 export const ProviderListResponse = z.object({
@@ -539,6 +544,7 @@ export const CommandSchemas = {
   "theme.get": { request: ThemeGetRequest, response: ThemeGetResponse },
   "theme.setActive": { request: ThemeSetActiveRequest, response: ThemeSetActiveResponse },
   "theme.import": { request: ThemeImportRequest, response: ThemeImportResponse },
+  "theme.delete": { request: ThemeDeleteRequest, response: ThemeDeleteResponse },
   "provider.list": { request: ProviderListRequest, response: ProviderListResponse },
   "provider.models": { request: ProviderModelsRequest, response: ProviderModelsResponse },
   "provider.addCustom": { request: ProviderAddCustomRequest, response: ProviderAddCustomResponse },

@@ -1,10 +1,10 @@
 import { EventEmitter } from "node:events";
-import { copyFile, readFile } from "node:fs/promises";
+import { copyFile, readFile, unlink } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
 import { EVENT_THEME_CHANGED } from "../../protocol/events.js";
 import type { ThemeListing, ThemeSpec } from "../../protocol/theme.js";
 import { BUNDLED_THEMES } from "./bundled.js";
-import { readUserThemes, type UserThemeRead, writeBundledExample } from "./loader.js";
+import { readUserThemes, type UserThemeRead } from "./loader.js";
 import { ThemeStorage } from "./storage.js";
 import { ThemeWatcher } from "./watcher.js";
 
@@ -15,6 +15,7 @@ interface RegistryEntry {
   spec: ThemeSpec;
   source: "bundled" | "user";
   vscodeRaw?: unknown;
+  filePath?: string;
 }
 
 export interface ThemeManagerEvents {
@@ -51,10 +52,6 @@ export class ThemeManager extends EventEmitter {
       const name = spec.meta?.name;
       if (!name) continue;
       this.registry.set(name, { name, spec, source: "bundled" });
-      // Best-effort: ship a forkable copy to disk if the user has nothing there yet.
-      await writeBundledExample(this.storage.themesDir, spec).catch((err) => {
-        console.warn("[themes] failed to seed bundled example", err);
-      });
     }
     await this.refreshUserThemes();
 
@@ -95,6 +92,15 @@ export class ThemeManager extends EventEmitter {
 
   get(name: string): ThemeSpec | undefined {
     return this.registry.get(name)?.spec;
+  }
+
+  /**
+   * Return the raw VS Code JSON for a theme imported from a VS Code colour-theme file, or
+   * `undefined` for bundled / pi-deck-format themes. The renderer forwards this to Shiki so
+   * syntax highlighting matches the imported palette key-for-key.
+   */
+  getVSCodeRaw(name: string): unknown {
+    return this.registry.get(name)?.vscodeRaw;
   }
 
   getActiveName(): string {
@@ -146,12 +152,56 @@ export class ThemeManager extends EventEmitter {
   }
 
   private upsertUserEntry(read: UserThemeRead): void {
+    // Bundled theme names are reserved. A user file whose basename collides with a bundled name
+    // is ignored — to fork a bundled theme the user saves it with a different name. This avoids
+    // the chip ambiguity and lets us serve the bundled in-memory spec authoritatively.
+    const existing = this.registry.get(read.name);
+    if (existing?.source === "bundled") return;
     this.registry.set(read.name, {
       name: read.name,
       spec: read.spec,
       source: "user",
       vscodeRaw: read.vscodeRaw,
+      filePath: read.filePath,
     });
+  }
+
+  /**
+   * Delete a user-imported theme. Bundled themes are refused — the in-memory registry is the
+   * authoritative source for them. If the deleted theme is the active one we fall back to
+   * `default-dark` so the UI never lands on a dangling reference. The chokidar watcher will
+   * also fire on the unlink, but we drop the entry eagerly so the next `theme.changed` event
+   * already reflects the deletion and the renderer doesn't briefly re-render a card we are
+   * about to remove.
+   */
+  async deleteUserTheme(name: string): Promise<void> {
+    const entry = this.registry.get(name);
+    if (!entry) {
+      throw new Error(`Unknown theme: ${name}`);
+    }
+    if (entry.source !== "user") {
+      throw new Error(`Cannot delete bundled theme: ${name}`);
+    }
+    if (entry.filePath) {
+      await unlink(entry.filePath).catch((err) => {
+        // The file may have already been removed externally — that's fine.
+        if ((err as NodeJS.ErrnoException)?.code !== "ENOENT") {
+          throw err;
+        }
+      });
+    }
+    this.registry.delete(name);
+
+    if (this.activeName === name) {
+      const fallback = this.registry.has(DEFAULT_THEME_NAME)
+        ? DEFAULT_THEME_NAME
+        : (this.registry.keys().next().value ?? DEFAULT_THEME_NAME);
+      this.activeName = fallback;
+      await this.storage.writeActive(this.activeName).catch(() => undefined);
+      this.emitChange(this.get(this.activeName));
+    } else {
+      this.emitChange();
+    }
   }
 
   private async handleDiskChange(): Promise<void> {

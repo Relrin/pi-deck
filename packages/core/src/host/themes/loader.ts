@@ -1,6 +1,7 @@
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
 import { type ThemeSpec, themeSpecSchema } from "../../protocol/theme.js";
+import { adaptVSCodeTheme } from "./vscode-adapter.js";
 
 export interface UserThemeRead {
   name: string;
@@ -37,9 +38,10 @@ export async function readUserThemes(themesDir: string): Promise<UserThemeRead[]
 
 /**
  * Detect VS Code vs pi-deck format and produce a `UserThemeRead`. A VS Code theme has either a
- * `tokenColors` array or a `colors` map; the import adapter does the actual translation in the
- * renderer (`packages/ui/src/theme/vscode-adapter.ts`). For the host we just wrap the raw payload
- * so it round-trips on the wire, plus a minimal `meta` derived from `type` and `name`.
+ * `tokenColors` array or a `colors` map; we translate it into a full pi-deck `ThemeSpec` via
+ * `adaptVSCodeTheme` so the appearance preview and the live UI actually pick up the imported
+ * palette (light/dark + accent + surfaces). The raw JSON is kept around so Shiki can render
+ * syntax highlighting with the same VS Code theme via `setShikiThemeFromVSCode`.
  */
 function adaptUserTheme(
   raw: unknown,
@@ -54,9 +56,8 @@ function adaptUserTheme(
     typeof obj.semanticTokenColors === "object";
 
   if (isVSCode) {
-    const name = (typeof obj.name === "string" && obj.name.trim()) || fallbackName;
-    const kind: "dark" | "light" = obj.type === "light" ? "light" : "dark";
-    const spec: ThemeSpec = { meta: { name, kind, accent: "custom" } };
+    const { spec } = adaptVSCodeTheme(raw, fallbackName);
+    const name = spec.meta?.name ?? fallbackName;
     return { name, spec, vscodeRaw: raw, filePath };
   }
 
@@ -69,16 +70,4 @@ function adaptUserTheme(
   const name = spec.meta?.name ?? fallbackName;
   if (!spec.meta) spec.meta = { name, kind: "dark", accent: "custom" };
   return { name, spec, filePath };
-}
-
-/** Write a pi-deck theme JSON to disk, creating the file if missing. */
-export async function writeBundledExample(themesDir: string, spec: ThemeSpec): Promise<void> {
-  const name = spec.meta?.name ?? "unnamed";
-  const target = join(themesDir, `${name}.json`);
-  try {
-    // Don't clobber user edits to an example that has the same filename.
-    await readFile(target, "utf8");
-  } catch {
-    await writeFile(target, `${JSON.stringify(spec, null, 2)}\n`, "utf8");
-  }
 }

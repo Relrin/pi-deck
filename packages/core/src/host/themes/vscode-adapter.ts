@@ -1,4 +1,4 @@
-import type { ThemeSpec } from "@pi-deck/core";
+import type { ThemeSpec } from "../../protocol/theme.js";
 
 /**
  * Best-effort adapter from a VS Code colour theme JSON into a pi-deck `ThemeSpec`.
@@ -73,7 +73,7 @@ function withAlpha(hex: string, alpha: number): string {
   return `#${[p.r, p.g, p.b].map((n) => n.toString(16).padStart(2, "0")).join("")}${a}`;
 }
 
-export function adaptVSCodeTheme(json: unknown): AdaptedTheme {
+export function adaptVSCodeTheme(json: unknown, fallbackName?: string): AdaptedTheme {
   const raw = (json ?? {}) as VSCodeThemeJson;
   const colors = raw.colors ?? {};
   const kind: "dark" | "light" = raw.type === "light" ? "light" : "dark";
@@ -125,9 +125,12 @@ export function adaptVSCodeTheme(json: unknown): AdaptedTheme {
   const warn =
     pick(colors, "editorWarning.foreground", "notificationsWarningIcon.foreground") ?? "#f2c94c";
 
+  const resolvedName =
+    (typeof raw.name === "string" && raw.name.trim()) || fallbackName || "vscode-imported";
+
   const spec: ThemeSpec = {
     meta: {
-      name: raw.name ?? "vscode-imported",
+      name: resolvedName,
       kind,
       accent: "custom",
     },

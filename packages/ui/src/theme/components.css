@@ -453,15 +453,19 @@
 /* ---------- Theme preview grid ---------- */
 .pid-theme-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
 }
-.pid-theme-card {
+.pid-theme-card-wrap {
   position: relative;
   display: flex;
+}
+.pid-theme-card {
+  flex: 1;
+  display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px;
+  gap: 6px;
+  padding: 8px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--bg-1);
@@ -489,7 +493,7 @@
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
   width: 100%;
-  height: 72px;
+  height: 48px;
   border-radius: 3px;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -499,29 +503,72 @@
 }
 .pid-theme-card-name {
   font-family: var(--font-mono);
-  font-size: var(--t-12);
+  font-size: 10px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 .pid-theme-card-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 4px;
+  min-width: 0;
 }
 .pid-theme-card-check {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 18px;
-  height: 18px;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   background: var(--accent);
   color: var(--accent-ink);
+}
+.pid-theme-card-delete {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--ink-2);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  transition:
+    opacity 0.12s,
+    color 0.12s,
+    background-color 0.12s,
+    border-color 0.12s;
+}
+.pid-theme-card-wrap:hover .pid-theme-card-delete,
+.pid-theme-card-wrap:focus-within .pid-theme-card-delete,
+.pid-theme-card-delete:focus-visible {
+  opacity: 1;
+}
+.pid-theme-card-delete:hover,
+.pid-theme-card-delete:focus-visible {
+  color: var(--del);
+  border-color: var(--del);
+  background: var(--del-soft);
+  outline: none;
+}
+.pid-theme-card-delete:disabled {
+  cursor: not-allowed;
+  opacity: 0;
 }
 
 .pid-section-stub {

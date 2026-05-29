@@ -245,17 +245,20 @@ async function handleThemeChanged(payload: Payload): Promise<void> {
   const themes = Array.isArray(payload.themes) ? (payload.themes as ThemeListing[]) : [];
 
   let spec: ThemeSpec | undefined = payload.spec as ThemeSpec | undefined;
+  let vscodeRaw: unknown;
   if (!spec) {
     const client = useSessionsStore.getState().client;
     if (client) {
       try {
-        spec = await client.themes.get(activeName);
+        const fetched = await client.themes.get(activeName);
+        spec = fetched.spec;
+        vscodeRaw = fetched.vscodeRaw;
       } catch {
         spec = undefined;
       }
     }
   }
-  useThemeStore.getState().applySpec(activeName, spec, themes);
+  useThemeStore.getState().applySpec(activeName, spec, themes, vscodeRaw);
   resetHighlighter();
 }
 
