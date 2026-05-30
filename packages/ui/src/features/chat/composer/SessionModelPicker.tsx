@@ -8,6 +8,7 @@ import { Check, ChevronDown, Search } from "../../../components/icons/index.js";
 import { ProviderIcon } from "../../models/icons/index.js";
 import { useProvidersStore } from "../../models/useProvidersStore.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore.js";
+import { AdaptiveChip } from "./AdaptiveChip.js";
 
 interface ProviderGroup {
   id: string;
@@ -28,6 +29,7 @@ type ListRow =
       label: string;
       ctx: string | undefined;
       isActive: boolean;
+      isAdaptive: boolean;
     };
 
 const HEADER_ROW_PX = 28;
@@ -103,15 +105,17 @@ export function SessionModelPicker({ sessionId }: SessionModelPickerProps) {
     return providers.find((p) => p.id === activeRef.providerId)?.iconKey;
   }, [activeRef, providers]);
 
-  const activeLabel = useMemo(() => {
-    if (!activeRef) return "model";
+  const activeModel = useMemo(() => {
+    if (!activeRef) return undefined;
     for (const group of groups) {
       if (group.id !== activeRef.providerId) continue;
       const m = group.models.find((mm) => mm.id === activeRef.modelId);
-      if (m) return m.label;
+      if (m) return m;
     }
-    return activeRef.modelId;
+    return undefined;
   }, [activeRef, groups]);
+
+  const activeLabel = activeModel?.label ?? activeRef?.modelId ?? "model";
 
   const searchable = useMemo(
     () =>
@@ -160,6 +164,7 @@ export function SessionModelPicker({ sessionId }: SessionModelPickerProps) {
           label: m.label,
           ctx: formatContextWindow(m.contextWindow),
           isActive: key === activeKey,
+          isAdaptive: m.adaptiveThinking === true,
         });
       }
     }
@@ -256,6 +261,7 @@ export function SessionModelPicker({ sessionId }: SessionModelPickerProps) {
             </span>
           )}
           <span className="pid-picker-trigger-label">{activeLabel}</span>
+          {activeModel?.adaptiveThinking && <AdaptiveChip />}
           <ChevronDown size={10} className="pid-picker-trigger-chev" />
         </button>
       </RadixDropdown.Trigger>
@@ -330,6 +336,7 @@ export function SessionModelPicker({ sessionId }: SessionModelPickerProps) {
                             <ProviderIcon iconKey={row.iconKey} size={14} />
                           </span>
                           <span className="pid-model-menu-item-label">{row.label}</span>
+                          {row.isAdaptive && <AdaptiveChip />}
                           {row.ctx && <span className="pid-model-menu-item-sub">{row.ctx}</span>}
                         </button>
                       )}

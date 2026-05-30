@@ -112,6 +112,11 @@ export const ModelInfoSchema = z.object({
     .optional(),
   /** Permitted thinking levels (empty when not a reasoning model). */
   thinkingLevels: z.array(ThinkingLevelSchema).optional(),
+  /**
+   * Model uses adaptive thinking — `thinking.type: "adaptive"` is sent and the
+   * thinking level maps to `output_config.effort` rather than a fixed budget.
+   */
+  adaptiveThinking: z.boolean().optional(),
 });
 export type ModelInfo = z.infer<typeof ModelInfoSchema>;
 

@@ -1928,6 +1928,13 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+.pid-picker-trigger[data-static] {
+  cursor: default;
+}
+.pid-picker-trigger[data-static]:hover {
+  background: transparent;
+  color: var(--ink-1);
+}
 .pid-picker-trigger-label {
   white-space: nowrap;
 }

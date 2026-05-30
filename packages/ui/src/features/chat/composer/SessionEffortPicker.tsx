@@ -45,6 +45,19 @@ export function SessionEffortPicker({ sessionId }: SessionEffortPickerProps) {
 
   if (activeModel && !activeModel.supportsThinking) return null;
 
+  // Adaptive-thinking models ignore explicit level budgets — the model picks effort on its own.
+  if (activeModel?.adaptiveThinking) {
+    return (
+      <span
+        className="pid-picker-trigger"
+        data-static
+        title="Adaptive thinking — managed by the model"
+      >
+        <span className="pid-picker-trigger-label">Adaptive</span>
+      </span>
+    );
+  }
+
   const activeValue = sessionSelection?.thinkingLevel ?? session?.thinkingLevel ?? DEFAULT_LEVEL;
   const options: PidChipPickerOption[] = LEVELS.map((l) => ({
     value: l.value,

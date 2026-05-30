@@ -22,6 +22,7 @@ interface PiModel {
   input: ("text" | "image")[];
   cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
   thinkingLevelMap?: Partial<Record<ThinkingLevel, string | null>>;
+  compat?: { forceAdaptiveThinking?: boolean };
 }
 
 /**
@@ -125,6 +126,7 @@ function piModelToInfo(providerId: string, model: PiModel): ModelInfo {
       cacheWrite: model.cost.cacheWrite,
     },
     thinkingLevels: allowed.length > 0 ? allowed : undefined,
+    adaptiveThinking: model.compat?.forceAdaptiveThinking ? true : undefined,
   };
 }
 
