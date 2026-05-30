@@ -1,9 +1,27 @@
-import { useEffect, useState } from "react";
+import { isValidElement, type ReactNode, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "../../../lib/cn.js";
 import { CheckboxItem, TaskListItem } from "../markdown/CheckboxItem.js";
 import { highlight } from "./code-highlight.js";
+
+/**
+ * Recursively concatenate the text content of a React children tree. Used in the fenced
+ * code block renderer below so empty / streaming-broken code blocks don't get rendered as
+ * the literal string `"undefined"` via `String(children)` — `String(undefined)` is
+ * `"undefined"`, which leaks into the UI when the agent emits an opening fence followed
+ * by a tool call that splits the assistant text segment.
+ */
+function extractText(node: ReactNode): string {
+  if (node === null || node === undefined || typeof node === "boolean") return "";
+  if (typeof node === "string") return node;
+  if (typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join("");
+  if (isValidElement(node)) {
+    return extractText((node.props as { children?: ReactNode }).children);
+  }
+  return "";
+}
 
 interface MarkdownProps {
   text: string;
@@ -20,7 +38,6 @@ export function Markdown({ text, isComplete }: MarkdownProps) {
           code({ className, children, ...rest }) {
             const langMatch = /language-(\w+)/.exec(className ?? "");
             const inline = !langMatch;
-            const content = String(children).replace(/\n$/, "");
             if (inline) {
               return (
                 <code
@@ -31,9 +48,26 @@ export function Markdown({ text, isComplete }: MarkdownProps) {
                 </code>
               );
             }
+            // Fenced code blocks: walk children for the actual text rather than coercing
+            // with `String(children)`. When the agent streams an opening fence followed by
+            // a tool call, the assistant text segment gets `\`\`\`bash\n\n\`\`\`` (the tool
+            // body lives in a sibling toolCallEntry, not the text). react-markdown then
+            // calls this component with `children: undefined`, which `String()` would turn
+            // into the literal word "undefined". Suppress empty blocks entirely — the tool
+            // call card below already carries the same information.
+            const content = extractText(children).replace(/\n$/, "");
+            if (!content) return null;
             return (
               <CodeBlock code={content} lang={langMatch?.[1] ?? "text"} highlight={isComplete} />
             );
+          },
+          pre({ children }) {
+            // react-markdown wraps every fenced code block in `<pre>` before handing the
+            // inner `<code>` to our component. When our `code` renderer returns `null` for
+            // an empty block, the `<pre>` shell would still render as a stray frame —
+            // suppress it here too so empty blocks leave no visual trace.
+            if (!extractText(children).trim()) return null;
+            return <pre>{children}</pre>;
           },
           a({ children, href }) {
             return (

@@ -33,4 +33,13 @@ describe("Markdown", () => {
     const pre = screen.getByText("echo hi", { selector: "pre code" });
     expect(pre).toBeInTheDocument();
   });
+
+  test("empty fenced code blocks render nothing (no literal 'undefined')", () => {
+    // Reproduces what we see when the agent streams an opening fence, then emits a tool
+    // call that splits the assistant text segment, then closes the fence. Without the
+    // guard, `String(undefined)` would leak the literal string "undefined" into the UI.
+    const { container } = render(<Markdown text={"```bash\n```"} isComplete={true} />);
+    expect(container.textContent).not.toContain("undefined");
+    expect(container.querySelector("pre")).toBeNull();
+  });
 });
