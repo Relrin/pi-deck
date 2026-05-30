@@ -157,6 +157,10 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
     case EVENT_SESSION_TOOL_CALL_UPDATE: {
       useMessagesStore.getState().applyToolCallUpdate(sessionId, {
         callId: String(payload.callId ?? ""),
+        // Carry the name through too — pi sometimes emits `tool_execution_start` with an
+        // empty `toolName` and only resolves the real name on a subsequent update/end.
+        // The store backfills missing names, so the row gets its label as soon as we know.
+        name: typeof payload.name === "string" ? payload.name : undefined,
         partialResult: payload.partialResult,
       });
       return;
@@ -164,6 +168,7 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
     case EVENT_SESSION_TOOL_CALL_END: {
       useMessagesStore.getState().applyToolCallEnd(sessionId, {
         callId: String(payload.callId ?? ""),
+        name: typeof payload.name === "string" ? payload.name : undefined,
         result: payload.result,
         isError: Boolean(payload.isError),
       });

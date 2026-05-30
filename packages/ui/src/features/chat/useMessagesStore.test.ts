@@ -182,6 +182,54 @@ describe("useMessagesStore — tool calls", () => {
     );
   });
 
+  test("update backfills the name when start arrived with an empty one", () => {
+    // Pi sometimes opens a call with `toolName: ""` (XML-style examples in plan-mode
+    // text get tentatively parsed). The real name lands on a later update/end — when it
+    // does, the entry should pick it up so the row is no longer a nameless ghost.
+    useMessagesStore.getState().applyToolCallStart(SID, {
+      callId: "t-1",
+      name: "",
+      input: undefined,
+    });
+    useMessagesStore.getState().applyToolCallUpdate(SID, {
+      callId: "t-1",
+      name: "bash",
+      partialResult: undefined,
+    });
+    expect(useMessagesStore.getState().bySession[SID]?.toolCalls["t-1"]?.name).toBe("bash");
+  });
+
+  test("end backfills the name when start arrived with an empty one", () => {
+    useMessagesStore.getState().applyToolCallStart(SID, {
+      callId: "t-1",
+      name: "",
+      input: undefined,
+    });
+    useMessagesStore.getState().applyToolCallEnd(SID, {
+      callId: "t-1",
+      name: "bash",
+      result: "done",
+      isError: false,
+    });
+    expect(useMessagesStore.getState().bySession[SID]?.toolCalls["t-1"]?.name).toBe("bash");
+  });
+
+  test("update does not overwrite an existing name with a later differing value", () => {
+    // Defensive: once a name is set, it's authoritative. A racing later event with a
+    // different name should be ignored so the row label doesn't flicker.
+    useMessagesStore.getState().applyToolCallStart(SID, {
+      callId: "t-1",
+      name: "bash",
+      input: {},
+    });
+    useMessagesStore.getState().applyToolCallUpdate(SID, {
+      callId: "t-1",
+      name: "edit",
+      partialResult: undefined,
+    });
+    expect(useMessagesStore.getState().bySession[SID]?.toolCalls["t-1"]?.name).toBe("bash");
+  });
+
   test("end with isError=false flips status to done with result", () => {
     useMessagesStore.getState().applyToolCallStart(SID, {
       callId: "t-1",

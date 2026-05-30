@@ -33,10 +33,13 @@ interface MessagesStoreState {
     sessionId: string,
     p: { callId: string; name: string; input: unknown },
   ) => void;
-  applyToolCallUpdate: (sessionId: string, p: { callId: string; partialResult: unknown }) => void;
+  applyToolCallUpdate: (
+    sessionId: string,
+    p: { callId: string; name?: string; partialResult: unknown },
+  ) => void;
   applyToolCallEnd: (
     sessionId: string,
-    p: { callId: string; result: unknown; isError: boolean },
+    p: { callId: string; name?: string; result: unknown; isError: boolean },
   ) => void;
   /**
    * Attach a pending approval to an existing tool call. Triggered by
@@ -336,24 +339,28 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
       };
     }),
 
-  applyToolCallUpdate: (sessionId, { callId, partialResult }) =>
+  applyToolCallUpdate: (sessionId, { callId, name, partialResult }) =>
     set((state) => {
       const session = state.bySession[sessionId];
       if (!session) return state;
       const existing = session.toolCalls[callId];
       if (!existing) return state;
+      const nextName = !existing.name && name && name.trim() ? name : existing.name;
       return {
         bySession: {
           ...state.bySession,
           [sessionId]: {
             ...session,
-            toolCalls: { ...session.toolCalls, [callId]: { ...existing, partialResult } },
+            toolCalls: {
+              ...session.toolCalls,
+              [callId]: { ...existing, name: nextName, partialResult },
+            },
           },
         },
       };
     }),
 
-  applyToolCallEnd: (sessionId, { callId, result, isError }) =>
+  applyToolCallEnd: (sessionId, { callId, name, result, isError }) =>
     set((state) => {
       const session = state.bySession[sessionId];
       if (!session) return state;
@@ -361,6 +368,7 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
       if (!existing) return state;
       const status: ToolCallStatus = isError ? "error" : "done";
       const errorText = isError ? extractErrorText(result) : undefined;
+      const nextName = !existing.name && name && name.trim() ? name : existing.name;
       return {
         bySession: {
           ...state.bySession,
@@ -370,6 +378,7 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
               ...session.toolCalls,
               [callId]: {
                 ...existing,
+                name: nextName,
                 result,
                 status,
                 errorText,

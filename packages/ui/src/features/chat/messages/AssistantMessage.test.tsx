@@ -75,3 +75,54 @@ describe("AssistantMessage — context menu", () => {
     expect(writeText).toHaveBeenCalledWith("**hello** `code`");
   });
 });
+
+describe("AssistantMessage — nameless tool-call guard", () => {
+  beforeEach(() => {
+    useMessagesStore.setState({ bySession: {} });
+  });
+
+  test("skips ghost tool calls that have no name (no thin dark rectangle)", () => {
+    // Reproduces what we see when pi 0.77 emits `tool_execution_start` with an empty
+    // `toolName` — observed when the agent's plan-mode text contains XML-style tool
+    // examples that pi tentatively parses as candidate calls. The nameless entry should
+    // not paint as a row; only the well-formed tool call below it should appear.
+    useMessagesStore.setState({
+      bySession: {
+        [SID]: {
+          messages: [],
+          toolCalls: {
+            "ghost-1": {
+              id: "ghost-1",
+              name: "",
+              input: undefined,
+              status: "running",
+              startedAt: 1,
+            },
+            "real-1": {
+              id: "real-1",
+              name: "bash",
+              input: { command: "ls" },
+              status: "done",
+              startedAt: 2,
+            },
+          },
+          isTurnInFlight: false,
+        },
+      },
+    });
+    const message: AssistantMessageEntry = {
+      kind: "assistant",
+      id: "a-1",
+      text: "**Running a bash command:**",
+      isComplete: true,
+      toolCallIds: ["ghost-1", "real-1"],
+      createdAt: 1,
+    };
+    const { container } = render(<AssistantMessage message={message} sessionId={SID} />);
+    // Exactly one tool row renders — the ghost call is skipped before mounting the card.
+    const rows = container.querySelectorAll(".pid-tool-row");
+    expect(rows.length).toBe(1);
+    // Sanity: the surviving row carries the bash tag.
+    expect(rows[0]?.querySelector(".pid-tool-row-tag")?.textContent).toBe("bash");
+  });
+});

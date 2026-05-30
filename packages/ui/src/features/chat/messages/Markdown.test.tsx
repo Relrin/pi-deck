@@ -42,4 +42,24 @@ describe("Markdown", () => {
     expect(container.textContent).not.toContain("undefined");
     expect(container.querySelector("pre")).toBeNull();
   });
+
+  test("unclosed fence followed by EOF renders nothing", () => {
+    // Agent emits an opening fence then immediately fires a tool call, leaving the text
+    // segment dangling without a closing fence. Remark closes the block at EOF — empty
+    // body — which would otherwise paint a stray dark rectangle next to the tool card.
+    const { container } = render(
+      <Markdown text={"**3. Editing a file:**\n```xml\n"} isComplete={true} />,
+    );
+    expect(container.textContent).not.toContain("undefined");
+    expect(container.querySelector("pre")).toBeNull();
+    expect(container.querySelector("code.language-xml")).toBeNull();
+  });
+
+  test("fence with only whitespace body also renders nothing", () => {
+    // Same shape but the agent emitted a literal newline inside the fence body before
+    // the tool call interrupted. `extractText().replace(/\n$/, "")` should collapse it
+    // to "" and the suppression should still kick in.
+    const { container } = render(<Markdown text={"```xml\n   \n```"} isComplete={true} />);
+    expect(container.querySelector("pre")).toBeNull();
+  });
 });

@@ -82,6 +82,8 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
           {message.toolCallIds.map((callId) => {
             const call = toolCalls?.[callId];
             if (!call) return null;
+            // Suppress nameless ghost calls.
+            if (!call.name?.trim()) return null;
             return <ToolCallCard key={callId} call={call} sessionId={sessionId} />;
           })}
           {!message.isComplete && (
