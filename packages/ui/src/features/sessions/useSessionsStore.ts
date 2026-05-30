@@ -15,6 +15,7 @@ import { useComposerStore } from "../chat/composer/useComposerStore.js";
 import type { UserMessageImage } from "../chat/types.js";
 import { useMessagesStore } from "../chat/useMessagesStore.js";
 import { useProvidersStore } from "../models/useProvidersStore.js";
+import { useToolsStore } from "../tools/useToolsStore.js";
 import { useProjectsStore } from "./useProjectsStore.js";
 
 export interface SessionsStoreState {
@@ -46,6 +47,7 @@ export interface SessionsStoreState {
       modelRef?: SessionModelRef;
       thinkingLevel?: ThinkingLevel;
       agentMode?: AgentMode;
+      excludedTools?: string[];
     },
   ) => Promise<void>;
   activateSession: (id: string) => Promise<void>;
@@ -246,6 +248,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         modelRef: opts?.modelRef,
         thinkingLevel: opts?.thinkingLevel,
         agentMode: opts?.agentMode,
+        excludedTools: opts?.excludedTools,
       });
       set((state) => {
         const cached = state.sessionsByProject[projectId] ?? [];
@@ -394,6 +397,9 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       if (summary?.agentMode) {
         useComposerStore.getState().seed(id, summary.agentMode);
       }
+      // Sync the local mirror to the server value so the
+      // composer chip reflects the session's actual exclusion list on first paint.
+      useToolsStore.getState().seed(id, summary?.excludedTools);
     } catch (err) {
       useNotificationStore.getState().error(humanizeError(err, "Failed to open session"));
     }

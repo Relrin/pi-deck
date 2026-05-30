@@ -57,6 +57,7 @@ export {
   SquareMinus,
   Star,
   Terminal,
+  ToolCase,
   Trash2,
   Undo2,
   User,

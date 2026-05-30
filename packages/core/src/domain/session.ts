@@ -45,6 +45,8 @@ export const SessionSummarySchema = z.object({
   branch: z.string().optional(),
   /** True once the user archived the session; absent is treated as `false` by consumers. */
   archived: z.boolean().optional(),
+  /** Built-in / extension / custom tool names to disable for this session. */
+  excludedTools: z.array(z.string().min(1)).optional(),
 });
 
 export type SessionSummary = z.infer<typeof SessionSummarySchema>;

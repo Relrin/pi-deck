@@ -35,6 +35,7 @@ async function handleRequest(frame: { id: string; cmd: string; payload: unknown 
           modelRef?: SessionModelRef;
           thinkingLevel?: ThinkingLevel;
           agentMode?: AgentMode;
+          excludedTools?: string[];
         };
         bridge = await initBridge(params, emitEvent);
         sendOk(frame.id, { sessionId: bridge.sessionId, sessionFile: bridge.sessionFile });

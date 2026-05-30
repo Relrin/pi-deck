@@ -2314,7 +2314,8 @@
 }
 /* When attachments are pending, hint via the icon colour but keep the ghost surface —
    the trailing count badge already calls out the actual count. */
-.pid-picker-trigger-icon-only[data-has-attachments] {
+.pid-picker-trigger-icon-only[data-has-attachments],
+.pid-picker-trigger-icon-only[data-has-exclusions] {
   color: var(--accent);
 }
 .pid-picker-trigger-badge {
@@ -4927,4 +4928,100 @@
 .pid-approval-pill-action:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ---------- Tool disablement (settings + composer popover) ---------- */
+.pid-toggle-switch {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 18px;
+  padding: 2px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+.pid-toggle-switch:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.pid-toggle-switch[data-on] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.pid-toggle-switch-thumb {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--ink-1);
+  transition:
+    transform 120ms ease,
+    background 120ms ease;
+}
+.pid-toggle-switch[data-on] .pid-toggle-switch-thumb {
+  transform: translateX(14px);
+  background: var(--accent-ink);
+}
+
+/* Rows-of-toggles list shared by the settings section and the composer popover. */
+.pid-tools-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pid-tools-list-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.pid-tools-list-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.pid-tools-list-name {
+  font-family: var(--font-mono);
+  font-size: var(--t-13);
+  color: var(--ink-0);
+  letter-spacing: 0;
+}
+.pid-tools-list-desc {
+  font-size: var(--t-12);
+  color: var(--ink-2);
+  line-height: 1.35;
+}
+
+.pid-tools-menu {
+  padding-bottom: 12px;
+}
+.pid-tools-menu-blurb {
+  margin: 0 0 12px;
+  padding: 0 12px;
+  font-size: var(--t-12);
+  font-style: italic;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
+.pid-tools-menu .pid-tools-list {
+  padding: 0 12px;
+}
+
+.pid-tools-settings-blurb {
+  max-width: 64ch;
+  margin-bottom: 28px;
+}
+.pid-tools-settings-block {
+  padding-top: 8px;
 }

@@ -12,6 +12,7 @@ import {
   McpServersSection,
   PrivacySection,
 } from "./sections/stubs";
+import { ToolsSection } from "./sections/ToolsSection";
 import { type SettingsSectionId, useSettingsStore } from "./useSettingsStore";
 
 interface NavItem {
@@ -23,6 +24,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: "appearance", label: "Appearance", stub: false },
   { id: "agent-models", label: "Providers & Models", stub: false },
+  { id: "tools", label: "Tools", stub: false },
   { id: "git-github", label: "Git & GitHub", stub: true },
   { id: "mcp-servers", label: "MCP Servers", stub: true },
   { id: "editor", label: "Editor", stub: true },
@@ -34,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
 const SECTION_RENDERERS: Record<SettingsSectionId, () => ReactNode> = {
   appearance: () => <AppearanceSection />,
   "agent-models": () => <ProvidersSection />,
+  tools: () => <ToolsSection />,
   "git-github": () => <GitGitHubSection />,
   "mcp-servers": () => <McpServersSection />,
   editor: () => <EditorSection />,

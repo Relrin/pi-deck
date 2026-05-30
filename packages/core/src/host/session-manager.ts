@@ -40,6 +40,8 @@ export interface SessionRecord {
   thinkingLevel?: ThinkingLevel;
   /** Agent permission mode set on the composer. */
   agentMode?: AgentMode;
+  /** Tool ids disabled for this session. */
+  excludedTools?: string[];
   /** Git branch snapshot taken when the session was created. */
   branch?: string;
   /** True after the user archives. The session keeps its files; UI buckets it differently. */
@@ -135,6 +137,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
         lastActivityAt: meta.lastActivityAt,
         sessionFile: meta.sessionFile,
         agentMode: meta.agentMode,
+        excludedTools: meta.excludedTools,
         branch,
         archived: meta.archived,
       });
@@ -245,6 +248,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     modelRef?: SessionModelRef;
     thinkingLevel?: ThinkingLevel;
     agentMode?: AgentMode;
+    excludedTools?: string[];
   }): Promise<SessionRecord> {
     const localId = `local-${this.nextLocalId++}`;
     const now = new Date().toISOString();
@@ -261,6 +265,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       modelRef,
       thinkingLevel: input.thinkingLevel,
       agentMode: input.agentMode,
+      excludedTools: input.excludedTools,
       archived: false,
     };
     this.sessions.set(localId, record);
@@ -305,6 +310,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       modelRef: record.modelRef,
       thinkingLevel: record.thinkingLevel,
       agentMode: record.agentMode,
+      excludedTools: record.excludedTools,
     })) as { sessionId: string; sessionFile: string };
 
     if (init.sessionId && init.sessionId !== record.id) {
@@ -474,6 +480,25 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     void this.patchMetadata(record, { lastActivityAt: record.lastActivityAt });
   }
 
+  /**
+   * Replace the session's excluded-tools list. pi 0.77's SDK accepts `excludeTools` only at
+   * `createAgentSession` time, so when the value changes on a live worker we deactivate +
+   * reactivate it; the next `activate` re-runs `init` with the new list. The transcript
+   * survives the bounce via `EVENT_SESSION_HISTORY_LOADED`.
+   */
+  async setExcludedTools(sessionId: string, excludedTools: string[]): Promise<void> {
+    const record = this.sessions.get(sessionId);
+    if (!record) throw new Error(`Unknown session ${sessionId}`);
+    const next = normalizeExcludedTools(excludedTools);
+    if (sameExcludedTools(record.excludedTools, next)) return;
+    record.excludedTools = next;
+    await this.patchMetadata(record, { excludedTools: next });
+    if (record.worker?.isAlive) {
+      await this.deactivate(sessionId);
+      await this.activate(sessionId);
+    }
+  }
+
   async setThinkingLevel(sessionId: string, level: ThinkingLevel): Promise<void> {
     const record = this.sessions.get(sessionId);
     if (!record) throw new Error(`Unknown session ${sessionId}`);
@@ -561,6 +586,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
         branch: record.branch,
         sessionFile: record.sessionFile,
         agentMode: record.agentMode,
+        excludedTools: record.excludedTools,
       });
     } catch {
       // Persistence is best-effort; an i/o hiccup must not break the live session.
@@ -576,6 +602,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       branch: string | undefined;
       sessionFile: string | undefined;
       agentMode: AgentMode | undefined;
+      excludedTools: string[] | undefined;
     }>,
   ): Promise<void> {
     if (!this.metadataStore) return;
@@ -615,6 +642,27 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       }
     });
   }
+}
+
+/**
+ * Trim + dedupe an excluded-tools list. Stored undefined when empty so a never-used field
+ * doesn't show up in persisted metadata.
+ */
+function normalizeExcludedTools(input: string[]): string[] | undefined {
+  const seen = new Set<string>();
+  for (const raw of input) {
+    const name = raw.trim();
+    if (name) seen.add(name);
+  }
+  return seen.size === 0 ? undefined : [...seen].sort();
+}
+
+function sameExcludedTools(a: string[] | undefined, b: string[] | undefined): boolean {
+  const aa = a ?? [];
+  const bb = b ?? [];
+  if (aa.length !== bb.length) return false;
+  for (let i = 0; i < aa.length; i++) if (aa[i] !== bb[i]) return false;
+  return true;
 }
 
 const PI_SESSION_TITLE_MAX = 60;

@@ -78,6 +78,12 @@ export interface InitParams {
   modelRef?: SessionModelRef;
   thinkingLevel?: ThinkingLevel;
   agentMode?: AgentMode;
+  /**
+   * Tool ids to drop from this session before the SDK registers them. Forwarded straight
+   * to `createAgentSession({ excludeTools })`. The SDK has no setter for this after
+   * construction, so changes mid-session come in via a worker restart from the host.
+   */
+  excludedTools?: string[];
 }
 
 /**
@@ -157,6 +163,9 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     }
   }
 
+  const excludeTools =
+    params.excludedTools && params.excludedTools.length > 0 ? params.excludedTools : undefined;
+
   const { session } = await createAgentSession({
     cwd: params.projectPath,
     authStorage,
@@ -165,6 +174,7 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     ...(sessionManager ? { sessionManager } : {}),
     ...(model ? { model } : {}),
     ...(thinkingLevel ? { thinkingLevel } : {}),
+    ...(excludeTools ? { excludeTools } : {}),
   });
 
   agentModeController.setPlanFilePath(

@@ -16,6 +16,8 @@ export const SessionMetadataSchema = z.object({
   sessionFile: z.string().optional(),
   /** Last permission mode the user set for this session. Restored on rehydrate. */
   agentMode: AgentModeSchema.optional(),
+  /** Tools the user disabled for this session. */
+  excludedTools: z.array(z.string().min(1)).optional(),
 });
 
 export type SessionMetadata = z.infer<typeof SessionMetadataSchema>;

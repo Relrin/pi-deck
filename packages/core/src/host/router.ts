@@ -73,6 +73,7 @@ function toSummary(record: SessionRecord) {
     modelRef: record.modelRef,
     thinkingLevel: record.thinkingLevel,
     agentMode: record.agentMode,
+    excludedTools: record.excludedTools,
     createdAt: record.createdAt,
     lastActivityAt: record.lastActivityAt,
     branch: record.branch,
@@ -132,6 +133,7 @@ const handlers: { [C in CommandName]: CommandHandler } = {
       modelRef: parsed.modelRef,
       thinkingLevel: parsed.thinkingLevel,
       agentMode: parsed.agentMode,
+      excludedTools: parsed.excludedTools,
     });
     await ctx.metadataStore.appendSessionId(project.id, record.id);
     return { session: toSummary(record) };
@@ -208,6 +210,11 @@ const handlers: { [C in CommandName]: CommandHandler } = {
   "session.setAgentMode": async (ctx, payload) => {
     const parsed = CommandSchemas["session.setAgentMode"].request.parse(payload);
     await ctx.sessionManager.setAgentMode(parsed.sessionId, parsed.mode);
+    return { ok: true as const };
+  },
+  "session.setExcludedTools": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.setExcludedTools"].request.parse(payload);
+    await ctx.sessionManager.setExcludedTools(parsed.sessionId, parsed.excludedTools);
     return { ok: true as const };
   },
   "session.approvePlan": async (ctx, payload) => {

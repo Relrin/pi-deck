@@ -20,6 +20,7 @@ import { useAttachmentsHotkeys } from "../intro/useAttachmentsHotkeys.js";
 import { type PromptImageDraft, useIntroComposerStore } from "../intro/useIntroComposerStore.js";
 import { useRecentAttachmentsStore } from "../intro/useRecentAttachmentsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
+import { SessionToolsButton } from "../tools/SessionToolsButton.js";
 import { ContextUsageIndicator } from "./composer/ContextUsageIndicator.js";
 import { ImagePreviewDialog } from "./composer/ImagePreviewDialog.js";
 import { SessionAgentModePicker } from "./composer/SessionAgentModePicker.js";
@@ -337,6 +338,7 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
         />
         <div className="pid-composer-row">
           <SessionAgentModePicker />
+          <SessionToolsButton />
           <PidAttachmentsPicker
             onChooseFiles={chooseFiles}
             onChooseFolder={chooseFolder}

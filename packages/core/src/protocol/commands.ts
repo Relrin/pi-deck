@@ -76,6 +76,8 @@ export const SessionCreateRequest = z.object({
   modelRef: SessionModelRefSchema.optional(),
   thinkingLevel: ThinkingLevelSchema.optional(),
   agentMode: AgentModeSchema.optional(),
+  /** Tool ids to disable for this session. See SessionSummarySchema.excludedTools. */
+  excludedTools: z.array(z.string().min(1)).optional(),
 });
 export const SessionCreateResponse = z.object({ session: SessionSummarySchema });
 
@@ -149,6 +151,17 @@ export const SessionSetAgentModeRequest = z.object({
   mode: AgentModeSchema,
 });
 export const SessionSetAgentModeResponse = z.object({ ok: z.literal(true) });
+
+/**
+ * Renderer → host: replace the session's disabled-tools list. pi 0.77's SDK only honours
+ * `excludeTools` at `createAgentSession` time, so the host respawns the worker when the live
+ * value changes.
+ */
+export const SessionSetExcludedToolsRequest = z.object({
+  sessionId: z.string().min(1),
+  excludedTools: z.array(z.string().min(1)),
+});
+export const SessionSetExcludedToolsResponse = z.object({ ok: z.literal(true) });
 
 /**
  * Renderer → host: approve the current plan and transition into an executing mode. The host
@@ -487,6 +500,10 @@ export const CommandSchemas = {
   "session.setAgentMode": {
     request: SessionSetAgentModeRequest,
     response: SessionSetAgentModeResponse,
+  },
+  "session.setExcludedTools": {
+    request: SessionSetExcludedToolsRequest,
+    response: SessionSetExcludedToolsResponse,
   },
   "session.approvePlan": {
     request: SessionApprovePlanRequest,

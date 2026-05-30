@@ -31,6 +31,12 @@ interface IntroComposerState {
   pendingThinkingLevel: ThinkingLevel | undefined;
   /** Last-selected agent mode; defaults to "plan" on a fresh install. */
   agentMode: AgentMode;
+  /**
+   * Per-create tool exclusion override. `undefined` = use the global default from
+   * `useToolsStore`; a (possibly empty) array = explicit override applied to the next
+   * `session.create`. Survives reloads so the picked state persists across launches.
+   */
+  pendingExcludedTools: string[] | undefined;
   /** Files / folders / repo refs queued for the next prompt; cleared on Send. */
   attachments: PromptAttachment[];
   /** Clipboard/dropped images queued for the next prompt; cleared on Send. */
@@ -40,6 +46,7 @@ interface IntroComposerState {
   setPendingModel: (ref: SessionModelRef | undefined) => void;
   setPendingThinkingLevel: (level: ThinkingLevel | undefined) => void;
   setAgentMode: (mode: AgentMode) => void;
+  setPendingExcludedTools: (tools: string[] | undefined) => void;
   addAttachments: (next: PromptAttachment[]) => void;
   removeAttachment: (path: string) => void;
   clearAttachments: () => void;
@@ -62,6 +69,7 @@ export const useIntroComposerStore = create<IntroComposerState>()(
       pendingModelRef: undefined,
       pendingThinkingLevel: undefined,
       agentMode: "plan",
+      pendingExcludedTools: undefined,
       attachments: [],
       images: [],
 
@@ -69,6 +77,7 @@ export const useIntroComposerStore = create<IntroComposerState>()(
       setPendingModel: (pendingModelRef) => set({ pendingModelRef }),
       setPendingThinkingLevel: (pendingThinkingLevel) => set({ pendingThinkingLevel }),
       setAgentMode: (agentMode) => set({ agentMode }),
+      setPendingExcludedTools: (pendingExcludedTools) => set({ pendingExcludedTools }),
       addAttachments: (next) =>
         set((s) => {
           // De-dupe on (kind|path) — re-attaching the same file is a no-op rather than dup chips.
@@ -110,6 +119,7 @@ export const useIntroComposerStore = create<IntroComposerState>()(
         pendingModelRef: state.pendingModelRef,
         pendingThinkingLevel: state.pendingThinkingLevel,
         agentMode: state.agentMode,
+        pendingExcludedTools: state.pendingExcludedTools,
       }),
     },
   ),

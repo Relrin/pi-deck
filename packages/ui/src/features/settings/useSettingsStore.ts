@@ -3,6 +3,7 @@ import { create } from "zustand";
 export type SettingsSectionId =
   | "appearance"
   | "agent-models"
+  | "tools"
   | "git-github"
   | "mcp-servers"
   | "editor"

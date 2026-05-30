@@ -25,6 +25,8 @@ import { usePathDragStore } from "../files/usePathDragStore.js";
 import { useGitStore } from "../git/useGitStore.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
+import { PidToolsButton } from "../tools/PidToolsButton.js";
+import { useToolsStore } from "../tools/useToolsStore.js";
 import { PidAgentModePicker } from "./PidAgentModePicker.js";
 import { PidAttachmentsPicker } from "./PidAttachmentsPicker.js";
 import { PidBranchPicker } from "./PidBranchPicker.js";
@@ -45,6 +47,8 @@ export function PidComposerScreen() {
   const pendingModelRef = useIntroComposerStore((s) => s.pendingModelRef);
   const pendingThinkingLevel = useIntroComposerStore((s) => s.pendingThinkingLevel);
   const agentMode = useIntroComposerStore((s) => s.agentMode);
+  const pendingExcludedTools = useIntroComposerStore((s) => s.pendingExcludedTools);
+  const defaultExcludedTools = useToolsStore((s) => s.defaultExcludedTools);
   const attachments = useIntroComposerStore((s) => s.attachments);
   const addAttachments = useIntroComposerStore((s) => s.addAttachments);
   const removeAttachment = useIntroComposerStore((s) => s.removeAttachment);
@@ -223,10 +227,13 @@ export function PidComposerScreen() {
           }))
         : undefined;
     try {
+      // Per-create override wins; otherwise the global default from Settings → Tools.
+      const excludedTools = pendingExcludedTools ?? defaultExcludedTools;
       await store.createSession(activeProjectId, {
         modelRef: pendingModelRef,
         thinkingLevel: pendingThinkingLevel,
         agentMode,
+        excludedTools: excludedTools.length > 0 ? excludedTools : undefined,
       });
       await useSessionsStore.getState().sendPrompt(trimmed, {
         agentMode,
@@ -381,6 +388,7 @@ export function PidComposerScreen() {
           />
           <div className="pid-composer-row">
             <PidAgentModePicker />
+            <PidToolsButton />
             <PidAttachmentsPicker
               onChooseFiles={chooseFiles}
               onChooseFolder={chooseFolder}
