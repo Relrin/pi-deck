@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Check, X } from "../../../components/icons/index.js";
 import { PidKbd } from "../../../components/kbd/PidKbd.js";
+import { Tooltip } from "../../../components/ui/Tooltip.js";
 import { humanizeError } from "../../../lib/format/humanize-error.js";
 import type { ToolApprovalDecision } from "../../../lib/transport/protocol-client.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
@@ -108,18 +109,20 @@ export function ApprovalPill({
   return (
     <div className="pid-approval-pill" data-busy={busy ?? undefined}>
       {reason && <span className="pid-approval-pill-reason">{reason}</span>}
-      <label className="pid-approval-pill-always" htmlFor={checkboxId}>
-        <input
-          id={checkboxId}
-          type="checkbox"
-          checked={alwaysAllow}
-          onChange={(e) => setAlwaysAllow(e.target.checked)}
-          disabled={busy !== null}
-        />
-        <span>
-          always allow <code className="pid-approval-pill-key">{allowKey}</code>
-        </span>
-      </label>
+      <Tooltip content="Allow this command for the rest of the session" side="bottom">
+        <label className="pid-approval-pill-always" htmlFor={checkboxId}>
+          <input
+            id={checkboxId}
+            type="checkbox"
+            checked={alwaysAllow}
+            onChange={(e) => setAlwaysAllow(e.target.checked)}
+            disabled={busy !== null}
+          />
+          <span>
+            always allow <code className="pid-approval-pill-key">{allowKey}</code>
+          </span>
+        </label>
+      </Tooltip>
       <button
         type="button"
         className="pid-approval-pill-action"
