@@ -108,4 +108,47 @@ describe("ToolCallCard", () => {
     await new Promise((r) => setTimeout(r, 1700));
     expect(row?.style.borderColor).toBe("");
   });
+
+  test("auto-expands when a pending approval arrives, then auto-collapses once it clears", () => {
+    const callBase = call({
+      status: "running",
+      startedAt: Date.now(),
+      pendingApproval: { approvalId: "ap-1" },
+    });
+    const { rerender } = render(<ToolCallCard sessionId="s-test" call={callBase} />);
+    // Approval pending → row should be expanded.
+    expect(screen.getByRole("button", { expanded: true })).toBeInTheDocument();
+
+    // Approval resolved → pendingApproval drops away on the next render.
+    rerender(
+      <ToolCallCard
+        sessionId="s-test"
+        call={{ ...callBase, pendingApproval: undefined, status: "done", endedAt: Date.now() }}
+      />,
+    );
+    expect(screen.getByRole("button", { expanded: false })).toBeInTheDocument();
+  });
+
+  test("a manual collapse during pending approval is preserved when the approval resolves", () => {
+    const callBase = call({
+      status: "running",
+      startedAt: Date.now(),
+      pendingApproval: { approvalId: "ap-1" },
+    });
+    const { rerender } = render(<ToolCallCard sessionId="s-test" call={callBase} />);
+
+    // User collapses the auto-expanded row mid-decision — this should hand control back.
+    fireEvent.click(screen.getByRole("button", { expanded: true }));
+    expect(screen.getByRole("button", { expanded: false })).toBeInTheDocument();
+
+    // Approval clears — the row must NOT bounce back to expanded only to collapse again,
+    // and it must remain in whatever state the user left it (collapsed here).
+    rerender(
+      <ToolCallCard
+        sessionId="s-test"
+        call={{ ...callBase, pendingApproval: undefined, status: "done", endedAt: Date.now() }}
+      />,
+    );
+    expect(screen.getByRole("button", { expanded: false })).toBeInTheDocument();
+  });
 });

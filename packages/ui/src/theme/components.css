@@ -3157,6 +3157,15 @@
   color: var(--ink-2);
   overflow: hidden;
 }
+.pid-tool-row[data-pending-approval] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-line);
+}
+.pid-tool-row-head-row {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
 /* Inside an agent message, the bubble already inherits the chat's left indent so
    the row uses negative-left margin to break flush with the chat-pane gutter and
    span the full available width. */
@@ -3176,9 +3185,14 @@
   cursor: pointer;
   color: inherit;
   font: inherit;
+  line-height: 14px;
 }
 .pid-tool-row-head:hover {
   background: var(--bg-2);
+}
+.pid-tool-row-head-row > .pid-tool-row-head {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .pid-tool-row-chev {
   display: inline-flex;
@@ -3187,12 +3201,20 @@
   flex: 0 0 auto;
 }
 .pid-tool-row-tag {
-  color: var(--ink-3);
+  color: var(--accent);
+  font-weight: 600;
   font-size: 9px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   min-width: 38px;
   flex: 0 0 auto;
+}
+.pid-tool-row-tag::before {
+  content: "·";
+  color: var(--ink-3);
+  font-size: 12px;
+  margin-right: 6px;
+  font-weight: 400;
 }
 .pid-tool-row-body {
   color: var(--ink-1);
@@ -3202,6 +3224,12 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.pid-tool-row-elapsed {
+  color: var(--ink-2);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
 .pid-tool-row-stat {
   color: var(--add);
   font-size: 10px;
@@ -3209,6 +3237,14 @@
 }
 .pid-tool-row-stat[data-tone="error"] {
   color: var(--del);
+}
+.pid-stream-status-elapsed {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
 }
 .pid-tool-row-detail {
   border-top: 1px solid var(--line);
@@ -4780,18 +4816,17 @@
   text-align: center;
 }
 
-/* ApprovalPill — inline allow/deny on a tool-call card while in `ask` mode. */
+/* ApprovalPill — inline allow / deny / always-allow controls */
 .pid-approval-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-2);
-  border: 1px solid var(--line);
+  gap: 10px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 0;
   font-size: 11px;
   color: var(--ink-1);
+  flex: 0 0 auto;
 }
 
 .pid-approval-pill-reason {
@@ -4799,34 +4834,87 @@
   margin-right: 4px;
 }
 
+/* "always allow <key>" checkbox + label. The label wraps the input so a click anywhere on
+ * the text toggles the box; we also style the surrounding tap target so it doesn't read as
+ * a button (the actual actions are the two adjacent buttons). */
+.pid-approval-pill-always {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.pid-approval-pill-always > input[type="checkbox"] {
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.pid-approval-pill-key {
+  font-family: var(--font-mono);
+  color: var(--ink-1);
+  background: transparent;
+  padding: 0;
+  border: 0;
+  font-size: 11px;
+}
+
+/* Two action buttons. Deny is the quiet outline; Allow once is the filled accent that
+ * carries the focal weight. Both end with a small `[Esc]` / `[↵]` kbd hint so the keyboard
+ * shortcut is discoverable without a tooltip. */
 .pid-approval-pill-action {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
   background: transparent;
+  font-family: var(--font-ui);
   font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
   color: var(--ink-0);
-}
-
-.pid-approval-pill-action[data-variant="allow"] {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.pid-approval-pill-action[data-variant="allow"]:hover {
-  background: var(--bg-1);
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
 }
 
 .pid-approval-pill-action[data-variant="deny"] {
-  border-color: var(--line);
+  color: var(--ink-1);
 }
 
-.pid-approval-pill-action[data-variant="deny"]:hover {
-  background: var(--bg-1);
+.pid-approval-pill-action[data-variant="deny"]:hover:not(:disabled) {
+  background: var(--bg-2);
+  color: var(--ink-0);
+  border-color: var(--ink-2);
+}
+.pid-approval-pill-action[data-variant="allow"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.pid-approval-pill-action[data-variant="allow"]:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.pid-approval-pill-action .pid-kbd {
+  background: transparent;
+  border-color: currentColor;
+  margin-left: 2px;
+}
+.pid-approval-pill-action[data-variant="deny"] .pid-kbd {
+  opacity: 0.7;
+}
+.pid-approval-pill-action[data-variant="allow"] .pid-kbd {
+  opacity: 1;
+  background: color-mix(in oklab, var(--accent-ink) 14%, transparent);
+  border-color: color-mix(in oklab, var(--accent-ink) 55%, transparent);
+  color: color-mix(in oklab, var(--accent-ink) 55%, transparent);
 }
 
 .pid-approval-pill-action:disabled {

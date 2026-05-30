@@ -12,7 +12,7 @@ export function BashRenderer({ call }: ToolRendererProps) {
   const output = extractTextContent(call.result) || extractTextContent(call.partialResult);
   return (
     <div className="space-y-2">
-      <div className="bg-[var(--color-panel-2)] rounded-[var(--radius-sm)] p-2 font-mono text-xs text-[var(--color-text)] overflow-x-auto whitespace-pre">
+      <div className="font-mono text-xs text-[var(--color-text)] overflow-x-auto whitespace-pre">
         <span className="text-[var(--color-accent)]">$</span> <span>{input.command ?? ""}</span>
       </div>
       {output && <CodeBlock text={output} ariaLabel="Bash output" />}

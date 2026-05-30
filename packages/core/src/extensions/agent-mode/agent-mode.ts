@@ -216,9 +216,7 @@ export function createAgentModeExtension(options: AgentModeExtensionOptions): Ag
       if (!entry) return;
       pending.delete(approvalId);
       timers.clearTimeout(entry.timerHandle);
-      entry.resolve(
-        decision === "deny" ? { block: true, reason: reason ?? "Denied by user." } : {},
-      );
+      entry.resolve(decision === "deny" ? { block: true, reason: reason ?? "Denied by user" } : {});
     },
     pendingApprovalIds() {
       return [...pending.keys()];
@@ -226,7 +224,7 @@ export function createAgentModeExtension(options: AgentModeExtensionOptions): Ag
     dispose() {
       for (const [id, entry] of pending) {
         timers.clearTimeout(entry.timerHandle);
-        entry.resolve({ block: true, reason: "Session closed before approval was answered." });
+        entry.resolve({ block: true, reason: "Session closed before approval was answered" });
         pending.delete(id);
       }
     },
