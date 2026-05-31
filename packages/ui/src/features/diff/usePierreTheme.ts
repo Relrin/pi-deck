@@ -3,6 +3,7 @@ import type { ThemesType } from "@pierre/diffs/react";
 import { useEffect, useMemo } from "react";
 import type { ThemeRegistration } from "shiki";
 import { getShikiThemeForActive } from "../../theme/shiki-bridge.js";
+import { usePreferencesStore } from "../../theme/usePreferencesStore.js";
 import { useThemeStore } from "../../theme/useThemeStore.js";
 
 /**
@@ -14,15 +15,13 @@ export type PierreThemeValue = string | ThemesType;
 /**
  * Resolve the active pi-deck theme to the Pierre/Shiki theme value Pierre expects.
  *
- * VS Code themes imported via `theme.import` ship their raw JSON through
- * `shiki-bridge`; we register that JSON as a custom Pierre theme on first use and
- * forward the name. Bundled pi-deck themes don't ship a Shiki payload, so we fall
- * back to Shiki's `github-light-default` / `github-dark-default` — same payload used
- * by the chat code-highlighter via `setShikiThemeByKind`.
- *
- * Registered names are cached in-module so re-renders don't re-register the same
- * theme; switching themes during a session triggers a fresh registration for the new
- * name only.
+ * Two paths:
+ *   1. The active pi-deck theme is an imported VS Code theme — register its raw JSON
+ *      as a Pierre custom theme on first use and forward the name. This keeps Pierre's
+ *      syntax highlighting token-for-token aligned with the editor's theme.
+ *   2. The active pi-deck theme is bundled — Pierre's input falls back to the user's
+ *      preference for the matching kind (`diffThemeLight` / `diffThemeDark` in
+ *      `usePreferencesStore`).
  */
 const registeredThemeNames = new Set<string>();
 
@@ -32,6 +31,8 @@ export function usePierreTheme(): PierreThemeValue {
   // effect; the bridge state is set synchronously alongside `applySpec`.
   const activeName = useThemeStore((s) => s.activeName);
   const activeSpec = useThemeStore((s) => s.activeSpec);
+  const diffThemeLight = usePreferencesStore((s) => s.diffThemeLight);
+  const diffThemeDark = usePreferencesStore((s) => s.diffThemeDark);
 
   // The bridge is a stateful singleton; `activeName`/`activeSpec` are the observable
   // signal that it has a new payload, which Biome can't see through.
@@ -48,5 +49,7 @@ export function usePierreTheme(): PierreThemeValue {
     registeredThemeNames.add(payload.name);
   }, [payload]);
 
-  return payload.name;
+  if (payload.raw) return payload.name;
+  const kind = activeSpec?.meta?.kind ?? "dark";
+  return kind === "light" ? diffThemeLight : diffThemeDark;
 }

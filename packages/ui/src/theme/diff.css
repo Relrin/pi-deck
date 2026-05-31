@@ -222,3 +222,110 @@ themes. These rules only style the surrounding chrome.
   overflow: hidden;
   max-height: 220px;
 }
+
+/* ---------- Settings → Git & GitHub: diff theme picker ---------- */
+.pid-diff-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.pid-diff-theme-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+  min-width: 0;
+}
+.pid-diff-theme-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pid-diff-theme-card-preview {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  max-height: 200px;
+}
+
+/* Trigger button shared visual with the chip family — pill outline + tight padding. */
+.pid-diff-theme-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--t-12);
+  color: var(--ink-1);
+  margin-left: auto;
+  max-width: 60%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pid-diff-theme-trigger:hover {
+  color: var(--ink-0);
+  background: color-mix(in oklab, var(--bg-0) 70%, var(--bg-2) 30%);
+}
+.pid-diff-theme-trigger-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Dropdown menu (Radix Portal) — listed in two columns: label + raw theme name as
+   a mono caption so power users can match it back to Shiki's bundled-theme catalogue. */
+.pid-diff-theme-menu {
+  min-width: 240px;
+  padding: 4px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+  z-index: 1000;
+}
+.pid-diff-theme-menu-item {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--t-12);
+  color: var(--ink-1);
+  outline: none;
+}
+.pid-diff-theme-menu-item[data-highlighted] {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+.pid-diff-theme-menu-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--ink-3);
+  justify-self: center;
+}
+.pid-diff-theme-menu-item[data-active="true"] .pid-diff-theme-menu-dot {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.pid-diff-theme-menu-label {
+  color: var(--ink-0);
+}
+.pid-diff-theme-menu-name {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+}

@@ -10,9 +10,10 @@ export interface DiffViewProps {
   unified: string;
   layout: DiffLayout;
   wordHighlight: boolean;
-  /** Optional Pierre annotations (one-per-line metadata used for review comments).
-   * Plan 008 requires the wiring exist but the renderer is supplied externally. */
+  /** Optional Pierre annotations (one-per-line metadata used for review comments) */
   annotations?: DiffLineAnnotation<unknown>[];
+  /** Force a specific Pierre/Shiki theme name */
+  themeOverride?: string;
   className?: string;
 }
 
@@ -35,9 +36,11 @@ export function DiffView({
   layout,
   wordHighlight,
   annotations,
+  themeOverride,
   className,
 }: DiffViewProps) {
-  const theme = usePierreTheme();
+  const derivedTheme = usePierreTheme();
+  const theme = themeOverride ?? derivedTheme;
   const indicators = usePreferencesStore((s) => s.diffIndicators);
   const background = usePreferencesStore((s) => s.diffBackground);
   const lineNumbers = usePreferencesStore((s) => s.diffLineNumbers);
