@@ -22,7 +22,7 @@ import { PidLeftRail } from "./layout/PidLeftRail";
 import { PidRightPane } from "./layout/PidRightPane";
 import { PidTopBar } from "./layout/PidTopBar";
 import { installPideckDevHatch } from "./lib/dev/__pideck";
-import { useNavStore } from "./lib/useNavStore";
+import { isSessionContextScreen, useNavStore } from "./lib/useNavStore";
 import { ThemeProvider } from "./theme/ThemeProvider";
 
 export function App() {
@@ -30,20 +30,21 @@ export function App() {
   const projectId = useProjectsStore((s) => s.activeProjectId);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
   const screen = useNavStore((s) => s.screen);
-  // The Git tab badge count only makes sense when the center column is actually showing a
-  // session. On blank / "Back to start" / editor / history routes the GitSidebar renders a
-  // placeholder, so the count badge stays hidden too.
-  const inSession = screen === "session" && Boolean(activeSessionId);
+
+  const inSessionContext = isSessionContextScreen(screen) && Boolean(activeSessionId);
   const gitCount = useGitStore((s) =>
-    projectId && inSession
+    projectId && inSessionContext
       ? (s.statusByProject[projectId]?.changes.length ?? undefined)
       : undefined,
   );
+
   // Context tab badge: count of artefacts the agent has produced this session. We don't add
   // "in scope" attachments because every session has at least one as soon as the user sends a
   // single attachment, which makes the badge noisy. Artefacts are sparser and more meaningful.
-  const artefacts = useArtefactsStore(selectArtefacts(inSession ? activeSessionId : undefined));
-  const contextCount = inSession && artefacts.length > 0 ? artefacts.length : undefined;
+  const artefacts = useArtefactsStore(
+    selectArtefacts(inSessionContext ? activeSessionId : undefined),
+  );
+  const contextCount = inSessionContext && artefacts.length > 0 ? artefacts.length : undefined;
   useSettingsHotkey();
   useNewSessionShortcut();
 
@@ -75,7 +76,9 @@ export function App() {
                 right={
                   <PidRightPane
                     git={<GitSidebar />}
-                    context={<PidContextPane sessionId={inSession ? activeSessionId : undefined} />}
+                    context={
+                      <PidContextPane sessionId={inSessionContext ? activeSessionId : undefined} />
+                    }
                     gitCount={gitCount}
                     contextCount={contextCount}
                     initialTab="git"

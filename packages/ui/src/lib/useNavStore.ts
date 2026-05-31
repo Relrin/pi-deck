@@ -30,6 +30,21 @@ export interface NavStoreState {
 
 const TRANSIENT_SCREENS: ReadonlySet<NavScreen> = new Set(["editor", "git-diff", "git-history"]);
 
+/**
+ * Screens that share the same an active session. Blank screen is the only one
+ * that drops out of the session context.
+ */
+const SESSION_CONTEXT_SCREENS: ReadonlySet<NavScreen> = new Set([
+  "session",
+  "editor",
+  "git-diff",
+  "git-history",
+]);
+
+export function isSessionContextScreen(screen: NavScreen): boolean {
+  return SESSION_CONTEXT_SCREENS.has(screen);
+}
+
 export const useNavStore = create<NavStoreState>()(
   persist(
     (set) => ({

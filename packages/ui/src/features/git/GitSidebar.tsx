@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavStore } from "../../lib/useNavStore.js";
+import { isSessionContextScreen, useNavStore } from "../../lib/useNavStore.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { BranchHeader } from "./BranchHeader.js";
@@ -12,11 +12,7 @@ import { useTurnFileTouches } from "./useTurnFileTouches.js";
 
 export function GitSidebar() {
   const projectId = useProjectsStore((s) => s.activeProjectId);
-  // The gate is the conjunction of: project loaded, WS client live, an active session id,
-  // AND the center column is actually showing that session. The last condition matters
-  // because the topbar's "Back to start" button flips `screen` to "blank" without clearing
-  // `activeSessionId` — without checking `screen`, the git tab would keep showing data while
-  // the user is on the blank/intro screen.
+
   const screen = useNavStore((s) => s.screen);
   const client = useSessionsStore((s) => s.client);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
@@ -31,33 +27,28 @@ export function GitSidebar() {
   const hunksByPath = useGitStore((s) => (projectId ? s.hunksByProject[projectId] : undefined));
   const groupMode = useGroupModeStore((s) => s.mode);
 
-  const inSession = screen === "session" && Boolean(activeSessionId);
+  const inSessionContext = isSessionContextScreen(screen) && Boolean(activeSessionId);
 
   useEffect(() => {
-    // Only hydrate while the user is actually viewing a session. On blank / editor / diff /
-    // history screens we keep the panel quiet — no branch row, no changes list, no spinner.
-    // Re-hydration on first WS connect + per-session switch is handled by the reactive deps.
-    if (!projectId || !client || !inSession) return;
+    if (!projectId || !client || !inSessionContext) return;
     void refreshStatus(projectId);
     void refreshBranches(projectId);
-  }, [projectId, client, inSession, refreshStatus, refreshBranches]);
+  }, [projectId, client, inSessionContext, refreshStatus, refreshBranches]);
 
   useEffect(() => {
     // Hunks are expensive to compute (one extra `git diff` per refresh), so we only fetch
     // them when the user has actually switched to the "hunk" grouping. `applyStatusChanged`
     // drops the cached entry on every change event, so this effect re-fires and re-fetches
     // whenever the working tree moves under us.
-    if (!projectId || !client || !inSession) return;
+    if (!projectId || !client || !inSessionContext) return;
     if (groupMode !== "hunk") return;
     if (hunksByPath) return;
     void refreshHunks(projectId);
-  }, [projectId, client, inSession, groupMode, hunksByPath, refreshHunks]);
+  }, [projectId, client, inSessionContext, groupMode, hunksByPath, refreshHunks]);
 
   const touched = useTurnFileTouches(status?.root);
 
-  // Not viewing a session → don't surface anything inside the Git tab. Covers the blank
-  // screen, "Back to start", and any future non-session route.
-  if (!projectId || !inSession) {
+  if (!projectId || !inSessionContext) {
     return <div className="pid-git-placeholder">Start or open a session to see git state.</div>;
   }
 
