@@ -7,6 +7,14 @@ The Pierre `PatchDiff` itself handles its own internal styling via Shiki
 themes. These rules only style the surrounding chrome.
 */
 
+/* ---------- Pierre host: follow the app's color-scheme ---------- */
+diffs-container {
+  color-scheme: dark;
+}
+[data-theme="light"] diffs-container {
+  color-scheme: light;
+}
+
 /* ---------- DiffTab (ad-hoc, full screen) ---------- */
 .pid-diff-tab {
   display: flex;

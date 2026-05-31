@@ -1,5 +1,4 @@
-import type { DiffLineAnnotation } from "@pierre/diffs/react";
-import { PatchDiff } from "@pierre/diffs/react";
+import { type DiffLineAnnotation, PatchDiff, useWorkerPool } from "@pierre/diffs/react";
 import { useEffect, useMemo, useState } from "react";
 import { usePreferencesStore } from "../../theme/usePreferencesStore.js";
 import type { DiffLayout } from "./useDiffSettingsStore.js";
@@ -52,6 +51,12 @@ export function DiffView({
   const lineNumbers = usePreferencesStore((s) => s.diffLineNumbers);
   const lineWrap = usePreferencesStore((s) => s.diffLineWrap);
 
+  const poolManager = useWorkerPool();
+  useEffect(() => {
+    if (forPreview || !poolManager) return;
+    void poolManager.setRenderOptions({ theme: derivedTheme });
+  }, [forPreview, poolManager, derivedTheme]);
+
   // Pierre's synchronous (no-worker-pool) render path lazy-loads the Shiki
   // highlighter but doesn't notify when the load completes — see DiffHunksRenderer
   // `hydrate()` calling `initializeHighlighter()` without an `await` or callback.
@@ -87,9 +92,11 @@ export function DiffView({
     [theme, layout, indicators, background, lineNumbers, lineWrap, wordHighlight],
   );
 
+  const themeKey = typeof theme === "string" ? theme : `${theme.light}|${theme.dark}`;
+
   return (
     <PatchDiff
-      key={forPreview ? `preview-${retryToken}-${theme}` : undefined}
+      key={forPreview ? `preview-${retryToken}-${themeKey}` : undefined}
       patch={unified}
       options={options}
       lineAnnotations={annotations}
