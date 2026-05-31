@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import { Children, type CSSProperties, isValidElement, type ReactNode } from "react";
 import { Square, SquareCheck, SquareMinus } from "../../../components/icons/index.js";
 import { cn } from "../../../lib/cn.js";
 
@@ -59,13 +59,19 @@ export function TaskListItem({ children, className }: TaskListItemProps) {
     // `- [x]` mid-execution rather than appearing instantly.
     transition: "opacity 300ms ease, color 300ms ease",
   };
+
+  const childArray = Children.toArray(children);
+  const checkboxIdx = childArray.findIndex(isValidElement);
+  const leading = checkboxIdx >= 0 ? childArray.slice(0, checkboxIdx + 1) : [];
+  const label = checkboxIdx >= 0 ? childArray.slice(checkboxIdx + 1) : childArray;
   return (
     <li
       className={cn(className, "pid-plan-task-item", isChecked && "pid-plan-task-item-checked")}
       style={style}
       data-checked={isChecked || undefined}
     >
-      {children}
+      {leading}
+      <span className="pid-plan-task-item-label">{label}</span>
     </li>
   );
 }

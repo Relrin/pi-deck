@@ -4634,6 +4634,11 @@
   color: var(--ink-0);
 }
 
+.pid-plan-task-item-label {
+  flex: 1;
+  min-width: 0;
+}
+
 .pid-plan-task-item-checked {
   color: var(--ink-2);
   text-decoration: line-through;
