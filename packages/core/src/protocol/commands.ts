@@ -341,6 +341,86 @@ export const GitTurnTouchesResponse = z.object({
 });
 
 /**
+ * One reviewable file inside a `ReviewTurn`. `status` matches the canonical git short
+ * status (`M` modified, `A` added by the agent, `D` deleted by the agent) and is computed
+ * by the host against the turn-start baseline, not against HEAD.
+ */
+export const ReviewFileSchema = z.object({
+  /** Repo-relative path (POSIX-normalised). */
+  path: z.string().min(1),
+  status: z.enum(["M", "A", "D"]),
+});
+
+/**
+ * One turn's worth of agent-driven file changes pending user review. `stashSha` is the
+ * `git stash create` SHA captured at turn start.
+ */
+export const ReviewTurnSchema = z.object({
+  turnId: z.string().min(1),
+  sessionId: z.string().min(1),
+  /** Project the turn ran inside — needed for the renderer to look up the repo root and
+   * route `diff.get` requests. */
+  projectId: z.string().min(1),
+  /** Turn-start `git stash create` SHA, or null when the tree was clean (baseline = HEAD). */
+  stashSha: z.string().nullable(),
+  files: z.array(ReviewFileSchema),
+  /** Epoch ms when the turn ended and this record was finalised. */
+  createdAt: z.number().int().nonnegative(),
+});
+export type ReviewTurn = z.infer<typeof ReviewTurnSchema>;
+
+export const ReviewListRequest = z.object({ sessionId: z.string().min(1) });
+export const ReviewListResponse = z.object({ turns: z.array(ReviewTurnSchema) });
+
+export const ReviewAcceptRequest = z.object({
+  sessionId: z.string().min(1),
+  turnId: z.string().min(1),
+});
+export const ReviewAcceptResponse = z.object({ ok: z.literal(true) });
+
+export const ReviewRejectRequest = z.object({
+  sessionId: z.string().min(1),
+  turnId: z.string().min(1),
+});
+export const ReviewRejectResponse = z.object({ ok: z.literal(true) });
+
+export const ReviewAcceptFileRequest = z.object({
+  sessionId: z.string().min(1),
+  turnId: z.string().min(1),
+  path: z.string().min(1),
+});
+export const ReviewAcceptFileResponse = z.object({ ok: z.literal(true) });
+
+export const ReviewRejectFileRequest = z.object({
+  sessionId: z.string().min(1),
+  turnId: z.string().min(1),
+  path: z.string().min(1),
+});
+export const ReviewRejectFileResponse = z.object({ ok: z.literal(true) });
+
+/**
+ * Baseline the diff is computed against. `"HEAD"` is the ad-hoc viewer's case (git
+ * sidebar click); `{ kind: "stash", sha }` is the review flow's case, where the SHA
+ * comes from the `ReviewTurn` the renderer is rendering.
+ */
+export const DiffBaselineSchema = z.union([
+  z.literal("HEAD"),
+  z.object({ kind: z.literal("stash"), sha: z.string().min(1) }),
+]);
+
+export const DiffGetRequest = z.object({
+  projectId: z.string().uuid(),
+  path: z.string().min(1),
+  baseline: DiffBaselineSchema,
+});
+export const DiffGetResponse = z.object({
+  unified: z.string(),
+  before: z.string().nullable(),
+  after: z.string().nullable(),
+  status: z.enum(["M", "A", "D"]),
+});
+
+/**
  * Snapshot fetch for the Context tab's "Artefacts produced" section. The renderer also
  * receives live updates via `session.artefacts.changed` events; this command is only used to
  * prime the store when the tab is opened mid-session.
@@ -553,6 +633,18 @@ export const CommandSchemas = {
     request: GitTurnTouchesRequest,
     response: GitTurnTouchesResponse,
   },
+  "review.list": { request: ReviewListRequest, response: ReviewListResponse },
+  "review.accept": { request: ReviewAcceptRequest, response: ReviewAcceptResponse },
+  "review.reject": { request: ReviewRejectRequest, response: ReviewRejectResponse },
+  "review.acceptFile": {
+    request: ReviewAcceptFileRequest,
+    response: ReviewAcceptFileResponse,
+  },
+  "review.rejectFile": {
+    request: ReviewRejectFileRequest,
+    response: ReviewRejectFileResponse,
+  },
+  "diff.get": { request: DiffGetRequest, response: DiffGetResponse },
   "session.artefacts.list": {
     request: SessionArtefactsListRequest,
     response: SessionArtefactsListResponse,

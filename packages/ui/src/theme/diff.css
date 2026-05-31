@@ -1,0 +1,224 @@
+/**
+Diff viewer + PR-style review surface.
+- DiffTab (full-screen): ad-hoc viewer routed via `git-diff` nav screen.
+- ReviewPanel: a wide modal opened from the chat ReviewBanner.
+
+The Pierre `PatchDiff` itself handles its own internal styling via Shiki
+themes. These rules only style the surrounding chrome.
+*/
+
+/* ---------- DiffTab (ad-hoc, full screen) ---------- */
+.pid-diff-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  background: var(--bg-0);
+  color: var(--ink-0);
+}
+.pid-diff-tab-head {
+  border-bottom: 1px solid var(--line);
+  padding: 12px 18px;
+  background: var(--bg-1);
+}
+.pid-diff-tab-head-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pid-diff-tab-path {
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60vw;
+}
+.pid-diff-tab-head-spacer {
+  flex: 1;
+}
+.pid-diff-tab-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* ---------- Diff toolbar (shared by DiffTab + ReviewPanel) ---------- */
+.pid-diff-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pid-diff-toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  /* Strip default <fieldset> chrome — the toolbar uses the element for a11y grouping
+     only, not for the boxed visual treatment fieldsets normally bring. */
+  padding: 0 8px 0 0;
+  margin: 0 4px 0 0;
+  border: 0;
+  border-right: 1px solid var(--line);
+  min-inline-size: 0;
+}
+
+/* ---------- Review banner (mounted in ChatView) ---------- */
+.pid-review-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--accent-line, var(--line));
+  border-bottom: 1px solid var(--accent-line, var(--line));
+  background: var(--accent-soft);
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  /* Reset default button look */
+  appearance: none;
+  border-left: 0;
+  border-right: 0;
+}
+.pid-review-banner:hover {
+  background: color-mix(in oklab, var(--accent-soft) 80%, var(--accent) 15%);
+}
+.pid-review-banner-count {
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--accent);
+  background: var(--bg-0);
+  padding: 1px 6px;
+  border-radius: 2px;
+  min-width: 18px;
+  text-align: center;
+}
+.pid-review-banner-label {
+  color: var(--ink-1);
+}
+.pid-review-banner-cta {
+  margin-left: auto;
+  color: var(--accent);
+}
+
+/* ---------- Review panel (wide modal variant) ---------- */
+.pid-modal[data-size="wide"] {
+  width: min(1100px, 94vw);
+  max-height: min(720px, 90vh);
+}
+.pid-review-panel-header {
+  gap: 10px;
+}
+.pid-review-panel-header-spacer {
+  flex: 1;
+}
+.pid-review-panel-body {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 0;
+}
+
+/* Left column — file list */
+.pid-review-files {
+  border-right: 1px solid var(--line);
+  background: var(--bg-1);
+  overflow-y: auto;
+}
+.pid-review-file-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  gap: 8px;
+}
+.pid-review-file-row[data-active="true"] {
+  background: var(--accent-soft);
+  border-left: 2px solid var(--accent);
+  padding-left: 8px;
+}
+.pid-review-file-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+.pid-review-file-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+.pid-review-file-row[data-status="A"] .pid-review-file-status {
+  color: var(--add);
+  background: var(--add-soft);
+}
+.pid-review-file-row[data-status="M"] .pid-review-file-status {
+  color: var(--mod);
+  background: var(--mod-soft);
+}
+.pid-review-file-row[data-status="D"] .pid-review-file-status {
+  color: var(--del);
+  background: var(--del-soft);
+}
+.pid-review-file-path {
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+.pid-review-file-actions {
+  display: inline-flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 80ms ease-out;
+}
+.pid-review-file-row:hover .pid-review-file-actions,
+.pid-review-file-row:focus-within .pid-review-file-actions {
+  opacity: 1;
+}
+
+/* Right column — diff */
+.pid-review-panel-diff {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.pid-review-panel-diff-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-1);
+  flex-wrap: wrap;
+}
+.pid-review-panel-diff-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* ---------- Small preview used in the settings ---------- */
+.pid-diff-preview {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  max-height: 220px;
+}

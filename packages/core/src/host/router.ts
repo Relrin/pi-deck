@@ -12,6 +12,7 @@ import {
   checkoutPaths,
   createBranch,
   currentBranch,
+  diffForPath,
   GitNotFoundError,
   getCommitUrl,
   getDiffHunks,
@@ -35,6 +36,7 @@ import type { GitWatchManager } from "./git-watch-manager.js";
 import type { MetadataStore } from "./metadata-store.js";
 import { PlanFileWatcher } from "./plan-file-watcher.js";
 import type { ProviderManager } from "./provider-manager.js";
+import type { ReviewStore } from "./review-store.js";
 import type { SessionManager, SessionRecord } from "./session-manager.js";
 import type { ThemeManager } from "./themes/index.js";
 import type { TurnTracker } from "./turn-tracker.js";
@@ -49,6 +51,7 @@ export interface RouterContext {
   planFileWatcher: PlanFileWatcher;
   turnTracker: TurnTracker;
   artefactsTracker: ArtefactsTracker;
+  reviewStore: ReviewStore;
   hostVersion: string;
   protocolVersion: number;
 }
@@ -472,6 +475,49 @@ const handlers: { [C in CommandName]: CommandHandler } = {
   "git.turnTouches": async (ctx, payload) => {
     const parsed = CommandSchemas["git.turnTouches"].request.parse(payload);
     return ctx.turnTracker.getFor(parsed.sessionId);
+  },
+  "review.list": async (ctx, payload) => {
+    const parsed = CommandSchemas["review.list"].request.parse(payload);
+    return { turns: ctx.reviewStore.listFor(parsed.sessionId) };
+  },
+  "review.accept": async (ctx, payload) => {
+    const parsed = CommandSchemas["review.accept"].request.parse(payload);
+    await ctx.reviewStore.accept(parsed.sessionId, parsed.turnId);
+    return { ok: true as const };
+  },
+  "review.reject": async (ctx, payload) => {
+    const parsed = CommandSchemas["review.reject"].request.parse(payload);
+    try {
+      await ctx.reviewStore.reject(parsed.sessionId, parsed.turnId);
+    } catch (err) {
+      mapGitError(err);
+    }
+    return { ok: true as const };
+  },
+  "review.acceptFile": async (ctx, payload) => {
+    const parsed = CommandSchemas["review.acceptFile"].request.parse(payload);
+    await ctx.reviewStore.acceptFile(parsed.sessionId, parsed.turnId, parsed.path);
+    return { ok: true as const };
+  },
+  "review.rejectFile": async (ctx, payload) => {
+    const parsed = CommandSchemas["review.rejectFile"].request.parse(payload);
+    try {
+      await ctx.reviewStore.rejectFile(parsed.sessionId, parsed.turnId, parsed.path);
+    } catch (err) {
+      mapGitError(err);
+    }
+    return { ok: true as const };
+  },
+  "diff.get": async (ctx, payload) => {
+    const parsed = CommandSchemas["diff.get"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const result = await diffForPath(project.path, parsed.path, parsed.baseline);
+      return result;
+    } catch (err) {
+      mapGitError(err);
+    }
   },
   "session.artefacts.list": async (ctx, payload) => {
     const parsed = CommandSchemas["session.artefacts.list"].request.parse(payload);

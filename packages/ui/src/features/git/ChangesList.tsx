@@ -1,6 +1,7 @@
 import type { GitChange, GitHunk } from "@pi-deck/core/git/types.js";
-import { type MouseEvent, useMemo, useState } from "react";
+import { type MouseEvent, useCallback, useMemo, useState } from "react";
 import { Folder } from "../../components/icons/index.js";
+import { useNavStore } from "../../lib/useNavStore.js";
 import { ChangeRow } from "./ChangeRow.js";
 import { ChangesToolbar } from "./ChangesToolbar.js";
 import { GroupModeMenu } from "./GroupModeMenu.js";
@@ -17,12 +18,7 @@ interface Props {
   hunksByPath: Record<string, GitHunk[]> | undefined;
 }
 
-/**
- * Locale-aware natural-order collator: handles digit runs ("file2" < "file10"), folds case
- * ("README" interleaves with "readme"), and respects the user's UI locale via `undefined`.
- * One instance is shared by every `ChangesList` render — `Intl.Collator` is expensive to
- * construct, cheap to call.
- */
+/* Locale-aware natural-order collator. */
 const PATH_COLLATOR = new Intl.Collator(undefined, {
   numeric: true,
   sensitivity: "base",
@@ -72,12 +68,24 @@ export function ChangesList({ projectId, changes, totals, touched, hunksByPath }
   const toggle = (path: string) => toggleStaging(projectId, path);
   const stageAll = () => selectAllStaging(projectId, allPaths);
 
+  // Clicking a change row both highlights it locally AND opens the diff in the center.
+  // Routed here (not inside ChangeRow) so the four grouping modes all inherit the
+  // behaviour through `shared.setActivePath`.
+  const openDiff = useNavStore((s) => s.openDiff);
+  const selectChange = useCallback(
+    (path: string) => {
+      setActivePath(path);
+      openDiff({ projectId, path });
+    },
+    [openDiff, projectId],
+  );
+
   const rowProps = {
     touched,
     syncedSelected,
     activePath,
     toggle,
-    setActivePath,
+    setActivePath: selectChange,
   } satisfies SharedRowProps;
 
   return (

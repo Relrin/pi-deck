@@ -2,6 +2,7 @@ import type { ThemeListing, ThemeSpec } from "@pi-deck/core";
 import type { SessionModelRef, ThinkingLevel } from "@pi-deck/core/domain/session.js";
 import type { FsNode } from "@pi-deck/core/fs/types.js";
 import type { GitStatus } from "@pi-deck/core/git/types.js";
+import type { ReviewTurn } from "@pi-deck/core/protocol/commands.js";
 import {
   ContextUsage,
   EVENT_FS_TREE_CHANGED,
@@ -10,6 +11,8 @@ import {
   EVENT_HOST_ERROR,
   EVENT_PLAN_FILE_CHANGED,
   EVENT_PROVIDER_CHANGED,
+  EVENT_REVIEW_AVAILABLE,
+  EVENT_REVIEW_CLEARED,
   EVENT_SESSION_AGENT_EVENT,
   EVENT_SESSION_ARTEFACTS_CHANGED,
   EVENT_SESSION_HISTORY_LOADED,
@@ -38,6 +41,7 @@ import { useFileTreeStore } from "../../features/files/useFileTreeStore.js";
 import { useGitStore } from "../../features/git/useGitStore.js";
 import { useProvidersStore } from "../../features/models/useProvidersStore.js";
 import { usePlanStore } from "../../features/plan-panel/usePlanStore.js";
+import { useReviewStore } from "../../features/review/useReviewStore.js";
 import { useProjectsStore } from "../../features/sessions/useProjectsStore.js";
 import { useSessionsStore } from "../../features/sessions/useSessionsStore.js";
 import { useThemeStore } from "../../theme/useThemeStore.js";
@@ -75,6 +79,22 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
       : [];
     if (sessionId) {
       useGitStore.getState().applyTurnTouches(sessionId, paths);
+    }
+    return;
+  }
+  if (topic === EVENT_REVIEW_AVAILABLE) {
+    const sessionId = typeof payload.sessionId === "string" ? payload.sessionId : "";
+    const turn = payload.turn as ReviewTurn | undefined;
+    if (sessionId && turn) {
+      useReviewStore.getState().upsertTurn(sessionId, turn);
+    }
+    return;
+  }
+  if (topic === EVENT_REVIEW_CLEARED) {
+    const sessionId = typeof payload.sessionId === "string" ? payload.sessionId : "";
+    const turnId = typeof payload.turnId === "string" ? payload.turnId : "";
+    if (sessionId && turnId) {
+      useReviewStore.getState().clearTurn(sessionId, turnId);
     }
     return;
   }

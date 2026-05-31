@@ -26,17 +26,6 @@ function StubSection({ title, kicker, plan, description }: StubProps) {
   );
 }
 
-export function GitGitHubSection() {
-  return (
-    <StubSection
-      title="Git & GitHub"
-      kicker="Settings · Git & GitHub"
-      plan="plan 007"
-      description="Manage authentication, default remotes, and how diffs / commits / PRs surface inside pi-deck."
-    />
-  );
-}
-
 export function McpServersSection() {
   return (
     <StubSection

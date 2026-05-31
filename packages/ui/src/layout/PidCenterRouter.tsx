@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { ChatView } from "../features/chat/ChatView";
 import { selectMessages, useMessagesStore } from "../features/chat/useMessagesStore";
+import { DiffTab } from "../features/diff/DiffTab";
 import { PidComposerScreen } from "../features/intro/PidComposerScreen";
 import { PidIntroScreen } from "../features/intro/PidIntroScreen";
 import { useSessionsStore } from "../features/sessions/useSessionsStore";
@@ -8,7 +9,6 @@ import { useNavStore } from "../lib/useNavStore";
 
 const PLACEHOLDER_LABELS: Record<string, string> = {
   editor: "Editor — coming in plan 013",
-  "git-diff": "Diff viewer — coming in plan 008",
   "git-history": "History — coming in plan 007",
 };
 
@@ -33,6 +33,10 @@ export function PidCenterRouter() {
       return <PidComposerScreen />;
     }
     return <SessionRoute sessionId={activeSessionId} />;
+  }
+
+  if (screen === "git-diff") {
+    return <DiffTab />;
   }
 
   const label = PLACEHOLDER_LABELS[screen] ?? screen;

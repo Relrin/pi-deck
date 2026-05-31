@@ -6,6 +6,7 @@ import { GitWatchManager } from "./git-watch-manager.js";
 import { MetadataStore } from "./metadata-store.js";
 import { PlanFileWatcher } from "./plan-file-watcher.js";
 import { ProviderManager } from "./provider-manager.js";
+import { ReviewStore } from "./review-store.js";
 import type { RouterContext } from "./router.js";
 import { SessionManager } from "./session-manager.js";
 import { ThemeManager } from "./themes/index.js";
@@ -54,6 +55,11 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     wsHandle?.broadcast(topic, payload);
   });
 
+  const reviewStore = new ReviewStore(sessionManager);
+  reviewStore.on("event", (topic, payload) => {
+    wsHandle?.broadcast(topic, payload);
+  });
+
   const themeManager = new ThemeManager(opts.userDataDir);
   await themeManager.init();
   themeManager.on("event", (topic, payload) => {
@@ -79,9 +85,16 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     wsHandle?.broadcast(topic, payload);
   });
 
-  const turnTracker = new TurnTracker(sessionManager);
+  const turnTracker = new TurnTracker(sessionManager, reviewStore);
   turnTracker.on("event", (topic, payload) => {
     wsHandle?.broadcast(topic, payload);
+  });
+  // Two-phase wiring: TurnTracker needs to call back into SessionManager.prompt() to take
+  // the stash snapshot before the worker starts editing. SessionManager exposes a setter
+  // so prompt() can await `turnTracker.beginTurn(...)` without a circular constructor dep.
+  sessionManager.setTurnLifecycle({
+    beginTurn: (sessionId, projectId, repoRoot) =>
+      turnTracker.beginTurn(sessionId, projectId, repoRoot),
   });
 
   const artefactsTracker = new ArtefactsTracker(sessionManager);
@@ -99,6 +112,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     planFileWatcher,
     turnTracker,
     artefactsTracker,
+    reviewStore,
     hostVersion: opts.hostVersion,
     protocolVersion: PROTOCOL_VERSION,
   };

@@ -60,6 +60,16 @@ export type SessionManagerEvents = {
   event: [topic: EventTopic, payload: unknown];
 };
 
+/**
+ * Hook the turn tracker installs via `setTurnLifecycle` so `prompt()` can take the
+ * turn-start `git stash create` snapshot before forwarding the prompt to the worker.
+ * Kept as a setter (not a constructor dep) to avoid a circular dep between
+ * SessionManager and TurnTracker — TurnTracker subscribes to SessionManager's events.
+ */
+export interface TurnLifecycle {
+  beginTurn: (sessionId: string, projectId: string, repoRoot: string) => Promise<string>;
+}
+
 const WORKER_TOPIC_MAP: Record<string, EventTopic> = {
   "message.delta": EVENT_SESSION_MESSAGE_DELTA,
   "user.message": EVENT_SESSION_USER_MESSAGE,
@@ -80,6 +90,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
   private readonly metadataStore?: MetadataStore;
   private readonly listPiSessions: (cwd: string) => Promise<PiSessionInfo[]>;
   private readonly rehydratedProjects = new Set<string>();
+  private turnLifecycle: TurnLifecycle | null = null;
   private nextLocalId = 1;
 
   constructor(opts: SessionManagerOptions) {
@@ -88,6 +99,15 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     this.providerManager = opts.providerManager;
     this.metadataStore = opts.metadataStore;
     this.listPiSessions = opts.listPiSessions ?? ((cwd) => PiSessionManager.list(cwd));
+  }
+
+  /**
+   * Install the turn-tracker hook called from `prompt()` before each prompt is forwarded
+   * to the worker. Setting it twice replaces the previous hook (the host wires this once
+   * at startup; tests can rebind).
+   */
+  setTurnLifecycle(lifecycle: TurnLifecycle | null): void {
+    this.turnLifecycle = lifecycle;
   }
 
   list(projectId: string): SessionRecord[] {
@@ -387,6 +407,16 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
         await worker.request("setEditAllowlist", {
           paths: [record.projectPath, ...folderRoots],
         });
+      }
+    }
+
+    // Snapshot the working tree before the agent starts writing. Done here (not inside the
+    // worker) so the SHA is owned by the host's review store and survives worker exits.
+    if (this.turnLifecycle) {
+      try {
+        await this.turnLifecycle.beginTurn(sessionId, record.projectId, record.projectPath);
+      } catch {
+        // Snapshot is best-effort — see TurnTracker.beginTurn comments.
       }
     }
 

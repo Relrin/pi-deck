@@ -2,6 +2,7 @@ import { z } from "zod";
 import { SessionModelRefSchema, ThinkingLevelSchema } from "../domain/session.js";
 import { FsNodeSchema } from "../fs/types.js";
 import { GitStatusSchema } from "../git/types.js";
+import { ReviewTurnSchema } from "./commands.js";
 import { themeListingSchema } from "./theme.js";
 
 export const EVENT_SESSION_MESSAGE_DELTA = "session.message.delta" as const;
@@ -21,6 +22,8 @@ export const EVENT_THEME_CHANGED = "theme.changed" as const;
 export const EVENT_PROVIDER_CHANGED = "provider.changed" as const;
 export const EVENT_GIT_STATUS_CHANGED = "git.status.changed" as const;
 export const EVENT_GIT_TURN_TOUCHES_CHANGED = "git.turnTouches.changed" as const;
+export const EVENT_REVIEW_AVAILABLE = "review.available" as const;
+export const EVENT_REVIEW_CLEARED = "review.cleared" as const;
 export const EVENT_SESSION_ARTEFACTS_CHANGED = "session.artefacts.changed" as const;
 export const EVENT_PLAN_FILE_CHANGED = "plan.file.changed" as const;
 export const EVENT_FS_TREE_CHANGED = "fs.tree.changed" as const;
@@ -203,6 +206,27 @@ export const GitTurnTouchesChangedPayload = z.object({
 });
 
 /**
+ * Pushed by the host's review store immediately after a turn ends that mutated at least
+ * one file. The renderer enqueues the turn into `useReviewStore` and unhides the
+ * `ReviewBanner` at the bottom of `ChatView`.
+ */
+export const ReviewAvailablePayload = z.object({
+  sessionId: z.string().min(1),
+  turn: ReviewTurnSchema,
+});
+
+/**
+ * Pushed when a turn's review record is cleared — either because the user
+ * accepted / rejected the whole turn, accepted / rejected the last remaining file in it,
+ * or the session worker exited (which drops every pending review for that session). The
+ * renderer drops the matching record from `useReviewStore`.
+ */
+export const ReviewClearedPayload = z.object({
+  sessionId: z.string().min(1),
+  turnId: z.string().min(1),
+});
+
+/**
  * Coalesced filesystem-change delta for a single project. The renderer's file-tree store
  * applies these to its in-memory tree without re-fetching the whole walk. Renames are
  * conveyed as (unlink + add) at both endpoints — the watcher doesn't try to detect a
@@ -285,6 +309,8 @@ export const EventSchemas = {
   [EVENT_SESSION_TOOL_APPROVAL_REQUESTED]: SessionToolApprovalRequestedPayload,
   [EVENT_GIT_STATUS_CHANGED]: GitStatusChangedPayload,
   [EVENT_GIT_TURN_TOUCHES_CHANGED]: GitTurnTouchesChangedPayload,
+  [EVENT_REVIEW_AVAILABLE]: ReviewAvailablePayload,
+  [EVENT_REVIEW_CLEARED]: ReviewClearedPayload,
   [EVENT_SESSION_ARTEFACTS_CHANGED]: SessionArtefactsChangedPayload,
   [EVENT_FS_TREE_CHANGED]: FsTreeChangedPayload,
   [EVENT_PLAN_FILE_CHANGED]: PlanFileChangedPayload,

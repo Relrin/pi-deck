@@ -450,6 +450,132 @@
   gap: 4px;
 }
 
+/* Connected-pill segmented control. */
+.pid-segmented-pill {
+  display: inline-flex;
+  width: fit-content;
+  align-self: flex-start;
+  align-items: stretch;
+  padding: 3px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  gap: 2px;
+}
+.pid-segmented-pill-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--t-12);
+  color: var(--ink-2);
+  white-space: nowrap;
+  transition:
+    background-color 80ms ease-out,
+    color 80ms ease-out,
+    border-color 80ms ease-out;
+}
+.pid-segmented-pill-option:hover {
+  color: var(--ink-0);
+  background: color-mix(in oklab, var(--bg-2) 60%, transparent);
+}
+.pid-segmented-pill-option[data-active="true"] {
+  background: var(--bg-0);
+  color: var(--ink-0);
+  border-color: var(--line);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.pid-segmented-pill-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-3);
+}
+.pid-segmented-pill-option[data-active="true"] .pid-segmented-pill-icon {
+  color: var(--ink-1);
+}
+
+/* Single boolean toggle laid out as `[icon] [label] [switch]` in a pill chrome.
+   For mutually-exclusive choices use `.pid-segmented-pill` instead. Sized to its
+   content; arrange several side-by-side via `.pid-toggle-pill-row`. */
+.pid-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 12px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--t-12);
+  color: var(--ink-1);
+  transition:
+    background-color 80ms ease-out,
+    border-color 80ms ease-out,
+    color 80ms ease-out;
+}
+.pid-toggle-pill:hover {
+  color: var(--ink-0);
+  background: color-mix(in oklab, var(--bg-1) 70%, var(--bg-2) 30%);
+}
+.pid-toggle-pill-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+}
+.pid-toggle-pill[data-checked="true"] .pid-toggle-pill-icon {
+  color: var(--ink-1);
+}
+.pid-toggle-pill-label {
+  white-space: nowrap;
+}
+.pid-toggle-pill-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 28px;
+  height: 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  transition:
+    background-color 120ms ease-out,
+    border-color 120ms ease-out;
+  flex-shrink: 0;
+}
+.pid-toggle-pill-thumb {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 12px;
+  height: 12px;
+  background: var(--ink-3);
+  border-radius: 50%;
+  transition:
+    transform 120ms ease-out,
+    background-color 120ms ease-out;
+}
+.pid-toggle-pill[data-checked="true"] .pid-toggle-pill-switch {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.pid-toggle-pill[data-checked="true"] .pid-toggle-pill-thumb {
+  background: var(--bg-0);
+  transform: translateX(12px);
+}
+.pid-toggle-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* ---------- Theme preview grid ---------- */
 .pid-theme-grid {
   display: grid;

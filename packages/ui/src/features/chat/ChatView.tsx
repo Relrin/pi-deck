@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { usePathDragStore } from "../files/usePathDragStore.js";
+import { ReviewBanner } from "../review/ReviewBanner.js";
+import { ReviewPanel } from "../review/ReviewPanel.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { ChatHeader } from "./ChatHeader.js";
 import { MessageInput } from "./MessageInput.js";
@@ -30,7 +32,9 @@ export function ChatView({ sessionId }: ChatViewProps) {
     >
       {session && <ChatHeader session={session} />}
       <MessageList sessionId={sessionId} />
+      <ReviewBanner sessionId={sessionId} />
       <MessageInput sessionId={sessionId} />
+      <ReviewPanel sessionId={sessionId} />
     </div>
   );
 }
