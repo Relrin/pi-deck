@@ -110,14 +110,22 @@ export function ApprovalPill({
     <div className="pid-approval-pill" data-busy={busy ?? undefined}>
       {reason && <span className="pid-approval-pill-reason">{reason}</span>}
       <Tooltip content="Allow this command for the rest of the session" side="bottom">
-        <label className="pid-approval-pill-always" htmlFor={checkboxId}>
+        <label
+          className="pid-approval-pill-always"
+          htmlFor={checkboxId}
+          data-checked={alwaysAllow || undefined}
+        >
           <input
             id={checkboxId}
             type="checkbox"
+            className="sr-only"
             checked={alwaysAllow}
             onChange={(e) => setAlwaysAllow(e.target.checked)}
             disabled={busy !== null}
           />
+          <span className="pid-approval-pill-checkbox" aria-hidden>
+            {alwaysAllow && <Check size={9} />}
+          </span>
           <span>
             always allow <code className="pid-approval-pill-key">{allowKey}</code>
           </span>
