@@ -126,9 +126,6 @@ export function GitGitHubSection() {
             onChange={setDiffLineWrap}
           />
         </div>
-        <div className="pid-diff-preview">
-          <DiffView unified={PREVIEW_PATCH} layout="unified" wordHighlight />
-        </div>
       </section>
 
       <section className="pid-settings-block">
@@ -176,7 +173,13 @@ function DiffThemeCard({ kind, value, options, onChange }: DiffThemeCardProps) {
         />
       </div>
       <div className="pid-diff-theme-card-preview">
-        <DiffView unified={PREVIEW_PATCH} layout="unified" wordHighlight themeOverride={value} />
+        <DiffView
+          unified={PREVIEW_PATCH}
+          layout="unified"
+          wordHighlight
+          themeOverride={value}
+          forPreview
+        />
       </div>
     </div>
   );

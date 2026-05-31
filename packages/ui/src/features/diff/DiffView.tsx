@@ -1,6 +1,6 @@
 import type { DiffLineAnnotation } from "@pierre/diffs/react";
 import { PatchDiff } from "@pierre/diffs/react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePreferencesStore } from "../../theme/usePreferencesStore.js";
 import type { DiffLayout } from "./useDiffSettingsStore.js";
 import { usePierreTheme } from "./usePierreTheme.js";
@@ -14,6 +14,11 @@ export interface DiffViewProps {
   annotations?: DiffLineAnnotation<unknown>[];
   /** Force a specific Pierre/Shiki theme name */
   themeOverride?: string;
+  /**
+   * When `true`, disable Pierre's shared worker pool and render the view
+   * synchronously in-process.
+   */
+  forPreview?: boolean;
   className?: string;
 }
 
@@ -37,6 +42,7 @@ export function DiffView({
   wordHighlight,
   annotations,
   themeOverride,
+  forPreview = false,
   className,
 }: DiffViewProps) {
   const derivedTheme = usePierreTheme();
@@ -45,6 +51,21 @@ export function DiffView({
   const background = usePreferencesStore((s) => s.diffBackground);
   const lineNumbers = usePreferencesStore((s) => s.diffLineNumbers);
   const lineWrap = usePreferencesStore((s) => s.diffLineWrap);
+
+  // Pierre's synchronous (no-worker-pool) render path lazy-loads the Shiki
+  // highlighter but doesn't notify when the load completes — see DiffHunksRenderer
+  // `hydrate()` calling `initializeHighlighter()` without an `await` or callback.
+  const [retryToken, setRetryToken] = useState(0);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `theme` is the remount signal.
+  useEffect(() => {
+    if (!forPreview) return;
+    const delays = [50, 200, 600];
+    const timers = delays.map((ms) => setTimeout(() => setRetryToken((t) => t + 1), ms));
+    return () => {
+      for (const t of timers) clearTimeout(t);
+    };
+  }, [forPreview, theme]);
 
   const options = useMemo(
     () => ({
@@ -68,9 +89,11 @@ export function DiffView({
 
   return (
     <PatchDiff
+      key={forPreview ? `preview-${retryToken}-${theme}` : undefined}
       patch={unified}
       options={options}
       lineAnnotations={annotations}
+      disableWorkerPool={forPreview}
       className={className}
     />
   );

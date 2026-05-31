@@ -1,3 +1,5 @@
+import { WorkerPoolContextProvider } from "@pierre/diffs/react";
+import PierreDiffsWorker from "@pierre/diffs/worker/worker-portable.js?worker";
 import { useEffect } from "react";
 import { TooltipProvider } from "./components/ui/Tooltip";
 import { NotificationCenter } from "./features/_status/NotificationCenter";
@@ -60,26 +62,31 @@ export function App() {
   return (
     <ThemeProvider>
       <TooltipProvider>
-        <PidAppShell
-          top={<PidTopBar />}
-          body={
-            <PidBody
-              left={<PidLeftRail sessions={<PidSessionsList />} files={<PidFileTree />} />}
-              center={<PidCenterRouter />}
-              right={
-                <PidRightPane
-                  git={<GitSidebar />}
-                  context={<PidContextPane sessionId={inSession ? activeSessionId : undefined} />}
-                  gitCount={gitCount}
-                  contextCount={contextCount}
-                  initialTab="git"
-                />
-              }
-            />
-          }
-          bottom={<PidFooter />}
-        />
-        <PidSettingsView />
+        <WorkerPoolContextProvider
+          poolOptions={{ workerFactory: () => new PierreDiffsWorker() }}
+          highlighterOptions={{}}
+        >
+          <PidAppShell
+            top={<PidTopBar />}
+            body={
+              <PidBody
+                left={<PidLeftRail sessions={<PidSessionsList />} files={<PidFileTree />} />}
+                center={<PidCenterRouter />}
+                right={
+                  <PidRightPane
+                    git={<GitSidebar />}
+                    context={<PidContextPane sessionId={inSession ? activeSessionId : undefined} />}
+                    gitCount={gitCount}
+                    contextCount={contextCount}
+                    initialTab="git"
+                  />
+                }
+              />
+            }
+            bottom={<PidFooter />}
+          />
+          <PidSettingsView />
+        </WorkerPoolContextProvider>
         <NotificationCenter />
       </TooltipProvider>
     </ThemeProvider>

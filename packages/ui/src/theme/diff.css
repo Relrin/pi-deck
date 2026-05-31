@@ -214,15 +214,6 @@ themes. These rules only style the surrounding chrome.
   overflow: auto;
 }
 
-/* ---------- Small preview used in the settings ---------- */
-.pid-diff-preview {
-  margin-top: 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  overflow: hidden;
-  max-height: 220px;
-}
-
 /* ---------- Settings → Git & GitHub: diff theme picker ---------- */
 .pid-diff-theme-grid {
   display: grid;
