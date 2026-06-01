@@ -3,7 +3,10 @@ import { fireEvent, render, screen } from "../../../test/utils";
 import { useNavStore } from "../../lib/useNavStore";
 import { useMessagesStore } from "../chat/useMessagesStore";
 import { PidSessionRow } from "./PidSessionRow";
+import { __resetSessionWarmup } from "./sessionWarmup";
 import { useSessionsStore } from "./useSessionsStore";
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const baseSession = {
   id: "sess-1",
@@ -25,9 +28,17 @@ beforeEach(() => {
   useSessionsStore.setState((prev) => ({
     ...prev,
     activeSessionId: undefined,
+    client: undefined,
   }));
   useMessagesStore.setState({ bySession: {} });
+  __resetSessionWarmup();
 });
+
+function installWarmClient() {
+  const call = mock((_method: string, _input: unknown) => Promise.resolve({ ok: true }));
+  useSessionsStore.setState((prev) => ({ ...prev, client: { call } as never }));
+  return call;
+}
 
 afterEach(() => {
   useSessionsStore.setState((prev) => ({ ...prev, activateSession: originalActivate }));
@@ -106,5 +117,33 @@ describe("PidSessionRow", () => {
     expect(
       screen.getByRole("button", { name: /My session/ }).querySelector(".pid-rail-row-meta"),
     ).not.toBeNull();
+  });
+
+  test("a deliberate hover warms the session's worker via session.activate", async () => {
+    const call = installWarmClient();
+    render(<PidSessionRow session={baseSession} active={false} />);
+    fireEvent.mouseEnter(screen.getByRole("button", { name: /My session/ }));
+    await wait(220);
+    expect(call).toHaveBeenCalledTimes(1);
+    expect(call.mock.calls[0]?.[0]).toBe("session.activate");
+    expect(call.mock.calls[0]?.[1]).toEqual({ sessionId: "sess-1" });
+  });
+
+  test("leaving before the hover delay cancels the warm-up", async () => {
+    const call = installWarmClient();
+    render(<PidSessionRow session={baseSession} active={false} />);
+    const button = screen.getByRole("button", { name: /My session/ });
+    fireEvent.mouseEnter(button);
+    fireEvent.mouseLeave(button);
+    await wait(220);
+    expect(call).not.toHaveBeenCalled();
+  });
+
+  test("does not warm the row that's already active", async () => {
+    const call = installWarmClient();
+    render(<PidSessionRow session={baseSession} active={true} />);
+    fireEvent.mouseEnter(screen.getByRole("button", { name: /My session/ }));
+    await wait(220);
+    expect(call).not.toHaveBeenCalled();
   });
 });

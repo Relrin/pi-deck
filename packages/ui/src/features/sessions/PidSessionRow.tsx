@@ -1,5 +1,5 @@
 import type { SessionSummary } from "@pi-deck/core/domain/session.js";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ConfirmDialog } from "../../components/dialogs/ConfirmDialog.js";
 import { InlineRename } from "../../components/InlineRename.js";
 import { Package, Pencil, Trash2 } from "../../components/icons/index.js";
@@ -7,7 +7,10 @@ import { ContextMenu, type ContextMenuItem } from "../../components/ui/ContextMe
 import { relativeTime } from "../../lib/format/relative-time";
 import { useNavStore } from "../../lib/useNavStore";
 import { useMessagesStore } from "../chat/useMessagesStore.js";
+import { warmSession } from "./sessionWarmup.js";
 import { useSessionsStore } from "./useSessionsStore";
+
+const HOVER_PREFETCH_DELAY_MS = 150;
 
 // Lucide icons render at 24px by default; the context menu wants compact 14px-ish glyphs
 // to sit alongside `var(--t-12)` mono labels.
@@ -35,6 +38,30 @@ export function PidSessionRow({ session, active }: PidSessionRowProps) {
       .catch(() => {});
     useNavStore.getState().goToSession();
   };
+
+  // Prefetch: warm this session's worker on a deliberate hover so the click that follows opens
+  // instantly. Cancelled if the pointer leaves before the delay elapses.
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelHoverPrefetch = () => {
+    if (hoverTimer.current !== null) {
+      clearTimeout(hoverTimer.current);
+      hoverTimer.current = null;
+    }
+  };
+  const onMouseEnter = () => {
+    if (active || hoverTimer.current !== null) return;
+    hoverTimer.current = setTimeout(() => {
+      hoverTimer.current = null;
+      warmSession(session.id);
+    }, HOVER_PREFETCH_DELAY_MS);
+  };
+  // Clear a pending timer if the row unmounts mid-hover.
+  useEffect(
+    () => () => {
+      if (hoverTimer.current !== null) clearTimeout(hoverTimer.current);
+    },
+    [],
+  );
 
   const menuItems: ContextMenuItem[] = [
     {
@@ -74,6 +101,8 @@ export function PidSessionRow({ session, active }: PidSessionRowProps) {
           className="pid-rail-row"
           aria-current={active ? "true" : undefined}
           onClick={onClick}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={cancelHoverPrefetch}
           title={session.title}
         >
           <span

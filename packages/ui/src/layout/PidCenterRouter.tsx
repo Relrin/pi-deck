@@ -1,6 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ChatView } from "../features/chat/ChatView";
-import { selectMessages, useMessagesStore } from "../features/chat/useMessagesStore";
+import {
+  selectMessages,
+  selectSessionLoaded,
+  useMessagesStore,
+} from "../features/chat/useMessagesStore";
 import { DiffTab } from "../features/diff/DiffTab";
 import { PidComposerScreen } from "../features/intro/PidComposerScreen";
 import { PidIntroScreen } from "../features/intro/PidIntroScreen";
@@ -49,8 +53,32 @@ export function PidCenterRouter() {
 
 function SessionRoute({ sessionId }: { sessionId: string }) {
   const messages = useMessagesStore(selectMessages(sessionId));
+  const loaded = useMessagesStore(selectSessionLoaded(sessionId));
+  const timedOut = useHistoryLoadTimeout(sessionId, !loaded);
+
+  if (!loaded && !timedOut) {
+    return (
+      <div className="pid-route-placeholder">
+        <span>Loading session…</span>
+      </div>
+    );
+  }
   if (messages.length === 0) {
     return <PidIntroScreen variant="inline-empty-session" />;
   }
   return <ChatView sessionId={sessionId} />;
+}
+
+/** Returns true once `pending` has held for ~10s, reset whenever the session changes. */
+function useHistoryLoadTimeout(sessionId: string, pending: boolean): boolean {
+  const [timedOut, setTimedOut] = useState(false);
+  // switching sessions restarts the timeout even though sessionId isn't read in the body.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: sessionId is the reset signal.
+  useEffect(() => {
+    setTimedOut(false);
+    if (!pending) return;
+    const timer = setTimeout(() => setTimedOut(true), 10_000);
+    return () => clearTimeout(timer);
+  }, [sessionId, pending]);
+  return timedOut;
 }

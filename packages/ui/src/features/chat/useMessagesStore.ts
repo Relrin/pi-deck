@@ -514,6 +514,17 @@ export function selectMessages(sessionId: string | undefined) {
     sessionId ? (state.bySession[sessionId]?.messages ?? EMPTY_MESSAGES) : EMPTY_MESSAGES;
 }
 
+/**
+ * Whether a session's transcript has been loaded yet. `loadHistory` always seeds a
+ * `bySession` entry (even for an empty session), so an absent entry means "history not
+ * fetched yet" — the cold-activation window. Lets the router show a loading state instead of
+ * the misleading empty-session intro while the worker spins up.
+ */
+export function selectSessionLoaded(sessionId: string | undefined) {
+  return (state: MessagesStoreState): boolean =>
+    sessionId ? state.bySession[sessionId] !== undefined : false;
+}
+
 export function selectToolCall(sessionId: string | undefined, callId: string) {
   return (state: MessagesStoreState): ToolCallEntry | undefined =>
     sessionId ? state.bySession[sessionId]?.toolCalls[callId] : undefined;

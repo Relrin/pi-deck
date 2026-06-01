@@ -42,6 +42,7 @@ import { useGitStore } from "../../features/git/useGitStore.js";
 import { useProvidersStore } from "../../features/models/useProvidersStore.js";
 import { usePlanStore } from "../../features/plan-panel/usePlanStore.js";
 import { useReviewStore } from "../../features/review/useReviewStore.js";
+import { forgetWarmedSession } from "../../features/sessions/sessionWarmup.js";
 import { useProjectsStore } from "../../features/sessions/useProjectsStore.js";
 import { useSessionsStore } from "../../features/sessions/useSessionsStore.js";
 import { useThemeStore } from "../../theme/useThemeStore.js";
@@ -211,6 +212,8 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
     }
     case EVENT_SESSION_WORKER_EXIT: {
       useMessagesStore.getState().markTurnInFlight(sessionId, false);
+      // The worker is gone — drop its warm marker so a later hover/open re-spawns it.
+      forgetWarmedSession(sessionId);
       return;
     }
     case EVENT_SESSION_HISTORY_LOADED: {

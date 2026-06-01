@@ -16,6 +16,7 @@ import type { UserMessageImage } from "../chat/types.js";
 import { useMessagesStore } from "../chat/useMessagesStore.js";
 import { useProvidersStore } from "../models/useProvidersStore.js";
 import { useToolsStore } from "../tools/useToolsStore.js";
+import { warmMostRecentSession } from "./sessionWarmup.js";
 import { useProjectsStore } from "./useProjectsStore.js";
 
 export interface SessionsStoreState {
@@ -197,6 +198,8 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         sessionsByProject: { ...state.sessionsByProject, [projectId]: sessions },
         errorByProject: { ...state.errorByProject, [projectId]: undefined },
       }));
+      // Warm the project's most-recent session's worker so its first open is instant.
+      warmMostRecentSession(sessions);
     } catch (err) {
       useNotificationStore.getState().error(humanizeError(err, "Failed to load sessions"));
     } finally {
@@ -262,6 +265,9 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         };
       });
       useProjectsStore.getState().setLastActiveSession(projectId, session.id);
+      // Pre-seed an empty transcript so the session view shows the intro immediately instead
+      // of the cold-load placeholder. The host re-emits the same empty history on activate.
+      useMessagesStore.getState().loadHistory(session.id, { messages: [], toolCalls: {} });
     } catch (err) {
       useNotificationStore.getState().error(humanizeError(err, "Failed to create session"));
       throw err;

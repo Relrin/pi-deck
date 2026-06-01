@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { useComposerStore } from "./composer/useComposerStore";
-import { useMessagesStore } from "./useMessagesStore";
+import { selectSessionLoaded, useMessagesStore } from "./useMessagesStore";
 
 const SID = "session-1";
 
@@ -469,5 +469,18 @@ describe("useMessagesStore — loadHistory", () => {
     expect((msgs[1] as { isComplete?: boolean }).isComplete).toBe(true);
     expect(msgs[3]?.kind).toBe("assistant");
     expect((msgs[3] as { text: string }).text).toBe("fresh reply");
+  });
+});
+
+describe("useMessagesStore — selectSessionLoaded", () => {
+  test("false before history loads, true once loadHistory seeds the session (even if empty)", () => {
+    reset();
+    expect(selectSessionLoaded(SID)(useMessagesStore.getState())).toBe(false);
+    useMessagesStore.getState().loadHistory(SID, { messages: [], toolCalls: {} });
+    expect(selectSessionLoaded(SID)(useMessagesStore.getState())).toBe(true);
+  });
+
+  test("false for an undefined session id", () => {
+    expect(selectSessionLoaded(undefined)(useMessagesStore.getState())).toBe(false);
   });
 });
