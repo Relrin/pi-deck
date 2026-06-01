@@ -133,6 +133,75 @@ describe("useSessionsStore — activateSession", () => {
       originalTs,
     );
   });
+
+  test("switches optimistically before the host round-trip (prevents the rail ping-pong)", async () => {
+    const ts = "2026-04-01T10:00:00Z";
+    let releaseActivate: (() => void) | undefined;
+    const activateGate = new Promise<void>((resolve) => {
+      releaseActivate = resolve;
+    });
+    let activateCalls = 0;
+    const client = mockClient({
+      "session.activate": () => {
+        activateCalls += 1;
+        return activateGate;
+      },
+      "session.list": () => ({ sessions: [] }),
+    });
+    useSessionsStore.setState({
+      client: client as never,
+      sessionsByProject: {
+        "proj-1": [{ id: "sess-A", projectId: "proj-1", title: "A", lastActivityAt: ts }],
+        "proj-2": [{ id: "sess-B", projectId: "proj-2", title: "B", lastActivityAt: ts }],
+      },
+      activeSessionId: "sess-A",
+    });
+    useProjectsStore.setState({ activeProjectId: "proj-1" });
+
+    const pending = useSessionsStore.getState().activateSession("sess-B");
+
+    // The active session + project flip synchronously, before the host confirms — this is
+    // what lets the router mount ChatView(B) directly instead of a fresh ChatView(A) that
+    // would fire a second, competing activation.
+    expect(useSessionsStore.getState().activeSessionId).toBe("sess-B");
+    expect(useProjectsStore.getState().activeProjectId).toBe("proj-2");
+
+    // A re-fire for the now-active session (what ChatView(B)'s mount effect does) is a
+    // harmless no-op and never flips the selection back.
+    void useSessionsStore.getState().activateSession("sess-B");
+    expect(useSessionsStore.getState().activeSessionId).toBe("sess-B");
+
+    releaseActivate?.();
+    await pending;
+    expect(useSessionsStore.getState().activeSessionId).toBe("sess-B");
+    expect(activateCalls).toBeGreaterThanOrEqual(1);
+  });
+
+  test("rolls the optimistic switch back when the host rejects", async () => {
+    const ts = "2026-04-01T10:00:00Z";
+    const client = mockClient({
+      "session.activate": () => {
+        throw new Error("host down");
+      },
+      "session.list": () => ({ sessions: [] }),
+    });
+    useSessionsStore.setState({
+      client: client as never,
+      sessionsByProject: {
+        "proj-1": [{ id: "sess-A", projectId: "proj-1", title: "A", lastActivityAt: ts }],
+        "proj-2": [{ id: "sess-B", projectId: "proj-2", title: "B", lastActivityAt: ts }],
+      },
+      activeSessionId: "sess-A",
+    });
+    useProjectsStore.setState({ activeProjectId: "proj-1" });
+
+    await useSessionsStore.getState().activateSession("sess-B");
+
+    expect(useSessionsStore.getState().activeSessionId).toBe("sess-A");
+    expect(useProjectsStore.getState().activeProjectId).toBe("proj-1");
+    expect(useNotificationStore.getState().notifications.length).toBe(1);
+    expect(useNotificationStore.getState().notifications[0]?.kind).toBe("error");
+  });
 });
 
 describe("useSessionsStore — setActiveSessionId", () => {

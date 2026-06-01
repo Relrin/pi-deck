@@ -363,44 +363,53 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
   activateSession: async (id) => {
     const client = get().client;
     if (!client) return;
+
+    const prevSessionId = get().activeSessionId;
+    const projectsStore = useProjectsStore.getState();
+    const previousProjectId = projectsStore.activeProjectId;
+
+    // Intentionally NOT bumping lastActivityAt: opening an old session should keep its
+    // position in the rail until the user actually sends a prompt. The bump happens in
+    // `sendPrompt` instead.
+
+    // Look up the session across every cache the rail may have populated — the active
+    // project's `sessions`, the per-project `sessionsByProject` (rail groups), and the
+    // archived list. Without this lookup, switching to a session in a different project
+    // would leave `activeProjectId` pointing at the OLD workspace, desynchronising the
+    // file tree, git sidebar, branch picker, and composer model defaults.
+    const summary = findSessionAcrossProjects(get(), id);
+    const targetProjectId = summary?.projectId ?? previousProjectId;
+
+    set({ activeSessionId: id });
+
+    if (targetProjectId && targetProjectId !== previousProjectId) {
+      projectsStore.setActive(targetProjectId);
+      // Refresh the global `sessions` array so the composer + topbar see the new
+      // project's sessions, not the previous one's leftovers.
+      void get().refreshSessions(targetProjectId);
+    }
+    if (targetProjectId) {
+      projectsStore.setLastActiveSession(targetProjectId, id);
+    }
+    // Seed the picker from the session's persisted mode so the trigger label is correct
+    // before the user touches it. Absent on legacy records — falls back to the store's
+    // default inside `getMode`.
+    if (summary?.agentMode) {
+      useComposerStore.getState().seed(id, summary.agentMode);
+    }
+    // Sync the local mirror to the server value so the composer chip reflects the session's
+    // actual exclusion list on first paint.
+    useToolsStore.getState().seed(id, summary?.excludedTools);
+
+    // Confirm with the host (idempotent on the backend). Roll the optimistic switch back if
+    // the host can't activate the session, so the UI doesn't point at a dead selection.
     try {
       await client.call("session.activate", { sessionId: id });
-      set({ activeSessionId: id });
-      // Intentionally NOT bumping lastActivityAt: opening an old session should keep its
-      // position in the rail until the user actually sends a prompt. The bump happens in
-      // `sendPrompt` instead.
-
-      // Look up the session across every cache the rail may have populated — the active
-      // project's `sessions`, the per-project `sessionsByProject` (rail groups), and the
-      // archived list. Without this lookup, switching to a session in a different project
-      // would leave `activeProjectId` pointing at the OLD workspace, desynchronising the
-      // file tree, git sidebar, branch picker, and composer model defaults.
-      const summary = findSessionAcrossProjects(get(), id);
-      const projectsStore = useProjectsStore.getState();
-      const previousProjectId = projectsStore.activeProjectId;
-      const targetProjectId = summary?.projectId ?? previousProjectId;
-
-      if (targetProjectId && targetProjectId !== previousProjectId) {
-        projectsStore.setActive(targetProjectId);
-        // Refresh the global `sessions` array so the composer + topbar see the new
-        // project's sessions, not the previous one's leftovers. Fire-and-forget: the
-        // session itself is already activated, so we don't need to await for the UI.
-        void get().refreshSessions(targetProjectId);
-      }
-      if (targetProjectId) {
-        useProjectsStore.getState().setLastActiveSession(targetProjectId, id);
-      }
-
-      // Seed the picker from the session's persisted mode so the trigger label is correct
-      // before the user touches it. Absent on legacy records — falls back to the store's
-      // default inside `getMode`.
-      if (summary?.agentMode) {
-        useComposerStore.getState().seed(id, summary.agentMode);
-      }
-      // Sync the local mirror to the server value so the
-      // composer chip reflects the session's actual exclusion list on first paint.
-      useToolsStore.getState().seed(id, summary?.excludedTools);
     } catch (err) {
+      set({ activeSessionId: prevSessionId });
+      if (targetProjectId !== previousProjectId) {
+        projectsStore.setActive(previousProjectId);
+      }
       useNotificationStore.getState().error(humanizeError(err, "Failed to open session"));
     }
   },
