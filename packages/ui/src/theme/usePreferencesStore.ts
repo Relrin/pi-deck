@@ -3,8 +3,9 @@ import { persist } from "zustand/middleware";
 
 export type Density = "compact" | "cozy";
 export type FontPair = "default" | "sans-only" | "mono-only";
-
 export type DiffIndicators = "bars" | "classic" | "none";
+export type DiffLayout = "split" | "unified";
+export type DiffLineDiffType = "word-alt" | "word" | "char" | "none";
 
 export interface PreferencesState {
   density: Density;
@@ -16,6 +17,10 @@ export interface PreferencesState {
   diffLineNumbers: boolean;
   /** Wrap long code lines instead of horizontal scrolling. */
   diffLineWrap: boolean;
+  /** Split vs unified arrangement of old / new content. Drives the toolbar's layout button. */
+  diffLayout: DiffLayout;
+  /** Inline-change highlight algorithm. */
+  diffLineDiffType: DiffLineDiffType;
   /** Pierre theme when active app theme has `kind: "light"`. */
   diffThemeLight: string;
   /** Pierre theme when the app theme has `kind: "dark"`. */
@@ -26,6 +31,8 @@ export interface PreferencesState {
   setDiffBackground: (on: boolean) => void;
   setDiffLineNumbers: (on: boolean) => void;
   setDiffLineWrap: (on: boolean) => void;
+  setDiffLayout: (layout: DiffLayout) => void;
+  setDiffLineDiffType: (type: DiffLineDiffType) => void;
   setDiffThemeLight: (name: string) => void;
   setDiffThemeDark: (name: string) => void;
 }
@@ -53,6 +60,14 @@ export const usePreferencesStore = create<PreferencesState>()(
       diffBackground: true,
       diffLineNumbers: true,
       diffLineWrap: false,
+      // Side-by-side reads better for code review and is what every reviewer-facing tool
+      // (GitHub, Reviewable, Phabricator) defaults to. Users who prefer the compact stacked
+      // view can flip via the per-diff toolbar or Settings → Git & GitHub.
+      diffLayout: "split",
+      // No inline highlight by default — line-level add/del marks alone are the least noisy
+      // read and match what `git diff` shows in the terminal. Users who want char- or word-
+      // grained highlights opt in via the toolbar / Settings.
+      diffLineDiffType: "none",
       diffThemeLight: "github-light-default",
       diffThemeDark: "github-dark-default",
       setDensity: (density) => {
@@ -67,6 +82,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       setDiffBackground: (diffBackground) => set({ diffBackground }),
       setDiffLineNumbers: (diffLineNumbers) => set({ diffLineNumbers }),
       setDiffLineWrap: (diffLineWrap) => set({ diffLineWrap }),
+      setDiffLayout: (diffLayout) => set({ diffLayout }),
+      setDiffLineDiffType: (diffLineDiffType) => set({ diffLineDiffType }),
       setDiffThemeLight: (diffThemeLight) => set({ diffThemeLight }),
       setDiffThemeDark: (diffThemeDark) => set({ diffThemeDark }),
     }),

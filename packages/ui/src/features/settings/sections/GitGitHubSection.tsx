@@ -1,15 +1,26 @@
 import {
+  Ban,
+  Baseline,
   Diff,
   Image as ImageIcon,
   ListOrdered,
   SquareChartGantt,
   SquareMenu,
+  SquareSplitHorizontal,
+  SquareSplitVertical,
+  Type,
+  WholeWord,
   WrapText,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { PidSegmentedPill } from "../../../components/segmented/PidSegmentedPill";
 import { PidTogglePill } from "../../../components/segmented/PidTogglePill";
-import { type DiffIndicators, usePreferencesStore } from "../../../theme/usePreferencesStore";
+import {
+  type DiffIndicators,
+  type DiffLayout,
+  type DiffLineDiffType,
+  usePreferencesStore,
+} from "../../../theme/usePreferencesStore";
 import { DiffThemePicker } from "../../diff/DiffThemePicker";
 import { DiffView } from "../../diff/DiffView";
 import { DARK_DIFF_THEMES, LIGHT_DIFF_THEMES } from "../../diff/diffThemes";
@@ -47,6 +58,62 @@ const DIFF_INDICATOR_OPTIONS: IndicatorOption[] = [
   },
 ];
 
+interface LayoutOption {
+  value: DiffLayout;
+  label: string;
+  description: string;
+  icon: ReactNode;
+}
+
+const DIFF_LAYOUT_OPTIONS: LayoutOption[] = [
+  {
+    value: "split",
+    label: "Side-by-side",
+    description: "Old and new content in adjacent columns.",
+    icon: <SquareSplitHorizontal size={12} aria-hidden />,
+  },
+  {
+    value: "unified",
+    label: "Unified",
+    description: "Stacked old + new in one column, like `git diff` output.",
+    icon: <SquareSplitVertical size={12} aria-hidden />,
+  },
+];
+
+interface LineDiffOption {
+  value: DiffLineDiffType;
+  label: string;
+  description: string;
+  icon: ReactNode;
+}
+
+const DIFF_LINE_DIFF_OPTIONS: LineDiffOption[] = [
+  {
+    value: "word-alt",
+    label: "Word-Alt",
+    description: "Whole-word highlights, enhanced algorithm.",
+    icon: <WholeWord size={12} aria-hidden />,
+  },
+  {
+    value: "word",
+    label: "Word",
+    description: "Changed words within lines.",
+    icon: <Type size={12} aria-hidden />,
+  },
+  {
+    value: "char",
+    label: "Character",
+    description: "Individual character changes.",
+    icon: <Baseline size={12} aria-hidden />,
+  },
+  {
+    value: "none",
+    label: "None",
+    description: "Line-level changes only.",
+    icon: <Ban size={12} aria-hidden />,
+  },
+];
+
 /**
  * Tiny unified-diff snippet shown in the live preview. Kept inline so the preview
  * always renders the same hand-picked example regardless of project state — the
@@ -73,6 +140,10 @@ export function GitGitHubSection() {
   const setDiffLineNumbers = usePreferencesStore((s) => s.setDiffLineNumbers);
   const diffLineWrap = usePreferencesStore((s) => s.diffLineWrap);
   const setDiffLineWrap = usePreferencesStore((s) => s.setDiffLineWrap);
+  const diffLayout = usePreferencesStore((s) => s.diffLayout);
+  const setDiffLayout = usePreferencesStore((s) => s.setDiffLayout);
+  const diffLineDiffType = usePreferencesStore((s) => s.diffLineDiffType);
+  const setDiffLineDiffType = usePreferencesStore((s) => s.setDiffLineDiffType);
   const diffThemeLight = usePreferencesStore((s) => s.diffThemeLight);
   const setDiffThemeLight = usePreferencesStore((s) => s.setDiffThemeLight);
   const diffThemeDark = usePreferencesStore((s) => s.diffThemeDark);
@@ -95,6 +166,34 @@ export function GitGitHubSection() {
           value={diffIndicators}
           options={DIFF_INDICATOR_OPTIONS}
           onChange={setDiffIndicators}
+        />
+      </section>
+
+      <section className="pid-settings-block">
+        <div className="pid-settings-block-label">Diff layout</div>
+        <div className="pid-settings-block-desc">
+          Default arrangement when a diff opens. Per-view, the diff toolbar can flip between the two
+          — the value here is the starting point that change persists into.
+        </div>
+        <PidSegmentedPill
+          ariaLabel="Diff layout"
+          value={diffLayout}
+          options={DIFF_LAYOUT_OPTIONS}
+          onChange={setDiffLayout}
+        />
+      </section>
+
+      <section className="pid-settings-block">
+        <div className="pid-settings-block-label">Inline change highlight</div>
+        <div className="pid-settings-block-desc">
+          How fine-grained the within-line highlight is. The per-diff toolbar's dropdown shows the
+          same options and writes back here.
+        </div>
+        <PidSegmentedPill
+          ariaLabel="Inline change highlight algorithm"
+          value={diffLineDiffType}
+          options={DIFF_LINE_DIFF_OPTIONS}
+          onChange={setDiffLineDiffType}
         />
       </section>
 
@@ -175,8 +274,8 @@ function DiffThemeCard({ kind, value, options, onChange }: DiffThemeCardProps) {
       <div className="pid-diff-theme-card-preview">
         <DiffView
           unified={PREVIEW_PATCH}
-          layout="unified"
-          wordHighlight
+          layoutOverride="unified"
+          lineDiffTypeOverride="word"
           themeOverride={value}
           forPreview
         />

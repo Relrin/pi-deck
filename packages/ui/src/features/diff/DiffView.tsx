@@ -1,18 +1,24 @@
 import { type DiffLineAnnotation, PatchDiff, useWorkerPool } from "@pierre/diffs/react";
 import { useEffect, useMemo, useState } from "react";
-import { usePreferencesStore } from "../../theme/usePreferencesStore.js";
-import type { DiffLayout } from "./useDiffSettingsStore.js";
+import {
+  type DiffLayout,
+  type DiffLineDiffType,
+  usePreferencesStore,
+} from "../../theme/usePreferencesStore.js";
 import { usePierreTheme } from "./usePierreTheme.js";
 
 export interface DiffViewProps {
   /** Unified diff text — i.e. the output of `git diff`. */
   unified: string;
-  layout: DiffLayout;
-  wordHighlight: boolean;
   /** Optional Pierre annotations (one-per-line metadata used for review comments) */
   annotations?: DiffLineAnnotation<unknown>[];
   /** Force a specific Pierre/Shiki theme name */
   themeOverride?: string;
+  /** Force a specific layout — used by the Settings → Git & GitHub preview cards where
+   * we want a deterministic shape regardless of the user's current preference. */
+  layoutOverride?: DiffLayout;
+  /** Force a specific inline-highlight algorithm — same use case as `layoutOverride`. */
+  lineDiffTypeOverride?: DiffLineDiffType;
   /**
    * When `true`, disable Pierre's shared worker pool and render the view
    * synchronously in-process.
@@ -22,25 +28,25 @@ export interface DiffViewProps {
 }
 
 /**
- * Thin React wrapper around `@pierre/diffs`'s `PatchDiff`. Maps toolbar/preference
- * state onto Pierre's options shape and forwards the rest verbatim. The wrapper is
- * intentionally pure — it doesn't fetch its own data, doesn't own the toolbar, and
- * doesn't read from a session store. Callers in `DiffTab` and `ReviewPanel` pass in
- * what they want rendered; this component is the single place Pierre is configured.
+ * Thin React wrapper around `@pierre/diffs`'s `PatchDiff`. Maps the global diff
+ * preferences (Settings → Git & GitHub + the per-screen toolbar) onto Pierre's
+ * `options` shape. Layout, line-diff type, background, and the rest are pulled
+ * directly from `usePreferencesStore`; only the patch text and (optional) per-call
+ * overrides for preview cards arrive via props.
  *
  * The line-style preference maps onto Pierre's built-in `diffIndicators` /
  * `disableBackground` knobs (no custom CSS overrides needed):
  *
- *   - `filled`  → coloured row backgrounds, `+`/`−` markers in the gutter.
- *   - `markers` → no backgrounds, classic gutter markers carry all the signal.
- *   - `bar`     → no backgrounds, thin coloured strip at the start of changed rows.
+ *   - `bars`    → no backgrounds, thin coloured strip at the start of changed rows.
+ *   - `classic` → coloured row backgrounds, `+`/`−` markers in the gutter.
+ *   - `none`    → no backgrounds, no markers.
  */
 export function DiffView({
   unified,
-  layout,
-  wordHighlight,
   annotations,
   themeOverride,
+  layoutOverride,
+  lineDiffTypeOverride,
   forPreview = false,
   className,
 }: DiffViewProps) {
@@ -50,6 +56,10 @@ export function DiffView({
   const background = usePreferencesStore((s) => s.diffBackground);
   const lineNumbers = usePreferencesStore((s) => s.diffLineNumbers);
   const lineWrap = usePreferencesStore((s) => s.diffLineWrap);
+  const layoutPref = usePreferencesStore((s) => s.diffLayout);
+  const lineDiffTypePref = usePreferencesStore((s) => s.diffLineDiffType);
+  const layout = layoutOverride ?? layoutPref;
+  const lineDiffType = lineDiffTypeOverride ?? lineDiffTypePref;
 
   const poolManager = useWorkerPool();
   useEffect(() => {
@@ -82,14 +92,14 @@ export function DiffView({
       disableBackground: !background,
       disableLineNumbers: !lineNumbers,
       overflow: lineWrap ? ("wrap" as const) : ("scroll" as const),
-      lineDiffType: wordHighlight ? ("word" as const) : ("none" as const),
+      lineDiffType,
       // Sticky file header inside the Pierre viewer; matches the mockup's "file path
       // pinned to the top of the diff column" look.
       stickyHeader: true,
       // Pierre's own header is redundant — DiffTab / ReviewPanel render their own.
       disableFileHeader: true,
     }),
-    [theme, layout, indicators, background, lineNumbers, lineWrap, wordHighlight],
+    [theme, layout, indicators, background, lineNumbers, lineWrap, lineDiffType],
   );
 
   const themeKey = typeof theme === "string" ? theme : `${theme.light}|${theme.dark}`;

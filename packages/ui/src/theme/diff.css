@@ -91,22 +91,125 @@ diffs-container {
 }
 
 /* ---------- Diff toolbar (shared by DiffTab + ReviewPanel) ---------- */
+/* Three controls — the line-diff dropdown then two icon-only toggle buttons. All three
+   share a soft pill-style chrome that matches the screenshot in plan/design notes:
+   light bg-1 fill, hairline border, tight padding. */
 .pid-diff-toolbar {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
-.pid-diff-toolbar-group {
+.pid-diff-toolbar-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  /* Strip default <fieldset> chrome — the toolbar uses the element for a11y grouping
-     only, not for the boxed visual treatment fieldsets normally bring. */
-  padding: 0 8px 0 0;
-  margin: 0 4px 0 0;
-  border: 0;
-  border-right: 1px solid var(--line);
-  min-inline-size: 0;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  border-radius: var(--radius);
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  color: var(--ink-1);
+  cursor: pointer;
+  transition:
+    background-color 0.12s,
+    color 0.12s,
+    border-color 0.12s,
+    box-shadow 0.12s;
+}
+.pid-diff-toolbar-btn:hover:not(:disabled) {
+  background: var(--bg-2);
+  color: var(--ink-0);
+  border-color: var(--line-strong);
+}
+.pid-diff-toolbar-btn:focus-visible {
+  outline: none;
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.pid-diff-toolbar-btn[data-active] {
+  color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.pid-diff-toolbar-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Dropdown trigger — label + chevron, same pill chrome as the icon buttons but
+   with text-fit padding. */
+.pid-diff-toolbar-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius);
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  color: var(--ink-1);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  transition:
+    background-color 0.12s,
+    color 0.12s,
+    border-color 0.12s,
+    box-shadow 0.12s;
+}
+.pid-diff-toolbar-select:hover {
+  background: var(--bg-2);
+  color: var(--ink-0);
+  border-color: var(--line-strong);
+}
+.pid-diff-toolbar-select:focus-visible {
+  outline: none;
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.pid-diff-toolbar-select-label {
+  white-space: nowrap;
+}
+
+/* Popover — opens below-right of the trigger. Each row is a 2-line stack:
+   label (mono) then a 1-line description (ui font, dim). */
+.pid-diff-toolbar-menu {
+  min-width: 260px;
+  padding: 4px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+  z-index: 1000;
+}
+.pid-diff-toolbar-menu-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  outline: none;
+}
+.pid-diff-toolbar-menu-item[data-highlighted] {
+  background: var(--bg-2);
+}
+.pid-diff-toolbar-menu-item[data-active] {
+  background: var(--accent-soft);
+}
+.pid-diff-toolbar-menu-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-0);
+  letter-spacing: 0.02em;
+}
+.pid-diff-toolbar-menu-desc {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--ink-2);
+  line-height: 1.35;
 }
 
 /* ---------- Review banner (mounted in ChatView) ---------- */

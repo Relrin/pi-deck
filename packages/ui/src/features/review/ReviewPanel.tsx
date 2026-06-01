@@ -7,7 +7,6 @@ import { PidIconButton } from "../../components/buttons/PidIconButton.js";
 import { PidChip } from "../../components/chip/PidChip.js";
 import { DiffToolbar } from "../diff/DiffToolbar.js";
 import { DiffView } from "../diff/DiffView.js";
-import { useDiffSettingsStore } from "../diff/useDiffSettingsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { ReviewFileList } from "./ReviewFileList.js";
 import { selectOpenTurn, useReviewStore } from "./useReviewStore.js";
@@ -92,8 +91,6 @@ function ReviewPanelBody({
   onClose,
 }: ReviewPanelBodyProps) {
   const client = useSessionsStore((s) => s.client);
-  const layout = useDiffSettingsStore((s) => s.layout);
-  const wordHighlight = useDiffSettingsStore((s) => s.wordHighlight);
 
   const [diff, setDiff] = useState<DiffPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -174,7 +171,7 @@ function ReviewPanelBody({
                 <span>Loading diff…</span>
               </div>
             ) : (
-              <DiffView unified={diff.unified} layout={layout} wordHighlight={wordHighlight} />
+              <DiffView unified={diff.unified} />
             )}
           </div>
         </section>

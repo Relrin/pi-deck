@@ -5,7 +5,6 @@ import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { DiffChangesetHeader } from "./DiffChangesetHeader.js";
 import { DiffToolbar } from "./DiffToolbar.js";
 import { DiffView } from "./DiffView.js";
-import { useDiffSettingsStore } from "./useDiffSettingsStore.js";
 
 type DiffPayload = CommandResponse<"diff.get">;
 
@@ -24,8 +23,6 @@ export function DiffTab() {
   const target = useNavStore((s) => s.diffTarget);
   const [diff, setDiff] = useState<DiffPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const layout = useDiffSettingsStore((s) => s.layout);
-  const wordHighlight = useDiffSettingsStore((s) => s.wordHighlight);
 
   useEffect(() => {
     if (!client || !target) {
@@ -87,7 +84,7 @@ export function DiffTab() {
             <span>No changes vs HEAD.</span>
           </div>
         ) : (
-          <DiffView unified={diff.unified} layout={layout} wordHighlight={wordHighlight} />
+          <DiffView unified={diff.unified} />
         )}
       </div>
     </div>

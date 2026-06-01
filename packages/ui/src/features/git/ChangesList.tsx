@@ -68,11 +68,9 @@ export function ChangesList({ projectId, changes, totals, touched, hunksByPath }
   const toggle = (path: string) => toggleStaging(projectId, path);
   const stageAll = () => selectAllStaging(projectId, allPaths);
 
-  // Clicking a change row both highlights it locally AND opens the diff in the center.
-  // Routed here (not inside ChangeRow) so the four grouping modes all inherit the
-  // behaviour through `shared.setActivePath`.
+  // Single-click highlights the row locally; double-click opens the diff in the center.
   const openDiff = useNavStore((s) => s.openDiff);
-  const selectChange = useCallback(
+  const handleOpenDiff = useCallback(
     (path: string) => {
       setActivePath(path);
       openDiff({ projectId, path });
@@ -85,7 +83,8 @@ export function ChangesList({ projectId, changes, totals, touched, hunksByPath }
     syncedSelected,
     activePath,
     toggle,
-    setActivePath: selectChange,
+    setActivePath,
+    openDiff: handleOpenDiff,
   } satisfies SharedRowProps;
 
   return (
@@ -136,7 +135,10 @@ interface SharedRowProps {
   syncedSelected: Set<string>;
   activePath: string | undefined;
   toggle: (path: string) => void;
+  /** Single-click handler: highlight the row locally without navigating. */
   setActivePath: (path: string) => void;
+  /** Double-click handler: route to the diff screen for `path`. */
+  openDiff: (path: string) => void;
 }
 
 interface GroupedRowsProps {
@@ -181,6 +183,7 @@ function FileRow({
       active={shared.activePath === change.path}
       onToggle={() => shared.toggle(change.path)}
       onSelect={() => shared.setActivePath(change.path)}
+      onOpenDiff={() => shared.openDiff(change.path)}
       hidePathDir={hidePathDir}
     />
   );
@@ -217,6 +220,7 @@ function HunkRows({
                 active={isActive}
                 onToggle={() => shared.toggle(c.path)}
                 onSelect={() => shared.setActivePath(c.path)}
+                onOpenDiff={() => shared.openDiff(c.path)}
               />
             ))}
           </div>
@@ -234,9 +238,19 @@ interface HunkRowProps {
   active: boolean;
   onToggle: () => void;
   onSelect: () => void;
+  onOpenDiff: () => void;
 }
 
-function HunkRow({ hunk, index, total, selected, active, onToggle, onSelect }: HunkRowProps) {
+function HunkRow({
+  hunk,
+  index,
+  total,
+  selected,
+  active,
+  onToggle,
+  onSelect,
+  onOpenDiff,
+}: HunkRowProps) {
   const range = formatHunkRange(hunk);
   // Per-hunk staging would need `git add -p` semantics we don't have yet, so the checkbox
   // mirrors the parent file's intent — clicking either toggles the whole file.
@@ -251,7 +265,12 @@ function HunkRow({ hunk, index, total, selected, active, onToggle, onSelect }: H
         onClick={stopProp}
         aria-label={`Toggle hunk ${index + 1} of ${total}`}
       />
-      <button type="button" className="pid-git-row-body" onClick={onSelect}>
+      <button
+        type="button"
+        className="pid-git-row-body"
+        onClick={onSelect}
+        onDoubleClick={onOpenDiff}
+      >
         <span className="pid-git-hunk-tree" aria-hidden>
           └
         </span>

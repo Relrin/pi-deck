@@ -12,7 +12,10 @@ interface Props {
   /** Highlights the row (accent background + left border) like the screenshot's first row. */
   active: boolean;
   onToggle: () => void;
+  /** Single-click handler: highlight the row, no navigation. */
   onSelect: () => void;
+  /** Double-click handler: route to the diff screen for this file. */
+  onOpenDiff: () => void;
   /** Suppress the parent-directory suffix on the filename — used in folder grouping where
    * the dir already appears in the section header above. */
   hidePathDir?: boolean;
@@ -35,6 +38,7 @@ export function ChangeRow({
   active,
   onToggle,
   onSelect,
+  onOpenDiff,
   hidePathDir,
 }: Props) {
   const tone = STATUS_TONE[change.status];
@@ -61,7 +65,12 @@ export function ChangeRow({
         onClick={stopProp}
         aria-label={`Stage ${change.path}`}
       />
-      <button type="button" className="pid-git-row-body" onClick={onSelect}>
+      <button
+        type="button"
+        className="pid-git-row-body"
+        onClick={onSelect}
+        onDoubleClick={onOpenDiff}
+      >
         <span className="pid-git-row-status" aria-hidden>
           {change.status}
         </span>
