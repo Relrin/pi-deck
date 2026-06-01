@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpFromLine, GitCommitHorizontal, Loader2 } from "../../components/icons/index.js";
+import { useRightPaneStore } from "../../layout/use-right-pane.js";
 import { useGitStore } from "./useGitStore.js";
 import { useStagingStore } from "./useStagingStore.js";
 
@@ -14,6 +15,13 @@ export function CommitComposer({ projectId, headShortSha }: Props) {
   const [amend, setAmend] = useState(false);
   const [force, setForce] = useState(false);
   const [busy, setBusy] = useState<"commit" | "commit-push" | undefined>(undefined);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const focusNonce = useRightPaneStore((s) => s.composerFocusNonce);
+  useEffect(() => {
+    if (focusNonce === 0) return; // initial seed value — no real request yet
+    textareaRef.current?.focus();
+  }, [focusNonce]);
 
   const commit = useGitStore((s) => s.commit);
   const push = useGitStore((s) => s.push);
@@ -63,6 +71,7 @@ export function CommitComposer({ projectId, headShortSha }: Props) {
       <div className="pid-mono-label pid-git-section-label">commit</div>
       <div className="pid-composer-shell pid-git-commit-shell">
         <textarea
+          ref={textareaRef}
           className="pid-composer-input pid-git-commit-input"
           rows={2}
           placeholder="describe the change…"

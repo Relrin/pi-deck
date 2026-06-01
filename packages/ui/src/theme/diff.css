@@ -25,6 +25,41 @@ diffs-container {
   background: var(--bg-0);
   color: var(--ink-0);
 }
+
+/* Changeset header. Located above the per-file head. */
+.pid-diff-changeset-head {
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-0);
+}
+.pid-diff-changeset-head-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pid-diff-changeset-head-spacer {
+  flex: 1;
+}
+.pid-diff-changeset-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.pid-diff-changeset-title {
+  margin: 8px 0 2px;
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: normal;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ink-0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .pid-diff-tab-head {
   border-bottom: 1px solid var(--line);
   padding: 12px 18px;
@@ -37,13 +72,14 @@ diffs-container {
   flex-wrap: wrap;
 }
 .pid-diff-tab-path {
+  flex: 1;
+  min-width: 0;
   font-family: var(--font-mono);
-  font-size: var(--t-12);
-  color: var(--ink-1);
+  font-size: var(--t-13);
+  color: var(--ink-0);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 60vw;
 }
 .pid-diff-tab-head-spacer {
   flex: 1;

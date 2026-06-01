@@ -1,5 +1,6 @@
-import { type ReactNode, useState } from "react";
+import type { ReactNode } from "react";
 import { GitBranch, Layers } from "../components/icons";
+import { useRightPaneStore } from "./use-right-pane";
 
 type RightTab = "git" | "context";
 
@@ -11,14 +12,9 @@ export interface PidRightPaneProps {
   initialTab?: RightTab;
 }
 
-export function PidRightPane({
-  git,
-  context,
-  gitCount,
-  contextCount,
-  initialTab = "context",
-}: PidRightPaneProps) {
-  const [tab, setTab] = useState<RightTab>(initialTab);
+export function PidRightPane({ git, context, gitCount, contextCount }: PidRightPaneProps) {
+  const tab = useRightPaneStore((s) => s.tab);
+  const setTab = useRightPaneStore((s) => s.setTab);
 
   return (
     <aside className="pid-rightpane" aria-label="Right pane">

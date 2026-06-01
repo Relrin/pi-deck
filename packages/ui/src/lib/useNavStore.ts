@@ -52,12 +52,11 @@ export const useNavStore = create<NavStoreState>()(
       diffTarget: null,
       expandedProjectsOverview: {},
       expandedProjectsRail: {},
-      setScreen: (screen) =>
-        // Stepping away from the diff screen drops its target so a stale path can't be
-        // re-opened by a later "switch back" interaction.
-        set(screen === "git-diff" ? { screen } : { screen, diffTarget: null }),
+
+      setScreen: (screen) => set({ screen }),
       setDiffTarget: (diffTarget) => set({ diffTarget }),
       openDiff: (target) => set({ screen: "git-diff", diffTarget: target }),
+
       toggleOverviewProject: (projectId) =>
         set((state) => ({
           expandedProjectsOverview: {
@@ -65,6 +64,7 @@ export const useNavStore = create<NavStoreState>()(
             [projectId]: !isExpanded(state.expandedProjectsOverview, projectId),
           },
         })),
+
       toggleRailProject: (projectId) =>
         set((state) => ({
           expandedProjectsRail: {
@@ -72,13 +72,15 @@ export const useNavStore = create<NavStoreState>()(
             [projectId]: !isExpanded(state.expandedProjectsRail, projectId),
           },
         })),
-      goToSession: () => set({ screen: "session", diffTarget: null }),
-      goToBlank: () => set({ screen: "blank", diffTarget: null }),
+
+      goToSession: () => set({ screen: "session" }),
+      goToBlank: () => set({ screen: "blank" }),
     }),
     {
       name: "pi-deck:nav:v1",
       partialize: (state) => ({
         screen: state.screen,
+        diffTarget: state.diffTarget,
         expandedProjectsOverview: state.expandedProjectsOverview,
         expandedProjectsRail: state.expandedProjectsRail,
       }),

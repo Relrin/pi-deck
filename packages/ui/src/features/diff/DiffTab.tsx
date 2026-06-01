@@ -2,6 +2,7 @@ import type { CommandResponse } from "@pi-deck/core/protocol/commands.js";
 import { useEffect, useState } from "react";
 import { useNavStore } from "../../lib/useNavStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
+import { DiffChangesetHeader } from "./DiffChangesetHeader.js";
 import { DiffToolbar } from "./DiffToolbar.js";
 import { DiffView } from "./DiffView.js";
 import { useDiffSettingsStore } from "./useDiffSettingsStore.js";
@@ -63,13 +64,12 @@ export function DiffTab() {
 
   return (
     <div className="pid-diff-tab">
+      <DiffChangesetHeader />
       <header className="pid-diff-tab-head">
         <div className="pid-diff-tab-head-row">
-          <span className="pid-mono-label">diff · vs HEAD</span>
           <span className="pid-diff-tab-path" title={target.path}>
             {target.path}
           </span>
-          <span className="pid-diff-tab-head-spacer" />
           <DiffToolbar />
         </div>
       </header>

@@ -206,6 +206,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-2);
+  line-height: 1;
 }
 .pid-rightpane .pid-mono-label {
   font-size: 11px;
@@ -4444,10 +4445,15 @@
     color 0.12s,
     border-color 0.12s;
 }
-.pid-git-commit-btn:hover {
+.pid-git-commit-btn:hover:not(:disabled) {
   background: var(--bg-3);
   color: var(--ink-0);
   border-color: var(--line-strong);
+}
+.pid-git-commit-btn:disabled,
+.pid-git-commit-btn[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 .pid-git-commit-btn-primary {
   background: var(--accent);
