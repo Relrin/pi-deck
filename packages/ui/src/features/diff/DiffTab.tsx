@@ -1,6 +1,7 @@
 import type { CommandResponse } from "@pi-deck/core/protocol/commands.js";
 import { useEffect, useState } from "react";
 import { useNavStore } from "../../lib/useNavStore.js";
+import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { DiffChangesetHeader } from "./DiffChangesetHeader.js";
 import { DiffToolbar } from "./DiffToolbar.js";
@@ -20,7 +21,10 @@ type DiffPayload = CommandResponse<"diff.get">;
  */
 export function DiffTab() {
   const client = useSessionsStore((s) => s.client);
-  const target = useNavStore((s) => s.diffTarget);
+  const activeProjectId = useProjectsStore((s) => s.activeProjectId);
+  const storedTarget = useNavStore((s) => s.diffTarget);
+
+  const target = storedTarget && storedTarget.projectId === activeProjectId ? storedTarget : null;
   const [diff, setDiff] = useState<DiffPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
 
