@@ -2,6 +2,7 @@
 @import "../theme/shell.css";
 @import "../theme/components.css";
 @import "../theme/diff.css";
+@import "../theme/pierre-file-icons.css";
 @import "./reset.css";
 @import "tailwindcss";
 

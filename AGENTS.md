@@ -93,6 +93,7 @@ bun run build         # Production build
 
 - Import from `packages/ui/src/components/icons` only. This is the swap point if we change icon libraries.
 - Extend `GlyphKind` in `packages/ui/src/components/glyph/kinds.tsx` for icons not present in `lucide-react`. If an icon cannot be found, drop in a dot-grid placeholder and `TODO` it.
+- **File-type icons** come from `@pierre/trees`' built-in set, for parity with the file tree. The tree renders them itself; light-DOM surfaces (the git sidebar's `ChangeRow`) use `PidPierreFileIcon` (`packages/ui/src/components/icons/PidPierreFileIcon.tsx`), which resolves the path → sprite symbol and colours it via `theme/pierre-file-icons.css` (Pierre's palette, vendored + scoped to `.pid-pierre-icon`; re-extract on upgrade). The old `iconForFile` + `@iconify-json/material-icon-theme` mapping was removed.
 
 ### Git operations
 
