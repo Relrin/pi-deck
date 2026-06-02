@@ -540,6 +540,23 @@ export const FsRenameResponse = z.object({
 });
 
 /**
+ * Move a file or folder into a different directory, preserving its basename. Distinct from
+ * `fs.rename` (which only changes the basename within the same parent) — this backs the file
+ * tree's cross-directory drag-and-drop. Both paths must resolve inside the project root.
+ */
+export const FsMoveRequest = z.object({
+  projectId: z.string().uuid(),
+  /** Absolute path of the source file or folder. */
+  fromPath: z.string().min(1),
+  /** Absolute path of the destination directory the item moves into. */
+  toDir: z.string().min(1),
+});
+export const FsMoveResponse = z.object({
+  /** Resolved absolute path (POSIX) of the item at its new location. */
+  path: z.string().min(1),
+});
+
+/**
  * Move the listed paths to the OS trash via Electron's `shell.trashItem`. The operation
  * is recoverable from the user's trash on every platform — but we still gate it on a
  * confirmation dialog on the renderer side.
@@ -673,6 +690,7 @@ export const CommandSchemas = {
   "fs.createFile": { request: FsCreateFileRequest, response: FsCreateFileResponse },
   "fs.createFolder": { request: FsCreateFolderRequest, response: FsCreateFolderResponse },
   "fs.rename": { request: FsRenameRequest, response: FsRenameResponse },
+  "fs.move": { request: FsMoveRequest, response: FsMoveResponse },
   "fs.delete": { request: FsDeleteRequest, response: FsDeleteResponse },
 } as const;
 

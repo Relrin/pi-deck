@@ -1,5 +1,5 @@
 import { rename as fsRename, mkdir, stat, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { FsExistsError, IllegalNameError, PathEscapeError } from "./types.js";
 
 /**
@@ -64,6 +64,15 @@ export interface RenameArgs {
   toName: string;
 }
 
+export interface MoveArgs {
+  projectRoot: string;
+  /** Absolute path of the source file or folder. */
+  fromPath: string;
+  /** Absolute path of the destination directory the item moves into. The basename is
+   * preserved; only the parent directory changes. */
+  toDir: string;
+}
+
 export interface DeleteArgs {
   projectRoot: string;
   /** Absolute paths to trash (files or directories). */
@@ -106,6 +115,36 @@ export async function rename(args: RenameArgs): Promise<string> {
   assertInsideRoot(target, root);
   if (from === target) return target;
   if (await exists(target)) throw new FsExistsError(target);
+  await fsRename(from, target);
+  return target;
+}
+
+/**
+ * Move `fromPath` into the directory `toDir`, keeping its basename. Backs the file tree's
+ * cross-directory drag-and-drop (`rename` only re-bases within the same dir). Rejects moves
+ * that would land a directory inside itself or one of its own descendants — chokidar would
+ * otherwise emit a confusing add/remove storm and git would lose the path entirely.
+ */
+export async function move(args: MoveArgs): Promise<string> {
+  const root = resolve(args.projectRoot);
+  const from = resolve(args.fromPath);
+  assertInsideRoot(from, root);
+  const destDir = resolve(args.toDir);
+  assertInsideRoot(destDir, root);
+  const target = resolve(destDir, basename(from));
+  assertInsideRoot(target, root);
+  // Dropping onto the current parent is a no-op — succeed silently so the UI's optimistic
+  // move doesn't bounce back with an error.
+  if (from === target) return target;
+  // Block self / descendant moves: if `target` resolves to `from` or anything beneath it,
+  // `relative(from, target)` produces a path that neither escapes upward (`..`) nor is
+  // absolute.
+  const intoSelf = relative(from, target);
+  if (intoSelf === "" || (!intoSelf.startsWith("..") && !isAbsolute(intoSelf))) {
+    throw new Error("Cannot move a directory into itself");
+  }
+  if (await exists(target)) throw new FsExistsError(target);
+  await mkdir(destDir, { recursive: true });
   await fsRename(from, target);
   return target;
 }

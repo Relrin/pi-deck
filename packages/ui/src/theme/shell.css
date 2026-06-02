@@ -463,6 +463,12 @@
   scrollbar-width: thin;
   scrollbar-color: var(--bg-3) transparent;
 }
+
+.pid-tree-pierre {
+  flex: 1;
+  min-height: 0;
+  display: block;
+}
 .pid-tree-body::-webkit-scrollbar {
   width: 6px;
 }

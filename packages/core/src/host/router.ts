@@ -2,6 +2,7 @@ import {
   FsExistsError,
   createFile as fsCreateFile,
   createFolder as fsCreateFolder,
+  move as fsMove,
   rename as fsRename,
   trashPaths as fsTrashPaths,
   IllegalNameError,
@@ -636,6 +637,21 @@ const handlers: { [C in CommandName]: CommandHandler } = {
         projectRoot: project.path,
         fromPath: parsed.fromPath,
         toName: parsed.toName,
+      });
+      return { path };
+    } catch (err) {
+      mapFsError(err);
+    }
+  },
+  "fs.move": async (ctx, payload) => {
+    const parsed = CommandSchemas["fs.move"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const path = await fsMove({
+        projectRoot: project.path,
+        fromPath: parsed.fromPath,
+        toDir: parsed.toDir,
       });
       return { path };
     } catch (err) {
