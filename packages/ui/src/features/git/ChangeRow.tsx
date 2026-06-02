@@ -20,14 +20,24 @@ interface Props {
   hidePathDir?: boolean;
 }
 
-const STATUS_TONE: Record<GitChange["status"], "add" | "mod" | "del" | "unt"> = {
+const STATUS_TONE: Record<GitChange["status"], "add" | "mod" | "del" | "ren" | "unt"> = {
   A: "add",
   M: "mod",
-  R: "mod",
+  R: "ren",
   C: "mod",
   D: "del",
-  U: "del",
+  U: "mod",
   "?": "unt",
+};
+
+const STATUS_LABEL: Record<GitChange["status"], string> = {
+  A: "A",
+  M: "M",
+  R: "R",
+  C: "M",
+  D: "D",
+  U: "M",
+  "?": "U",
 };
 
 export function ChangeRow({
@@ -70,7 +80,7 @@ export function ChangeRow({
         onDoubleClick={onOpenDiff}
       >
         <span className="pid-git-row-status" aria-hidden>
-          {change.status}
+          {STATUS_LABEL[change.status]}
         </span>
         <PidPierreFileIcon path={change.path} size={14} className="pid-git-row-fileicon" />
         <span className="pid-git-row-name">

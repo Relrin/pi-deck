@@ -40,12 +40,10 @@ export function PidTreeSearch({ model }: PidTreeSearchProps) {
 
   return (
     <div className="pid-tree-filter">
-      <span className="pid-tree-filter-icon" aria-hidden>
-        <Search size={12} />
-      </span>
+      <Search size={12} aria-hidden />
       <input
         type="text"
-        className="pid-input pid-tree-filter-input"
+        className="pid-tree-filter-input"
         placeholder="filter files…"
         value={value}
         onChange={(e) => search.setValue(e.target.value || null)}

@@ -400,68 +400,47 @@
   font-family: var(--font-mono);
   font-size: var(--t-12);
 }
-.pid-tree-header-spacer {
-  flex: 1;
-}
-.pid-tree-header-total {
-  font-family: var(--font-mono);
-  font-size: 10px;
-}
-.pid-tree-header-total[data-tone="add"] {
-  color: var(--add);
-}
-.pid-tree-header-total[data-tone="del"] {
-  color: var(--del);
-}
 .pid-tree-filter-row {
   padding: 8px 12px;
   border-bottom: 1px solid var(--line);
 }
 .pid-tree-filter {
-  position: relative;
-  display: block;
-}
-.pid-tree-filter-icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-1);
   color: var(--ink-3);
-  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
 }
 .pid-tree-filter-input {
-  padding-left: 28px;
-  padding-right: 26px;
-}
-.pid-tree-filter-clear {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
+  flex: 1;
+  min-width: 0;
   background: transparent;
   border: 0;
+  outline: none;
+  color: var(--ink-0);
+  font: inherit;
+  padding: 0;
+}
+.pid-tree-filter-input::placeholder {
   color: var(--ink-3);
-  cursor: pointer;
-  padding: 2px 4px;
+}
+.pid-tree-filter-clear {
   display: inline-flex;
   align-items: center;
+  padding: 0;
+  background: transparent;
+  border: 0;
   border-radius: 3px;
+  color: var(--ink-3);
+  cursor: pointer;
 }
 .pid-tree-filter-clear:hover {
   color: var(--ink-1);
-  background: var(--bg-2);
-}
-
-.pid-tree-body {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-  font-family: var(--font-mono);
-  font-size: var(--t-12);
-  padding: 4px 0 16px;
-  outline: none;
-  scrollbar-width: thin;
-  scrollbar-color: var(--bg-3) transparent;
 }
 
 .pid-tree-body-wrap {
@@ -474,108 +453,18 @@
   flex: 1;
   min-height: 0;
   display: block;
-}
-.pid-tree-body::-webkit-scrollbar {
-  width: 6px;
-}
-.pid-tree-body::-webkit-scrollbar-thumb {
-  background: var(--bg-3);
-  border-radius: 3px;
-}
-.pid-tree-body:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--accent-line);
-}
-.pid-tree-virt {
-  position: relative;
-  width: 100%;
-}
-.pid-tree-virt-item {
-  width: 100%;
-}
-
-.pid-tree-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 24px;
-  padding-right: 10px;
-  color: var(--ink-1);
-  cursor: pointer;
-  position: relative;
-  user-select: none;
-}
-.pid-tree-row:hover {
-  background: var(--bg-2);
-  color: var(--ink-0);
-}
-.pid-tree-row[data-selected="true"] {
-  background: var(--accent-soft);
-  color: var(--ink-0);
-}
-.pid-tree-row-arrow {
-  width: 12px;
-  color: var(--ink-3);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.pid-tree-row-icon {
-  width: 16px;
-  height: 16px;
-  color: var(--ink-2);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.pid-tree-row-icon svg {
-  display: block;
-}
-.pid-tree-row-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-}
-.pid-tree-row-badge {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--ink-3);
-  letter-spacing: 0.08em;
-}
-.pid-tree-row-badge[data-tone="add"] {
-  color: var(--add);
-}
-.pid-tree-row-badge[data-tone="mod"] {
-  color: var(--mod);
-}
-.pid-tree-row-badge[data-tone="del"] {
-  color: var(--del);
-}
-.pid-tree-row-badge[data-tone="unt"] {
-  color: var(--ink-3);
-}
-.pid-tree-row-input {
-  flex: 1;
-  min-width: 0;
-  background: var(--bg-inset);
-  border: 1px solid var(--accent-line);
-  border-radius: 3px;
-  color: var(--ink-0);
-  font: inherit;
-  padding: 1px 6px;
-  outline: none;
-}
-.pid-tree-row-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
-}
-.pid-tree-row-draft {
-  background: var(--bg-inset);
-}
-.pid-tree-row-draft .pid-tree-row-icon {
-  color: var(--accent);
+  --trees-font-family-override: var(--font-mono);
+  --trees-font-size-override: var(--t-12);
+  --trees-icon-width-override: 14px;
+  --trees-item-row-gap-override: 8px;
+  --trees-padding-inline-override: 0;
+  --trees-item-margin-x-override: 0;
+  --trees-item-padding-x-override: 14px;
+  --trees-border-radius-override: 0;
+  --trees-focus-ring-color-override: transparent;
+  --trees-selected-focused-border-color-override: transparent;
+  --trees-status-renamed-override: var(--warn);
+  --trees-status-untracked-override: var(--info);
 }
 
 .pid-tree-empty {

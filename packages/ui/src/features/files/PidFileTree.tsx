@@ -32,8 +32,12 @@ import {
 } from "./pierreTreeAdapters.js";
 import { useFileTreeStore } from "./useFileTreeStore.js";
 
-/** Stable reference so `gitTotals ?? EMPTY_TOTALS` doesn't allocate per render. */
-const EMPTY_TOTALS = { add: 0, del: 0 } as const;
+const TREE_SCROLLBAR_CSS = `
+[data-file-tree-virtualized-scroll='true'],
+[data-file-tree-scrollbar-measure='true'] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
+}`;
 
 /** A draft `add` + inline-rename in flight, keyed by the placeholder's project-relative path. */
 interface PendingCreate {
@@ -64,9 +68,6 @@ export function PidFileTree() {
     projectId ? s.statusByProject[projectId]?.changes : undefined,
   );
   const gitRoot = useGitStore((s) => (projectId ? s.statusByProject[projectId]?.root : undefined));
-  const gitTotals = useGitStore((s) =>
-    projectId ? s.statusByProject[projectId]?.totals : undefined,
-  );
   const ensureStatus = useGitStore((s) => s.ensureStatus);
 
   // Live values read by the model's construction-time callbacks (onRename, etc.), which are
@@ -161,6 +162,8 @@ export function PidFileTree() {
     flattenEmptyDirectories: true,
     initialExpansion: "closed",
     icons: { set: "complete", colored: true },
+    itemHeight: 28,
+    unsafeCSS: TREE_SCROLLBAR_CSS,
     // Drive search from our own input (PidTreeSearch); hide non-matches to mirror the
     // previous fuse-filter behaviour.
     fileTreeSearchMode: "hide-non-matches",
@@ -286,8 +289,6 @@ export function PidFileTree() {
     model.setGitStatus(gitChangesToEntries(gitChanges ?? [], gitRoot, root));
   }, [gitChanges, gitRoot, root, nodes, model]);
 
-  const totals = gitTotals ?? EMPTY_TOTALS;
-
   if (!projectId || !project) {
     return (
       <div className="pid-tree-shell">
@@ -307,17 +308,6 @@ export function PidFileTree() {
     <div className="pid-tree-shell">
       <div className="pid-tree-header">
         <span className="pid-mono-label">{project.displayName}</span>
-        <span className="pid-tree-header-spacer" />
-        {totals.add > 0 ? (
-          <span className="pid-tree-header-total" data-tone="add">
-            +{totals.add}
-          </span>
-        ) : null}
-        {totals.del > 0 ? (
-          <span className="pid-tree-header-total" data-tone="del">
-            −{totals.del}
-          </span>
-        ) : null}
       </div>
       <div className="pid-tree-filter-row">
         <PidTreeSearch model={model} />

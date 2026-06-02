@@ -1613,8 +1613,11 @@
 /* ---------- Context menu (right-click on rail rows etc.) ---------- */
 .pid-context-menu {
   z-index: 50;
+  display: flex;
+  flex-direction: column;
   min-width: 11rem;
-  padding: 4px;
+  padding: 4px 0;
+  overflow: hidden;
   background: var(--bg-1);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -1627,14 +1630,16 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 4px 8px;
-  border-radius: 3px;
+  padding: 4px 12px;
+  text-align: left;
   cursor: pointer;
   outline: none;
   user-select: none;
 }
+.pid-context-menu-item:hover,
+.pid-context-menu-item:focus,
 .pid-context-menu-item[data-highlighted] {
-  background: var(--bg-2);
+  background: var(--bg-3);
 }
 .pid-context-menu-item[data-disabled] {
   color: var(--ink-3);
@@ -1643,6 +1648,8 @@
 .pid-context-menu-item[data-danger] {
   color: var(--del);
 }
+.pid-context-menu-item[data-danger]:hover,
+.pid-context-menu-item[data-danger]:focus,
 .pid-context-menu-item[data-danger][data-highlighted] {
   background: var(--del-soft);
 }
@@ -1660,7 +1667,8 @@
 }
 .pid-context-menu-shortcut {
   margin-left: auto;
-  padding-left: 12px;
+  padding-left: 16px;
+  text-align: right;
   font-size: var(--t-11, 11px);
   color: var(--ink-3);
   letter-spacing: 0.04em;
@@ -4218,8 +4226,7 @@
 .pid-git-row-status {
   text-align: center;
   font-weight: 600;
-  font-size: 9px;
-  letter-spacing: 0.02em;
+  font-size: var(--t-12);
   color: var(--ink-3);
 }
 .pid-git-row[data-tone="add"] .pid-git-row-status {
@@ -4231,8 +4238,11 @@
 .pid-git-row[data-tone="del"] .pid-git-row-status {
   color: var(--del);
 }
+.pid-git-row[data-tone="ren"] .pid-git-row-status {
+  color: var(--warn);
+}
 .pid-git-row[data-tone="unt"] .pid-git-row-status {
-  color: var(--ink-3);
+  color: var(--info);
 }
 .pid-git-row-name {
   min-width: 0;
