@@ -156,3 +156,33 @@ export function readThemeTokens(el: HTMLElement): TreeThemeTokenMap {
   }
   return out;
 }
+
+// --- Path helpers (Pierre tree paths & absolute fs paths) ------------------------------------
+// Pierre identities are project-relative POSIX; directories carry a trailing slash. The host
+// fs commands want absolute paths, so file operations round-trip through these.
+
+/** Drop a single trailing slash (Pierre's canonical directory paths carry one). */
+export function stripTrailingSlash(path: string): string {
+  return path.endsWith("/") ? path.slice(0, -1) : path;
+}
+
+/** POSIX basename of a tree path, tolerating a trailing slash. */
+export function treePathBasename(path: string): string {
+  const p = stripTrailingSlash(path);
+  const ix = p.lastIndexOf("/");
+  return ix >= 0 ? p.slice(ix + 1) : p;
+}
+
+/** Project-relative POSIX parent of a tree path; `""` at the project root. */
+export function treePathParent(path: string): string {
+  const p = stripTrailingSlash(path);
+  const ix = p.lastIndexOf("/");
+  return ix >= 0 ? p.slice(0, ix) : "";
+}
+
+/** Absolute path for a project-relative tree path. `root` is the POSIX project root. */
+export function treeRelToAbs(root: string, rel: string): string {
+  const base = root.replace(/\/+$/, "");
+  const r = stripTrailingSlash(rel);
+  return r ? `${base}/${r}` : base;
+}

@@ -6,6 +6,9 @@ import {
   flattenFsNodes,
   gitChangesToEntries,
   gitStatusToPierre,
+  treePathBasename,
+  treePathParent,
+  treeRelToAbs,
 } from "./pierreTreeAdapters.js";
 
 function dir(relPath: string, children: FsNode[]): FsNode {
@@ -112,5 +115,25 @@ describe("buildTreeThemeInput", () => {
     expect(input.bg).toBeUndefined();
     expect(input.colors && "sideBar.background" in input.colors).toBe(false);
     expect(input.colors?.["sideBar.foreground"]).toBe("#fff");
+  });
+});
+
+describe("tree path helpers", () => {
+  test("treePathBasename tolerates a trailing slash", () => {
+    expect(treePathBasename("src/components/Button.tsx")).toBe("Button.tsx");
+    expect(treePathBasename("src/components/")).toBe("components");
+    expect(treePathBasename("README.md")).toBe("README.md");
+  });
+
+  test("treePathParent returns the project-relative parent, empty at root", () => {
+    expect(treePathParent("src/components/Button.tsx")).toBe("src/components");
+    expect(treePathParent("src/")).toBe("");
+    expect(treePathParent("README.md")).toBe("");
+  });
+
+  test("treeRelToAbs joins onto the project root, stripping dir slashes", () => {
+    expect(treeRelToAbs("/repo", "src/a.ts")).toBe("/repo/src/a.ts");
+    expect(treeRelToAbs("/repo/", "src/empty/")).toBe("/repo/src/empty");
+    expect(treeRelToAbs("/repo", "")).toBe("/repo");
   });
 });
