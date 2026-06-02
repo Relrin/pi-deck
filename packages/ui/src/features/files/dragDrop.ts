@@ -1,5 +1,4 @@
 import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
-import type { VisibleRow } from "./useFileTreeStore.js";
 
 /**
  * Custom MIME type used for in-app drag-n-drop from the file tree to the chat composer.
@@ -48,36 +47,4 @@ export function hasPideckPaths(dataTransfer: DataTransfer | null | undefined): b
   // DataTransfer.types is readonly DOMStringList in some browsers — coerce to array first.
   const types = Array.from(dataTransfer.types ?? []);
   return types.includes(PIDECK_PATHS_MIME);
-}
-
-/**
- * Build the drag payload for a row plus (optionally) its surrounding selection.
- *
- * If the dragged row is already in `selectedPaths` (and the selection has more than one
- * entry), drag the whole selection so the user's bulk-pick flows through to the composer.
- * Otherwise drag the single row.
- *
- * `nodeTypeByPath` is a lookup from path → "file" | "dir" so we can emit per-path `kind`
- * tags. Anything not in the map falls back to "file"; the composer treats unrecognised
- * kinds as files anyway.
- *
- * Lives in `dragDrop.ts` rather than the row component so HMR Fast Refresh stays happy
- * (component files should export only components).
- */
-export function buildDragPayload(
-  draggedRow: VisibleRow,
-  selectedPaths: Set<string>,
-  nodeTypeByPath: Map<string, "file" | "dir">,
-): { mimePayload: string; rowCount: number } {
-  const paths =
-    selectedPaths.size > 1 && selectedPaths.has(draggedRow.path)
-      ? [...selectedPaths]
-      : [draggedRow.path];
-  const attachments = paths.map((path) => {
-    const type = nodeTypeByPath.get(path) ?? draggedRow.node.type;
-    const kind: PromptAttachment["kind"] = type === "dir" ? "folder" : "file";
-    return { kind, path };
-  });
-  const mimePayload = encodePideckPaths(attachments);
-  return { mimePayload, rowCount: paths.length };
 }
