@@ -88,6 +88,26 @@ diffs-container {
   flex: 1;
   min-height: 0;
   overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
+}
+.pid-diff-tab-body::-webkit-scrollbar,
+.pid-diff-tab-body ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.pid-diff-tab-body::-webkit-scrollbar-track,
+.pid-diff-tab-body ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pid-diff-tab-body::-webkit-scrollbar-thumb,
+.pid-diff-tab-body ::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 3px;
+}
+.pid-diff-tab-body::-webkit-scrollbar-thumb:hover,
+.pid-diff-tab-body ::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
 }
 
 /* ---------- Diff toolbar (shared by DiffTab + ReviewPanel) ---------- */
@@ -359,6 +379,26 @@ diffs-container {
   flex: 1;
   min-height: 0;
   overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
+}
+.pid-review-panel-diff-body::-webkit-scrollbar,
+.pid-review-panel-diff-body ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.pid-review-panel-diff-body::-webkit-scrollbar-track,
+.pid-review-panel-diff-body ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pid-review-panel-diff-body::-webkit-scrollbar-thumb,
+.pid-review-panel-diff-body ::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 3px;
+}
+.pid-review-panel-diff-body::-webkit-scrollbar-thumb:hover,
+.pid-review-panel-diff-body ::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
 }
 
 /* ---------- Settings → Git & GitHub: diff theme picker ---------- */

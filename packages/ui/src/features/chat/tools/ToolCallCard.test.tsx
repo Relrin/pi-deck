@@ -1,7 +1,8 @@
-import { describe, expect, test } from "bun:test";
+import { beforeEach, describe, expect, test } from "bun:test";
 import { fireEvent, render, screen } from "../../../../test/utils";
 import type { ToolCallEntry } from "../types";
 import { ToolCallCard } from "./ToolCallCard";
+import { useToolCardExpansionStore } from "./useToolCardExpansionStore";
 
 function call(overrides: Partial<ToolCallEntry> = {}): ToolCallEntry {
   return {
@@ -15,6 +16,12 @@ function call(overrides: Partial<ToolCallEntry> = {}): ToolCallEntry {
 }
 
 describe("ToolCallCard", () => {
+  // Expanded state lives in a module-level store keyed by session + call id, so without a
+  // reset the same "s-test" / "t-1" pair would leak open/closed state between cases.
+  beforeEach(() => {
+    useToolCardExpansionStore.setState({ expanded: {} });
+  });
+
   test("collapsed by default for done status", () => {
     render(<ToolCallCard sessionId="s-test" call={call({ status: "done" })} />);
     const toggle = screen.getByRole("button", { expanded: false });

@@ -9,7 +9,7 @@ import { MessageContextMenu } from "./MessageContextMenu.js";
 import { MessageSurface } from "./MessageSurface.js";
 import { isPlanShapedMessage, PlanCard } from "./PlanCard.js";
 import { StreamingStatus } from "./StreamingStatus.js";
-import { formatMessageTime } from "./time.js";
+import { formatMessageTime, formatMessageTimestampFull } from "./time.js";
 
 interface AssistantMessageProps {
   message: AssistantMessageEntry;
@@ -52,6 +52,7 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
     <MessageSurface
       kind="agent"
       timestamp={formatMessageTime(message.createdAt)}
+      timestampTitle={formatMessageTimestampFull(message.createdAt)}
       agentLabel={modelLabel}
       agentTitle={message.model}
     >

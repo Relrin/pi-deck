@@ -2,8 +2,10 @@ import type { ReactNode } from "react";
 
 export interface MessageSurfaceProps {
   kind: "user" | "agent";
-  /** Mono-formatted timestamp, e.g. "21:14:18". */
+  /** Mono-formatted timestamp, e.g. "Jun 4, 20:41". */
   timestamp?: string;
+  /** Full-precision timestamp shown on hover over the time tag, e.g. "Jun 4, 2026, 20:41:18". */
+  timestampTitle?: string;
   /**
    * Label shown in place of "pi" on agent rows. When provided, the tag renders as
    * "PI · <agentLabel>" so the brand stays visible alongside the model name. Pass the
@@ -23,6 +25,7 @@ export interface MessageSurfaceProps {
 export function MessageSurface({
   kind,
   timestamp,
+  timestampTitle,
   agentLabel,
   agentTitle,
   children,
@@ -36,7 +39,11 @@ export function MessageSurface({
               {agentLabel ?? "pi"}
             </span>
           )}
-          {timestamp && <span className="pid-msg-tag-time">{timestamp}</span>}
+          {timestamp && (
+            <span className="pid-msg-tag-time" title={timestampTitle}>
+              {timestamp}
+            </span>
+          )}
           {kind === "user" && <span>you</span>}
         </div>
         <div className="pid-msg-body">{children}</div>

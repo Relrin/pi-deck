@@ -5,13 +5,17 @@ import { ImagePreviewDialog } from "../composer/ImagePreviewDialog.js";
 import type { UserMessageEntry, UserMessageImage } from "../types.js";
 import { MessageContextMenu } from "./MessageContextMenu.js";
 import { MessageSurface } from "./MessageSurface.js";
-import { formatMessageTime } from "./time.js";
+import { formatMessageTime, formatMessageTimestampFull } from "./time.js";
 
 export function UserMessage({ message }: { message: UserMessageEntry }) {
   const attachments = message.attachments ?? [];
   const images = message.images ?? [];
   return (
-    <MessageSurface kind="user" timestamp={formatMessageTime(message.createdAt)}>
+    <MessageSurface
+      kind="user"
+      timestamp={formatMessageTime(message.createdAt)}
+      timestampTitle={formatMessageTimestampFull(message.createdAt)}
+    >
       {/* Chips live outside the context-menu trigger because Radix's asChild requires a
           single React child; keeping them as siblings also matches the design intent
           (chips are message metadata, not selectable text). */}

@@ -11,6 +11,7 @@ import { DefaultRenderer } from "./renderers/DefaultRenderer.js";
 import { StatusIcon } from "./StatusIcon.js";
 import { getRenderer, getSummarizer } from "./ToolRendererRegistry.js";
 import { deriveToolFileDiff, isFileDiffTool } from "./toolFileDiff.js";
+import { useToolCardExpansionStore } from "./useToolCardExpansionStore.js";
 
 function statusStat(call: ToolCallEntry): { text: string; tone: "ok" | "error" } | undefined {
   if (call.status === "done") return { text: "ok", tone: "ok" };
@@ -33,7 +34,11 @@ export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; session
   //     clears. Cleared by any manual toggle below.
   //   - `prevHasPendingApprovalRef` — lets us react to the *transitions* (false→true and
   //     true→false), not to every render where the flag happens to be set.
-  const [expanded, setExpanded] = useState(false);
+  const expanded = useToolCardExpansionStore((s) => s.expanded[sessionId]?.[call.id] ?? false);
+  const setOpen = useCallback(
+    (open: boolean) => useToolCardExpansionStore.getState().setOpen(sessionId, call.id, open),
+    [sessionId, call.id],
+  );
   const hasPendingApproval = !!call.pendingApproval;
   const autoExpandedByApprovalRef = useRef(false);
   const prevHasPendingApprovalRef = useRef(false);
@@ -46,11 +51,10 @@ export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; session
       // Approval just arrived. Open the row, but only claim the auto-expand if it wasn't
       // already open — otherwise we'd surprise-collapse a row the user had manually opened
       // before the approval came in.
-      setExpanded((current) => {
-        if (current) return current;
+      if (!useToolCardExpansionStore.getState().isOpen(sessionId, call.id)) {
         autoExpandedByApprovalRef.current = true;
-        return true;
-      });
+        setOpen(true);
+      }
       return;
     }
 
@@ -59,16 +63,17 @@ export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; session
       // long-running command body doesn't keep eating screen space after the user has
       // already moved on.
       autoExpandedByApprovalRef.current = false;
-      setExpanded(false);
+      setOpen(false);
     }
-  }, [hasPendingApproval]);
+  }, [hasPendingApproval, sessionId, call.id, setOpen]);
 
   // Any manual toggle hands control back to the user — we drop the auto-expand claim so the
   // post-approval collapse logic above won't override their choice.
   const toggleExpanded = useCallback(() => {
     autoExpandedByApprovalRef.current = false;
-    setExpanded((v) => !v);
-  }, []);
+    useToolCardExpansionStore.getState().toggle(sessionId, call.id);
+  }, [sessionId, call.id]);
+
   const Renderer = getRenderer(call.name) ?? DefaultRenderer;
   const summary = getSummarizer(call.name)?.(call.input);
 
