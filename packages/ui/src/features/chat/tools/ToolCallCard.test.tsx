@@ -151,4 +151,60 @@ describe("ToolCallCard", () => {
     );
     expect(screen.getByRole("button", { expanded: false })).toBeInTheDocument();
   });
+
+  // A settled edit/write card augments — never replaces — the standard header: the status
+  // icon, tool tag, path, and `ok` stat all stay; we only insert the +N −M counts right after
+  // the path. The collapsed card never mounts the Pierre body, so these run without it.
+  test("a done edit card shows +N −M counts alongside the standard chrome", () => {
+    render(
+      <ToolCallCard
+        sessionId="s-test"
+        call={call({
+          name: "edit",
+          status: "done",
+          input: { path: "src/watcher.ts", edits: [{ oldText: "old", newText: "new1\nnew2" }] },
+        })}
+      />,
+    );
+    const header = screen.getByRole("button", { expanded: false });
+    // Standard chrome stays.
+    expect(header.textContent).toContain("edit");
+    expect(screen.getByText("ok")).toBeInTheDocument();
+    // Inserted counts.
+    expect(screen.getByText("+2")).toBeInTheDocument();
+    expect(screen.getByText("−1")).toBeInTheDocument();
+  });
+
+  test("a done write card synthesises additions and shows +N −0", () => {
+    const { container } = render(
+      <ToolCallCard
+        sessionId="s-test"
+        call={call({
+          name: "write",
+          status: "done",
+          input: { path: "new.ts", content: "a\nb\nc\n" },
+        })}
+      />,
+    );
+    expect(screen.getByText("+3")).toBeInTheDocument();
+    // No deletions on a create, so the del count is omitted entirely.
+    expect(container.querySelector('.pid-tool-row-counts span[data-tone="del"]')).toBeNull();
+  });
+
+  test("non-file tools keep the plain header (no counts)", () => {
+    const { container } = render(
+      <ToolCallCard sessionId="s-test" call={call({ name: "bash", status: "done" })} />,
+    );
+    expect(container.querySelector(".pid-tool-row-counts")).toBeNull();
+  });
+
+  test("a still-running edit (no diff yet) shows no counts", () => {
+    const { container } = render(
+      <ToolCallCard
+        sessionId="s-test"
+        call={call({ name: "edit", status: "running", input: { path: "x.ts", edits: [] } })}
+      />,
+    );
+    expect(container.querySelector(".pid-tool-row-counts")).toBeNull();
+  });
 });

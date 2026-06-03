@@ -3381,6 +3381,29 @@
 .pid-tool-row-stat[data-tone="error"] {
   color: var(--del);
 }
+.pid-tool-row-counts {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: inherit;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.pid-tool-row-head[data-kind="file-diff"] .pid-tool-row-body {
+  flex: 0 1 auto;
+}
+.pid-tool-row-head[data-kind="file-diff"] .pid-tool-row-counts {
+  margin-left: -6px;
+  margin-right: auto;
+}
+.pid-tool-row-counts span[data-tone="add"] {
+  color: var(--add);
+}
+.pid-tool-row-counts span[data-tone="del"] {
+  color: var(--del);
+}
 .pid-stream-status-elapsed {
   margin-left: auto;
   font-family: var(--font-mono);

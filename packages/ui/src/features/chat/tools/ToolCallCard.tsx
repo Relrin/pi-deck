@@ -10,6 +10,7 @@ import { deriveAllowKey } from "./deriveAllowKey.js";
 import { DefaultRenderer } from "./renderers/DefaultRenderer.js";
 import { StatusIcon } from "./StatusIcon.js";
 import { getRenderer, getSummarizer } from "./ToolRendererRegistry.js";
+import { deriveToolFileDiff, isFileDiffTool } from "./toolFileDiff.js";
 
 function statusStat(call: ToolCallEntry): { text: string; tone: "ok" | "error" } | undefined {
   if (call.status === "done") return { text: "ok", tone: "ok" };
@@ -71,6 +72,11 @@ export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; session
   const Renderer = getRenderer(call.name) ?? DefaultRenderer;
   const summary = getSummarizer(call.name)?.(call.input);
 
+  // For edit/write tools, surface the LoC counts inline in the header (the Pierre diff
+  // renders in the expanded body). `null` until the diff is ready — i.e. while the edit is
+  // still streaming or if it errored — in which case the header is unchanged.
+  const fileDiff = isFileDiffTool(call.name) ? deriveToolFileDiff(call) : null;
+
   // Flash a subtle ring when the card first appears so the user spots new activity. The
   // "new" window is anchored to the call's stable `startedAt` — NOT the component's mount
   // time — because the message list is virtualized: off-screen cards unmount and remount
@@ -131,6 +137,7 @@ export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; session
           aria-expanded={expanded}
           aria-controls={`tool-call-body-${call.id}`}
           className="pid-tool-row-head"
+          data-kind={fileDiff ? "file-diff" : undefined}
           title={summaryTitle}
         >
           <span className="pid-tool-row-chev">
@@ -143,6 +150,12 @@ export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; session
           <StatusIcon status={call.status} toolName={call.name} errorText={call.errorText} />
           <span className="pid-tool-row-tag">{call.name}</span>
           <span className="pid-tool-row-body">{summaryText ?? ""}</span>
+          {fileDiff && (
+            <span className="pid-tool-row-counts" aria-hidden>
+              {fileDiff.add > 0 ? <span data-tone="add">+{fileDiff.add}</span> : null}
+              {fileDiff.del > 0 ? <span data-tone="del">−{fileDiff.del}</span> : null}
+            </span>
+          )}
           {showDuration && durationMs !== undefined && (
             <span className="pid-tool-row-elapsed">{formatDuration(durationMs)}</span>
           )}

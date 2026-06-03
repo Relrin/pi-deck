@@ -68,8 +68,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       // read and match what `git diff` shows in the terminal. Users who want char- or word-
       // grained highlights opt in via the toolbar / Settings.
       diffLineDiffType: "none",
-      diffThemeLight: "github-light-default",
-      diffThemeDark: "github-dark-default",
+      diffThemeLight: "pierre-light-soft",
+      diffThemeDark: "pierre-dark-soft",
       setDensity: (density) => {
         applyDensity(density);
         set({ density });

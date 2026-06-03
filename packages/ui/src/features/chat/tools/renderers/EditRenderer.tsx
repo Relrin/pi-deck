@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { cn } from "../../../../lib/cn.js";
 import { EDIT_RENDERER_COLLAPSED_EDITS } from "../../../../lib/ui-constants.js";
+import { DiffView } from "../../../diff/DiffView.js";
+import { deriveToolFileDiff } from "../toolFileDiff.js";
 import type { ToolRendererProps, ToolSummarizer } from "../types.js";
 
 interface EditEntry {
@@ -13,7 +15,19 @@ interface EditInput {
   edits?: EditEntry[];
 }
 
+/**
+ * When pi has handed back its unified diff (`result.details.diff`) we render the full
+ * Pierre split/unified viewer. Until then — while the edit is still streaming, or when it
+ * errored before producing a diff — we fall back to the raw old/new fragments from the
+ * tool input so the card still shows something useful.
+ */
 export function EditRenderer({ call }: ToolRendererProps) {
+  const fileDiff = deriveToolFileDiff(call);
+  if (fileDiff) return <DiffView fileDiff={fileDiff.fileDiff} />;
+  return <EditFragments call={call} />;
+}
+
+function EditFragments({ call }: ToolRendererProps) {
   const input = (call.input ?? {}) as EditInput;
   const edits = Array.isArray(input.edits) ? input.edits : [];
   const [showAll, setShowAll] = useState(false);

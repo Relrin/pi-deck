@@ -42,8 +42,12 @@ describe("ReadRenderer", () => {
 });
 
 describe("WriteRenderer", () => {
-  test("renders content", () => {
-    render(<WriteRenderer call={call("write", { path: "/a.ts", content: "new file body" })} />);
+  // With a path + content the renderer now shows the Pierre diff (covered in
+  // EditRenderer.test / toolFileDiff.test, which stub the worker pool). The plain code-block
+  // fallback only remains for the edge case of content arriving without a path — exercised
+  // here because it doesn't mount Pierre.
+  test("falls back to a code block when content has no path", () => {
+    render(<WriteRenderer call={call("write", { content: "new file body" })} />);
     expect(screen.getByLabelText("File contents to write").textContent).toContain("new file body");
   });
 
