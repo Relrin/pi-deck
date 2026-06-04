@@ -12,6 +12,7 @@ import {
   McpServersSection,
   PrivacySection,
 } from "./sections/stubs";
+import { TerminalSection } from "./sections/TerminalSection";
 import { ToolsSection } from "./sections/ToolsSection";
 import { type SettingsSectionId, useSettingsStore } from "./useSettingsStore";
 
@@ -28,6 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "git-github", label: "Git & GitHub", stub: false },
   { id: "mcp-servers", label: "MCP Servers", stub: true },
   { id: "editor", label: "Editor", stub: true },
+  { id: "terminal", label: "Terminal", stub: false },
   { id: "keybinds", label: "Keybinds", stub: true },
   { id: "privacy", label: "Privacy", stub: true },
   { id: "advanced", label: "Advanced", stub: true },
@@ -40,6 +42,7 @@ const SECTION_RENDERERS: Record<SettingsSectionId, () => ReactNode> = {
   "git-github": () => <GitGitHubSection />,
   "mcp-servers": () => <McpServersSection />,
   editor: () => <EditorSection />,
+  terminal: () => <TerminalSection />,
   keybinds: () => <KeybindsSection />,
   privacy: () => <PrivacySection />,
   advanced: () => <AdvancedSection />,

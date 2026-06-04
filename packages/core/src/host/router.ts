@@ -31,6 +31,7 @@ import {
 } from "../git/index.js";
 import { getRecentCommits } from "../git/log.js";
 import { type CommandName, CommandSchemas } from "../protocol/commands.js";
+import type { TerminalManager } from "../terminal/index.js";
 import type { ArtefactsTracker } from "./artefacts-tracker.js";
 import type { FsWatchManager } from "./fs-watch-manager.js";
 import type { GitWatchManager } from "./git-watch-manager.js";
@@ -53,6 +54,7 @@ export interface RouterContext {
   turnTracker: TurnTracker;
   artefactsTracker: ArtefactsTracker;
   reviewStore: ReviewStore;
+  terminalManager: TerminalManager;
   hostVersion: string;
   protocolVersion: number;
 }
@@ -669,6 +671,41 @@ const handlers: { [C in CommandName]: CommandHandler } = {
       mapFsError(err);
     }
   },
+  "terminal.open": async (ctx, payload) => {
+    const parsed = CommandSchemas["terminal.open"].request.parse(payload);
+    try {
+      return await ctx.terminalManager.open(parsed);
+    } catch (err) {
+      throw new RouterError(
+        "terminal_open_failed",
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+  },
+  "terminal.write": async (ctx, payload) => {
+    const parsed = CommandSchemas["terminal.write"].request.parse(payload);
+    ctx.terminalManager.write(
+      parsed.terminalId,
+      Buffer.from(parsed.dataB64, "base64").toString("utf8"),
+    );
+    return { ok: true as const };
+  },
+  "terminal.resize": async (ctx, payload) => {
+    const parsed = CommandSchemas["terminal.resize"].request.parse(payload);
+    ctx.terminalManager.resize(parsed.terminalId, parsed.cols, parsed.rows);
+    return { ok: true as const };
+  },
+  "terminal.close": async (ctx, payload) => {
+    const parsed = CommandSchemas["terminal.close"].request.parse(payload);
+    ctx.terminalManager.close(parsed.terminalId);
+    return { ok: true as const };
+  },
+  "terminal.list": async (ctx) => ({ terminals: ctx.terminalManager.list() }),
+  "terminal.snapshot": async (ctx, payload) => {
+    const parsed = CommandSchemas["terminal.snapshot"].request.parse(payload);
+    return { dataB64: ctx.terminalManager.snapshot(parsed.terminalId) };
+  },
+  "terminal.detectShells": async (ctx) => ctx.terminalManager.detectShells(),
 };
 
 export async function dispatch(

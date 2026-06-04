@@ -25,6 +25,8 @@ import {
   EVENT_SESSION_TURN_END,
   EVENT_SESSION_USER_MESSAGE,
   EVENT_SESSION_WORKER_EXIT,
+  EVENT_TERMINAL_EXIT,
+  EVENT_TERMINAL_OUTPUT,
   EVENT_THEME_CHANGED,
   TokenUsage,
 } from "@pi-deck/core/protocol/events.js";
@@ -45,6 +47,8 @@ import { useReviewStore } from "../../features/review/useReviewStore.js";
 import { forgetWarmedSession } from "../../features/sessions/sessionWarmup.js";
 import { useProjectsStore } from "../../features/sessions/useProjectsStore.js";
 import { useSessionsStore } from "../../features/sessions/useSessionsStore.js";
+import { dispatchTerminalOutput } from "../../features/terminal/terminalOutput.js";
+import { useTerminalStore } from "../../features/terminal/useTerminalStore.js";
 import { useThemeStore } from "../../theme/useThemeStore.js";
 
 type Payload = Record<string, unknown>;
@@ -134,6 +138,19 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
     if (sid && path && content !== undefined) {
       usePlanStore.getState().applyPlanFileChanged(sid, path, content);
     }
+    return;
+  }
+  if (topic === EVENT_TERMINAL_OUTPUT) {
+    const terminalId = typeof payload.terminalId === "string" ? payload.terminalId : "";
+    const dataB64 = typeof payload.dataB64 === "string" ? payload.dataB64 : "";
+    if (terminalId && dataB64) {
+      dispatchTerminalOutput(terminalId, dataB64, Boolean(payload.throttled));
+    }
+    return;
+  }
+  if (topic === EVENT_TERMINAL_EXIT) {
+    const terminalId = typeof payload.terminalId === "string" ? payload.terminalId : "";
+    if (terminalId) useTerminalStore.getState().applyExit(terminalId);
     return;
   }
   if (topic === EVENT_SESSION_MODEL_CHANGED) {

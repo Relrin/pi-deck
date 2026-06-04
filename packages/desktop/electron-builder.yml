@@ -2,6 +2,12 @@ appId: dev.pi-deck
 productName: pi-deck
 copyright: Copyright © 2026 pi-deck
 asar: true
+# Native modules can't be loaded from inside the asar archive — unpack node-pty (and its
+# platform-specific prebuilt binary package) so the *.node binding resolves at runtime.
+asarUnpack:
+  - "**/node_modules/@lydell/node-pty/**"
+  - "**/node_modules/@lydell/node-pty-*/**"
+  - "**/node_modules/node-pty/**"
 directories:
   output: out
   buildResources: build

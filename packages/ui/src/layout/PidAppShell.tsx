@@ -4,10 +4,12 @@ import { useRailState } from "./use-rail-state";
 export interface PidAppShellProps {
   top: ReactNode;
   body: ReactNode;
+  /** Optional dock row between the body and the footer (the integrated terminal). */
+  dock?: ReactNode;
   bottom: ReactNode;
 }
 
-export function PidAppShell({ top, body, bottom }: PidAppShellProps) {
+export function PidAppShell({ top, body, dock, bottom }: PidAppShellProps) {
   // Drive --rail-w / --rightpane-w from the persisted store so both the topbar grid and
   // the body grid stay in sync without each subtree re-reading the state. When a panel
   // is hidden, collapse its column to 0 so the center cell expands cleanly.
@@ -24,6 +26,7 @@ export function PidAppShell({ top, body, bottom }: PidAppShellProps) {
     <div className="pid-app" style={styleVars}>
       {top}
       {body}
+      {dock}
       {bottom}
     </div>
   );

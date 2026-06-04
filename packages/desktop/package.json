@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@earendil-works/pi-coding-agent": "0.77.0",
+    "@lydell/node-pty": "1.2.0-beta.12",
     "@pi-deck/core": "workspace:*",
     "@pi-deck/ui": "workspace:*",
     "react": "19.2.6",

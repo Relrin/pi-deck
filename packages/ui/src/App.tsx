@@ -14,6 +14,8 @@ import { useProjectsStore } from "./features/sessions/useProjectsStore";
 import { useSessionsStore } from "./features/sessions/useSessionsStore";
 import { PidSettingsView } from "./features/settings/PidSettingsView";
 import { useSettingsHotkey } from "./features/settings/useSettingsHotkey";
+import { TerminalDock } from "./features/terminal/TerminalDock";
+import { useTerminalHotkey } from "./features/terminal/useTerminalHotkey";
 import { PidAppShell } from "./layout/PidAppShell";
 import { PidBody } from "./layout/PidBody";
 import { PidCenterRouter } from "./layout/PidCenterRouter";
@@ -46,6 +48,7 @@ export function App() {
   );
   const contextCount = inSessionContext && artefacts.length > 0 ? artefacts.length : undefined;
   useSettingsHotkey();
+  useTerminalHotkey();
   useNewSessionShortcut();
 
   useEffect(() => {
@@ -86,6 +89,7 @@ export function App() {
                 }
               />
             }
+            dock={<TerminalDock />}
             bottom={<PidFooter />}
           />
           <PidSettingsView />

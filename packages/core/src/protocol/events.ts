@@ -27,6 +27,8 @@ export const EVENT_REVIEW_CLEARED = "review.cleared" as const;
 export const EVENT_SESSION_ARTEFACTS_CHANGED = "session.artefacts.changed" as const;
 export const EVENT_PLAN_FILE_CHANGED = "plan.file.changed" as const;
 export const EVENT_FS_TREE_CHANGED = "fs.tree.changed" as const;
+export const EVENT_TERMINAL_OUTPUT = "terminal.output" as const;
+export const EVENT_TERMINAL_EXIT = "terminal.exit" as const;
 
 export const SessionMessageDeltaPayload = z.object({
   sessionId: z.string(),
@@ -291,6 +293,22 @@ export const SessionToolApprovalRequestedPayload = z.object({
   reason: z.string().optional(),
 });
 
+/**
+ * A chunk of PTY output for one terminal.
+ */
+export const TerminalOutputPayload = z.object({
+  terminalId: z.string().min(1),
+  dataB64: z.string(),
+  throttled: z.boolean().optional(),
+});
+
+/** Emitted once when a terminal's PTY exits (shell quit, killed, or crashed). */
+export const TerminalExitPayload = z.object({
+  terminalId: z.string().min(1),
+  exitCode: z.number().nullable(),
+  signal: z.union([z.number(), z.string()]).nullable(),
+});
+
 export const EventSchemas = {
   [EVENT_SESSION_MESSAGE_DELTA]: SessionMessageDeltaPayload,
   [EVENT_SESSION_USER_MESSAGE]: SessionUserMessagePayload,
@@ -314,6 +332,8 @@ export const EventSchemas = {
   [EVENT_SESSION_ARTEFACTS_CHANGED]: SessionArtefactsChangedPayload,
   [EVENT_FS_TREE_CHANGED]: FsTreeChangedPayload,
   [EVENT_PLAN_FILE_CHANGED]: PlanFileChangedPayload,
+  [EVENT_TERMINAL_OUTPUT]: TerminalOutputPayload,
+  [EVENT_TERMINAL_EXIT]: TerminalExitPayload,
 } as const;
 
 export type EventTopic = keyof typeof EventSchemas;

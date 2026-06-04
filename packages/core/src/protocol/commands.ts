@@ -567,6 +567,78 @@ export const FsDeleteRequest = z.object({
 });
 export const FsDeleteResponse = z.object({ ok: z.literal(true) });
 
+// --- Terminal -------------------------------------------------------------
+export const TerminalShellSchema = z.object({
+  /** Display label, e.g. "PowerShell", "zsh", "Git Bash". */
+  label: z.string().min(1),
+  /** Absolute path (or bare command resolvable on PATH) used to spawn the PTY. */
+  path: z.string().min(1),
+  /** Default args passed at spawn (e.g. `["--login", "-i"]` for Git Bash). */
+  args: z.array(z.string()),
+});
+export type TerminalShell = z.infer<typeof TerminalShellSchema>;
+
+export const TerminalOpenRequest = z.object({
+  /** Working directory for the new PTY. Must be an existing directory. */
+  cwd: z.string().min(1),
+  cols: z.number().int().positive().max(2000),
+  rows: z.number().int().positive().max(2000),
+  /** Absolute path / command to spawn; the host falls back to the OS default when omitted. */
+  shell: z.string().min(1).optional(),
+  /** Args for the shell; only honoured together with `shell`. */
+  shellArgs: z.array(z.string()).optional(),
+});
+export const TerminalOpenResponse = z.object({
+  terminalId: z.string().min(1),
+  /** The shell the host actually spawned (after fallback resolution). */
+  shell: z.string().min(1),
+  cols: z.number().int().positive(),
+  rows: z.number().int().positive(),
+});
+
+export const TerminalWriteRequest = z.object({
+  terminalId: z.string().min(1),
+  /** Base64-encoded keystroke / paste bytes. Base64 avoids UTF-8 splitting over JSON. */
+  dataB64: z.string(),
+});
+export const TerminalWriteResponse = z.object({ ok: z.literal(true) });
+
+export const TerminalResizeRequest = z.object({
+  terminalId: z.string().min(1),
+  cols: z.number().int().positive().max(2000),
+  rows: z.number().int().positive().max(2000),
+});
+export const TerminalResizeResponse = z.object({ ok: z.literal(true) });
+
+export const TerminalCloseRequest = z.object({ terminalId: z.string().min(1) });
+export const TerminalCloseResponse = z.object({ ok: z.literal(true) });
+
+export const TerminalListRequest = z.object({}).strict();
+export const TerminalSummarySchema = z.object({
+  terminalId: z.string().min(1),
+  cwd: z.string().min(1),
+  shell: z.string().min(1),
+  cols: z.number().int().positive(),
+  rows: z.number().int().positive(),
+});
+export type TerminalSummary = z.infer<typeof TerminalSummarySchema>;
+export const TerminalListResponse = z.object({ terminals: z.array(TerminalSummarySchema) });
+
+/**
+ * Returns the host's capped output ring buffer for a terminal so a freshly-(re)mounted
+ * `TerminalView` can repaint recent scrollback before subscribing to the live
+ * `terminal.output` stream. `dataB64` is empty when the terminal is unknown / has no output.
+ */
+export const TerminalSnapshotRequest = z.object({ terminalId: z.string().min(1) });
+export const TerminalSnapshotResponse = z.object({ dataB64: z.string() });
+
+export const TerminalDetectShellsRequest = z.object({}).strict();
+export const TerminalDetectShellsResponse = z.object({
+  shells: z.array(TerminalShellSchema),
+  /** Path of the shell used when the user hasn't picked one; null when none was found. */
+  defaultPath: z.string().min(1).nullable(),
+});
+
 export const CommandSchemas = {
   ping: { request: PingRequest, response: PingResponse },
   "project.list": { request: ProjectListRequest, response: ProjectListResponse },
@@ -692,6 +764,16 @@ export const CommandSchemas = {
   "fs.rename": { request: FsRenameRequest, response: FsRenameResponse },
   "fs.move": { request: FsMoveRequest, response: FsMoveResponse },
   "fs.delete": { request: FsDeleteRequest, response: FsDeleteResponse },
+  "terminal.open": { request: TerminalOpenRequest, response: TerminalOpenResponse },
+  "terminal.write": { request: TerminalWriteRequest, response: TerminalWriteResponse },
+  "terminal.resize": { request: TerminalResizeRequest, response: TerminalResizeResponse },
+  "terminal.close": { request: TerminalCloseRequest, response: TerminalCloseResponse },
+  "terminal.list": { request: TerminalListRequest, response: TerminalListResponse },
+  "terminal.snapshot": { request: TerminalSnapshotRequest, response: TerminalSnapshotResponse },
+  "terminal.detectShells": {
+    request: TerminalDetectShellsRequest,
+    response: TerminalDetectShellsResponse,
+  },
 } as const;
 
 export type CommandName = keyof typeof CommandSchemas;

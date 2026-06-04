@@ -2,6 +2,7 @@ import { type ReactNode, useState } from "react";
 import { Files, List, Settings, Terminal } from "../components/icons";
 import { Tooltip } from "../components/ui/Tooltip";
 import { useSettingsStore } from "../features/settings/useSettingsStore";
+import { useTerminalStore } from "../features/terminal/useTerminalStore";
 import { isMacOs } from "../lib/platform";
 
 type RailTab = "sessions" | "files";
@@ -15,6 +16,7 @@ export interface PidLeftRailProps {
 export function PidLeftRail({ sessions, files, initialTab = "sessions" }: PidLeftRailProps) {
   const [tab, setTab] = useState<RailTab>(initialTab);
   const settingsTooltip = `Settings (${isMacOs() ? "⌘" : "Ctrl"}+,)`;
+  const terminalTooltip = `Toggle terminal (${isMacOs() ? "⌘" : "Ctrl"}+\`)`;
 
   return (
     <aside className="pid-rail" aria-label="Left rail">
@@ -60,13 +62,12 @@ export function PidLeftRail({ sessions, files, initialTab = "sessions" }: PidLef
             <Settings size={14} aria-hidden />
           </button>
         </Tooltip>
-        <Tooltip content="Terminal — coming soon">
+        <Tooltip content={terminalTooltip}>
           <button
             type="button"
             className="pid-topbar-btn"
-            aria-label="Terminal (coming soon)"
-            aria-disabled
-            onClick={(event) => event.preventDefault()}
+            aria-label="Toggle terminal panel"
+            onClick={() => useTerminalStore.getState().togglePanel()}
           >
             <Terminal size={14} aria-hidden />
           </button>

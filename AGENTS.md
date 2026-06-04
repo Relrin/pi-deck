@@ -15,6 +15,8 @@ A friendly desktop and web client for the [pi coding agent](https://github.com/e
 - **Agent embedding:** `@earendil-works/pi-coding-agent` `AgentSession` API, one Node subprocess per active session.
 - **Renderer & backend transport:** WebSocket over localhost. Same protocol works for the standalone web target.
 - **Diffs:** `@pierre/diffs` (built on Shiki).
+- **PTY:** `@lydell/node-pty` (native module, runs in the host / Electron main). Ships per-platform prebuilt N-API binaries, so no electron-rebuild step; `node-pty` is a runtime fallback. Externalized in the main build + `asarUnpack`ed for packaging.
+- **Terminal renderer:** `ghostty-web` (WASM, preferred) with `@xterm/xterm` + `@xterm/addon-fit` as a runtime fallback behind a single adapter.
 - **Lint / format:** Biome.
 - **Tests:** `bun test` for unit. Playwright for end-to-end (not wired yet).
 
@@ -245,6 +247,12 @@ Append new entry points under the matching sub-heading. Keep entries to one line
 
 - **`Pid*` primitives** — `PidButton`, `PidIconButton`, `PidChip`, `PidKbd` in `packages/ui/src/components/{buttons,chip,kbd}/`. Style rules in `packages/ui/src/theme/components.css`. Other primitives (inputs, selects, table rows) ship as later plans need them — no speculative scaffolding.
 - **Radix wrappers** — `Dialog`, `Tabs`, `Tooltip`, `DropdownMenu`, `ContextMenu`, `Spinner` keep their current implementation; restyle via className rather than rewriting. Previous `Button` / `IconButton` are renamed `Button.legacy.tsx` / `IconButton.legacy.tsx` — new code must use the `Pid*` primitives.
+
+### Terminal
+
+- **Backend** — `packages/core/src/terminal/`. `TerminalManager` (`index.ts`) owns the live PTYs (one per `terminalId`) in the host / Electron main, independent of pi sessions; `pty.ts` loads `@lydell/node-pty` (fallback `node-pty`); `shells.ts` does OS-aware shell detection (Windows pwsh/PowerShell/Git Bash/cmd with PATHEXT + WSL handling; macOS/Linux from `$SHELL` + defaults); `buffer.ts` is a byte-capped output ring for repaint. Output is batched (~8 ms) and flow-controlled (`pause`/`resume` past a high-water mark, with a `[output throttled]` hint). `terminal.*` commands route through `host/router.ts`; `terminal.output` / `terminal.exit` events broadcast like any other. `shutdownAll()` (called from `host.close()`) kills every PTY on quit — no zombies.
+- **UI** — `packages/ui/src/features/terminal/`. A toggleable, vertically-resizable **bottom dock** (`TerminalDock` → `TerminalPane` → `TerminalView`), not a main-panel tab. `TerminalRenderer.ts` is the ghostty-web/xterm adapter; `terminalOutput.ts` is a pub/sub that writes PTY bytes straight into the emulator (bypassing React state); `useGhosttyTheme.ts` maps the active pi-deck theme to the emulator palette. Toggle via the left-rail Terminal button or `Ctrl/⌘+\``. Panel open/height + isolated tab set persist **per pi-deck session** (`useTerminalStore`, runtime `terminalId` stripped on persist). New terminals open in the active session's project root, inheriting its git branch. Settings live in `features/settings/sections/TerminalSection.tsx` + `useTerminalSettingsStore`.
+- **Deferred:** pi ↔ terminal chat mirroring (a follow-up; plan-mode behaviour will be mirror-read-only + approve in the chat PlanCard).
 
 ## Protocol stability
 

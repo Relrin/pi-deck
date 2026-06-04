@@ -1,4 +1,5 @@
 import { PROTOCOL_VERSION } from "../protocol/version.js";
+import { TerminalManager } from "../terminal/index.js";
 import { ArtefactsTracker } from "./artefacts-tracker.js";
 import { generateToken } from "./auth.js";
 import { FsWatchManager } from "./fs-watch-manager.js";
@@ -102,6 +103,11 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     wsHandle?.broadcast(topic, payload);
   });
 
+  const terminalManager = new TerminalManager();
+  terminalManager.on("event", (topic, payload) => {
+    wsHandle?.broadcast(topic, payload);
+  });
+
   const router: RouterContext = {
     metadataStore,
     sessionManager,
@@ -113,6 +119,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     turnTracker,
     artefactsTracker,
     reviewStore,
+    terminalManager,
     hostVersion: opts.hostVersion,
     protocolVersion: PROTOCOL_VERSION,
   };
@@ -124,6 +131,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     token,
     close: async () => {
       sessionManager.shutdown();
+      terminalManager.shutdownAll();
       await themeManager.shutdown();
       await gitWatchManager.shutdown();
       await fsWatchManager.shutdown();

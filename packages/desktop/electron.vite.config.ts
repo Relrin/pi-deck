@@ -29,7 +29,9 @@ export default defineConfig({
           index: resolve(__dirname, "src/main/index.ts"),
           worker: resolve(__dirname, "src/worker/entry.ts"),
         },
-        external: ["electron", "@earendil-works/pi-coding-agent"],
+        // node-pty (and its platform prebuild package) is a native module — keep it external
+        // so it's `require`d from node_modules at runtime instead of being bundled.
+        external: ["electron", "@earendil-works/pi-coding-agent", "@lydell/node-pty", "node-pty"],
         output: {
           format: "es",
           entryFileNames: "[name].mjs",

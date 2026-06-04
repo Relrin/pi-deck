@@ -7,6 +7,7 @@ export type SettingsSectionId =
   | "git-github"
   | "mcp-servers"
   | "editor"
+  | "terminal"
   | "keybinds"
   | "privacy"
   | "advanced";

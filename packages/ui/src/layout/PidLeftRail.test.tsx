@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { fireEvent, render, screen } from "../../test/utils";
 import { useSettingsStore } from "../features/settings/useSettingsStore";
+import { useTerminalStore } from "../features/terminal/useTerminalStore";
 import { PidLeftRail } from "./PidLeftRail";
 
 function resetSettings() {
   useSettingsStore.setState({ open: false, section: "appearance" });
+  useTerminalStore.setState({ bySession: {}, currentKey: "__global__" });
 }
 
 describe("PidLeftRail — footer cluster", () => {
@@ -19,7 +21,7 @@ describe("PidLeftRail — footer cluster", () => {
   test("renders the settings and terminal buttons in the rail footer", () => {
     render(<PidLeftRail sessions={<div>sessions</div>} files={<div>files</div>} />);
     expect(screen.getByRole("button", { name: "Open settings" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Terminal (coming soon)" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Toggle terminal panel" })).toBeInTheDocument();
   });
 
   test("settings button uses the lucide Settings (cog) icon, not the legacy Sliders glyph", () => {
@@ -35,12 +37,18 @@ describe("PidLeftRail — footer cluster", () => {
     expect(useSettingsStore.getState().open).toBe(true);
   });
 
-  test("terminal button is disabled and clicking it is a no-op", () => {
+  test("clicking the terminal button toggles the bottom panel", () => {
     render(<PidLeftRail sessions={<div>sessions</div>} files={<div>files</div>} />);
-    const terminal = screen.getByRole("button", { name: "Terminal (coming soon)" });
-    expect(terminal.getAttribute("aria-disabled")).toBe("true");
+    const terminal = screen.getByRole("button", { name: "Toggle terminal panel" });
+    const isOpen = () => {
+      const s = useTerminalStore.getState();
+      return s.bySession[s.currentKey]?.open ?? false;
+    };
+    expect(isOpen()).toBe(false);
     fireEvent.click(terminal);
-    expect(useSettingsStore.getState().open).toBe(false);
+    expect(isOpen()).toBe(true);
+    fireEvent.click(terminal);
+    expect(isOpen()).toBe(false);
   });
 });
 

@@ -58,6 +58,26 @@ export class ProtocolClient {
     return this.call("plan.file.read", { sessionId });
   }
 
+  terminal = {
+    open: (req: CommandRequest<"terminal.open">): Promise<CommandResponse<"terminal.open">> =>
+      this.call("terminal.open", req),
+    write: (terminalId: string, dataB64: string): Promise<CommandResponse<"terminal.write">> =>
+      this.call("terminal.write", { terminalId, dataB64 }),
+    resize: (
+      terminalId: string,
+      cols: number,
+      rows: number,
+    ): Promise<CommandResponse<"terminal.resize">> =>
+      this.call("terminal.resize", { terminalId, cols, rows }),
+    close: (terminalId: string): Promise<CommandResponse<"terminal.close">> =>
+      this.call("terminal.close", { terminalId }),
+    list: (): Promise<CommandResponse<"terminal.list">> => this.call("terminal.list", {}),
+    snapshot: (terminalId: string): Promise<CommandResponse<"terminal.snapshot">> =>
+      this.call("terminal.snapshot", { terminalId }),
+    detectShells: (): Promise<CommandResponse<"terminal.detectShells">> =>
+      this.call("terminal.detectShells", {}),
+  };
+
   themes = {
     list: async (): Promise<{ activeName: string; themes: ThemeListing[] }> => {
       return this.call("theme.list", {});

@@ -10,7 +10,7 @@
   display: grid;
   height: 100vh;
   width: 100vw;
-  grid-template-rows: var(--topbar-h) 1fr var(--footer-h);
+  grid-template-rows: var(--topbar-h) 1fr auto var(--footer-h);
   background: var(--bg-0);
   color: var(--ink-0);
   position: relative;
@@ -744,5 +744,177 @@
   font-family: var(--font-mono);
   font-size: 10.5px;
   line-height: 1.5;
+  color: var(--ink-3);
+}
+
+/* ---------- Bottom terminal dock ---------- */
+.pid-dock {
+  min-height: 0;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-0);
+  overflow: hidden;
+}
+.pid-dock[data-open="false"] {
+  height: 0;
+}
+.pid-dock-handle {
+  flex: 0 0 6px;
+  height: 6px;
+  cursor: row-resize;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--line);
+  transition: background-color 0.12s;
+}
+.pid-dock-handle:hover,
+.pid-dock-handle:focus-visible {
+  background: var(--accent-line);
+  outline: none;
+}
+.pid-terminal-pane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pid-terminal-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+  padding: 0 6px 0 4px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--line);
+  gap: 8px;
+}
+.pid-terminal-tabs-strip {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.pid-terminal-tabs-strip::-webkit-scrollbar {
+  display: none;
+}
+.pid-terminal-tabs-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.pid-terminal-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px 3px 10px;
+  max-width: 220px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-2);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pid-terminal-tab:hover {
+  color: var(--ink-0);
+  background: var(--bg-2);
+}
+.pid-terminal-tab.active {
+  color: var(--ink-0);
+  background: var(--bg-0);
+  border-color: var(--line);
+}
+.pid-terminal-tab.exited .pid-terminal-tab-label {
+  color: var(--ink-3);
+  text-decoration: line-through;
+}
+.pid-terminal-tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pid-terminal-tab-close,
+.pid-terminal-tab-new {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.pid-terminal-tab-close:hover,
+.pid-terminal-tab-new:hover {
+  color: var(--ink-0);
+  background: var(--bg-3);
+}
+.pid-terminal-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: var(--bg-0);
+}
+.pid-terminal-view,
+.pid-terminal-surface {
+  position: absolute;
+  inset: 0;
+}
+.pid-terminal-surface {
+  padding: 4px 6px;
+}
+.pid-terminal-throttle {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--warn);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 2;
+}
+.pid-terminal-exited {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-2);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  z-index: 2;
+}
+.pid-terminal-exited button {
+  font: inherit;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent-line);
+  border-radius: 3px;
+  padding: 1px 8px;
+  cursor: pointer;
+}
+.pid-terminal-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-family: var(--font-mono);
+  font-size: 11px;
   color: var(--ink-3);
 }
