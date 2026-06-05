@@ -62,6 +62,31 @@ const DEFAULT_SCROLLBACK = 5000;
 /** Cache the loaded ghostty WASM instance — it's expensive and shareable across terminals. */
 let ghosttyLoad: Promise<unknown> | null = null;
 
+let ghosttyLogsHandled = false;
+
+/**
+ * ghostty-vt's WASM routes every parser diagnostic straight to `console.log("[ghostty-vt]", ...)`
+ * - there's no log-level or handler hook to override. On Windows, ConPTY enables win32-input-mode
+ * (`CSI ?9001h`), which ghostty doesn't implement.
+ *
+ * Set `localStorage["pi-deck:terminal:ghostty-logs"] = "1"` to keep them when
+ * debugging the emulator.
+ */
+function silenceGhosttyVtLogs(): void {
+  if (ghosttyLogsHandled) return;
+  ghosttyLogsHandled = true;
+  try {
+    if (globalThis.localStorage?.getItem("pi-deck:terminal:ghostty-logs") === "1") return;
+  } catch {
+    // localStorage unavailable (e.g. tests) — proceed with silencing.
+  }
+  const original = console.log.bind(console);
+  console.log = (...args: unknown[]) => {
+    if (args[0] === "[ghostty-vt]") return;
+    original(...args);
+  };
+}
+
 export async function mountTerminal(
   container: HTMLElement,
   init: TerminalRendererInit,
@@ -78,6 +103,7 @@ async function mountGhostty(
   container: HTMLElement,
   init: TerminalRendererInit,
 ): Promise<TerminalRendererHandle> {
+  silenceGhosttyVtLogs();
   const { Ghostty, Terminal, FitAddon } = await import("ghostty-web");
   if (!ghosttyLoad) ghosttyLoad = Ghostty.load(ghosttyWasmUrl);
   const ghostty = (await ghosttyLoad) as Awaited<ReturnType<typeof Ghostty.load>>;
