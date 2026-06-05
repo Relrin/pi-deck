@@ -3,6 +3,7 @@ import { usePathDragStore } from "../files/usePathDragStore.js";
 import { ReviewBanner } from "../review/ReviewBanner.js";
 import { ReviewPanel } from "../review/ReviewPanel.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
+import { TerminalDock } from "../terminal/TerminalDock.js";
 import { ChatHeader } from "./ChatHeader.js";
 import { MessageInput } from "./MessageInput.js";
 import { MessageList } from "./MessageList.js";
@@ -35,6 +36,7 @@ export function ChatView({ sessionId }: ChatViewProps) {
       <ReviewBanner sessionId={sessionId} />
       <MessageInput sessionId={sessionId} />
       <ReviewPanel sessionId={sessionId} />
+      <TerminalDock />
     </div>
   );
 }

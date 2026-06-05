@@ -10,7 +10,7 @@
   display: grid;
   height: 100vh;
   width: 100vw;
-  grid-template-rows: var(--topbar-h) 1fr auto var(--footer-h);
+  grid-template-rows: var(--topbar-h) 1fr var(--footer-h);
   background: var(--bg-0);
   color: var(--ink-0);
   position: relative;
@@ -749,6 +749,7 @@
 
 /* ---------- Bottom terminal dock ---------- */
 .pid-dock {
+  flex: 0 0 auto;
   min-height: 0;
   max-height: 80vh;
   display: flex;

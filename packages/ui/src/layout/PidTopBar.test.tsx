@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { fireEvent, render, screen } from "../../test/utils";
 import { useSettingsStore } from "../features/settings/useSettingsStore";
+import {
+  GLOBAL_SCOPE,
+  selectCurrentScope,
+  useTerminalStore,
+} from "../features/terminal/useTerminalStore";
 import { PidTopBar } from "./PidTopBar";
 import { RAIL_DEFAULTS, useRailState } from "./use-rail-state";
 
@@ -12,6 +17,7 @@ function resetStores() {
     rightVisible: true,
   });
   useSettingsStore.setState({ open: false, section: "appearance" });
+  useTerminalStore.setState({ bySession: {}, currentKey: GLOBAL_SCOPE });
 }
 
 describe("PidTopBar — panel toggles", () => {
@@ -25,26 +31,24 @@ describe("PidTopBar — panel toggles", () => {
     resetStores();
   });
 
-  test("renders the three pane-toggle buttons; left/right are interactive, bottom is the placeholder", () => {
+  test("renders the three pane-toggle buttons; all three are interactive toggles", () => {
     render(<PidTopBar />);
     const left = screen.getByRole("button", { name: "Hide left rail" });
     const right = screen.getByRole("button", { name: "Hide right pane" });
-    const bottom = screen.getByRole("button", {
-      name: "Toggle bottom panel (coming soon)",
-    });
+    // Terminal starts closed, so the bottom toggle reads "Show".
+    const bottom = screen.getByRole("button", { name: "Show bottom panel" });
 
     expect(left).toBeInTheDocument();
     expect(right).toBeInTheDocument();
     expect(bottom).toBeInTheDocument();
 
-    // Left/right are real toggles, not placeholders.
+    // All three are real toggles — none is a disabled placeholder.
     expect(left.getAttribute("aria-disabled")).toBeNull();
     expect(right.getAttribute("aria-disabled")).toBeNull();
+    expect(bottom.getAttribute("aria-disabled")).toBeNull();
     expect(left.getAttribute("aria-pressed")).toBe("true");
     expect(right.getAttribute("aria-pressed")).toBe("true");
-
-    // Bottom remains a disabled placeholder until the terminal exists.
-    expect(bottom.getAttribute("aria-disabled")).toBe("true");
+    expect(bottom.getAttribute("aria-pressed")).toBe("false");
   });
 
   test("clicking the left toggle hides the left rail and updates the label", () => {
@@ -72,14 +76,17 @@ describe("PidTopBar — panel toggles", () => {
     expect(useRailState.getState().rightVisible).toBe(true);
   });
 
-  test("clicking the bottom placeholder is a no-op", () => {
+  test("clicking the bottom toggle opens/closes the terminal panel and flips its label", () => {
     render(<PidTopBar />);
-    const bottom = screen.getByRole("button", {
-      name: "Toggle bottom panel (coming soon)",
-    });
-    fireEvent.click(bottom);
-    expect(useRailState.getState().leftVisible).toBe(true);
-    expect(useRailState.getState().rightVisible).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Show bottom panel" }));
+    expect(selectCurrentScope(useTerminalStore.getState()).open).toBe(true);
+
+    // After toggling, the label flips so the next click reads as "Hide".
+    const open = screen.getByRole("button", { name: "Hide bottom panel" });
+    expect(open.getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(open);
+    expect(selectCurrentScope(useTerminalStore.getState()).open).toBe(false);
   });
 
   test("settings button appears in the topbar only when the left rail is hidden", () => {

@@ -67,7 +67,10 @@ export function PidLeftRail({ sessions, files, initialTab = "sessions" }: PidLef
             type="button"
             className="pid-topbar-btn"
             aria-label="Toggle terminal panel"
-            onClick={() => useTerminalStore.getState().togglePanel()}
+            onClick={(event) => {
+              useTerminalStore.getState().togglePanel();
+              event.currentTarget.blur();
+            }}
           >
             <Terminal size={14} aria-hidden />
           </button>

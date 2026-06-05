@@ -1,7 +1,8 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { ArrowLeft, PanelBottom, PanelLeft, PanelRight, Settings } from "../components/icons";
 import { Tooltip } from "../components/ui/Tooltip";
 import { useSettingsStore } from "../features/settings/useSettingsStore";
+import { useTerminalStore } from "../features/terminal/useTerminalStore";
 import {
   getPlatformOs,
   isMacOs,
@@ -11,31 +12,9 @@ import {
 import { useNavStore } from "../lib/useNavStore";
 import { useRailState } from "./use-rail-state";
 
-interface PlaceholderButtonProps {
-  label: string;
-  tooltip: string;
-  icon: ReactNode;
-}
-
-function PlaceholderButton({ label, tooltip, icon }: PlaceholderButtonProps) {
-  return (
-    <Tooltip content={tooltip}>
-      <button
-        type="button"
-        className="pid-topbar-btn"
-        aria-label={label}
-        aria-disabled
-        onClick={(event) => event.preventDefault()}
-      >
-        {icon}
-      </button>
-    </Tooltip>
-  );
-}
-
 interface ToggleButtonProps {
   pressed: boolean;
-  onToggle: () => void;
+  onToggle: (event: ReactMouseEvent<HTMLButtonElement>) => void;
   showLabel: string;
   hideLabel: string;
   icon: ReactNode;
@@ -98,6 +77,7 @@ export function PidTopBar() {
   const rightVisible = useRailState((s) => s.rightVisible);
   const toggleLeft = useRailState((s) => s.toggleLeft);
   const toggleRight = useRailState((s) => s.toggleRight);
+  const terminalOpen = useTerminalStore((s) => s.bySession[s.currentKey]?.open ?? false);
 
   const rightStyle: CSSProperties | undefined = reservesNativeOverlay()
     ? { paddingRight: NATIVE_OVERLAY_RESERVE_PX }
@@ -139,9 +119,14 @@ export function PidTopBar() {
           hideLabel="Hide left rail"
           icon={<PanelLeft size={14} />}
         />
-        <PlaceholderButton
-          label="Toggle bottom panel (coming soon)"
-          tooltip="Toggle bottom panel — coming soon"
+        <ToggleButton
+          pressed={terminalOpen}
+          onToggle={(event) => {
+            useTerminalStore.getState().togglePanel();
+            event.currentTarget.blur();
+          }}
+          showLabel="Show bottom panel"
+          hideLabel="Hide bottom panel"
           icon={<PanelBottom size={14} />}
         />
         <ToggleButton
