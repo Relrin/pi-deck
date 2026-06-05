@@ -21,6 +21,7 @@ function newTabId(): string {
 export function TerminalPane() {
   const scope = useTerminalStore((s) => s.bySession[s.currentKey]);
   const addTab = useTerminalStore((s) => s.addTab);
+  const ensureTab = useTerminalStore((s) => s.ensureTab);
   const removeTab = useTerminalStore((s) => s.removeTab);
   const setActiveTab = useTerminalStore((s) => s.setActiveTab);
   const setOpen = useTerminalStore((s) => s.setOpen);
@@ -35,9 +36,9 @@ export function TerminalPane() {
   // Open a default tab when the panel is shown with none yet (and a project is available).
   useEffect(() => {
     if (tabs.length === 0 && cwd) {
-      addTab({ tabId: newTabId(), cwd, terminalId: null });
+      ensureTab({ tabId: newTabId(), cwd, terminalId: null });
     }
-  }, [tabs.length, cwd, addTab]);
+  }, [tabs.length, cwd, ensureTab]);
 
   const onNew = () => {
     if (!cwd) return;
@@ -49,6 +50,9 @@ export function TerminalPane() {
     const client = useSessionsStore.getState().client;
     if (tab?.terminalId && client)
       void client.terminal.close(tab.terminalId).catch(() => undefined);
+
+    // Closing the last terminal dismisses the whole panel
+    if (tabs.length <= 1) setOpen(false);
     removeTab(tabId);
   };
 

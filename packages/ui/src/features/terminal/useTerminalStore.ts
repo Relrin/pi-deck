@@ -51,6 +51,8 @@ interface TerminalStore {
   setHeight: (px: number) => void;
 
   addTab: (tab: Omit<TerminalTab, "exited">) => void;
+  /** Add `tab` only when the scope has no tabs yet. */
+  ensureTab: (tab: Omit<TerminalTab, "exited">) => void;
   removeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
   setTabTerminalId: (tabId: string, terminalId: string, shell?: string) => void;
@@ -99,6 +101,17 @@ export const useTerminalStore = create<TerminalStore>()(
             tabs: [...s.tabs, { ...tab, exited: false }],
             activeTabId: tab.tabId,
           })),
+        ),
+
+      // Check-and-add in a single synchronous `set`, so a second concurrent call (StrictMode's
+      // double-invoked effect) sees the tab the first added and no-ops instead of duplicating it.
+      ensureTab: (tab) =>
+        set((state) =>
+          patchCurrent(state, (s) =>
+            s.tabs.length > 0
+              ? s
+              : { ...s, tabs: [{ ...tab, exited: false }], activeTabId: tab.tabId },
+          ),
         ),
 
       removeTab: (tabId) =>

@@ -62,6 +62,25 @@ describe("useTerminalStore", () => {
     expect(scope()?.activeTabId).toBe("t1");
   });
 
+  test("ensureTab spawns a default tab only when empty — idempotent under double calls", () => {
+    const store = useTerminalStore.getState();
+    store.setScope("s");
+    // Mimic React StrictMode double-invoking the default-tab effect.
+    store.ensureTab({ tabId: "first", cwd: "/p", terminalId: null });
+    store.ensureTab({ tabId: "second", cwd: "/p", terminalId: null });
+    expect(scope()?.tabs.map((t) => t.tabId)).toEqual(["first"]);
+    expect(scope()?.activeTabId).toBe("first");
+  });
+
+  test("ensureTab is a no-op when the scope already has a tab", () => {
+    const store = useTerminalStore.getState();
+    store.setScope("s");
+    store.addTab({ tabId: "existing", cwd: "/p", terminalId: null });
+    store.ensureTab({ tabId: "ignored", cwd: "/p", terminalId: null });
+    expect(scope()?.tabs.map((t) => t.tabId)).toEqual(["existing"]);
+    expect(scope()?.activeTabId).toBe("existing");
+  });
+
   test("togglePanel flips open for the current scope", () => {
     const store = useTerminalStore.getState();
     store.setScope("s");
