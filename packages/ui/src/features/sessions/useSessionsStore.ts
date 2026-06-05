@@ -123,6 +123,8 @@ function archivedFlagPatch(
   };
 }
 
+let initStarted = false;
+
 export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
   status: "idle",
   client: undefined,
@@ -139,14 +141,17 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
   archivedLoaded: false,
 
   initialize: async () => {
-    if (get().client) return;
+    if (get().client || initStarted) return;
+    initStarted = true;
     const bridge = window.bridge?.connect;
     if (!bridge) {
+      initStarted = false;
       set({ initError: "Preload bridge not available" });
       return;
     }
     const info = await bridge();
     if (!info) {
+      initStarted = false;
       set({ initError: "Backend did not provide connection info" });
       return;
     }
