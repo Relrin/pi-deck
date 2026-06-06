@@ -810,7 +810,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 6px 3px 10px;
+  padding: 3px 6px 3px 8px;
   max-width: 220px;
   font-family: var(--font-mono);
   font-size: 11px;
@@ -834,9 +834,28 @@
   color: var(--ink-3);
   text-decoration: line-through;
 }
+.pid-terminal-tab-icon {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
 .pid-terminal-tab-label {
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+}
+.pid-terminal-tab-rename {
+  flex: 1 1 auto;
+  min-width: 60px;
+  max-width: 160px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-0);
+  background: var(--bg-inset);
+  border: 1px solid var(--accent-line);
+  border-radius: 3px;
+  padding: 1px 4px;
+  outline: none;
 }
 .pid-terminal-tab-close {
   display: inline-flex;

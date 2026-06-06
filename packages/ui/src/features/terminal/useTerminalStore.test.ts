@@ -50,6 +50,16 @@ describe("useTerminalStore", () => {
     expect(scope()?.tabs[0]?.exited).toBe(true);
   });
 
+  test("renameTab sets a trimmed custom title and clears it when blanked", () => {
+    const store = useTerminalStore.getState();
+    store.setScope("s");
+    store.addTab({ tabId: "t1", cwd: "/p", terminalId: null });
+    store.renameTab("t1", "  Deploy  ");
+    expect(scope()?.tabs[0]?.title).toBe("Deploy");
+    store.renameTab("t1", "   ");
+    expect(scope()?.tabs[0]?.title).toBeUndefined();
+  });
+
   test("removeTab focuses a neighbour when the active tab is closed", () => {
     const store = useTerminalStore.getState();
     store.setScope("s");

@@ -37,6 +37,8 @@ export interface TerminalTab {
    * friendly labels survive reloads.
    */
   requestedShell?: TerminalShell;
+  /** User-overridden tab name (from double-click rename). Falls back to the derived shell label. */
+  title?: string;
   /** True once the PTY has exited; the view shows an "[exited]" affordance to restart. */
   exited: boolean;
 }
@@ -63,6 +65,8 @@ interface TerminalStore {
   ensureTab: (tab: Omit<TerminalTab, "exited">) => void;
   removeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
+  /** Override a tab's name; an empty/blank title clears the override (reverts to the shell label). */
+  renameTab: (tabId: string, title: string) => void;
   setTabTerminalId: (tabId: string, terminalId: string, shell?: string) => void;
   /** Find the tab carrying `terminalId` across all scopes and mark it exited. */
   applyExit: (terminalId: string) => void;
@@ -141,6 +145,16 @@ export const useTerminalStore = create<TerminalStore>()(
       setActiveTab: (tabId) =>
         set((state) => patchCurrent(state, (s) => ({ ...s, activeTabId: tabId }))),
 
+      renameTab: (tabId, title) =>
+        set((state) =>
+          patchCurrent(state, (s) => ({
+            ...s,
+            tabs: s.tabs.map((t) =>
+              t.tabId === tabId ? { ...t, title: title.trim() || undefined } : t,
+            ),
+          })),
+        ),
+
       setTabTerminalId: (tabId, terminalId, shell) =>
         set((state) =>
           patchCurrent(state, (s) => ({
@@ -186,6 +200,7 @@ export const useTerminalStore = create<TerminalStore>()(
                 cwd: t.cwd,
                 shell: t.shell,
                 requestedShell: t.requestedShell,
+                title: t.title,
                 terminalId: null,
                 exited: false,
               })),
