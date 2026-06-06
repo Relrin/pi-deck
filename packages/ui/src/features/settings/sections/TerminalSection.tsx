@@ -1,4 +1,8 @@
+import { useMemo, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
+import { PidSelect } from "../../../components/inputs/PidSelect";
+import { PidStepper } from "../../../components/inputs/PidStepper";
+import { CUSTOM_FONT_VALUE, detectAvailableMonoFonts } from "../../terminal/terminalFonts";
 import { useDetectedShells } from "../../terminal/useDetectedShells";
 import {
   type DefaultCwdMode,
@@ -26,6 +30,23 @@ export function TerminalSection() {
   const defaultLabel = shells.find((s) => s.path === defaultPath)?.label ?? defaultPath;
   const selectableShells = shells.filter((s) => s.kind !== "wsl");
 
+  // Installed subset of the curated monospace families — probed once on mount.
+  const availableFonts = useMemo(() => detectAvailableMonoFonts(), []);
+  const [customMode, setCustomMode] = useState(false);
+  // Show the free-text field when the user explicitly chose "Custom…", or when the stored family
+  // isn't one we can offer as an option (a typed value, or a font that isn't installed here).
+  const showCustomFont = customMode || (fontFamily !== "" && !availableFonts.includes(fontFamily));
+  const fontSelectValue = showCustomFont ? CUSTOM_FONT_VALUE : fontFamily;
+
+  function handleSelectFont(value: string) {
+    if (value === CUSTOM_FONT_VALUE) {
+      setCustomMode(true);
+      return;
+    }
+    setCustomMode(false);
+    setFontFamily(value);
+  }
+
   return (
     <div className="pid-settings-panel-inner">
       <header>
@@ -38,8 +59,7 @@ export function TerminalSection() {
         <div className="pid-settings-block-desc">
           Shells detected on this system. Choosing one applies to terminals opened afterward.
         </div>
-        <select
-          className="pid-input"
+        <PidSelect
           aria-label="Shell"
           value={shellPath ?? ""}
           onChange={(e) => setShellPath(e.target.value || null)}
@@ -50,7 +70,7 @@ export function TerminalSection() {
               {shell.label} — {shell.path}
             </option>
           ))}
-        </select>
+        </PidSelect>
       </section>
 
       <section className="pid-settings-block">
@@ -76,29 +96,42 @@ export function TerminalSection() {
       <section className="pid-settings-block">
         <div className="pid-settings-block-label">Font</div>
         <div className="pid-settings-block-desc">
-          Leave the family blank to use the UI mono font (<code>--font-mono</code>).
+          Pick an installed monospace family, or choose <code>Custom…</code> to type your own. The
+          default follows the UI mono font (<code>--font-mono</code>).
         </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <input
-            className="pid-input"
-            style={{ flex: "1 1 240px" }}
-            type="text"
+        <div className="pid-terminal-font-row">
+          <PidSelect
             aria-label="Font family"
-            placeholder="Default (--font-mono)"
+            wrapperClassName="pid-terminal-font-family"
+            value={fontSelectValue}
+            onChange={(e) => handleSelectFont(e.target.value)}
+          >
+            <option value="">Default (--font-mono)</option>
+            {availableFonts.map((family) => (
+              <option key={family} value={family} style={{ fontFamily: `"${family}", monospace` }}>
+                {family}
+              </option>
+            ))}
+            <option value={CUSTOM_FONT_VALUE}>Custom…</option>
+          </PidSelect>
+          <PidStepper
+            value={fontSize}
+            min={TERMINAL_FONT_SIZE_MIN}
+            max={TERMINAL_FONT_SIZE_MAX}
+            onChange={setFontSize}
+            ariaLabel="font size"
+          />
+        </div>
+        {showCustomFont && (
+          <input
+            className="pid-input pid-terminal-font-custom"
+            type="text"
+            aria-label="Custom font family"
+            placeholder="e.g. Fira Code, monospace"
             value={fontFamily}
             onChange={(e) => setFontFamily(e.target.value)}
           />
-          <input
-            className="pid-input"
-            style={{ width: 90 }}
-            type="number"
-            aria-label="Font size"
-            min={TERMINAL_FONT_SIZE_MIN}
-            max={TERMINAL_FONT_SIZE_MAX}
-            value={fontSize}
-            onChange={(e) => setFontSize(Number(e.target.value))}
-          />
-        </div>
+        )}
       </section>
     </div>
   );

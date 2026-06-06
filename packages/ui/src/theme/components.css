@@ -501,6 +501,99 @@
   color: var(--ink-1);
 }
 
+.pid-select-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.pid-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 30px;
+  cursor: pointer;
+}
+.pid-select::-ms-expand {
+  display: none;
+}
+.pid-select-chevron {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  color: var(--ink-2);
+  pointer-events: none;
+}
+
+.pid-stepper {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-inset);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.pid-stepper:focus-within {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.pid-stepper-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  align-self: stretch;
+  background: transparent;
+  border: none;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    background-color 80ms ease-out,
+    color 80ms ease-out;
+}
+.pid-stepper-btn:hover:not(:disabled) {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+.pid-stepper-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.pid-stepper-value {
+  width: 40px;
+  padding: 6px 0;
+  text-align: center;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  outline: none;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.pid-stepper-value::-webkit-inner-spin-button,
+.pid-stepper-value::-webkit-outer-spin-button {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Terminal settings — font family selector + size stepper on one row, custom field below. */
+.pid-terminal-font-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.pid-terminal-font-family {
+  flex: 1 1 220px;
+}
+.pid-terminal-font-custom {
+  margin-top: 10px;
+}
+
 /* Single boolean toggle laid out as `[icon] [label] [switch]` in a pill chrome.
    For mutually-exclusive choices use `.pid-segmented-pill` instead. Sized to its
    content; arrange several side-by-side via `.pid-toggle-pill-row`. */

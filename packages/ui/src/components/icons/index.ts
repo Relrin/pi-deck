@@ -37,6 +37,7 @@ export {
   Loader2,
   Map,
   Mic,
+  Minus,
   MoreHorizontal,
   Package,
   PanelBottom,
