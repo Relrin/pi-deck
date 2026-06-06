@@ -29,6 +29,12 @@ export interface TerminalTab {
   terminalId: string | null;
   /** Shell path the host actually spawned; populated from the `terminal.open` response. */
   shell?: string;
+  /**
+   * Shell path the user explicitly chose for this tab via the new-terminal picker. `undefined`
+   * means "use the global default shell setting". Drives the `terminal.open` request; distinct
+   * from `shell`, which is the resolved path the host reports back (used for the tab label).
+   */
+  requestedShell?: string;
   /** True once the PTY has exited; the view shows an "[exited]" affordance to restart. */
   exited: boolean;
 }
@@ -177,6 +183,7 @@ export const useTerminalStore = create<TerminalStore>()(
                 tabId: t.tabId,
                 cwd: t.cwd,
                 shell: t.shell,
+                requestedShell: t.requestedShell,
                 terminalId: null,
                 exited: false,
               })),

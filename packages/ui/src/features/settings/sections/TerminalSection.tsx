@@ -1,7 +1,5 @@
-import type { TerminalShell } from "@pi-deck/core/protocol/commands.js";
-import { useEffect, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
-import { useSessionsStore } from "../../sessions/useSessionsStore";
+import { useDetectedShells } from "../../terminal/useDetectedShells";
 import {
   type DefaultCwdMode,
   TERMINAL_FONT_SIZE_MAX,
@@ -15,7 +13,6 @@ const CWD_OPTIONS: Array<{ value: DefaultCwdMode; label: string }> = [
 ];
 
 export function TerminalSection() {
-  const client = useSessionsStore((s) => s.client);
   const shellPath = useTerminalSettingsStore((s) => s.shellPath);
   const setShellPath = useTerminalSettingsStore((s) => s.setShellPath);
   const fontFamily = useTerminalSettingsStore((s) => s.fontFamily);
@@ -25,25 +22,8 @@ export function TerminalSection() {
   const defaultCwd = useTerminalSettingsStore((s) => s.defaultCwd);
   const setDefaultCwd = useTerminalSettingsStore((s) => s.setDefaultCwd);
 
-  const [shells, setShells] = useState<TerminalShell[]>([]);
-  const [defaultLabel, setDefaultLabel] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!client) return;
-    let cancelled = false;
-    void client.terminal
-      .detectShells()
-      .then((res) => {
-        if (cancelled) return;
-        setShells(res.shells);
-        const def = res.shells.find((s) => s.path === res.defaultPath);
-        setDefaultLabel(def?.label ?? res.defaultPath);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [client]);
+  const { shells, defaultPath } = useDetectedShells();
+  const defaultLabel = shells.find((s) => s.path === defaultPath)?.label ?? defaultPath;
 
   return (
     <div className="pid-settings-panel-inner">

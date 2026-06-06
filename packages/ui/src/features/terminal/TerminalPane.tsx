@@ -40,9 +40,9 @@ export function TerminalPane() {
     }
   }, [tabs.length, cwd, ensureTab]);
 
-  const onNew = () => {
+  const onNew = (requestedShell?: string) => {
     if (!cwd) return;
-    addTab({ tabId: newTabId(), cwd, terminalId: null });
+    addTab({ tabId: newTabId(), cwd, terminalId: null, requestedShell });
   };
 
   const onClose = (tabId: string) => {
@@ -65,6 +65,7 @@ export function TerminalPane() {
         onSelect={setActiveTab}
         onClose={onClose}
         onNew={onNew}
+        canCreate={Boolean(cwd)}
         onClosePanel={() => setOpen(false)}
       />
       <div className="pid-terminal-body">

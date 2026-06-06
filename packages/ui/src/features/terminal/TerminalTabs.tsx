@@ -1,5 +1,6 @@
-import { Plus, X } from "../../components/icons/index.js";
+import { X } from "../../components/icons/index.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
+import { NewTerminalButton } from "./NewTerminalButton.js";
 import type { TerminalTab } from "./useTerminalStore.js";
 
 function basename(p: string): string {
@@ -19,7 +20,10 @@ export interface TerminalTabsProps {
   projectName: string | null;
   onSelect: (tabId: string) => void;
   onClose: (tabId: string) => void;
-  onNew: () => void;
+  /** Open a new terminal; pass a shell path to launch that kind, omit for the default shell. */
+  onNew: (shellPath?: string) => void;
+  /** Whether a new terminal can be created right now (false when no project is open). */
+  canCreate: boolean;
   onClosePanel: () => void;
 }
 
@@ -30,6 +34,7 @@ export function TerminalTabs({
   onSelect,
   onClose,
   onNew,
+  canCreate,
   onClosePanel,
 }: TerminalTabsProps) {
   return (
@@ -61,16 +66,7 @@ export function TerminalTabs({
             </div>
           );
         })}
-        <Tooltip content="New terminal">
-          <button
-            type="button"
-            className="pid-terminal-tab-new"
-            aria-label="New terminal"
-            onClick={onNew}
-          >
-            <Plus size={13} aria-hidden />
-          </button>
-        </Tooltip>
+        <NewTerminalButton onNew={onNew} disabled={!canCreate} />
       </div>
       <div className="pid-terminal-tabs-actions">
         <Tooltip content="Close panel (Ctrl+`)">
