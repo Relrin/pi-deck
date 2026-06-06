@@ -1,0 +1,97 @@
+/*
+  Subsetted Devicon icon font for the terminal shell-type picker
+  Regenerate via `bun packages/ui/scripts/build-devicon-subset.ts`.
+ */
+
+@font-face {
+  font-family: "devicon";
+  src: url("./fonts/devicon-subset.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+[class^="devicon-"],
+[class*=" devicon-"] {
+  font-family: "devicon", monospace;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.devicon-powershell-plain::before {
+  content: "\eb7d";
+}
+.devicon-windows11-plain::before {
+  content: "\eca8";
+}
+.devicon-git-plain::before {
+  content: "\ea2d";
+}
+.devicon-bash-plain::before {
+  content: "\ed55";
+}
+.devicon-zsh-plain::before {
+  content: "\e992";
+}
+.devicon-ubuntu-plain::before {
+  content: "\ec68";
+}
+.devicon-debian-plain::before {
+  content: "\e9b1";
+}
+.devicon-kalilinux-plain::before {
+  content: "\ecfe";
+}
+.devicon-archlinux-plain::before {
+  content: "\e92c";
+}
+.devicon-fedora-plain::before {
+  content: "\e9f8";
+}
+.devicon-opensuse-plain::before {
+  content: "\eb4d";
+}
+.devicon-linux-plain::before {
+  content: "\eac9";
+}
+
+/* Brand colours (with contrast-lifted values for the dark ones). */
+.devicon-powershell-plain.colored {
+  color: #2f86d8;
+}
+.devicon-windows11-plain.colored {
+  color: #0078d4;
+}
+.devicon-git-plain.colored {
+  color: #f34f29;
+}
+.devicon-bash-plain.colored {
+  color: #4eaa25;
+}
+.devicon-ubuntu-plain.colored {
+  color: #e95420;
+}
+.devicon-debian-plain.colored {
+  color: #c70d5a;
+}
+.devicon-kalilinux-plain.colored {
+  color: #2777ff;
+}
+.devicon-archlinux-plain.colored {
+  color: #1791cf;
+}
+.devicon-fedora-plain.colored {
+  color: #3c6eb4;
+}
+.devicon-opensuse-plain.colored {
+  color: #73ba25;
+}
+.devicon-zsh-plain.colored,
+.devicon-linux-plain.colored {
+  color: var(--ink-1);
+}

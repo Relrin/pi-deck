@@ -1,4 +1,4 @@
-@import "devicon/devicon.min.css";
+@import "../theme/devicon.css";
 @import "../theme/tokens.css";
 @import "../theme/shell.css";
 @import "../theme/components.css";
