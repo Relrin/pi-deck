@@ -50,6 +50,31 @@ describe("detectShells", () => {
     const shells = detectShells(unixDeps("darwin"));
     expect(shells.map((s) => s.path)).toEqual(["/bin/zsh", "/bin/bash", "/bin/sh"]);
   });
+
+  test("windows: shells carry a kind for icon mapping", () => {
+    const byLabel = new Map(detectShells(winDeps()).map((s) => [s.label, s.kind]));
+    expect(byLabel.get("PowerShell")).toBe("powershell");
+    expect(byLabel.get("Git Bash")).toBe("gitbash");
+    expect(byLabel.get("Command Prompt")).toBe("cmd");
+  });
+
+  test("windows: enumerates WSL distros as `wsl.exe -d <name>`, hiding docker distros", () => {
+    const shells = detectShells(
+      winDeps({
+        isOnPath: (cmd) => cmd === "pwsh.exe" || cmd === "wsl.exe",
+        listWslDistros: () => ["Ubuntu", "Debian", "docker-desktop", "docker-desktop-data"],
+      }),
+    );
+    const wsl = shells.filter((s) => s.kind === "wsl");
+    expect(wsl.map((s) => s.label)).toEqual(["Ubuntu (WSL)", "Debian (WSL)"]);
+    expect(wsl.every((s) => s.path === "wsl.exe")).toBe(true);
+    expect(wsl.find((s) => s.label === "Ubuntu (WSL)")?.args).toEqual(["-d", "Ubuntu"]);
+  });
+
+  test("windows: no WSL entries when wsl.exe is absent", () => {
+    const shells = detectShells(winDeps({ listWslDistros: () => ["Ubuntu"] }));
+    expect(shells.some((s) => s.kind === "wsl")).toBe(false);
+  });
 });
 
 describe("resolveShell", () => {

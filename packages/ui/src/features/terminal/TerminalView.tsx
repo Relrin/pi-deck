@@ -81,8 +81,8 @@ export function TerminalView({ tab }: { tab: TerminalTab }) {
             cwd: tab.cwd,
             cols,
             rows,
-            // Per-tab choice from the new-terminal picker wins; otherwise the global setting.
-            shell: tab.requestedShell ?? shellPath ?? undefined,
+            shell: tab.requestedShell?.path ?? shellPath ?? undefined,
+            shellArgs: tab.requestedShell?.args,
           });
           id = opened.terminalId;
           setTabTerminalId(tab.tabId, opened.terminalId, opened.shell);
@@ -120,7 +120,7 @@ export function TerminalView({ tab }: { tab: TerminalTab }) {
       handleRef.current = null;
       terminalIdRef.current = null;
     };
-  }, [tab.tabId, tab.cwd, tab.requestedShell, restartKey]);
+  }, [tab.tabId, tab.cwd, tab.requestedShell?.path, restartKey]);
 
   useEffect(() => {
     handleRef.current?.setTheme(theme);

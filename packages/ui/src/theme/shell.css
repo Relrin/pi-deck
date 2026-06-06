@@ -838,9 +838,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.pid-terminal-tab-close,
-.pid-terminal-tab-new,
-.pid-terminal-tab-new-caret {
+.pid-terminal-tab-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -852,33 +850,57 @@
   color: var(--ink-3);
   cursor: pointer;
 }
-.pid-terminal-tab-close:hover,
-.pid-terminal-tab-new:hover,
-.pid-terminal-tab-new-caret:hover {
+.pid-terminal-tab-close:hover {
   color: var(--ink-0);
   background: var(--bg-3);
 }
 .pid-terminal-tab-new-group {
   display: inline-flex;
+  align-items: stretch;
+  height: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-2);
+  overflow: hidden;
+}
+.pid-terminal-tab-new,
+.pid-terminal-tab-new-caret {
+  display: inline-flex;
   align-items: center;
-  gap: 0;
+  justify-content: center;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    background-color 0.12s,
+    color 0.12s;
+}
+.pid-terminal-tab-new {
+  width: 24px;
 }
 .pid-terminal-tab-new-caret {
-  width: 14px;
+  width: 18px;
+  border-left: 1px solid var(--line);
 }
-.pid-terminal-tab-new-group:hover .pid-terminal-tab-new-caret {
-  box-shadow: inset 1px 0 0 var(--line);
+.pid-terminal-tab-new:hover,
+.pid-terminal-tab-new-caret:hover,
+.pid-terminal-tab-new-caret[data-state="open"] {
+  color: var(--ink-0);
+  background: var(--bg-3);
+}
+.pid-terminal-tab-new-group:has(button:disabled) {
+  opacity: 0.4;
 }
 .pid-terminal-tab-new:disabled,
 .pid-terminal-tab-new-caret:disabled {
-  opacity: 0.4;
   cursor: default;
 }
 .pid-terminal-tab-new:disabled:hover,
 .pid-terminal-tab-new-caret:disabled:hover {
-  color: var(--ink-3);
+  color: var(--ink-2);
   background: transparent;
-  box-shadow: none;
 }
 .pid-terminal-body {
   flex: 1;

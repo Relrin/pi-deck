@@ -1,3 +1,4 @@
+import type { TerminalShell } from "@pi-deck/core/protocol/commands.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -30,11 +31,12 @@ export interface TerminalTab {
   /** Shell path the host actually spawned; populated from the `terminal.open` response. */
   shell?: string;
   /**
-   * Shell path the user explicitly chose for this tab via the new-terminal picker. `undefined`
-   * means "use the global default shell setting". Drives the `terminal.open` request; distinct
-   * from `shell`, which is the resolved path the host reports back (used for the tab label).
+   * The shell the user explicitly chose for this tab via the new-terminal picker (label + path +
+   * args). `undefined` means "use the global default shell setting". Carries the full descriptor
+   * — not just the path — so WSL distros (which all share `wsl.exe` and differ only by args) and
+   * friendly labels survive reloads.
    */
-  requestedShell?: string;
+  requestedShell?: TerminalShell;
   /** True once the PTY has exited; the view shows an "[exited]" affordance to restart. */
   exited: boolean;
 }

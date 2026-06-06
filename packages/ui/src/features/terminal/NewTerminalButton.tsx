@@ -1,3 +1,4 @@
+import type { TerminalShell } from "@pi-deck/core/protocol/commands.js";
 import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import type { ReactNode } from "react";
 import { ChevronDown, GitBranch, Plus, Settings, Terminal } from "../../components/icons/index.js";
@@ -6,23 +7,31 @@ import { useSettingsStore } from "../settings/useSettingsStore.js";
 import { useDetectedShells } from "./useDetectedShells.js";
 import { useTerminalSettingsStore } from "./useTerminalSettingsStore.js";
 
-/** Pick a glyph for a shell row. lucide has no brand icons, so Git Bash gets the branch mark. */
-function shellIcon(label: string): ReactNode {
-  if (/git/i.test(label)) return <GitBranch size={14} aria-hidden />;
-  return <Terminal size={14} aria-hidden />;
+/**
+ * Glyph for a shell row, keyed off its detected `kind`. lucide ships no brand marks, so this is a
+ * best-effort monochrome mapping (Git Bash gets the branch glyph); a brand icon pack can replace
+ * this later without touching callers.
+ */
+function shellIcon(kind: string | undefined): ReactNode {
+  switch (kind) {
+    case "gitbash":
+      return <GitBranch size={14} aria-hidden />;
+    default:
+      return <Terminal size={14} aria-hidden />;
+  }
 }
 
 export interface NewTerminalButtonProps {
-  /** Open a new terminal. Pass a shell path to launch that kind; omit for the default shell. */
-  onNew: (shellPath?: string) => void;
+  /** Open a new terminal. Pass a shell to launch that kind; omit for the default shell. */
+  onNew: (shell?: TerminalShell) => void;
   /** When true the control is inert (e.g. no project open, so there is nowhere to spawn). */
   disabled?: boolean;
 }
 
 /**
  * The tab strip's "new terminal" control: a `+` that opens the default shell plus an adjacent
- * caret that opens a flyout of every detected shell (Windows-Terminal style). Picking a shell
- * opens a new tab running it; the effective default is marked.
+ * caret that opens a flyout of every detected shell. The two halves read as one split button.
+ * Picking a shell opens a new tab running it; the effective default is marked.
  */
 export function NewTerminalButton({ onNew, disabled }: NewTerminalButtonProps) {
   const { shells, defaultPath } = useDetectedShells();
@@ -69,15 +78,15 @@ export function NewTerminalButton({ onNew, disabled }: NewTerminalButtonProps) {
             ) : (
               shells.map((shell) => (
                 <RadixDropdown.Item
-                  key={shell.path}
+                  key={`${shell.path} ${shell.args.join(" ")}`}
                   className="pid-context-menu-item"
-                  onSelect={() => onNew(shell.path)}
+                  onSelect={() => onNew(shell)}
                 >
                   <span className="pid-context-menu-icon" aria-hidden>
-                    {shellIcon(shell.label)}
+                    {shellIcon(shell.kind)}
                   </span>
                   <span className="pid-context-menu-label">{shell.label}</span>
-                  {shell.path === effectiveDefault ? (
+                  {shell.kind !== "wsl" && shell.path === effectiveDefault ? (
                     <span className="pid-context-menu-shortcut">default</span>
                   ) : null}
                 </RadixDropdown.Item>

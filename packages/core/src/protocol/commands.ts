@@ -567,14 +567,31 @@ export const FsDeleteRequest = z.object({
 });
 export const FsDeleteResponse = z.object({ ok: z.literal(true) });
 
-// --- Terminal -------------------------------------------------------------
+/**
+ * Coarse family of a detected shell, used by the renderer to pick an icon and (for WSL) to tell
+ * apart entries that share the same `path`. The schema stores it as a free-form `string` so new
+ * kinds never break response validation; the renderer treats unknown values as "other".
+ */
+export type TerminalShellKind =
+  | "powershell"
+  | "cmd"
+  | "gitbash"
+  | "wsl"
+  | "bash"
+  | "zsh"
+  | "fish"
+  | "sh"
+  | "other";
+
 export const TerminalShellSchema = z.object({
-  /** Display label, e.g. "PowerShell", "zsh", "Git Bash". */
+  /** Display label, e.g. "PowerShell", "zsh", "Git Bash", "Ubuntu (WSL)". */
   label: z.string().min(1),
   /** Absolute path (or bare command resolvable on PATH) used to spawn the PTY. */
   path: z.string().min(1),
-  /** Default args passed at spawn (e.g. `["--login", "-i"]` for Git Bash). */
+  /** Default args passed at spawn (e.g. `["-i", "-l"]` for Git Bash, `["-d", "Ubuntu"]` for WSL). */
   args: z.array(z.string()),
+  /** Shell family hint for icon mapping; absent on shells detected before this field existed. */
+  kind: z.string().optional(),
 });
 export type TerminalShell = z.infer<typeof TerminalShellSchema>;
 

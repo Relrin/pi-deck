@@ -1,3 +1,4 @@
+import type { TerminalShell } from "@pi-deck/core/protocol/commands.js";
 import { X } from "../../components/icons/index.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
 import { NewTerminalButton } from "./NewTerminalButton.js";
@@ -9,6 +10,7 @@ function basename(p: string): string {
 }
 
 function shellLabel(tab: TerminalTab): string {
+  if (tab.requestedShell?.label) return tab.requestedShell.label;
   if (!tab.shell) return "shell";
   return basename(tab.shell).replace(/\.(exe|cmd|bat|com)$/i, "");
 }
@@ -20,8 +22,8 @@ export interface TerminalTabsProps {
   projectName: string | null;
   onSelect: (tabId: string) => void;
   onClose: (tabId: string) => void;
-  /** Open a new terminal; pass a shell path to launch that kind, omit for the default shell. */
-  onNew: (shellPath?: string) => void;
+  /** Open a new terminal; pass a shell to launch that kind, omit for the default shell. */
+  onNew: (shell?: TerminalShell) => void;
   /** Whether a new terminal can be created right now (false when no project is open). */
   canCreate: boolean;
   onClosePanel: () => void;

@@ -1,3 +1,4 @@
+import type { TerminalShell } from "@pi-deck/core/protocol/commands.js";
 import { useEffect } from "react";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
@@ -40,7 +41,7 @@ export function TerminalPane() {
     }
   }, [tabs.length, cwd, ensureTab]);
 
-  const onNew = (requestedShell?: string) => {
+  const onNew = (requestedShell?: TerminalShell) => {
     if (!cwd) return;
     addTab({ tabId: newTabId(), cwd, terminalId: null, requestedShell });
   };

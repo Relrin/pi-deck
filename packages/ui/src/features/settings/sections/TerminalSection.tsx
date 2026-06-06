@@ -24,6 +24,7 @@ export function TerminalSection() {
 
   const { shells, defaultPath } = useDetectedShells();
   const defaultLabel = shells.find((s) => s.path === defaultPath)?.label ?? defaultPath;
+  const selectableShells = shells.filter((s) => s.kind !== "wsl");
 
   return (
     <div className="pid-settings-panel-inner">
@@ -44,7 +45,7 @@ export function TerminalSection() {
           onChange={(e) => setShellPath(e.target.value || null)}
         >
           <option value="">System default{defaultLabel ? ` (${defaultLabel})` : ""}</option>
-          {shells.map((shell) => (
+          {selectableShells.map((shell) => (
             <option key={shell.path} value={shell.path}>
               {shell.label} — {shell.path}
             </option>
