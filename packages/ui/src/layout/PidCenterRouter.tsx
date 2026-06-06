@@ -13,7 +13,6 @@ import { useNavStore } from "../lib/useNavStore";
 
 const PLACEHOLDER_LABELS: Record<string, string> = {
   editor: "Editor — coming in plan 013",
-  "git-history": "History — coming in plan 007",
 };
 
 export function PidCenterRouter() {

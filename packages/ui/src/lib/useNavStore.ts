@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type NavScreen = "blank" | "session" | "editor" | "git-diff" | "git-history";
+export type NavScreen = "blank" | "session" | "editor" | "git-diff";
 
 /**
  * Which file the `git-diff` screen should render, plus the baseline to render against.
@@ -28,18 +28,13 @@ export interface NavStoreState {
   goToBlank: () => void;
 }
 
-const TRANSIENT_SCREENS: ReadonlySet<NavScreen> = new Set(["editor", "git-diff", "git-history"]);
+const TRANSIENT_SCREENS: ReadonlySet<NavScreen> = new Set(["editor", "git-diff"]);
 
 /**
  * Screens that share the same an active session. Blank screen is the only one
  * that drops out of the session context.
  */
-const SESSION_CONTEXT_SCREENS: ReadonlySet<NavScreen> = new Set([
-  "session",
-  "editor",
-  "git-diff",
-  "git-history",
-]);
+const SESSION_CONTEXT_SCREENS: ReadonlySet<NavScreen> = new Set(["session", "editor", "git-diff"]);
 
 export function isSessionContextScreen(screen: NavScreen): boolean {
   return SESSION_CONTEXT_SCREENS.has(screen);
@@ -89,6 +84,10 @@ export const useNavStore = create<NavStoreState>()(
         // Migrate stored "overview" route from earlier builds to the renamed "blank" route.
         if ((rehydrated.screen as string) === "overview") {
           rehydrated.screen = "blank";
+        }
+        // The git-history screen was removed; coerce any persisted value to a live screen.
+        if ((rehydrated.screen as string) === "git-history") {
+          rehydrated.screen = "session";
         }
         if (TRANSIENT_SCREENS.has(rehydrated.screen)) {
           rehydrated.screen = "session";

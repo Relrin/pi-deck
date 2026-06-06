@@ -13,7 +13,6 @@ const SCREENS: readonly ScreenButton[] = [
   { id: "session", label: "SESSION", target: "session" },
   { id: "editor", label: "EDITOR", target: "editor" },
   { id: "diff", label: "DIFF", target: "git-diff" },
-  { id: "history", label: "HISTORY", target: "git-history" },
   { id: "overview", label: "OVERVIEW", target: null, disabledTooltip: "Coming soon" },
   { id: "blank", label: "BLANK", target: "blank" },
 ];

@@ -64,13 +64,13 @@ describe("PidFooter", () => {
     expect(screen.queryByText(/claude-opus/i)).toBeNull();
   });
 
-  test("renders the 6 mockup screen buttons in order, without SETTINGS or PR", () => {
+  test("renders the screen buttons in order, without SETTINGS or PR", () => {
     render(<PidFooter />);
     const switcher = screen.getByRole("toolbar", { name: "Switch screen" });
     const labels = within(switcher)
       .getAllByRole("button")
       .map((b) => b.textContent);
-    expect(labels).toEqual(["SESSION", "EDITOR", "DIFF", "HISTORY", "OVERVIEW", "BLANK"]);
+    expect(labels).toEqual(["SESSION", "EDITOR", "DIFF", "OVERVIEW", "BLANK"]);
     expect(within(switcher).queryByRole("button", { name: "SETTINGS" })).toBeNull();
     expect(within(switcher).queryByRole("button", { name: "PR" })).toBeNull();
   });
