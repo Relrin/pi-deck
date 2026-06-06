@@ -4,7 +4,7 @@ import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { TerminalTabs } from "./TerminalTabs.js";
 import { TerminalView } from "./TerminalView.js";
-import { activeProjectName, resolveDefaultCwd } from "./terminalCwd.js";
+import { resolveDefaultCwd } from "./terminalCwd.js";
 import { useTerminalStore } from "./useTerminalStore.js";
 
 function newTabId(): string {
@@ -62,7 +62,6 @@ export function TerminalPane() {
       <TerminalTabs
         tabs={tabs}
         activeTabId={activeTabId}
-        projectName={activeProjectName()}
         onSelect={setActiveTab}
         onClose={onClose}
         onNew={onNew}

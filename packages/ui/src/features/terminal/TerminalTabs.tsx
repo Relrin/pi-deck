@@ -18,8 +18,6 @@ function shellLabel(tab: TerminalTab): string {
 export interface TerminalTabsProps {
   tabs: TerminalTab[];
   activeTabId: string | null;
-  /** Display name of the active project, used in the "shell — project" tab label. */
-  projectName: string | null;
   onSelect: (tabId: string) => void;
   onClose: (tabId: string) => void;
   /** Open a new terminal; pass a shell to launch that kind, omit for the default shell. */
@@ -32,7 +30,6 @@ export interface TerminalTabsProps {
 export function TerminalTabs({
   tabs,
   activeTabId,
-  projectName,
   onSelect,
   onClose,
   onNew,
@@ -43,7 +40,7 @@ export function TerminalTabs({
     <div className="pid-terminal-tabs" role="tablist" aria-label="Terminal tabs">
       <div className="pid-terminal-tabs-strip">
         {tabs.map((tab) => {
-          const label = projectName ? `${shellLabel(tab)} — ${projectName}` : shellLabel(tab);
+          const label = shellLabel(tab);
           return (
             <div
               key={tab.tabId}

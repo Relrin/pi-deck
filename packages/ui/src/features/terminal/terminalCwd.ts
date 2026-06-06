@@ -11,11 +11,3 @@ export function resolveDefaultCwd(): string | null {
   const project = projects.find((p) => p.id === activeProjectId);
   return project?.path ?? null;
 }
-
-/** Basename of the active project's path, for terminal tab labels ("zsh — pi-deck"). */
-export function activeProjectName(): string | null {
-  const cwd = resolveDefaultCwd();
-  if (!cwd) return null;
-  const parts = cwd.replace(/\\/g, "/").split("/").filter(Boolean);
-  return parts[parts.length - 1] ?? null;
-}

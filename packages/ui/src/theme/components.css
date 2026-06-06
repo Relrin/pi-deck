@@ -1661,6 +1661,26 @@
   flex: 0 0 auto;
   color: inherit;
 }
+/* Devicon icon-font glyphs for terminal shell types. */
+.pid-shell-icon {
+  line-height: 1;
+}
+.pid-shell-icon.devicon-powershell-plain.colored {
+  color: #2f86d8;
+}
+.pid-shell-icon.devicon-bash-plain.colored {
+  color: #4eaa25;
+}
+.pid-shell-icon.devicon-debian-plain.colored {
+  color: #c70d5a;
+}
+.pid-shell-icon.devicon-fedora-plain.colored {
+  color: #3c6eb4;
+}
+.pid-shell-icon.devicon-linux-plain.colored,
+.pid-shell-icon.devicon-zsh-plain.colored {
+  color: var(--ink-1);
+}
 .pid-context-menu-label {
   flex: 1;
   white-space: nowrap;
