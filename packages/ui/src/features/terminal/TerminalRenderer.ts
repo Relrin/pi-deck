@@ -139,9 +139,14 @@ async function mountGhostty(
     focus: () => term.focus(),
     setTheme: (theme) => {
       try {
-        term.options.theme = theme;
+        // ghostty-web 0.4.0 ignores `options.theme` after open(), so apply to the
+        // renderer directly and force a full redraw
+        term.renderer?.setTheme(theme);
+        if (term.renderer && term.wasmTerm) {
+          term.renderer.render(term.wasmTerm, true, term.viewportY, term);
+        }
       } catch {
-        // Options proxy rejected the update — non-fatal.
+        // Renderer not ready / proxy rejected the update — non-fatal.
       }
     },
     setFont: (family, size) => {
