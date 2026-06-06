@@ -1,11 +1,10 @@
 import ghosttyWasmUrl from "ghostty-web/ghostty-vt.wasm?url";
 
 /**
- * Thin adapter over a web terminal emulator. ghostty-web is the default (better heavy-output
- * perf); if its WASM fails to load we transparently fall back to xterm.js. Both expose an
- * xterm-shaped API (`open`/`write`/`onData`/`loadAddon(FitAddon)`/`resize`/`dispose`), so the
- * two implementations differ only in how they're constructed. The renderer libraries are
- * dynamically imported so they (and the WASM) stay out of the main bundle until a terminal opens.
+ * Thin adapter over the ghostty-web terminal emulator (WASM, chosen for its heavy-output perf).
+ * The handle exposes an xterm-shaped API (`write`/`fit`/`resize`/`focus`/`dispose`). The renderer
+ * library and its WASM are dynamically imported so they stay out of the main bundle until a
+ * terminal opens.
  */
 
 export interface TerminalTheme {
@@ -44,7 +43,7 @@ export interface TerminalRendererInit {
 }
 
 export interface TerminalRendererHandle {
-  readonly backend: "ghostty" | "xterm";
+  readonly backend: "ghostty";
   write(data: string): void;
   resize(cols: number, rows: number): void;
   /** Re-measure and resize to the container; returns the new grid, or null if unmeasurable. */
@@ -88,18 +87,6 @@ function silenceGhosttyVtLogs(): void {
 }
 
 export async function mountTerminal(
-  container: HTMLElement,
-  init: TerminalRendererInit,
-): Promise<TerminalRendererHandle> {
-  try {
-    return await mountGhostty(container, init);
-  } catch (err) {
-    console.warn("[terminal] ghostty-web unavailable — falling back to xterm.js:", err);
-    return await mountXterm(container, init);
-  }
-}
-
-async function mountGhostty(
   container: HTMLElement,
   init: TerminalRendererInit,
 ): Promise<TerminalRendererHandle> {
@@ -156,60 +143,6 @@ async function mountGhostty(
       } catch {
         // ignore
       }
-    },
-    getSelection: () => term.getSelection(),
-    scrollToBottom: () => term.scrollToBottom(),
-    dispose: () => {
-      for (const d of disposers) d.dispose();
-      term.dispose();
-    },
-  };
-}
-
-async function mountXterm(
-  container: HTMLElement,
-  init: TerminalRendererInit,
-): Promise<TerminalRendererHandle> {
-  const [{ Terminal }, { FitAddon }] = await Promise.all([
-    import("@xterm/xterm"),
-    import("@xterm/addon-fit"),
-  ]);
-  await import("@xterm/xterm/css/xterm.css");
-
-  const term = new Terminal({
-    fontFamily: init.fontFamily,
-    fontSize: init.fontSize,
-    theme: init.theme,
-    cursorBlink: true,
-    scrollback: init.scrollback ?? DEFAULT_SCROLLBACK,
-  });
-  const fit = new FitAddon();
-  term.loadAddon(fit);
-  term.open(container);
-  const disposers = [
-    term.onData(init.onData),
-    term.onResize(({ cols, rows }) => init.onResize(cols, rows)),
-  ];
-
-  return {
-    backend: "xterm",
-    write: (data) => term.write(data),
-    resize: (cols, rows) => term.resize(cols, rows),
-    fit: () => {
-      try {
-        fit.fit();
-      } catch {
-        return null;
-      }
-      return { cols: term.cols, rows: term.rows };
-    },
-    focus: () => term.focus(),
-    setTheme: (theme) => {
-      term.options.theme = theme;
-    },
-    setFont: (family, size) => {
-      term.options.fontFamily = family;
-      term.options.fontSize = size;
     },
     getSelection: () => term.getSelection(),
     scrollToBottom: () => term.scrollToBottom(),

@@ -14,7 +14,7 @@ function resolveFontFamily(configured: string): string {
 }
 
 /**
- * Renders one terminal tab: mounts the emulator (ghostty-web → xterm fallback), opens or
+ * Renders one terminal tab: mounts the ghostty-web emulator, opens or
  * reattaches to its host PTY, repaints recent scrollback from the host buffer, then streams live
  * output. User keystrokes and grid resizes are forwarded to the PTY over the protocol.
  *

@@ -5,5 +5,3 @@ declare module "ghostty-web/ghostty-vt.wasm?url" {
   const src: string;
   export default src;
 }
-
-declare module "@xterm/xterm/css/xterm.css";
