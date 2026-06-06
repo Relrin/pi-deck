@@ -869,6 +869,7 @@
 }
 .pid-terminal-surface {
   padding: 4px 6px;
+  caret-color: transparent;
 }
 .pid-terminal-throttle {
   position: absolute;
