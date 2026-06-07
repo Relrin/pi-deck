@@ -1,6 +1,7 @@
 import * as RadixDialog from "@radix-ui/react-dialog";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { PidButton } from "../../components/buttons/PidButton";
+import { useAutoGrowTextarea } from "../../lib/useAutoGrowTextarea";
 import type { IntroTemplate } from "./templates";
 import { useTemplatesStore } from "./useTemplatesStore";
 
@@ -27,6 +28,9 @@ export function EditTemplateDialog({ template, open, onOpenChange }: Props) {
   const [title, setTitle] = useState("");
   const [blurb, setBlurb] = useState("");
   const [body, setBody] = useState("");
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useAutoGrowTextarea(bodyRef, body, { maxRows: 16 });
 
   // Seed the fields from the effective values whenever the dialog opens for a template.
   useEffect(() => {
@@ -97,6 +101,7 @@ export function EditTemplateDialog({ template, open, onOpenChange }: Props) {
               </label>
               <textarea
                 id="tpl-body"
+                ref={bodyRef}
                 className="pid-form-textarea"
                 value={body}
                 onChange={(e) => setBody(e.target.value)}

@@ -2160,8 +2160,8 @@
   color: var(--ink-0);
 }
 .pid-form-textarea {
-  min-height: 140px;
-  resize: vertical;
+  min-height: 120px;
+  resize: none;
   font-family: var(--font-mono);
   line-height: 1.5;
   scrollbar-width: thin;
