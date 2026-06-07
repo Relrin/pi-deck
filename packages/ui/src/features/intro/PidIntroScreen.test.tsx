@@ -5,6 +5,7 @@ import { useProjectsStore } from "../sessions/useProjectsStore";
 import { useSessionsStore } from "../sessions/useSessionsStore";
 import { PidIntroScreen } from "./PidIntroScreen";
 import { useIntroComposerStore } from "./useIntroComposerStore";
+import { useTemplatesStore } from "./useTemplatesStore";
 
 function seedProject() {
   useProjectsStore.setState({
@@ -53,6 +54,7 @@ const originalSendPrompt = useSessionsStore.getState().sendPrompt;
 
 beforeEach(() => {
   useIntroComposerStore.setState({ text: "" });
+  useTemplatesStore.setState({ overrides: {} });
   useNavStore.setState({
     screen: "blank",
     expandedProjectsOverview: {},
@@ -93,6 +95,33 @@ describe("PidIntroScreen", () => {
     render(<PidIntroScreen variant="fullscreen" />);
     fireEvent.click(screen.getByText("Fix a failing test"));
     expect(useIntroComposerStore.getState().text).toMatch(/failing test/i);
+  });
+
+  test("clicking a template's edit (pencil) button opens the editor seeded from that template", () => {
+    render(<PidIntroScreen variant="fullscreen" />);
+    fireEvent.click(screen.getByLabelText("Edit template: Fix a failing test"));
+    // The dialog's Title field is unique to the editor and seeds from the template default.
+    expect(screen.getByLabelText("Title")).toHaveValue("Fix a failing test");
+    expect(screen.getByLabelText("Prompt")).toBeInTheDocument();
+  });
+
+  test("an overridden template renders the custom title/blurb and prefills its body", () => {
+    useTemplatesStore.setState({
+      overrides: {
+        "fix-failing-test": {
+          title: "Tame the flake",
+          blurb: "My custom blurb",
+          body: "my custom prompt body",
+        },
+      },
+    });
+    render(<PidIntroScreen variant="fullscreen" />);
+    expect(screen.getByText("Tame the flake")).toBeInTheDocument();
+    expect(screen.getByText("My custom blurb")).toBeInTheDocument();
+    expect(screen.queryByText("Fix a failing test")).toBeNull();
+
+    fireEvent.click(screen.getByText("Tame the flake"));
+    expect(useIntroComposerStore.getState().text).toBe("my custom prompt body");
   });
 
   test("clicking a recent session activates it and flips screen to session", async () => {

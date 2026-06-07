@@ -1005,6 +1005,72 @@
   font-size: var(--t-12);
   color: var(--ink-2);
 }
+.pid-intro-template-wrap {
+  position: relative;
+  display: grid;
+}
+.pid-intro-template {
+  position: relative;
+}
+.pid-intro-template-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pid-intro-template-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--radius);
+  padding: 1px 6px;
+  transition: opacity 0.12s;
+}
+.pid-intro-template-edit {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-2);
+  color: var(--ink-2);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.12s,
+    background-color 0.12s,
+    border-color 0.12s,
+    color 0.12s;
+}
+.pid-intro-template-wrap:hover .pid-intro-template-edit,
+.pid-intro-template-wrap:focus-within .pid-intro-template-edit {
+  opacity: 1;
+}
+.pid-intro-template-edit:hover {
+  background: var(--bg-3);
+  border-color: var(--line-strong);
+  color: var(--ink-0);
+}
+.pid-intro-template-edit:focus-visible {
+  outline: none;
+  opacity: 1;
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+/* Don't let the "edited" badge and the edit button overlap in the same corner. */
+.pid-intro-template-wrap:hover .pid-intro-template-badge,
+.pid-intro-template-wrap:focus-within .pid-intro-template-badge {
+  opacity: 0;
+}
 .pid-intro-recent {
   display: flex;
   flex-wrap: wrap;
@@ -2083,7 +2149,8 @@
   color: var(--ink-2);
 }
 .pid-form-input,
-.pid-form-select {
+.pid-form-select,
+.pid-form-textarea {
   background: var(--bg-1);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -2092,8 +2159,30 @@
   font-size: var(--t-13);
   color: var(--ink-0);
 }
+.pid-form-textarea {
+  min-height: 140px;
+  resize: vertical;
+  font-family: var(--font-mono);
+  line-height: 1.5;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
+}
+.pid-form-textarea::-webkit-scrollbar {
+  width: 6px;
+}
+.pid-form-textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pid-form-textarea::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 3px;
+}
+.pid-form-textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
+}
 .pid-form-input:focus-visible,
-.pid-form-select:focus-visible {
+.pid-form-select:focus-visible,
+.pid-form-textarea:focus-visible {
   outline: none;
   border-color: var(--accent-line);
   box-shadow: 0 0 0 3px var(--accent-soft);
@@ -2103,6 +2192,9 @@
   justify-content: flex-end;
   gap: 8px;
   margin-top: 4px;
+}
+.pid-form-row-spacer {
+  margin-right: auto;
 }
 .pid-form-hint {
   font-family: var(--font-ui);
@@ -2462,7 +2554,12 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
+.pid-composer-template-wrap {
+  position: relative;
+  display: grid;
+}
 .pid-composer-template {
+  position: relative;
   text-align: left;
   padding: 14px;
   border: 1px solid var(--line);
@@ -2479,6 +2576,64 @@
 .pid-composer-template:hover {
   background: var(--bg-2);
   border-color: var(--ink-3);
+}
+.pid-composer-template-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pid-composer-template-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--radius);
+  padding: 1px 6px;
+  transition: opacity 0.12s;
+}
+.pid-composer-template-edit {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-2);
+  color: var(--ink-2);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.12s,
+    background-color 0.12s,
+    border-color 0.12s,
+    color 0.12s;
+}
+.pid-composer-template-wrap:hover .pid-composer-template-edit,
+.pid-composer-template-wrap:focus-within .pid-composer-template-edit {
+  opacity: 1;
+}
+.pid-composer-template-edit:hover {
+  background: var(--bg-3);
+  border-color: var(--ink-3);
+  color: var(--ink-0);
+}
+.pid-composer-template-edit:focus-visible {
+  outline: none;
+  opacity: 1;
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.pid-composer-template-wrap:hover .pid-composer-template-badge,
+.pid-composer-template-wrap:focus-within .pid-composer-template-badge {
+  opacity: 0;
 }
 .pid-composer-template-num {
   font-family: var(--font-mono);

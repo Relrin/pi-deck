@@ -231,7 +231,8 @@ Append new entry points under the matching sub-heading. Keep entries to one line
 
 ### Intro
 
-- **Screens** — `packages/ui/src/features/intro/`. `PidIntroScreen` renders the italic-serif hero, stub composer (bound to `useIntroComposerStore`), 6 static templates from `templates.ts`, and a recent-sessions strip. Fullscreen variant is the empty-state landing when no project / no sessions exist; inline variant is rendered inside the `session` route by `PidCenterRouter` when the active session has zero messages.
+- **Screens** — `packages/ui/src/features/intro/`. Two near-identical surfaces share the `templates.ts` set: **`PidComposerScreen`** is the `blank` route (and the no-active-session fallback) wired by `PidCenterRouter`; **`PidIntroScreen`** is the empty-state landing (`PidSessionsOverview`, `variant="fullscreen"`) and the inline empty-session view (`variant="inline-empty-session"`). Both render the hero/composer (bound to `useIntroComposerStore`), 6 template cards, and a recents strip. NB: the `blank` route is `PidComposerScreen`, NOT `PidIntroScreen` — changes to the template cards must be made in **both** components.
+- **Editable templates** — defaults live in `templates.ts`; per-id overrides (title / blurb / body) persist via `useTemplatesStore` (localStorage `pi-deck:templates:v1`) and merge through `resolveTemplate`. Implemented in **both** `PidComposerScreen` and `PidIntroScreen`. Each card opens `EditTemplateDialog` two ways: a hover-revealed pencil button (`.pid-composer-template-edit` / `.pid-intro-template-edit`, the reliable primary affordance — a real sibling button, not nested in the card) and a right-click `ContextMenu` ("Edit template…" / "Reset to default" when overridden). The 6 slots are fixed — no add/remove.
 
 ### Git
 

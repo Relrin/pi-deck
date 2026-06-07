@@ -10,8 +10,9 @@ import {
   useRef,
   useState,
 } from "react";
-import { Archive, Folder, Plus, Send, X } from "../../components/icons/index.js";
+import { Archive, Folder, Pencil, Plus, Send, Undo2, X } from "../../components/icons/index.js";
 import { PidChipPicker, type PidChipPickerOption } from "../../components/picker/PidChipPicker.js";
+import { ContextMenu, type ContextMenuItem } from "../../components/ui/ContextMenu.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
 import { useAutoGrowTextarea } from "../../lib/useAutoGrowTextarea.js";
 import { useNavStore } from "../../lib/useNavStore.js";
@@ -27,16 +28,18 @@ import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { PidToolsButton } from "../tools/PidToolsButton.js";
 import { useToolsStore } from "../tools/useToolsStore.js";
+import { EditTemplateDialog } from "./EditTemplateDialog.js";
 import { PidAgentModePicker } from "./PidAgentModePicker.js";
 import { PidAttachmentsPicker } from "./PidAttachmentsPicker.js";
 import { PidBranchPicker } from "./PidBranchPicker.js";
 import { PidEffortPicker } from "./PidEffortPicker.js";
 import { PidModelPicker } from "./PidModelPicker.js";
 import { PidRepoFileSearchDialog } from "./PidRepoFileSearchDialog.js";
-import { INTRO_TEMPLATES } from "./templates.js";
+import { INTRO_TEMPLATES, type IntroTemplate } from "./templates.js";
 import { useAttachmentsHotkeys } from "./useAttachmentsHotkeys.js";
 import { type PromptImageDraft, useIntroComposerStore } from "./useIntroComposerStore.js";
 import { useRecentAttachmentsStore } from "./useRecentAttachmentsStore.js";
+import { resolveTemplate, useTemplatesStore } from "./useTemplatesStore.js";
 
 const RECENT_LIMIT = 3;
 
@@ -57,7 +60,11 @@ export function PidComposerScreen() {
   const removeImage = useIntroComposerStore((s) => s.removeImage);
   const pushRecent = useRecentAttachmentsStore((s) => s.push);
 
+  const templateOverrides = useTemplatesStore((s) => s.overrides);
+  const resetTemplate = useTemplatesStore((s) => s.resetOverride);
+
   const [repoSearchOpen, setRepoSearchOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<IntroTemplate | null>(null);
   const [previewImage, setPreviewImage] = useState<PromptImageDraft | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const dragDepthRef = useRef(0);
@@ -250,6 +257,18 @@ export function PidComposerScreen() {
 
   const onTemplate = (body: string) => setText(body);
 
+  // Pair each built-in default (what we edit / reset against) with its effective view
+  // (default merged with any override) used for display and prefill.
+  const templates = useMemo(
+    () =>
+      INTRO_TEMPLATES.map((base) => ({
+        base,
+        effective: resolveTemplate(base, templateOverrides[base.id]),
+        overridden: Boolean(templateOverrides[base.id]),
+      })),
+    [templateOverrides],
+  );
+
   const onRecent = (sessionId: string) => {
     useSessionsStore
       .getState()
@@ -417,18 +436,53 @@ export function PidComposerScreen() {
         <div className="pid-composer-templates-wrap">
           <div className="pid-composer-templates-label">start from a template</div>
           <div className="pid-composer-templates">
-            {INTRO_TEMPLATES.map((template) => (
-              <button
-                key={template.id}
-                type="button"
-                className="pid-composer-template"
-                onClick={() => onTemplate(template.body)}
-              >
-                <span className="pid-composer-template-num">{template.num}</span>
-                <span className="pid-composer-template-title">{template.title}</span>
-                <span className="pid-composer-template-blurb">{template.blurb}</span>
-              </button>
-            ))}
+            {templates.map(({ base, effective, overridden }) => {
+              const items: ContextMenuItem[] = [
+                {
+                  label: "Edit template…",
+                  icon: <Pencil size={14} />,
+                  onSelect: () => setEditingTemplate(base),
+                },
+              ];
+              if (overridden) {
+                items.push({ kind: "separator" });
+                items.push({
+                  label: "Reset to default",
+                  icon: <Undo2 size={14} />,
+                  onSelect: () => resetTemplate(base.id),
+                });
+              }
+              return (
+                <div key={base.id} className="pid-composer-template-wrap">
+                  <ContextMenu items={items}>
+                    <button
+                      type="button"
+                      className="pid-composer-template"
+                      data-overridden={overridden || undefined}
+                      onClick={() => onTemplate(effective.body)}
+                    >
+                      <span className="pid-composer-template-head">
+                        <span className="pid-composer-template-num">{effective.num}</span>
+                        {overridden && <span className="pid-composer-template-badge">edited</span>}
+                      </span>
+                      <span className="pid-composer-template-title">{effective.title}</span>
+                      <span className="pid-composer-template-blurb">{effective.blurb}</span>
+                    </button>
+                  </ContextMenu>
+                  {/* Sibling (not nested) of the card button so it's a real, reliably
+                      clickable control — opens the same editor the right-click menu does. */}
+                  <button
+                    type="button"
+                    className="pid-composer-template-edit"
+                    aria-label={`Edit template: ${effective.title}`}
+                    title="Edit template"
+                    onClick={() => setEditingTemplate(base)}
+                  >
+                    <Pencil size={13} aria-hidden />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -471,6 +525,13 @@ export function PidComposerScreen() {
           name={previewImage.name}
         />
       )}
+      <EditTemplateDialog
+        template={editingTemplate}
+        open={editingTemplate !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingTemplate(null);
+        }}
+      />
     </div>
   );
 }

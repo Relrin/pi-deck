@@ -9,8 +9,9 @@ import {
   useState,
 } from "react";
 import { PidButton } from "../../components/buttons/PidButton";
-import { X } from "../../components/icons/index.js";
+import { Pencil, Undo2, X } from "../../components/icons/index.js";
 import { PidKbd } from "../../components/kbd/PidKbd";
+import { ContextMenu, type ContextMenuItem } from "../../components/ui/ContextMenu";
 import { Tooltip } from "../../components/ui/Tooltip";
 import { useAutoGrowTextarea } from "../../lib/useAutoGrowTextarea";
 import { useNavStore } from "../../lib/useNavStore";
@@ -20,8 +21,10 @@ import { useImagePaste } from "../chat/composer/useImagePaste";
 import type { UserMessageImage } from "../chat/types";
 import { useProjectsStore } from "../sessions/useProjectsStore";
 import { useSessionsStore } from "../sessions/useSessionsStore";
-import { INTRO_TEMPLATES } from "./templates";
+import { EditTemplateDialog } from "./EditTemplateDialog";
+import { INTRO_TEMPLATES, type IntroTemplate } from "./templates";
 import { type PromptImageDraft, useIntroComposerStore } from "./useIntroComposerStore";
+import { resolveTemplate, useTemplatesStore } from "./useTemplatesStore";
 
 export interface PidIntroScreenProps {
   variant: "fullscreen" | "inline-empty-session";
@@ -39,7 +42,10 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
   const sessions = useSessionsStore((s) => s.sessions);
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const activeProject = useProjectsStore((s) => s.projects.find((p) => p.id === s.activeProjectId));
+  const templateOverrides = useTemplatesStore((s) => s.overrides);
+  const resetTemplate = useTemplatesStore((s) => s.resetOverride);
 
+  const [editingTemplate, setEditingTemplate] = useState<IntroTemplate | null>(null);
   const [previewImage, setPreviewImage] = useState<PromptImageDraft | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const dragDepthRef = useRef(0);
@@ -71,6 +77,18 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
         .sort((a, b) => b.lastActivityAt.localeCompare(a.lastActivityAt))
         .slice(0, RECENT_LIMIT),
     [sessions],
+  );
+
+  // Each card pairs its built-in default (the thing we edit / reset against) with the effective
+  // view (default merged with any override) used for display and prefill.
+  const templates = useMemo(
+    () =>
+      INTRO_TEMPLATES.map((base) => ({
+        base,
+        effective: resolveTemplate(base, templateOverrides[base.id]),
+        overridden: Boolean(templateOverrides[base.id]),
+      })),
+    [templateOverrides],
   );
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -221,18 +239,52 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
       <div>
         <div className="pid-intro-templates-label">start from a template</div>
         <div className="pid-intro-templates">
-          {INTRO_TEMPLATES.map((template) => (
-            <button
-              key={template.id}
-              type="button"
-              className="pid-card"
-              onClick={() => onTemplate(template.body)}
-            >
-              <span className="pid-intro-template-num">{template.num}</span>
-              <span className="pid-intro-template-title">{template.title}</span>
-              <span className="pid-intro-template-blurb">{template.blurb}</span>
-            </button>
-          ))}
+          {templates.map(({ base, effective, overridden }) => {
+            const items: ContextMenuItem[] = [
+              {
+                label: "Edit template…",
+                icon: <Pencil size={14} />,
+                onSelect: () => setEditingTemplate(base),
+              },
+            ];
+            if (overridden) {
+              items.push({ kind: "separator" });
+              items.push({
+                label: "Reset to default",
+                icon: <Undo2 size={14} />,
+                onSelect: () => resetTemplate(base.id),
+              });
+            }
+            return (
+              <div key={base.id} className="pid-intro-template-wrap">
+                <ContextMenu items={items}>
+                  <button
+                    type="button"
+                    className="pid-card pid-intro-template"
+                    data-overridden={overridden || undefined}
+                    onClick={() => onTemplate(effective.body)}
+                  >
+                    <span className="pid-intro-template-head">
+                      <span className="pid-intro-template-num">{effective.num}</span>
+                      {overridden && <span className="pid-intro-template-badge">edited</span>}
+                    </span>
+                    <span className="pid-intro-template-title">{effective.title}</span>
+                    <span className="pid-intro-template-blurb">{effective.blurb}</span>
+                  </button>
+                </ContextMenu>
+
+                <button
+                  type="button"
+                  className="pid-intro-template-edit"
+                  aria-label={`Edit template: ${effective.title}`}
+                  title="Edit template"
+                  onClick={() => setEditingTemplate(base)}
+                >
+                  <Pencil size={13} aria-hidden />
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -272,6 +324,13 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
           name={previewImage.name}
         />
       )}
+      <EditTemplateDialog
+        template={editingTemplate}
+        open={editingTemplate !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingTemplate(null);
+        }}
+      />
     </div>
   );
 }
