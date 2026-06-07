@@ -211,6 +211,7 @@
   overflow: auto;
 }
 .pid-editor-cm .cm-lineNumbers .cm-gutterElement {
+  position: relative;
   padding-left: 10px;
   padding-right: 12px;
 }
@@ -247,17 +248,71 @@
   background: transparent;
 }
 
-/* ---------- Live diff (dirty) gutter tints vs HEAD ---------- */
+/* ---------- Live diff (dirty) markers vs HEAD ----------
 .pid-editor-cm .cm-line.pid-cm-diff-add {
   background: var(--add-soft);
-  box-shadow: inset 2px 0 0 0 var(--add);
 }
 .pid-editor-cm .cm-line.pid-cm-diff-mod {
   background: var(--mod-soft);
-  box-shadow: inset 2px 0 0 0 var(--mod);
 }
-.pid-editor-cm .cm-line.pid-cm-diff-del {
-  box-shadow: inset 2px 0 0 0 var(--del);
+
+/* The change bar lives in the line-number gutter, anchored to its right edge so hover/selection
+   thickens it leftward (toward the number) instead of growing towards the code side. */
+.pid-editor-cm .cm-lineNumbers .cm-gutterElement.pid-cm-diff-add::after,
+.pid-editor-cm .cm-lineNumbers .cm-gutterElement.pid-cm-diff-mod::after,
+.pid-editor-cm .cm-lineNumbers .cm-gutterElement.pid-cm-diff-del::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 2px;
+  transition: width 0.1s ease;
+}
+.pid-editor-cm .cm-lineNumbers .cm-gutterElement.pid-cm-diff-add::after {
+  background: var(--add);
+}
+.pid-editor-cm .cm-lineNumbers .cm-gutterElement.pid-cm-diff-mod::after {
+  background: var(--mod);
+}
+.pid-editor-cm .cm-lineNumbers .cm-gutterElement.pid-cm-diff-del::after {
+  background: var(--del);
+}
+.pid-editor-cm .cm-lineNumbers .cm-gutterElement.pid-cm-diff-active::after {
+  width: 5px;
+}
+
+.pid-diff-block-toolbar {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 2px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+}
+.pid-diff-block-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: var(--bg-3);
+  color: var(--ink-2);
+  border-radius: 3px;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+.pid-diff-block-toolbar-btn:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 /* ---------- Overlays + empty state ---------- */

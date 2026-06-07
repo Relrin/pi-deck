@@ -23,12 +23,24 @@ import {
   keymap,
   lineNumbers,
 } from "@codemirror/view";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavStore } from "../../lib/useNavStore.js";
 import { useThemeStore } from "../../theme/useThemeStore.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
-import { baselineText, diffGutter, setDiffBaseline } from "./diffExtension.js";
+import {
+  baselineText,
+  type DiffHoverInfo,
+  diffChunkInfo,
+  diffGutter,
+  diffHoverAt,
+  gotoDiffChunk,
+  revertDiffChunk,
+  setActiveDiffChunk,
+  setDiffBaseline,
+} from "./diffExtension.js";
 import { cmHighlight, cmTheme } from "./editorTheme.js";
 import { languageForFile } from "./languages.js";
+import { PidDiffBlockToolbar } from "./PidDiffBlockToolbar.js";
 import {
   type EditorTab,
   selectActiveTabId,
@@ -76,10 +88,73 @@ export function CodeMirrorEditor() {
   const dark = useThemeIsDark();
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const cacheRef = useRef<Map<string, TabCacheEntry>>(new Map());
   const prevIdRef = useRef<string | null>(null);
   const darkRef = useRef(dark);
+
+  // Diff-block toolbar: opens on a gutter *click* (pinned), closes on outside-click / Escape /
+  // scroll / edit / tab switch. Hovering the gutter only thickens the block's bar.
+  const [openChunk, setOpenChunk] = useState<DiffHoverInfo | null>(null);
+  const openIdxRef = useRef<number | null>(null);
+  const activeIdxRef = useRef<number | null>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  const setActive = useCallback((view: EditorView, idx: number | null) => {
+    if (activeIdxRef.current === idx) return;
+    activeIdxRef.current = idx;
+    setActiveDiffChunk(view, idx);
+  }, []);
+
+  const closeToolbar = useCallback(() => {
+    openIdxRef.current = null;
+    const v = viewRef.current;
+    if (v) setActive(v, null);
+    setOpenChunk(null);
+  }, [setActive]);
+
+  // Stable ref so the per-tab CM updateListener + scroll listener can close without re-subscribing.
+  const closeToolbarRef = useRef(closeToolbar);
+  closeToolbarRef.current = closeToolbar;
+
+  // Hover → thicken the hovered block's bar (suppressed while the toolbar is pinned open).
+  const handleWrapMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (openIdxRef.current !== null) return;
+      const view = viewRef.current;
+      if (!view) return;
+      const info = diffHoverAt(view, e.clientX, e.clientY);
+      setActive(view, info?.overGutter ? info.index : null);
+    },
+    [setActive],
+  );
+
+  const handleWrapMouseLeave = useCallback(() => {
+    if (openIdxRef.current !== null) return;
+    const view = viewRef.current;
+    if (view) setActive(view, null);
+  }, [setActive]);
+
+  // Click the gutter → open/switch the toolbar; click elsewhere in the editor → dismiss.
+  const handleWrapClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (toolbarRef.current && e.target instanceof Node && toolbarRef.current.contains(e.target)) {
+        return; // a toolbar button owns this click
+      }
+      const view = viewRef.current;
+      if (!view) return;
+      const info = diffHoverAt(view, e.clientX, e.clientY);
+      if (info?.overGutter) {
+        openIdxRef.current = info.index;
+        setActive(view, info.index);
+        setOpenChunk(info);
+      } else if (openIdxRef.current !== null) {
+        closeToolbar();
+      }
+    },
+    [setActive, closeToolbar],
+  );
 
   // Persist `content` to disk, then mark the in-editor baseline clean. Capturing the doc we wrote
   // (not the post-await doc) means edits made during the save round-trip correctly stay dirty.
@@ -113,6 +188,8 @@ export function CodeMirrorEditor() {
       const listener = EditorView.updateListener.of((update) => {
         const id = tab.id;
         if (update.docChanged) {
+          // Editing shifts/destroys chunks — drop the toolbar.
+          closeToolbarRef.current();
           const entry = cacheRef.current.get(id);
           const isDirty = entry ? !update.state.doc.eq(entry.savedText) : true;
           useEditorStore.getState().setDirty(id, isDirty);
@@ -181,7 +258,11 @@ export function CodeMirrorEditor() {
     if (!parent) return;
     const view = new EditorView({ parent, state: EditorState.create({ doc: "" }) });
     viewRef.current = view;
+    // Scrolling invalidates the toolbar's anchor — drop it.
+    const onScroll = () => closeToolbarRef.current();
+    view.scrollDOM.addEventListener("scroll", onScroll, { passive: true });
     return () => {
+      view.scrollDOM.removeEventListener("scroll", onScroll);
       view.destroy();
       viewRef.current = null;
     };
@@ -199,6 +280,7 @@ export function CodeMirrorEditor() {
         e.state = view.state;
         e.scrollTop = view.scrollDOM.scrollTop;
       }
+      closeToolbarRef.current(); // a pinned toolbar belongs to the tab we're leaving
     }
     prevIdRef.current = activeTabId;
     if (!activeTabId) return;
@@ -227,6 +309,26 @@ export function CodeMirrorEditor() {
     viewRef.current?.dispatch({ effects: themeCompartment.reconfigure(cmTheme(dark)) });
   }, [dark]);
 
+  // While the toolbar is pinned open, dismiss it on Escape or a click outside the editor.
+  useEffect(() => {
+    if (!openChunk) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeToolbarRef.current();
+    };
+    const onDocDown = (e: MouseEvent) => {
+      const t = e.target;
+      if (t instanceof Node && wrapRef.current && !wrapRef.current.contains(t)) {
+        closeToolbarRef.current();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onDocDown, true);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onDocDown, true);
+    };
+  }, [openChunk]);
+
   // Drop cached states for tabs that were closed.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `order` is the prune trigger; membership is read from the live store.
   useEffect(() => {
@@ -237,11 +339,51 @@ export function CodeMirrorEditor() {
   }, [order]);
 
   const overlay = renderOverlay(activeTabId, status, blocked, errorMessage);
+  const view = viewRef.current;
+
+  // Prev/next: navigate to the neighbour block and re-anchor the pinned toolbar to it.
+  const reanchor = (view: EditorView, index: number) => {
+    openIdxRef.current = index;
+    activeIdxRef.current = index;
+    requestAnimationFrame(() => {
+      const info = diffChunkInfo(view, index);
+      if (info) setOpenChunk(info);
+      else closeToolbar();
+    });
+  };
 
   return (
-    <div className="pid-editor-cm-wrap">
+    // biome-ignore lint/a11y/noStaticElementInteractions: pointer-only affordance (gutter click opens the toolbar, hover thickens the bar); the same actions live in the dedicated Diff view.
+    // biome-ignore lint/a11y/useKeyWithClickEvents: the click is event-delegation for the non-focusable gutter; the toolbar's actions are also reachable in the keyboard-accessible Diff view.
+    <div
+      className="pid-editor-cm-wrap"
+      ref={wrapRef}
+      onClick={handleWrapClick}
+      onMouseMove={handleWrapMouseMove}
+      onMouseLeave={handleWrapMouseLeave}
+    >
       <div className="pid-editor-cm" ref={containerRef} />
       {overlay}
+      {openChunk && view ? (
+        <PidDiffBlockToolbar
+          info={openChunk}
+          rootRef={toolbarRef}
+          wrapRef={wrapRef}
+          onPrev={() => reanchor(view, gotoDiffChunk(view, openChunk.index, -1))}
+          onNext={() => reanchor(view, gotoDiffChunk(view, openChunk.index, 1))}
+          onRevert={() => {
+            revertDiffChunk(view, openChunk.index);
+            closeToolbar();
+          }}
+          onOpenDiff={() => {
+            const tab = activeTabId ? useEditorStore.getState().tabs[activeTabId] : undefined;
+            if (tab) {
+              useNavStore.getState().openDiff({ projectId: tab.projectId, path: tab.relPath });
+            }
+            closeToolbar();
+          }}
+        />
+      ) : null}
     </div>
   );
 }
