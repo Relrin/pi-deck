@@ -27,7 +27,7 @@ const readFileOk =
 const flush = () => new Promise<void>((r) => setTimeout(r, 0));
 
 beforeEach(() => {
-  useEditorStore.setState({ order: [], tabs: {}, activeTabId: null });
+  useEditorStore.setState({ byProject: {}, tabs: {} });
   useSessionsStore.setState({ client: undefined } as never);
   useNotificationStore.setState({ notifications: [] });
 });
@@ -47,7 +47,7 @@ describe("useEditorStore.openFile", () => {
       relPath: "src/a.ts",
     });
     const id = "p1:/proj/src/a.ts";
-    expect(useEditorStore.getState().activeTabId).toBe(id);
+    expect(useEditorStore.getState().byProject.p1?.activeTabId).toBe(id);
     expect(useEditorStore.getState().tabs[id]?.status).toBe("loading");
 
     await flush();
@@ -70,7 +70,7 @@ describe("useEditorStore.openFile", () => {
     useEditorStore.getState().openFile(args);
     await flush();
     useEditorStore.getState().openFile(args);
-    expect(useEditorStore.getState().order).toEqual(["p1:/proj/a.ts"]);
+    expect(useEditorStore.getState().byProject.p1?.order).toEqual(["p1:/proj/a.ts"]);
   });
 
   test("binary files open read-only and blocked", async () => {
@@ -145,7 +145,30 @@ describe("useEditorStore.closeTab", () => {
     useEditorStore.getState().setActive("p1:/proj/b.ts");
     useEditorStore.getState().closeTab("p1:/proj/b.ts");
 
-    expect(useEditorStore.getState().order).toEqual(["p1:/proj/a.ts", "p1:/proj/c.ts"]);
-    expect(useEditorStore.getState().activeTabId).toBe("p1:/proj/c.ts");
+    expect(useEditorStore.getState().byProject.p1?.order).toEqual([
+      "p1:/proj/a.ts",
+      "p1:/proj/c.ts",
+    ]);
+    expect(useEditorStore.getState().byProject.p1?.activeTabId).toBe("p1:/proj/c.ts");
+  });
+});
+
+describe("useEditorStore per-workspace isolation", () => {
+  test("open files + active tab are tracked separately per project", async () => {
+    useSessionsStore.setState({
+      client: mockClient({
+        "fs.readFile": readFileOk(""),
+        "git.fileBaseline": () => ({ content: null }),
+      }) as never,
+    });
+    useEditorStore.getState().openFile({ projectId: "p1", absPath: "/p1/a.ts", relPath: "a.ts" });
+    useEditorStore.getState().openFile({ projectId: "p2", absPath: "/p2/b.ts", relPath: "b.ts" });
+    await flush();
+
+    const st = useEditorStore.getState();
+    expect(st.byProject.p1?.order).toEqual(["p1:/p1/a.ts"]);
+    expect(st.byProject.p2?.order).toEqual(["p2:/p2/b.ts"]);
+    expect(st.byProject.p1?.activeTabId).toBe("p1:/p1/a.ts");
+    expect(st.byProject.p2?.activeTabId).toBe("p2:/p2/b.ts");
   });
 });

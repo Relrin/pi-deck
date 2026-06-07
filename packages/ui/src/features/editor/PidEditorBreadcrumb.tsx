@@ -1,9 +1,11 @@
 import { Fragment } from "react";
+import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { selectActiveTab, useEditorStore } from "./useEditorStore.js";
 
 /** Styled breadcrumb of the active file's project-relative path (`src › components › file.tsx`). */
 export function PidEditorBreadcrumb() {
-  const relPath = useEditorStore((s) => selectActiveTab(s)?.relPath);
+  const projectId = useProjectsStore((s) => s.activeProjectId);
+  const relPath = useEditorStore((s) => selectActiveTab(projectId)(s)?.relPath);
   if (!relPath) return null;
   const segments = relPath.split("/").filter(Boolean);
   if (segments.length === 0) return null;

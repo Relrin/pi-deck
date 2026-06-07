@@ -46,6 +46,14 @@ export interface EditorTab {
   indentWidth: number;
 }
 
+/** Per-workspace open-file set. Tabs are isolated per project: switching projects swaps the
+ * whole tab strip + active file. */
+export interface ProjectTabs {
+  /** Tab ids in display order. */
+  order: string[];
+  activeTabId: string | null;
+}
+
 export interface OpenFileArgs {
   projectId: string;
   /** POSIX absolute path. */
@@ -55,10 +63,9 @@ export interface OpenFileArgs {
 }
 
 interface EditorStoreState {
-  /** Tab ids in display order. */
-  order: string[];
+  /** Per-project tab strips. The `tabs` map is global (ids are project-qualified). */
+  byProject: Record<string, ProjectTabs | undefined>;
   tabs: Record<string, EditorTab>;
-  activeTabId: string | null;
 
   /** Open a file (or focus its existing tab) and load its contents + baseline. */
   openFile: (args: OpenFileArgs) => void;
@@ -71,6 +78,7 @@ interface EditorStoreState {
 }
 
 const INITIAL_CURSOR: EditorCursor = { line: 1, col: 1, selLen: 0 };
+const EMPTY_ORDER: string[] = [];
 
 function tabId(projectId: string, absPath: string): string {
   return `${projectId}:${absPath}`;
@@ -119,14 +127,16 @@ function detectIndent(content: string): { useTabs: boolean; width: number } {
 }
 
 export const useEditorStore = create<EditorStoreState>((set, get) => ({
-  order: [],
+  byProject: {},
   tabs: {},
-  activeTabId: null,
 
   openFile: ({ projectId, absPath, relPath }) => {
     const id = tabId(projectId, absPath);
     if (get().tabs[id]) {
-      set({ activeTabId: id });
+      set((s) => {
+        const proj = s.byProject[projectId] ?? { order: [], activeTabId: null };
+        return { byProject: { ...s.byProject, [projectId]: { ...proj, activeTabId: id } } };
+      });
       return;
     }
     const fileName = basename(relPath) || basename(absPath);
@@ -147,30 +157,44 @@ export const useEditorStore = create<EditorStoreState>((set, get) => ({
       indentUseTabs: false,
       indentWidth: 2,
     };
-    set((s) => ({
-      tabs: { ...s.tabs, [id]: tab },
-      order: [...s.order, id],
-      activeTabId: id,
-    }));
+    set((s) => {
+      const proj = s.byProject[projectId] ?? { order: [], activeTabId: null };
+      return {
+        tabs: { ...s.tabs, [id]: tab },
+        byProject: {
+          ...s.byProject,
+          [projectId]: { order: [...proj.order, id], activeTabId: id },
+        },
+      };
+    });
     void loadTab(id, set, get);
   },
 
   setActive: (id) => {
-    if (get().tabs[id]) set({ activeTabId: id });
+    set((s) => {
+      const tab = s.tabs[id];
+      if (!tab) return s;
+      const proj = s.byProject[tab.projectId];
+      if (!proj || proj.activeTabId === id) return s;
+      return { byProject: { ...s.byProject, [tab.projectId]: { ...proj, activeTabId: id } } };
+    });
   },
 
   closeTab: (id) => {
     set((s) => {
-      if (!s.tabs[id]) return s;
-      const order = s.order.filter((x) => x !== id);
+      const tab = s.tabs[id];
+      if (!tab) return s;
+      const proj = s.byProject[tab.projectId];
+      if (!proj) return s;
+      const order = proj.order.filter((x) => x !== id);
       const { [id]: _removed, ...tabs } = s.tabs;
-      let activeTabId = s.activeTabId;
+      let activeTabId = proj.activeTabId;
       if (activeTabId === id) {
-        const wasAt = s.order.indexOf(id);
+        const wasAt = proj.order.indexOf(id);
         // Prefer the tab that slid into this slot, else the previous one, else nothing.
         activeTabId = order[wasAt] ?? order[wasAt - 1] ?? null;
       }
-      return { order, tabs, activeTabId };
+      return { tabs, byProject: { ...s.byProject, [tab.projectId]: { order, activeTabId } } };
     });
   },
 
@@ -279,7 +303,22 @@ function patchTab(
   set((s) => ({ tabs: { ...s.tabs, [id]: { ...tab, ...patch } } }));
 }
 
-/** Selector: the active tab, or undefined. */
-export function selectActiveTab(s: EditorStoreState): EditorTab | undefined {
-  return s.activeTabId ? s.tabs[s.activeTabId] : undefined;
+/** Tab ids (display order) for a project, or a stable empty array. */
+export function selectProjectOrder(projectId: string | undefined) {
+  return (s: EditorStoreState): string[] =>
+    (projectId ? s.byProject[projectId]?.order : undefined) ?? EMPTY_ORDER;
+}
+
+/** The active tab id for a project, or null. */
+export function selectActiveTabId(projectId: string | undefined) {
+  return (s: EditorStoreState): string | null =>
+    (projectId ? s.byProject[projectId]?.activeTabId : null) ?? null;
+}
+
+/** The active tab object for a project, or undefined. */
+export function selectActiveTab(projectId: string | undefined) {
+  return (s: EditorStoreState): EditorTab | undefined => {
+    const id = projectId ? s.byProject[projectId]?.activeTabId : undefined;
+    return id ? s.tabs[id] : undefined;
+  };
 }

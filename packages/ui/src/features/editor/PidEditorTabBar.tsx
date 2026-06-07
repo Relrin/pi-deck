@@ -3,7 +3,8 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown } from "../../components/icons/index.js";
 import { PidPierreFileIcon } from "../../components/icons/PidPierreFileIcon.js";
 import { cn } from "../../lib/cn.js";
-import { useEditorStore } from "./useEditorStore.js";
+import { useProjectsStore } from "../sessions/useProjectsStore.js";
+import { selectActiveTabId, selectProjectOrder, useEditorStore } from "./useEditorStore.js";
 
 /** Horizontal padding (`6px 8px`) + a little slack reserved inside the strip. */
 const STRIP_PADDING = 18;
@@ -25,8 +26,9 @@ function fileNameOf(id: string): string {
  * fit calculation never fights the rendered (clipped) row.
  */
 export function PidEditorTabBar() {
-  const order = useEditorStore((s) => s.order);
-  const activeTabId = useEditorStore((s) => s.activeTabId);
+  const projectId = useProjectsStore((s) => s.activeProjectId);
+  const order = useEditorStore(selectProjectOrder(projectId));
+  const activeTabId = useEditorStore(selectActiveTabId(projectId));
   const setActive = useEditorStore((s) => s.setActive);
 
   const stripRef = useRef<HTMLDivElement>(null);
@@ -145,7 +147,10 @@ function computeVisible(order: string[], active: string | null, count: number): 
 function PidEditorTab({ id }: { id: string }) {
   const fileName = useEditorStore((s) => s.tabs[id]?.fileName ?? "");
   const dirty = useEditorStore((s) => s.tabs[id]?.dirty ?? false);
-  const active = useEditorStore((s) => s.activeTabId === id);
+  const active = useEditorStore((s) => {
+    const pid = s.tabs[id]?.projectId;
+    return pid ? s.byProject[pid]?.activeTabId === id : false;
+  });
   const setActive = useEditorStore((s) => s.setActive);
   const closeTab = useEditorStore((s) => s.closeTab);
 

@@ -25,10 +25,16 @@ import {
 } from "@codemirror/view";
 import { useCallback, useEffect, useRef } from "react";
 import { useThemeStore } from "../../theme/useThemeStore.js";
+import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { baselineText, diffGutter, setDiffBaseline } from "./diffExtension.js";
 import { cmHighlight, cmTheme } from "./editorTheme.js";
 import { languageForFile } from "./languages.js";
-import { type EditorTab, useEditorStore } from "./useEditorStore.js";
+import {
+  type EditorTab,
+  selectActiveTabId,
+  selectProjectOrder,
+  useEditorStore,
+} from "./useEditorStore.js";
 
 // Compartments are shared keys; configuration is per-EditorState. We reconfigure the theme
 // compartment on light/dark flips and the language compartment is set once per tab at build time.
@@ -59,15 +65,14 @@ function useThemeIsDark(): boolean {
  * scroll. Content/dirty/cursor flow back into `useEditorStore` for the tab strip + status bar.
  */
 export function CodeMirrorEditor() {
-  const activeTabId = useEditorStore((s) => s.activeTabId);
-  const status = useEditorStore((s) => (s.activeTabId ? s.tabs[s.activeTabId]?.status : undefined));
-  const blocked = useEditorStore((s) =>
-    s.activeTabId ? s.tabs[s.activeTabId]?.blocked : undefined,
-  );
+  const projectId = useProjectsStore((s) => s.activeProjectId);
+  const activeTabId = useEditorStore(selectActiveTabId(projectId));
+  const status = useEditorStore((s) => (activeTabId ? s.tabs[activeTabId]?.status : undefined));
+  const blocked = useEditorStore((s) => (activeTabId ? s.tabs[activeTabId]?.blocked : undefined));
   const errorMessage = useEditorStore((s) =>
-    s.activeTabId ? s.tabs[s.activeTabId]?.errorMessage : undefined,
+    activeTabId ? s.tabs[activeTabId]?.errorMessage : undefined,
   );
-  const order = useEditorStore((s) => s.order);
+  const order = useEditorStore(selectProjectOrder(projectId));
   const dark = useThemeIsDark();
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -89,7 +94,12 @@ export function CodeMirrorEditor() {
         if (entry) entry.savedText = savedDoc;
         const current = viewRef.current;
         // Recompute dirty against the just-saved doc (it may differ if the user kept typing).
-        if (current && useEditorStore.getState().activeTabId === id) {
+        // Only the live view reflects this tab if it's still the active one in its project.
+        const tab = useEditorStore.getState().tabs[id];
+        const stillActive = tab
+          ? useEditorStore.getState().byProject[tab.projectId]?.activeTabId === id
+          : false;
+        if (current && stillActive) {
           useEditorStore.getState().setDirty(id, !current.state.doc.eq(savedDoc));
         } else {
           useEditorStore.getState().setDirty(id, false);
@@ -218,10 +228,11 @@ export function CodeMirrorEditor() {
   }, [dark]);
 
   // Drop cached states for tabs that were closed.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `order` is the prune trigger; membership is read from the live store.
   useEffect(() => {
-    const ids = new Set(order);
+    const tabs = useEditorStore.getState().tabs;
     for (const id of [...cacheRef.current.keys()]) {
-      if (!ids.has(id)) cacheRef.current.delete(id);
+      if (!tabs[id]) cacheRef.current.delete(id);
     }
   }, [order]);
 

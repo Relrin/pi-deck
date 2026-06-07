@@ -1,3 +1,4 @@
+import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { eolLabel } from "./eol.js";
 import { selectActiveTab, useEditorStore } from "./useEditorStore.js";
 
@@ -7,7 +8,8 @@ import { selectActiveTab, useEditorStore } from "./useEditorStore.js";
  * encoding, line ending, and language.
  */
 export function PidEditorStatus() {
-  const tab = useEditorStore(selectActiveTab);
+  const projectId = useProjectsStore((s) => s.activeProjectId);
+  const tab = useEditorStore(selectActiveTab(projectId));
   if (!tab) return null;
   const { cursor } = tab;
   const indentLabel = tab.indentUseTabs

@@ -1,3 +1,4 @@
+import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { CodeMirrorEditor } from "./CodeMirrorEditor.js";
 import { PidEditorBreadcrumb } from "./PidEditorBreadcrumb.js";
 import { PidEditorTabBar } from "./PidEditorTabBar.js";
@@ -5,11 +6,13 @@ import { useEditorStore } from "./useEditorStore.js";
 
 /**
  * The EDITOR screen: a tab strip + styled breadcrumb on top, a CodeMirror editor below. Rendered
- * by `PidCenterRouter` when `useNavStore.screen === "editor"`. Files are opened from the file tree
- * (single-click) via `useEditorStore.openFile`.
+ * by `PidCenterRouter` when `useNavStore.screen === "editor"`. Open files are isolated per workspace.
  */
 export function PidEditorView() {
-  const hasTabs = useEditorStore((s) => s.order.length > 0);
+  const projectId = useProjectsStore((s) => s.activeProjectId);
+  const hasTabs = useEditorStore((s) =>
+    projectId ? (s.byProject[projectId]?.order.length ?? 0) > 0 : false,
+  );
 
   if (!hasTabs) {
     return (
