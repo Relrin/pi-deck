@@ -4,6 +4,7 @@
 @import "../theme/components.css";
 @import "../theme/diff.css";
 @import "../theme/pierre-file-icons.css";
+@import "../features/editor/editor.css";
 @import "./reset.css";
 @import "tailwindcss";
 

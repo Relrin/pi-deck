@@ -1,4 +1,4 @@
-import { NotARepoError, runGit } from "./runner.js";
+import { GitCommandError, NotARepoError, runGit } from "./runner.js";
 
 export interface ProjectFileEntry {
   path: string;
@@ -29,4 +29,23 @@ export async function listProjectFiles(cwd: string, limit = 5000): Promise<Proje
     if (out.length >= limit) break;
   }
   return out;
+}
+
+/**
+ * Returns the contents of `relPath` as of HEAD — the code editor's diff baseline. `relPath` is
+ * repo-relative with forward slashes. Returns `null` when the path is untracked / absent at HEAD
+ * (so the editor renders the whole buffer as added) or when `cwd` isn't a git repo. Mirrors the
+ * private `readBaseline` in `diff.ts` but exposes just the blob the editor needs. A missing `git`
+ * binary still bubbles as `GitNotFoundError`.
+ */
+export async function fileAtHead(cwd: string, relPath: string): Promise<string | null> {
+  try {
+    const { stdout } = await runGit(cwd, ["show", `HEAD:${relPath}`]);
+    return stdout;
+  } catch (err) {
+    // GitCommandError covers "exists on disk but not in HEAD" (untracked) and "unknown revision"
+    // (no commits yet); NotARepoError covers non-repo project roots. Both mean "no baseline".
+    if (err instanceof GitCommandError || err instanceof NotARepoError) return null;
+    throw err;
+  }
 }

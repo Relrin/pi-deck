@@ -1,8 +1,11 @@
+import { PidEditorStatus } from "../features/editor/PidEditorStatus";
 import { getAppVersion } from "../lib/platform";
+import { useNavStore } from "../lib/useNavStore";
 import { PidScreenSwitcher } from "./PidScreenSwitcher";
 
 export function PidFooter() {
   const version = getAppVersion();
+  const screen = useNavStore((s) => s.screen);
 
   return (
     <footer className="pid-footer">
@@ -15,6 +18,7 @@ export function PidFooter() {
         <PidScreenSwitcher />
       </div>
       <div className="spacer" />
+      {screen === "editor" ? <PidEditorStatus /> : null}
     </footer>
   );
 }

@@ -3,8 +3,10 @@ import {
   createFile as fsCreateFile,
   createFolder as fsCreateFolder,
   move as fsMove,
+  readTextFile as fsReadTextFile,
   rename as fsRename,
   trashPaths as fsTrashPaths,
+  writeTextFile as fsWriteTextFile,
   IllegalNameError,
   PathEscapeError,
 } from "../fs/index.js";
@@ -14,6 +16,7 @@ import {
   createBranch,
   currentBranch,
   diffForPath,
+  fileAtHead,
   GitNotFoundError,
   getCommitUrl,
   getDiffHunks,
@@ -343,6 +346,17 @@ const handlers: { [C in CommandName]: CommandHandler } = {
       mapGitError(err);
     }
   },
+  "git.fileBaseline": async (ctx, payload) => {
+    const parsed = CommandSchemas["git.fileBaseline"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      const content = await fileAtHead(project.path, parsed.path);
+      return { content };
+    } catch (err) {
+      mapGitError(err);
+    }
+  },
   "git.commit": async (ctx, payload) => {
     const parsed = CommandSchemas["git.commit"].request.parse(payload);
     const project = await ctx.metadataStore.readProject(parsed.projectId);
@@ -666,6 +680,32 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
     try {
       await fsTrashPaths({ projectRoot: project.path, paths: parsed.paths });
+      return { ok: true as const };
+    } catch (err) {
+      mapFsError(err);
+    }
+  },
+  "fs.readFile": async (ctx, payload) => {
+    const parsed = CommandSchemas["fs.readFile"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      return await fsReadTextFile({ projectRoot: project.path, path: parsed.path });
+    } catch (err) {
+      mapFsError(err);
+    }
+  },
+  "fs.writeFile": async (ctx, payload) => {
+    const parsed = CommandSchemas["fs.writeFile"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      await fsWriteTextFile({
+        projectRoot: project.path,
+        path: parsed.path,
+        content: parsed.content,
+        eol: parsed.eol,
+      });
       return { ok: true as const };
     } catch (err) {
       mapFsError(err);

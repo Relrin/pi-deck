@@ -181,7 +181,7 @@ Append new entry points under the matching sub-heading. Keep entries to one line
 ### App shell & layout
 
 - **Shell components** — `packages/ui/src/layout/PidAppShell.tsx` (+ `PidTopBar`, `PidBody`, `PidLeftRail`, `PidRightPane`, `PidFooter`). Layout CSS in `packages/ui/src/theme/shell.css`. Resizable rails per *App shell rules*. The previous shell is preserved at `packages/ui/src/layout/AppShell.legacy.tsx` (+ siblings) and is unwired.
-- **Center router** — `packages/ui/src/layout/PidCenterRouter.tsx`. Reads `useNavStore.screen` and renders overview / session (chat or inline-intro) / editor / git-diff / git-history. Editor / diff / history are placeholders until their owning plans land.
+- **Center router** — `packages/ui/src/layout/PidCenterRouter.tsx`. Reads `useNavStore.screen` and renders overview / session (chat or inline-intro) / editor / git-diff. The `editor` screen renders the CodeMirror editor (see *Code editor*); `git-diff` the diff view.
 - **Nav store** — `packages/ui/src/lib/useNavStore.ts`. Single source of truth for the center screen + per-project expand state. Persists under `pi-deck:nav:v1`. Transient screens coerce back to `session` on rehydrate. Settings stays a modal — it is not a nav route.
 
 ### Chat
@@ -236,13 +236,21 @@ Append new entry points under the matching sub-heading. Keep entries to one line
 
 ### Git
 
-- **Operations** — `packages/core/src/git/`. All git operations go through `runner.ts` (no JS-git library). Repo detection via `detect.ts`, status via `status.ts`, recent commits via `log.ts`, file watching via `watcher.ts`, init via `init.ts`. Pure read-only display in v1 — no commit/push/pull/stage.
+- **Operations** — `packages/core/src/git/`. All git operations go through `runner.ts` (no JS-git library). Repo detection via `detect.ts`, status via `status.ts`, recent commits via `log.ts`, file watching via `watcher.ts`, init via `init.ts`. `files.ts` `fileAtHead` (command `git.fileBaseline`) returns a path's HEAD contents — the code editor's diff-gutter baseline; `null` for untracked / non-repo.
 - **Sidebar UI** — `packages/ui/src/features/git/`. Subscribes to `git.status.changed` / `git.turnTouches.changed`. `GitSidebar` composes `BranchHeader` (Radix dropdown that runs checkout), `ChangesList` (flat list + diffbar), `RecentCommitsList`, and the `EmptyState` Init button. Per-project state extends `useGitStore` with `statusByProject`, `commitsByProject`, `touchesBySession`.
 
 ### Filesystem
 
-- **Walker & watcher** — `packages/core/src/fs/`. Walker (`walker.ts`) + watcher (`watcher.ts`) feed the files-tab tree. The fs watcher is **retained on purpose** — it keeps the tree live while the agent mutates files mid-turn (Pierre doesn't poll disk; the renderer pushes watcher deltas into the model). Respects `.gitignore` + `.git/info/exclude`. CRUD ops in `ops.ts` (`createFile` / `createFolder` / `rename` / `move` / `trashPaths`); deletes go through `shell.trashItem` (injected from the desktop bridge via `setTrashImpl`). All paths validated against project root to block traversal.
+- **Walker & watcher** — `packages/core/src/fs/`. Walker (`walker.ts`) + watcher (`watcher.ts`) feed the files-tab tree. The fs watcher is **retained on purpose** — it keeps the tree live while the agent mutates files mid-turn (Pierre doesn't poll disk; the renderer pushes watcher deltas into the model). Respects `.gitignore` + `.git/info/exclude`. CRUD ops in `ops.ts` (`createFile` / `createFolder` / `rename` / `move` / `trashPaths`); deletes go through `shell.trashItem` (injected from the desktop bridge via `setTrashImpl`). All paths validated against project root to block traversal. The code editor reads/writes file *contents* via `ops.ts` `readTextFile` / `writeTextFile` (commands `fs.readFile` / `fs.writeFile`): `readTextFile` detects EOL, strips a UTF-8 BOM, LF-normalises, and flags binary (NUL sniff) / oversized files; `writeTextFile` re-applies the stored EOL.
 - **File tree UI** — `packages/ui/src/features/files/`. Rendered by **`@pierre/trees`** (`PidFileTree.tsx` builds a `useFileTree` model; the library owns rendering, virtualization, keyboard nav, search, file-type icons, inline rename, and in-tree drag-to-move). pi-deck is the data feed + glue: `useFileTreeStore` loads the host walk and applies watcher deltas, `pierreTreeAdapters.ts` flattens `FsNode[]` → path list / maps git status to `setGitStatus` / bridges the theme via `themeToTreeStyles`, and mutations route to the host (`fs.rename` / `fs.move` / `fs.createFile` / `fs.createFolder` / `fs.delete`). The row context menu (`PidTreeContextMenu`) and filter input (`PidTreeSearch`, backed by Pierre search — not `fuse.js`) are pi-deck-styled; the "Attach to chat" action feeds the composer attachment pipeline (`application/x-pideck-paths` MIME via `useComposerPathDrop`, shared by `MessageInput.tsx` and `PidComposerScreen.tsx`).
+
+### Code editor
+
+- **Editor view** — `packages/ui/src/features/editor/`. A real, editable **CodeMirror 6** editor on nav screen `editor`. `PidEditorView` composes the tab strip (`PidEditorTabBar`), styled breadcrumb (`PidEditorBreadcrumb`), and the `CodeMirrorEditor` host. Files open from a single-click in the file tree (`PidFileTree`'s `onSelectionChange` → `useEditorStore.openFile` + `setScreen("editor")`).
+- **State** — `useEditorStore.ts`: open tabs + active id + per-tab content/baseline/eol/dirty/cursor/readOnly/indent. Loads via `fs.readFile` + `git.fileBaseline`; saves via `fs.writeFile` (Ctrl/Cmd+S). The store holds tab metadata only — CodeMirror `EditorState`s are cached per tab inside `CodeMirrorEditor` so switching tabs preserves undo history, selection, and scroll.
+- **Theme + highlighting** — `editorTheme.ts` maps CodeMirror chrome + a `HighlightStyle` (lezer tags) onto theme tokens, so syntax colours track the active pi-deck theme (the `dark` flag is reconfigured via a compartment on light/dark flips). Languages by extension in `languages.ts` (also the tab type-badge).
+- **Diff gutter** — `diffExtension.ts` paints live add/mod/del line tints against the git HEAD baseline using `@codemirror/merge`'s `Chunk` diff primitive (no inline-original merge UI). Recomputes as you type; `null` baseline (untracked / no repo) shows no tints.
+- **Status bar** — `PidEditorStatus.tsx`, rendered in `PidFooter` only on the `editor` screen: cursor Ln/Col + selection, indentation, UTF-8, LF/CRLF, language.
 
 ### UI primitives
 

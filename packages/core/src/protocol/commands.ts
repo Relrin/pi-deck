@@ -241,6 +241,20 @@ export const GitDiffHunksResponse = z.object({
   hunksByPath: z.record(z.string(), z.array(GitHunkSchema)),
 });
 
+/**
+ * Read a file's contents as of HEAD — the editor's diff baseline for live add/mod/del gutter
+ * tints. `path` is repo-relative (forward slashes). `content` is `null` when the file is
+ * untracked / absent at HEAD (the editor then renders the whole buffer as added) or when the
+ * project isn't a git repo.
+ */
+export const GitFileBaselineRequest = z.object({
+  projectId: z.string().uuid(),
+  path: z.string().min(1),
+});
+export const GitFileBaselineResponse = z.object({
+  content: z.string().nullable(),
+});
+
 export const GitCommitRequest = z.object({
   projectId: z.string().uuid(),
   message: z.string().min(1),
@@ -568,6 +582,37 @@ export const FsDeleteRequest = z.object({
 export const FsDeleteResponse = z.object({ ok: z.literal(true) });
 
 /**
+ * Read a project file for the code editor. The host guards binary blobs (NUL sniff) and very
+ * large files: in those cases `content` is empty and `binary` / `tooLarge` is set so the editor
+ * opens read-only with a notice. `content` is LF-normalised; `eol` reports the on-disk ending so
+ * `fs.writeFile` can round-trip it.
+ */
+export const FsReadFileRequest = z.object({
+  projectId: z.string().uuid(),
+  /** Absolute path of the file to read; must resolve inside the project root. */
+  path: z.string().min(1),
+});
+export const FsReadFileResponse = z.object({
+  content: z.string(),
+  eol: z.enum(["lf", "crlf"]),
+  binary: z.boolean(),
+  tooLarge: z.boolean(),
+  sizeBytes: z.number().int().nonnegative(),
+});
+
+/**
+ * Persist editor content to a project file. `content` is LF-separated; the host re-applies
+ * `eol` on write. `path` must resolve inside the project root.
+ */
+export const FsWriteFileRequest = z.object({
+  projectId: z.string().uuid(),
+  path: z.string().min(1),
+  content: z.string(),
+  eol: z.enum(["lf", "crlf"]),
+});
+export const FsWriteFileResponse = z.object({ ok: z.literal(true) });
+
+/**
  * Coarse family of a detected shell, used by the renderer to pick an icon and (for WSL) to tell
  * apart entries that share the same `path`. The schema stores it as a free-form `string` so new
  * kinds never break response validation; the renderer treats unknown values as "other".
@@ -722,6 +767,10 @@ export const CommandSchemas = {
     request: GitDiffHunksRequest,
     response: GitDiffHunksResponse,
   },
+  "git.fileBaseline": {
+    request: GitFileBaselineRequest,
+    response: GitFileBaselineResponse,
+  },
   "git.commit": { request: GitCommitRequest, response: GitCommitResponse },
   "git.push": { request: GitPushRequest, response: GitPushResponse },
   "git.pull": { request: GitPullRequest, response: GitPullResponse },
@@ -781,6 +830,8 @@ export const CommandSchemas = {
   "fs.rename": { request: FsRenameRequest, response: FsRenameResponse },
   "fs.move": { request: FsMoveRequest, response: FsMoveResponse },
   "fs.delete": { request: FsDeleteRequest, response: FsDeleteResponse },
+  "fs.readFile": { request: FsReadFileRequest, response: FsReadFileResponse },
+  "fs.writeFile": { request: FsWriteFileRequest, response: FsWriteFileResponse },
   "terminal.open": { request: TerminalOpenRequest, response: TerminalOpenResponse },
   "terminal.write": { request: TerminalWriteRequest, response: TerminalWriteResponse },
   "terminal.resize": { request: TerminalResizeRequest, response: TerminalResizeResponse },

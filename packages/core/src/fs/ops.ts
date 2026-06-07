@@ -1,4 +1,4 @@
-import { rename as fsRename, mkdir, stat, writeFile } from "node:fs/promises";
+import { rename as fsRename, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { FsExistsError, IllegalNameError, PathEscapeError } from "./types.js";
 
@@ -169,6 +169,96 @@ export async function trashPaths(args: DeleteArgs): Promise<void> {
     if (!(await exists(abs))) continue;
     await trashImpl(abs);
   }
+}
+
+/** Dominant on-disk line ending. The editor edits an LF body and re-applies this on save. */
+export type Eol = "lf" | "crlf";
+
+/** Files larger than this are opened read-only with empty content (the editor shows a notice). */
+const MAX_EDITABLE_BYTES = 2 * 1024 * 1024;
+
+export interface ReadTextFileArgs {
+  projectRoot: string;
+  /** Absolute path of the file to read; must resolve inside the project root. */
+  path: string;
+}
+
+export interface ReadTextFileResult {
+  /** UTF-8 text normalised to LF. Empty string when `binary` or `tooLarge`. */
+  content: string;
+  /** Dominant line ending detected on disk. */
+  eol: Eol;
+  /** A NUL byte was found in the sniffed prefix — treat as non-editable. */
+  binary: boolean;
+  /** File exceeded `MAX_EDITABLE_BYTES`. */
+  tooLarge: boolean;
+  sizeBytes: number;
+}
+
+export interface WriteTextFileArgs {
+  projectRoot: string;
+  path: string;
+  /** Editor buffer content (LF-separated). */
+  content: string;
+  /** Line ending to materialise on disk. */
+  eol: Eol;
+}
+
+/**
+ * Read a project file for the editor. Guards against binary blobs (NUL sniff) and very large
+ * files (size cap) by returning a flag + empty content rather than streaming megabytes into the
+ * renderer. The on-disk EOL is detected and reported so `writeTextFile` can round-trip it; the
+ * returned `content` is always LF-normalised (CodeMirror edits LF internally).
+ */
+export async function readTextFile(args: ReadTextFileArgs): Promise<ReadTextFileResult> {
+  const root = resolve(args.projectRoot);
+  const target = resolve(args.path);
+  assertInsideRoot(target, root);
+  const info = await stat(target);
+  const sizeBytes = info.size;
+  if (sizeBytes > MAX_EDITABLE_BYTES) {
+    return { content: "", eol: "lf", binary: false, tooLarge: true, sizeBytes };
+  }
+  const buf = await readFile(target);
+  if (looksBinary(buf)) {
+    return { content: "", eol: "lf", binary: true, tooLarge: false, sizeBytes };
+  }
+  let text = buf.toString("utf8");
+  // Strip a leading UTF-8 BOM so it doesn't surface as a stray glyph in the gutter.
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+  const eol = detectEol(text);
+  const content = text.replace(/\r\n?/g, "\n");
+  return { content, eol, binary: false, tooLarge: false, sizeBytes };
+}
+
+/** Persist editor content, re-applying `eol`. Content arrives LF-separated from the renderer. */
+export async function writeTextFile(args: WriteTextFileArgs): Promise<void> {
+  const root = resolve(args.projectRoot);
+  const target = resolve(args.path);
+  assertInsideRoot(target, root);
+  const lf = args.content.replace(/\r\n?/g, "\n");
+  const body = args.eol === "crlf" ? lf.replace(/\n/g, "\r\n") : lf;
+  await writeFile(target, body, "utf8");
+}
+
+function detectEol(text: string): Eol {
+  let crlf = 0;
+  let lf = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text.charCodeAt(i) !== 10) continue; // \n
+    if (i > 0 && text.charCodeAt(i - 1) === 13)
+      crlf++; // \r\n
+    else lf++;
+  }
+  return crlf > lf ? "crlf" : "lf";
+}
+
+function looksBinary(buf: Buffer): boolean {
+  const n = Math.min(buf.length, 8000);
+  for (let i = 0; i < n; i++) {
+    if (buf[i] === 0) return true;
+  }
+  return false;
 }
 
 function validateName(name: string): void {

@@ -10,8 +10,10 @@ import { themeToTreeStyles } from "@pierre/trees";
 import { FileTree, useFileTree } from "@pierre/trees/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { humanizeError } from "../../lib/format/humanize-error.js";
+import { useNavStore } from "../../lib/useNavStore.js";
 import { useThemeStore } from "../../theme/useThemeStore.js";
 import { useNotificationStore } from "../_status/useNotificationStore.js";
+import { useEditorStore } from "../editor/useEditorStore.js";
 import { useGitStore } from "../git/useGitStore.js";
 import { useIntroComposerStore } from "../intro/useIntroComposerStore.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
@@ -156,6 +158,24 @@ export function PidFileTree() {
     useNotificationStore.getState().error(error);
   }, []);
 
+  // Open a file in the editor on selection. Single file only — folder clicks (expand/collapse)
+  // and multi-selects are ignored so navigating the tree doesn't yank the center to the editor.
+  const handleSelectionChange = useCallback((selected: readonly string[]) => {
+    if (selected.length !== 1) return;
+    const path = selected[0];
+    if (!path || path.endsWith("/")) return;
+    const pid = projectIdRef.current;
+    const r = rootRef.current;
+    if (!pid || !r) return;
+    if (modelRef.current?.getItem(path)?.isDirectory()) return;
+    useEditorStore.getState().openFile({
+      projectId: pid,
+      absPath: treeRelToAbs(r, path),
+      relPath: stripTrailingSlash(path),
+    });
+    useNavStore.getState().setScreen("editor");
+  }, []);
+
   // Build the model once for the component's lifetime; updates flow through model methods.
   const { model } = useFileTree({
     paths: [],
@@ -169,6 +189,7 @@ export function PidFileTree() {
     fileTreeSearchMode: "hide-non-matches",
     renaming: { onRename: handleRename, onError: handleRenameError },
     dragAndDrop: { onDropComplete: handleDrop, onDropError: handleDropError },
+    onSelectionChange: handleSelectionChange,
   });
   modelRef.current = model;
 

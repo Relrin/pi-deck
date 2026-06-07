@@ -1,0 +1,199 @@
+/* Code editor (EDITOR screen). Colours come from theme tokens only - see packages/ui/src/theme/tokens.css. */
+
+.pid-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  background: var(--bg-0);
+}
+
+/* ---------- Tab strip ---------- */
+.pid-editor-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--bg-inset);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  flex: 0 0 auto;
+}
+.pid-editor-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 12px;
+  border-radius: var(--radius);
+  background: var(--bg-0);
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-2);
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+.pid-editor-tab:hover {
+  background: var(--bg-2);
+  color: var(--ink-1);
+}
+.pid-editor-tab.active {
+  background: var(--bg-3);
+  color: var(--ink-0);
+  font-weight: 500;
+}
+.pid-editor-tab .name {
+  font-variant-ligatures: none;
+}
+.pid-ft-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 2px 3px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  opacity: 0.85;
+}
+.pid-editor-tab .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mod);
+}
+.pid-editor-tab .close {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: var(--ink-3);
+  font-size: 10px;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    opacity 0.12s ease;
+}
+.pid-editor-tab:hover .close,
+.pid-editor-tab.active .close {
+  opacity: 1;
+}
+.pid-editor-tab .close:hover {
+  background: var(--bg-1);
+  color: var(--ink-0);
+}
+
+/* ---------- Breadcrumb / file-context bar ---------- */
+.pid-editor-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 18px;
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--ink-2);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-1);
+  flex: 0 0 auto;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.pid-editor-crumbs .crumb {
+  color: var(--ink-2);
+}
+.pid-editor-crumbs .crumb.file {
+  color: var(--ink-0);
+}
+.pid-editor-crumbs .sep {
+  color: var(--ink-3);
+}
+
+/* ---------- Editor body ---------- */
+.pid-editor-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+}
+.pid-editor-cm-wrap {
+  position: absolute;
+  inset: 0;
+}
+.pid-editor-cm {
+  position: absolute;
+  inset: 0;
+}
+.pid-editor-cm .cm-editor {
+  height: 100%;
+}
+.pid-editor-cm .cm-editor.cm-focused {
+  outline: none;
+}
+.pid-editor-cm .cm-scroller {
+  overflow: auto;
+}
+
+/* ---------- Live diff (dirty) gutter tints vs HEAD ---------- */
+.pid-editor-cm .cm-line.pid-cm-diff-add {
+  background: var(--add-soft);
+  box-shadow: inset 2px 0 0 0 var(--add);
+}
+.pid-editor-cm .cm-line.pid-cm-diff-mod {
+  background: var(--mod-soft);
+  box-shadow: inset 2px 0 0 0 var(--mod);
+}
+.pid-editor-cm .cm-line.pid-cm-diff-del {
+  box-shadow: inset 2px 0 0 0 var(--del);
+}
+
+/* ---------- Overlays + empty state ---------- */
+.pid-editor-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-0);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--t-13);
+  text-align: center;
+  padding: 24px;
+}
+.pid-editor-overlay.error {
+  color: var(--del);
+}
+.pid-editor-empty {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--ink-3);
+}
+.pid-editor-empty-title {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-13);
+  color: var(--ink-2);
+}
+.pid-editor-empty-hint {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--t-12);
+  color: var(--ink-3);
+}

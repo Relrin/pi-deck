@@ -6,14 +6,13 @@ import {
   useMessagesStore,
 } from "../features/chat/useMessagesStore";
 import { DiffTab } from "../features/diff/DiffTab";
+import { PidEditorView } from "../features/editor/PidEditorView";
 import { PidComposerScreen } from "../features/intro/PidComposerScreen";
 import { PidIntroScreen } from "../features/intro/PidIntroScreen";
 import { useSessionsStore } from "../features/sessions/useSessionsStore";
 import { useNavStore } from "../lib/useNavStore";
 
-const PLACEHOLDER_LABELS: Record<string, string> = {
-  editor: "Editor — coming in plan 013",
-};
+const PLACEHOLDER_LABELS: Record<string, string> = {};
 
 export function PidCenterRouter() {
   const screen = useNavStore((s) => s.screen);
@@ -40,6 +39,10 @@ export function PidCenterRouter() {
 
   if (screen === "git-diff") {
     return <DiffTab />;
+  }
+
+  if (screen === "editor") {
+    return <PidEditorView />;
   }
 
   const label = PLACEHOLDER_LABELS[screen] ?? screen;
