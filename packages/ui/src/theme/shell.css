@@ -830,10 +830,6 @@
   background: var(--bg-0);
   border-color: var(--line);
 }
-.pid-terminal-tab.exited .pid-terminal-tab-label {
-  color: var(--ink-3);
-  text-decoration: line-through;
-}
 .pid-terminal-tab-icon {
   display: inline-flex;
   align-items: center;
@@ -843,6 +839,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+}
+.pid-terminal-tab.exited .pid-terminal-tab-label {
+  color: var(--ink-3);
+  text-decoration: line-through;
 }
 .pid-terminal-tab-rename {
   flex: 1 1 auto;
