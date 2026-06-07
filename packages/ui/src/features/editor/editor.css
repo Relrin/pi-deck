@@ -210,6 +210,10 @@
 .pid-editor-cm .cm-scroller {
   overflow: auto;
 }
+.pid-editor-cm .cm-lineNumbers .cm-gutterElement {
+  padding-left: 10px;
+  padding-right: 12px;
+}
 
 .pid-editor-cm .cm-scroller,
 .pid-editor-crumbs,
