@@ -16,8 +16,19 @@
   padding: 6px 8px;
   background: var(--bg-inset);
   border-bottom: 1px solid var(--line);
-  overflow-x: auto;
+  overflow: hidden;
+  position: relative;
   flex: 0 0 auto;
+}
+.pid-editor-tabs-ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  gap: 4px;
+  width: max-content;
+  visibility: hidden;
+  pointer-events: none;
 }
 .pid-editor-tab {
   display: flex;
@@ -32,6 +43,7 @@
   cursor: pointer;
   white-space: nowrap;
   position: relative;
+  flex: 0 0 auto;
   transition:
     background 0.12s ease,
     color 0.12s ease;
@@ -85,6 +97,69 @@
 .pid-editor-tab .close:hover {
   background: var(--bg-1);
   color: var(--ink-0);
+}
+
+.pid-editor-tab-overflow {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: 0 0 auto;
+  margin-left: 2px;
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-0);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+.pid-editor-tab-overflow:hover {
+  background: var(--bg-2);
+  color: var(--ink-0);
+  border-color: var(--line-strong);
+}
+.pid-editor-overflow-menu {
+  z-index: 50;
+  min-width: 150px;
+  max-width: 300px;
+  max-height: 60vh;
+  overflow: hidden auto;
+  padding: 3px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+  outline: none;
+}
+.pid-editor-overflow-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  line-height: 1.2;
+  color: var(--ink-1);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+.pid-editor-overflow-row[data-highlighted] {
+  background: var(--accent-soft);
+  color: var(--ink-0);
+}
+.pid-editor-overflow-row .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ---------- Breadcrumb / file-context bar ---------- */
