@@ -158,15 +158,17 @@ export function PidFileTree() {
     useNotificationStore.getState().error(error);
   }, []);
 
-  // Open a file in the editor on selection. Single file only — folder clicks (expand/collapse)
-  // and multi-selects are ignored so navigating the tree doesn't yank the center to the editor.
-  const handleSelectionChange = useCallback((selected: readonly string[]) => {
-    if (selected.length !== 1) return;
-    const path = selected[0];
-    if (!path || path.endsWith("/")) return;
+  // Open a file in the editor on double-click
+  const handleDoubleClick = useCallback(() => {
     const pid = projectIdRef.current;
     const r = rootRef.current;
     if (!pid || !r) return;
+
+    const selected = modelRef.current?.getSelectedPaths() ?? [];
+    if (selected.length !== 1) return;
+
+    const path = selected[0];
+    if (!path || path.endsWith("/")) return;
     if (modelRef.current?.getItem(path)?.isDirectory()) return;
     useEditorStore.getState().openFile({
       projectId: pid,
@@ -189,7 +191,6 @@ export function PidFileTree() {
     fileTreeSearchMode: "hide-non-matches",
     renaming: { onRename: handleRename, onError: handleRenameError },
     dragAndDrop: { onDropComplete: handleDrop, onDropError: handleDropError },
-    onSelectionChange: handleSelectionChange,
   });
   modelRef.current = model;
 
@@ -339,6 +340,7 @@ export function PidFileTree() {
           className="pid-tree-pierre"
           style={themeStyle}
           renderContextMenu={renderContextMenu}
+          onDoubleClick={handleDoubleClick}
           aria-label="Project files"
         />
       </div>
