@@ -211,6 +211,38 @@
   overflow: auto;
 }
 
+.pid-editor-cm .cm-scroller,
+.pid-editor-crumbs,
+.pid-editor-overflow-menu {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
+}
+.pid-editor-cm .cm-scroller::-webkit-scrollbar,
+.pid-editor-crumbs::-webkit-scrollbar,
+.pid-editor-overflow-menu::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.pid-editor-cm .cm-scroller::-webkit-scrollbar-track,
+.pid-editor-crumbs::-webkit-scrollbar-track,
+.pid-editor-overflow-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pid-editor-cm .cm-scroller::-webkit-scrollbar-thumb,
+.pid-editor-crumbs::-webkit-scrollbar-thumb,
+.pid-editor-overflow-menu::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 3px;
+}
+.pid-editor-cm .cm-scroller::-webkit-scrollbar-thumb:hover,
+.pid-editor-crumbs::-webkit-scrollbar-thumb:hover,
+.pid-editor-overflow-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
+}
+.pid-editor-cm .cm-scroller::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* ---------- Live diff (dirty) gutter tints vs HEAD ---------- */
 .pid-editor-cm .cm-line.pid-cm-diff-add {
   background: var(--add-soft);
