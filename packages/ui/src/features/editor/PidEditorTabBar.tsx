@@ -1,5 +1,5 @@
+import { PidPierreFileIcon } from "../../components/icons/PidPierreFileIcon.js";
 import { cn } from "../../lib/cn.js";
-import { badgeForFile } from "./languages.js";
 import { useEditorStore } from "./useEditorStore.js";
 
 /** The editor's open-file tab strip. Mirrors the mockup `.pid-editor-tabs`. */
@@ -22,7 +22,6 @@ function PidEditorTab({ id }: { id: string }) {
   const active = useEditorStore((s) => s.activeTabId === id);
   const setActive = useEditorStore((s) => s.setActive);
   const closeTab = useEditorStore((s) => s.closeTab);
-  const badge = badgeForFile(fileName);
 
   return (
     <div
@@ -38,9 +37,7 @@ function PidEditorTab({ id }: { id: string }) {
         }
       }}
     >
-      <span className="pid-ft-icon" style={{ color: badge.color, borderColor: badge.color }}>
-        {badge.text}
-      </span>
+      <PidPierreFileIcon path={fileName} size={14} className="pid-editor-tab-icon" />
       <span className="name">{fileName}</span>
       {dirty ? <span className="dot" role="img" aria-label="Unsaved changes" /> : null}
       <button

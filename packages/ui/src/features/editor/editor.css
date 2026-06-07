@@ -48,19 +48,9 @@
 .pid-editor-tab .name {
   font-variant-ligatures: none;
 }
-.pid-ft-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: 8px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  line-height: 1;
-  padding: 2px 3px;
-  border: 1px solid currentColor;
-  border-radius: 3px;
-  opacity: 0.85;
+.pid-editor-tab-icon {
+  flex: 0 0 auto;
+  display: block;
 }
 .pid-editor-tab .dot {
   width: 6px;
