@@ -49,31 +49,55 @@ export function gitStatusToPierre(status: GitChangeStatus): PierreGitStatus {
 }
 
 /**
- * Map git's repo-relative change list onto the tree's project-relative path space.
- *
- * Git reports paths relative to the repo root; the tree's identities are relative to the
- * opened project root. When they differ (project opened in a repo subdirectory, or — rarely —
- * above the repo) we round-trip through an absolute path and re-relativise, dropping anything
- * that falls outside the opened subtree.
+ * Rebase a git change list into the tree's project-relative path space, pairing each mapped path
+ * with its source change. Changes that fall outside the opened subtree are dropped. Shared by the
+ * decoration mapper and the context-menu lookup so both agree on the path translation.
  */
-export function gitChangesToEntries(
+function rebaseChanges(
   changes: readonly GitChange[],
   gitRoot: string | undefined,
   treeRoot: string | undefined,
-): GitStatusEntry[] {
+): Array<{ rel: string; change: GitChange }> {
   const git = normalizeRoot(gitRoot);
   const tree = normalizeRoot(treeRoot);
   // Only round-trip through an absolute path when the two roots genuinely differ; otherwise
   // (equal roots, or either unknown) git's paths are already in the tree's relative space.
   const rebase = Boolean(git) && Boolean(tree) && git !== tree;
-  const entries: GitStatusEntry[] = [];
+  const out: Array<{ rel: string; change: GitChange }> = [];
   for (const change of changes) {
     const changePosix = change.path.replace(/\\/g, "/");
     const rel = rebase ? posixRelative(tree, `${git}/${changePosix}`) : changePosix;
     if (!rel) continue; // outside the opened subtree, or the root itself
-    entries.push({ path: rel, status: gitStatusToPierre(change.status) });
+    out.push({ rel, change });
   }
-  return entries;
+  return out;
+}
+
+export function gitChangesToEntries(
+  changes: readonly GitChange[],
+  gitRoot: string | undefined,
+  treeRoot: string | undefined,
+): GitStatusEntry[] {
+  return rebaseChanges(changes, gitRoot, treeRoot).map(({ rel, change }) => ({
+    path: rel,
+    status: gitStatusToPierre(change.status),
+  }));
+}
+
+/**
+ * Map of project-relative tree path → the git change at that path. Lets the file-tree context
+ * menu answer "is this row changed, and what's its status?" for a clicked item.
+ */
+export function gitChangeByTreePath(
+  changes: readonly GitChange[],
+  gitRoot: string | undefined,
+  treeRoot: string | undefined,
+): Map<string, GitChange> {
+  const map = new Map<string, GitChange>();
+  for (const { rel, change } of rebaseChanges(changes, gitRoot, treeRoot)) {
+    map.set(rel, change);
+  }
+  return map;
 }
 
 function normalizeRoot(root: string | undefined): string {

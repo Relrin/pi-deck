@@ -2,9 +2,11 @@ import type { GitChange, GitHunk } from "@pi-deck/core/git/types.js";
 import { type MouseEvent, useCallback, useMemo, useState } from "react";
 import { Folder } from "../../components/icons/index.js";
 import { useNavStore } from "../../lib/useNavStore.js";
+import { useEditorStore } from "../editor/useEditorStore.js";
 import { ChangeRow } from "./ChangeRow.js";
 import { ChangesToolbar } from "./ChangesToolbar.js";
 import { GroupModeMenu } from "./GroupModeMenu.js";
+import { useGitStore } from "./useGitStore.js";
 import { type GroupMode, useGroupModeStore } from "./useGroupModeStore.js";
 import { useStagingStore } from "./useStagingStore.js";
 
@@ -78,6 +80,34 @@ export function ChangesList({ projectId, changes, totals, touched, hunksByPath }
     [openDiff, projectId],
   );
 
+  // Right-click → "Show file in editor". `change.path` is repo-relative; join it onto the repo
+  // root for the absolute path the editor loads, and pass it through as the project-relative path
+  const gitRoot = useGitStore((s) => s.statusByProject[projectId]?.root);
+  const handleShowInEditor = useCallback(
+    (path: string) => {
+      if (!gitRoot) return;
+      const base = gitRoot.replace(/\\/g, "/").replace(/\/+$/, "");
+      const rel = path.replace(/\\/g, "/");
+      useEditorStore.getState().openFile({ projectId, absPath: `${base}/${rel}`, relPath: rel });
+      useNavStore.getState().setScreen("editor");
+    },
+    [gitRoot, projectId],
+  );
+
+  // Right-click → "Rollback": discard the file's edits. Untracked files are `git clean`-ed,
+  // tracked ones `git checkout`-ed back to HEAD — the store classifies via the same split the
+  // changes toolbar uses.
+  const rollback = useGitStore((s) => s.rollback);
+  const handleRollback = useCallback(
+    (change: GitChange) => {
+      const sets = change.untracked
+        ? { tracked: [], untracked: [change.path] }
+        : { tracked: [change.path], untracked: [] };
+      void rollback(projectId, sets);
+    },
+    [rollback, projectId],
+  );
+
   const rowProps = {
     touched,
     syncedSelected,
@@ -85,6 +115,8 @@ export function ChangesList({ projectId, changes, totals, touched, hunksByPath }
     toggle,
     setActivePath,
     openDiff: handleOpenDiff,
+    showInEditor: handleShowInEditor,
+    rollback: handleRollback,
   } satisfies SharedRowProps;
 
   return (
@@ -139,6 +171,10 @@ interface SharedRowProps {
   setActivePath: (path: string) => void;
   /** Double-click handler: route to the diff screen for `path`. */
   openDiff: (path: string) => void;
+  /** Context-menu handler: open `path` in the editor screen. */
+  showInEditor: (path: string) => void;
+  /** Context-menu handler: discard the change (restore to HEAD / remove if untracked). */
+  rollback: (change: GitChange) => void;
 }
 
 interface GroupedRowsProps {
@@ -184,6 +220,8 @@ function FileRow({
       onToggle={() => shared.toggle(change.path)}
       onSelect={() => shared.setActivePath(change.path)}
       onOpenDiff={() => shared.openDiff(change.path)}
+      onShowInEditor={() => shared.showInEditor(change.path)}
+      onRollback={() => shared.rollback(change)}
       hidePathDir={hidePathDir}
     />
   );

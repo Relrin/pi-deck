@@ -25,6 +25,7 @@ import { PidTreeSearch } from "./PidTreeSearch.js";
 import {
   buildTreeThemeInput,
   flattenFsNodes,
+  gitChangeByTreePath,
   gitChangesToEntries,
   readThemeTokens,
   stripTrailingSlash,
@@ -250,19 +251,40 @@ export function PidFileTree() {
     [model, targetsForItem],
   );
 
+  // Lookup of changed files (project-relative path → git change) for the row context menu.
+  const changeByPath = useMemo(
+    () => gitChangeByTreePath(gitChanges ?? [], gitRoot, root),
+    [gitChanges, gitRoot, root],
+  );
+
   const renderContextMenu = useCallback(
-    (item: ContextMenuItem, ctx: ContextMenuOpenContext) => (
-      <PidTreeContextMenu
-        item={item}
-        ctx={ctx}
-        onNewFile={(it) => beginCreate(it, "file")}
-        onNewFolder={(it) => beginCreate(it, "folder")}
-        onAttach={attachToChat}
-        onRename={(it) => model.startRenaming(it.path)}
-        onDelete={requestDeleteFromItem}
-      />
-    ),
-    [model, beginCreate, attachToChat, requestDeleteFromItem],
+    (item: ContextMenuItem, ctx: ContextMenuOpenContext) => {
+      // "Show diff" only for changed, tracked files — untracked files have no HEAD to diff against,
+      // and directories aren't a single file. `path` is project-relative, which is what diff.get
+      // resolves against the project root.
+      const rel = stripTrailingSlash(item.path);
+      const change = item.kind === "directory" ? undefined : changeByPath.get(rel);
+      const onShowDiff =
+        change && change.status !== "?"
+          ? () => {
+              const pid = projectIdRef.current;
+              if (pid) useNavStore.getState().openDiff({ projectId: pid, path: rel });
+            }
+          : undefined;
+      return (
+        <PidTreeContextMenu
+          item={item}
+          ctx={ctx}
+          onShowDiff={onShowDiff}
+          onNewFile={(it) => beginCreate(it, "file")}
+          onNewFolder={(it) => beginCreate(it, "folder")}
+          onAttach={attachToChat}
+          onRename={(it) => model.startRenaming(it.path)}
+          onDelete={requestDeleteFromItem}
+        />
+      );
+    },
+    [model, beginCreate, attachToChat, requestDeleteFromItem, changeByPath],
   );
 
   // Delete via keyboard

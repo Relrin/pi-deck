@@ -1,6 +1,8 @@
 import type { GitChange } from "@pi-deck/core/git/types.js";
 import type { MouseEvent } from "react";
+import { FileText, Undo2 } from "../../components/icons/index.js";
 import { PidPierreFileIcon } from "../../components/icons/PidPierreFileIcon.js";
+import { ContextMenu, type ContextMenuItem } from "../../components/ui/ContextMenu.js";
 
 interface Props {
   change: GitChange;
@@ -15,6 +17,12 @@ interface Props {
   onSelect: () => void;
   /** Double-click handler: route to the diff screen for this file. */
   onOpenDiff: () => void;
+  /** Right-click action: open this file in the editor. Omitted for deleted files (no file on
+   * disk to open). */
+  onShowInEditor?: () => void;
+  /** Right-click action: discard this file's changes — restore to HEAD, or remove it if
+   * untracked. Applies to every change (including deletions, which it restores). */
+  onRollback?: () => void;
   /** Suppress the parent-directory suffix on the filename — used in folder grouping where
    * the dir already appears in the section header above. */
   hidePathDir?: boolean;
@@ -48,6 +56,8 @@ export function ChangeRow({
   onToggle,
   onSelect,
   onOpenDiff,
+  onShowInEditor,
+  onRollback,
   hidePathDir,
 }: Props) {
   const tone = STATUS_TONE[change.status];
@@ -57,7 +67,7 @@ export function ChangeRow({
   // shouldn't also activate the row (which would feel like a double-tap).
   const stopProp = (e: MouseEvent) => e.stopPropagation();
 
-  return (
+  const row = (
     <div
       className="pid-git-row"
       data-tone={tone}
@@ -95,6 +105,28 @@ export function ChangeRow({
       </button>
     </div>
   );
+
+  // Build the row's right-click actions. A deleted file has nothing on disk to open (so no editor
+  // action), but rollback still applies — it restores the deletion.
+  const items: ContextMenuItem[] = [];
+  if (onShowInEditor && change.status !== "D") {
+    items.push({
+      label: "Open file in editor",
+      icon: <FileText size={12} />,
+      onSelect: onShowInEditor,
+    });
+  }
+  if (onRollback) {
+    if (items.length > 0) items.push({ kind: "separator" });
+    items.push({
+      label: "Rollback",
+      icon: <Undo2 size={12} />,
+      onSelect: onRollback,
+      danger: true,
+    });
+  }
+  if (items.length === 0) return row;
+  return <ContextMenu items={items}>{row}</ContextMenu>;
 }
 
 function splitPath(path: string): { name: string; dir: string } {

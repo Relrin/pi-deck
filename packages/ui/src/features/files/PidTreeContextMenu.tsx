@@ -1,11 +1,20 @@
 import type { ContextMenuItem, ContextMenuOpenContext } from "@pierre/trees";
-import { FilePlus, FolderPlus, Paperclip, Pencil, Trash2 } from "../../components/icons/index.js";
+import {
+  ArrowLeftRight,
+  FilePlus,
+  FolderPlus,
+  Paperclip,
+  Pencil,
+  Trash2,
+} from "../../components/icons/index.js";
 
 interface PidTreeContextMenuProps {
   /** The right-clicked row, supplied by `@pierre/trees`. */
   item: ContextMenuItem;
   /** Open context — used to close the menu after an action fires. */
   ctx: ContextMenuOpenContext;
+  /** Present only for changed (added/modified) files — jumps to the Diff screen for the row. */
+  onShowDiff?: (item: ContextMenuItem) => void;
   onNewFile: (item: ContextMenuItem) => void;
   onNewFolder: (item: ContextMenuItem) => void;
   onAttach: (item: ContextMenuItem) => void;
@@ -19,6 +28,7 @@ interface PidTreeContextMenuProps {
 export function PidTreeContextMenu({
   item,
   ctx,
+  onShowDiff,
   onNewFile,
   onNewFolder,
   onAttach,
@@ -34,6 +44,22 @@ export function PidTreeContextMenu({
 
   return (
     <div className="pid-context-menu" role="menu">
+      {onShowDiff ? (
+        <>
+          <button
+            type="button"
+            role="menuitem"
+            className="pid-context-menu-item"
+            onClick={run(onShowDiff)}
+          >
+            <span className="pid-context-menu-icon" aria-hidden>
+              <ArrowLeftRight size={12} />
+            </span>
+            <span className="pid-context-menu-label">Show diff</span>
+          </button>
+          <div className="pid-context-menu-separator" aria-hidden />
+        </>
+      ) : null}
       <button
         type="button"
         role="menuitem"

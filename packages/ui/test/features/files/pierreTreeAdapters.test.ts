@@ -4,6 +4,7 @@ import type { GitChange } from "@pi-deck/core/git/types.js";
 import {
   buildTreeThemeInput,
   flattenFsNodes,
+  gitChangeByTreePath,
   gitChangesToEntries,
   gitStatusToPierre,
   treePathBasename,
@@ -89,6 +90,26 @@ describe("gitChangesToEntries", () => {
     expect(gitChangesToEntries([change("a.ts", "M")], undefined, "/repo")).toEqual([
       { path: "a.ts", status: "modified" },
     ]);
+  });
+});
+
+describe("gitChangeByTreePath", () => {
+  test("keys each change by its project-relative path", () => {
+    const a = change("src/a.ts", "M");
+    const b = change("b.txt", "?");
+    const map = gitChangeByTreePath([a, b], "/repo", "/repo");
+    expect(map.get("src/a.ts")).toEqual(a);
+    expect(map.get("b.txt")).toEqual(b);
+    expect(map.size).toBe(2);
+  });
+
+  test("re-bases keys onto the opened subtree and drops changes outside it", () => {
+    const inside = change("packages/ui/x.ts", "A");
+    const outside = change("packages/core/y.ts", "M");
+    const map = gitChangeByTreePath([inside, outside], "/repo", "/repo/packages/ui");
+    expect(map.get("x.ts")).toEqual(inside);
+    expect(map.has("packages/core/y.ts")).toBe(false);
+    expect(map.size).toBe(1);
   });
 });
 
