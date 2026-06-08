@@ -397,3 +397,86 @@
   font-size: var(--t-12);
   color: var(--ink-3);
 }
+
+/* ---------- Search / replace panel (Ctrl-F) ---------- . */
+.pid-editor-cm .cm-panel.cm-search {
+  padding: 8px 40px 8px 12px;
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  line-height: 1.4;
+}
+.pid-editor-cm .cm-panel.cm-search .cm-textfield {
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  line-height: 1.4;
+  padding: 6px 10px;
+  margin: 4px 6px 4px 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-inset);
+  color: var(--ink-0);
+  min-width: 220px;
+  vertical-align: middle;
+}
+.pid-editor-cm .cm-panel.cm-search .cm-textfield:focus {
+  outline: none;
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.pid-editor-cm .cm-panel.cm-search .cm-button {
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  line-height: 1.4;
+  letter-spacing: 0.06em;
+  padding: 5px 10px;
+  margin: 4px 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-2);
+  background-image: none;
+  color: var(--ink-1);
+  vertical-align: middle;
+  cursor: pointer;
+}
+.pid-editor-cm .cm-panel.cm-search .cm-button:hover {
+  background: var(--bg-3);
+  color: var(--ink-0);
+  border-color: var(--line-strong);
+}
+.pid-editor-cm .cm-panel.cm-search .cm-button:focus-visible {
+  outline: none;
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.pid-editor-cm .cm-panel.cm-search label {
+  font-size: var(--t-12);
+  line-height: 1.4;
+  color: var(--ink-2);
+  margin: 4px 6px 4px 2px;
+  vertical-align: middle;
+}
+.pid-editor-cm .cm-panel.cm-search label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  vertical-align: -2px;
+  accent-color: var(--accent);
+}
+.pid-editor-cm .cm-panel.cm-search [name="close"] {
+  top: 6px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.pid-editor-cm .cm-panel.cm-search [name="close"]:hover {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
