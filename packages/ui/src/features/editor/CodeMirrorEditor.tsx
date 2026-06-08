@@ -30,10 +30,13 @@ import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import {
   baselineText,
   type DiffHoverInfo,
+  type DiffOverview,
   diffChunkInfo,
   diffGutter,
   diffHoverAt,
+  diffOverview,
   gotoDiffChunk,
+  revealDiffChunk,
   revertDiffChunk,
   setActiveDiffChunk,
   setDiffBaseline,
@@ -41,6 +44,7 @@ import {
 import { cmHighlight, cmTheme } from "./editorTheme.js";
 import { languageForFile } from "./languages.js";
 import { PidDiffBlockToolbar } from "./PidDiffBlockToolbar.js";
+import { PidDiffMinimap } from "./PidDiffMinimap.js";
 import {
   type EditorTab,
   selectActiveTabId,
@@ -52,6 +56,8 @@ import {
 // compartment on light/dark flips and the language compartment is set once per tab at build time.
 const langCompartment = new Compartment();
 const themeCompartment = new Compartment();
+
+const EMPTY_OVERVIEW: DiffOverview = { hasBaseline: false, marks: [] };
 
 interface TabCacheEntry {
   /** Detached state for an inactive tab — preserves undo history + selection on tab switch. */
@@ -100,6 +106,21 @@ export function CodeMirrorEditor() {
   const openIdxRef = useRef<number | null>(null);
   const activeIdxRef = useRef<number | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+
+  // Diff overview ruler (minimap): a whole-file map of change blocks beside the scrollbar. Marks
+  // are line-fraction based, so they only change on edits + tab switches — coalesce bursts via rAF.
+  const [overview, setOverview] = useState<DiffOverview>(EMPTY_OVERVIEW);
+  const overviewRafRef = useRef<number | null>(null);
+  const refreshOverview = useCallback(() => {
+    if (overviewRafRef.current !== null) return;
+    overviewRafRef.current = requestAnimationFrame(() => {
+      overviewRafRef.current = null;
+      const v = viewRef.current;
+      setOverview(v ? diffOverview(v.state) : EMPTY_OVERVIEW);
+    });
+  }, []);
+  const refreshOverviewRef = useRef(refreshOverview);
+  refreshOverviewRef.current = refreshOverview;
 
   const setActive = useCallback((view: EditorView, idx: number | null) => {
     if (activeIdxRef.current === idx) return;
@@ -188,8 +209,9 @@ export function CodeMirrorEditor() {
       const listener = EditorView.updateListener.of((update) => {
         const id = tab.id;
         if (update.docChanged) {
-          // Editing shifts/destroys chunks — drop the toolbar.
+          // Editing shifts/destroys chunks — drop the toolbar and re-map the overview ruler.
           closeToolbarRef.current();
+          refreshOverviewRef.current();
           const entry = cacheRef.current.get(id);
           const isDirty = entry ? !update.state.doc.eq(entry.savedText) : true;
           useEditorStore.getState().setDirty(id, isDirty);
@@ -263,6 +285,7 @@ export function CodeMirrorEditor() {
     view.scrollDOM.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       view.scrollDOM.removeEventListener("scroll", onScroll);
+      if (overviewRafRef.current !== null) cancelAnimationFrame(overviewRafRef.current);
       view.destroy();
       viewRef.current = null;
     };
@@ -283,9 +306,15 @@ export function CodeMirrorEditor() {
       closeToolbarRef.current(); // a pinned toolbar belongs to the tab we're leaving
     }
     prevIdRef.current = activeTabId;
-    if (!activeTabId) return;
+    if (!activeTabId) {
+      setOverview(EMPTY_OVERVIEW);
+      return;
+    }
     const tab = useEditorStore.getState().tabs[activeTabId];
-    if (!tab || tab.status !== "ready") return; // overlay covers loading / error
+    if (!tab || tab.status !== "ready") {
+      setOverview(EMPTY_OVERVIEW); // overlay covers loading / error
+      return;
+    }
     let entry = cacheRef.current.get(activeTabId);
     if (!entry) {
       const state = buildState(tab);
@@ -295,6 +324,7 @@ export function CodeMirrorEditor() {
     view.setState(entry.state);
     view.scrollDOM.scrollTop = entry.scrollTop;
     if (!tab.readOnly) view.focus();
+    refreshOverviewRef.current();
   }, [activeTabId, status, buildState]);
 
   // Flip CodeMirror's dark flag live across the active view + every cached (inactive) state, so
@@ -363,6 +393,9 @@ export function CodeMirrorEditor() {
       onMouseLeave={handleWrapMouseLeave}
     >
       <div className="pid-editor-cm" ref={containerRef} />
+      {overview.hasBaseline && view ? (
+        <PidDiffMinimap marks={overview.marks} onJumpToChunk={(i) => revealDiffChunk(view, i)} />
+      ) : null}
       {overlay}
       {openChunk && view ? (
         <PidDiffBlockToolbar

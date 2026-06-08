@@ -1,5 +1,6 @@
 import { Chunk } from "@codemirror/merge";
 import {
+  type EditorState,
   type Extension,
   type RangeSet,
   RangeSetBuilder,
@@ -196,6 +197,17 @@ export function revertDiffChunk(view: EditorView, index: number): void {
   });
 }
 
+/** Select + centre-scroll to a specific chunk and mark it active (no-op for a bad index). */
+export function revealDiffChunk(view: EditorView, index: number): void {
+  const c = view.state.field(chunksField)[index];
+  if (!c) return;
+  const pos = c.lineFroms[0] ?? c.fromB;
+  view.dispatch({
+    selection: { anchor: pos },
+    effects: [setActiveChunk.of(index), EditorView.scrollIntoView(pos, { y: "center" })],
+  });
+}
+
 /** Move selection + scroll to the prev/next chunk (wrapping). Returns the new chunk index. */
 export function gotoDiffChunk(view: EditorView, fromIndex: number, dir: -1 | 1): number {
   const chunks = view.state.field(chunksField);
@@ -203,11 +215,7 @@ export function gotoDiffChunk(view: EditorView, fromIndex: number, dir: -1 | 1):
   let idx = fromIndex + dir;
   if (idx < 0) idx = chunks.length - 1;
   if (idx >= chunks.length) idx = 0;
-  const pos = chunks[idx]?.lineFroms[0] ?? chunks[idx]?.fromB ?? 0;
-  view.dispatch({
-    selection: { anchor: pos },
-    effects: [setActiveChunk.of(idx), EditorView.scrollIntoView(pos, { y: "center" })],
-  });
+  revealDiffChunk(view, idx);
   return idx;
 }
 
@@ -263,6 +271,36 @@ export function diffHoverAt(
     clientLeft: contentRect.left,
     overGutter: clientX < contentRect.left,
   };
+}
+
+/** One change block, projected onto a 0..1 vertical axis for the diff overview ruler (minimap). */
+export interface DiffOverviewMark {
+  index: number;
+  kind: DiffKind;
+  /** Fraction [0,1] down the document where the block starts (by line number). */
+  top: number;
+  /** Fraction of the document the block spans; tiny blocks are floored by the ruler's CSS. */
+  size: number;
+}
+
+/** Snapshot for the diff overview ruler: whether the file is tracked (has a HEAD baseline) and
+ * the per-block marks. Line-based (not pixel-based) so it's independent of scroll + wrapping. */
+export interface DiffOverview {
+  hasBaseline: boolean;
+  marks: DiffOverviewMark[];
+}
+
+/** Project the current chunk set onto document-fraction marks for the overview ruler. */
+export function diffOverview(state: EditorState): DiffOverview {
+  const hasBaseline = state.field(baselineField) !== null;
+  const { doc } = state;
+  const total = Math.max(doc.lines, 1);
+  const marks = state.field(chunksField).map((c, index): DiffOverviewMark => {
+    const startLine = doc.lineAt(c.lineFroms[0] ?? Math.min(c.fromB, doc.length)).number;
+    const lineCount = Math.max(c.lineFroms.length, 1);
+    return { index, kind: c.kind, top: (startLine - 1) / total, size: lineCount / total };
+  });
+  return { hasBaseline, marks };
 }
 
 /** Assemble the diff extension. Field order matters: baseline → chunks → active → deco. */
