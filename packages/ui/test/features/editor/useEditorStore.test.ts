@@ -73,6 +73,32 @@ describe("useEditorStore.openFile", () => {
     expect(useEditorStore.getState().byProject.p1?.order).toEqual(["p1:/proj/a.ts"]);
   });
 
+  test("collapses to one tab when the same file is opened with different path separators", async () => {
+    // The file tree opens with the native (backslash) project root; the git panel opens with
+    // git's POSIX repo root. Both must resolve to a single tab.
+    useSessionsStore.setState({
+      client: mockClient({
+        "fs.readFile": readFileOk(""),
+        "git.fileBaseline": () => ({ content: null }),
+      }) as never,
+    });
+    // File-tree style: native root + POSIX remainder (mixed separators).
+    useEditorStore
+      .getState()
+      .openFile({ projectId: "p1", absPath: "D:\\Code\\proj/src/a.ts", relPath: "src/a.ts" });
+    await flush();
+    // Git-panel style: fully POSIX.
+    useEditorStore
+      .getState()
+      .openFile({ projectId: "p1", absPath: "D:/Code/proj/src/a.ts", relPath: "src/a.ts" });
+
+    const order = useEditorStore.getState().byProject.p1?.order ?? [];
+    expect(order).toEqual(["p1:D:/Code/proj/src/a.ts"]);
+    expect(useEditorStore.getState().tabs[order[0] as string]?.absPath).toBe(
+      "D:/Code/proj/src/a.ts",
+    );
+  });
+
   test("binary files open read-only and blocked", async () => {
     useSessionsStore.setState({
       client: mockClient({

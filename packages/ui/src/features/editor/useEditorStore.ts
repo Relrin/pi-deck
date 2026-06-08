@@ -80,8 +80,15 @@ interface EditorStoreState {
 const INITIAL_CURSOR: EditorCursor = { line: 1, col: 1, selLen: 0 };
 const EMPTY_ORDER: string[] = [];
 
+/**
+ * Canonical POSIX form for path identity: forward slashes, no trailing slash.
+ */
+function toPosixPath(path: string): string {
+  return path.replace(/\\/g, "/").replace(/\/+$/, "");
+}
+
 function tabId(projectId: string, absPath: string): string {
-  return `${projectId}:${absPath}`;
+  return `${projectId}:${toPosixPath(absPath)}`;
 }
 
 function basename(path: string): string {
@@ -131,7 +138,9 @@ export const useEditorStore = create<EditorStoreState>((set, get) => ({
   tabs: {},
 
   openFile: ({ projectId, absPath, relPath }) => {
-    const id = tabId(projectId, absPath);
+    // Normalize so a file opened from different surfaces (file tree vs. git panel) shares one tab.
+    const normAbs = toPosixPath(absPath);
+    const id = tabId(projectId, normAbs);
     if (get().tabs[id]) {
       set((s) => {
         const proj = s.byProject[projectId] ?? { order: [], activeTabId: null };
@@ -139,11 +148,11 @@ export const useEditorStore = create<EditorStoreState>((set, get) => ({
       });
       return;
     }
-    const fileName = basename(relPath) || basename(absPath);
+    const fileName = basename(relPath) || basename(normAbs);
     const tab: EditorTab = {
       id,
       projectId,
-      absPath,
+      absPath: normAbs,
       relPath,
       fileName,
       status: "loading",
