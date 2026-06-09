@@ -10,7 +10,7 @@ import { useSessionsStore } from "../sessions/useSessionsStore.js";
 
 /**
  * Top-of-screen header for the ad-hoc diff route. Mirrors the "review · changeset" header
- * in the design mockup — kicker row + bulk actions on the right, session title below — but
+ * in the design mockup — a single kicker row with bulk actions on the right — but
  * scaled down to the data we actually have here:
  *
  *   - "N files" counts the active session's working-tree changes (same source as the Git
@@ -26,14 +26,11 @@ import { useSessionsStore } from "../sessions/useSessionsStore.js";
  *
  * The header sits above the existing per-file head (`pid-diff-tab-head`) inside `DiffTab`.
  * It hides itself when there's no active session or no project — there's nothing
- * meaningful to commit, revert, or title in that state.
+ * meaningful to commit or revert in that state.
  */
 export function DiffChangesetHeader() {
   const projectId = useProjectsStore((s) => s.activeProjectId);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
-  const sessionTitle = useSessionsStore(
-    (s) => s.sessions.find((session) => session.id === activeSessionId)?.title,
-  );
   const changes = useGitStore((s) =>
     projectId ? s.statusByProject[projectId]?.changes : undefined,
   );
@@ -134,11 +131,6 @@ export function DiffChangesetHeader() {
           </button>
         </div>
       </div>
-      {sessionTitle ? (
-        <h1 className="pid-diff-changeset-title" title={sessionTitle}>
-          {sessionTitle}
-        </h1>
-      ) : null}
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}

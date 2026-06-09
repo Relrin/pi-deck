@@ -1,4 +1,5 @@
 import type { CommandResponse } from "@pi-deck/core/protocol/commands.js";
+import { parseDiffFromFile } from "@pierre/diffs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavStore } from "../../lib/useNavStore.js";
 import { useEditorStore } from "../editor/useEditorStore.js";
@@ -109,6 +110,14 @@ export function DiffTab() {
     };
   }, [client, target]);
 
+  const fileDiff = useMemo(() => {
+    if (!target || !diff || diff.unified.length === 0) return null;
+    return parseDiffFromFile(
+      { name: target.path, contents: diff.before ?? "" },
+      { name: target.path, contents: diff.after ?? "" },
+    );
+  }, [diff, target]);
+
   // Tracked changed files (those with a HEAD diff), in natural path order — the set the
   // compare-previous/next-file actions cycle through.
   const diffFiles = useMemo(() => orderedDiffFiles(changes), [changes]);
@@ -185,12 +194,12 @@ export function DiffTab() {
           <div className="pid-route-placeholder">
             <span>Loading diff…</span>
           </div>
-        ) : diff.unified.length === 0 ? (
+        ) : diff.unified.length === 0 || !fileDiff ? (
           <div className="pid-route-placeholder">
             <span>No changes vs HEAD.</span>
           </div>
         ) : (
-          <DiffView unified={diff.unified} />
+          <DiffView fileDiff={fileDiff} />
         )}
       </div>
     </div>
