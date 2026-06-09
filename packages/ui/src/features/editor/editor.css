@@ -248,21 +248,13 @@
   background: transparent;
 }
 
-/* Editor popovers (autocomplete list, completion docs, LSP signature/reference surfaces) get
-   the same slim scrollbar as the session / diff screens. */
-.cm-tooltip-autocomplete > ul,
-.cm-tooltip.cm-completionInfo,
-.cm-lsp-signature-tooltip,
-.cm-lsp-reference-panel {
-  scrollbar-width: thin;
-  scrollbar-color: var(--bg-3) transparent;
-}
+/* Editor popovers (autocomplete list, completion docs, LSP signature/reference surfaces) */
 .cm-tooltip-autocomplete > ul::-webkit-scrollbar,
 .cm-tooltip.cm-completionInfo::-webkit-scrollbar,
 .cm-lsp-signature-tooltip::-webkit-scrollbar,
 .cm-lsp-reference-panel::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 .cm-tooltip-autocomplete > ul::-webkit-scrollbar-track,
 .cm-tooltip.cm-completionInfo::-webkit-scrollbar-track,
@@ -276,6 +268,9 @@
 .cm-lsp-reference-panel::-webkit-scrollbar-thumb {
   background: var(--bg-3);
   border-radius: 3px;
+  /* Inset the thumb so the wider track keeps the slim look of the other surfaces. */
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 .cm-tooltip-autocomplete > ul::-webkit-scrollbar-thumb:hover,
 .cm-tooltip.cm-completionInfo::-webkit-scrollbar-thumb:hover,

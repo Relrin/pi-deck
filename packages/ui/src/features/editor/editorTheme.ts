@@ -2,6 +2,7 @@ import { HighlightStyle } from "@codemirror/language";
 import type { Extension } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { tags as t } from "@lezer/highlight";
+import { COMPLETION_ICONS, completionIconMaskUrl } from "./codicon-symbols.js";
 
 /**
  * CodeMirror chrome theme + syntax highlight style, both expressed against pi-deck's CSS custom
@@ -80,6 +81,15 @@ export function cmTheme(dark: boolean): Extension {
         color: "var(--ink-1)",
         boxShadow: "var(--shadow-pop)",
       },
+      ".cm-tooltip.cm-tooltip-autocomplete > ul": {
+        minWidth: "320px",
+        maxWidth: "min(700px, 90vw)",
+        maxHeight: "22em",
+      },
+      ".cm-tooltip.cm-tooltip-autocomplete > ul > li": {
+        padding: "4px 8px",
+        lineHeight: "1.4",
+      },
       ".cm-tooltip-autocomplete ul li": {
         fontFamily: "var(--font-mono)",
       },
@@ -87,12 +97,48 @@ export function cmTheme(dark: boolean): Extension {
         backgroundColor: "var(--accent-soft)",
         color: "var(--accent)",
       },
+      // Docs panel beside the completion list.
+      ".cm-tooltip.cm-completionInfo": {
+        maxWidth: "min(480px, 70vw)",
+        maxHeight: "22em",
+        overflowY: "auto",
+        padding: "6px 10px",
+      },
       ".cm-completionLabel": { color: "var(--ink-1)" },
       ".cm-completionDetail": { color: "var(--ink-3)" },
+      ".cm-completionIcon": {
+        width: "1.1em",
+        paddingRight: ".5em",
+        fontStyle: "normal",
+        fontSize: "85%",
+        textAlign: "center",
+        opacity: "0.9",
+      },
+      ".cm-completionIcon:after": { content: "'·'", color: "var(--ink-3)" },
+      ...COMPLETION_ICON_RULES,
     },
     { dark },
   );
 }
+
+/**
+ * One rule per completion kind: an empty pseudo-element sized to the row, with the codicon
+ * as a mask over a token-coloured background
+ */
+const COMPLETION_ICON_RULES: Record<string, Record<string, string>> = Object.fromEntries(
+  Object.entries(COMPLETION_ICONS).map(([type, icon]) => [
+    `.cm-completionIcon-${type}:after`,
+    {
+      content: "''",
+      display: "inline-block",
+      width: "1em",
+      height: "1em",
+      verticalAlign: "text-bottom",
+      backgroundColor: `var(${icon.token})`,
+      mask: `${completionIconMaskUrl(icon)} center / contain no-repeat`,
+    },
+  ]),
+);
 
 const highlight = HighlightStyle.define([
   {
