@@ -4,6 +4,12 @@ import { ConfirmDialog } from "../../components/dialogs/ConfirmDialog.js";
 import { Check } from "../../components/icons/index.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { type Eol, eolLabel } from "./eol.js";
+import {
+  type LspServerState,
+  selectTabDiagnostics,
+  selectTabServer,
+  useLspStore,
+} from "./lsp/useLspStore.js";
 import { PidGotoLineDialog } from "./PidGotoLineDialog.js";
 import { selectActiveTab, useEditorStore } from "./useEditorStore.js";
 
@@ -22,6 +28,36 @@ const EOLS: { value: Eol; label: string; hint: string }[] = [
   { value: "crlf", label: "CRLF", hint: "Windows (\\r\\n)" },
 ];
 
+function lspDotColor(status: LspServerState["status"]): string {
+  switch (status) {
+    case "ready":
+      return "var(--add)";
+    case "starting":
+      return "var(--warn)";
+    case "crashed":
+      return "var(--del)";
+    default: // missing / disabled
+      return "var(--ink-3)";
+  }
+}
+
+function lspTitle(server: LspServerState): string {
+  switch (server.status) {
+    case "ready":
+      return "Language server connected";
+    case "starting":
+      return "Language server starting…";
+    case "missing":
+      return server.installHint
+        ? `Language server not installed — ${server.installHint}`
+        : "Language server not installed";
+    case "crashed":
+      return `Language server crashed — ${server.message ?? "reopen the file to retry"}`;
+    case "disabled":
+      return "Language server disabled in Settings → Editor";
+  }
+}
+
 /**
  * Status segments for the active editor tab — rendered in the footer's right region (after the
  * spacer) only while the editor screen is active. Three segments are interactive: the cursor
@@ -34,6 +70,8 @@ export function PidEditorStatus() {
   const setEol = useEditorStore((s) => s.setEol);
   const setBom = useEditorStore((s) => s.setBom);
   const setEncoding = useEditorStore((s) => s.setEncoding);
+  const lspServer = useLspStore(selectTabServer(tab));
+  const lspDiag = useLspStore(selectTabDiagnostics(tab));
 
   const [gotoOpen, setGotoOpen] = useState(false);
   // When the tab has unsaved edits, reopening would discard them — stash the choice and confirm.
@@ -56,6 +94,26 @@ export function PidEditorStatus() {
 
   return (
     <>
+      {lspDiag && (lspDiag.errors > 0 || lspDiag.warnings > 0) ? (
+        <div className="seg" title="Language-server diagnostics in this file">
+          {lspDiag.errors > 0 ? (
+            <span style={{ color: "var(--del)" }}>✕ {lspDiag.errors}</span>
+          ) : null}
+          {lspDiag.warnings > 0 ? (
+            <span style={{ color: "var(--warn)" }}>▲ {lspDiag.warnings}</span>
+          ) : null}
+        </div>
+      ) : null}
+
+      {lspServer ? (
+        <div className="seg" title={lspTitle(lspServer)}>
+          <span aria-hidden style={{ color: lspDotColor(lspServer.status) }}>
+            ●
+          </span>
+          <span className="lbl">LSP</span>
+        </div>
+      ) : null}
+
       <button
         type="button"
         className="seg seg-btn"

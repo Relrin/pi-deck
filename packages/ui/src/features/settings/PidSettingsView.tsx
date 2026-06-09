@@ -3,11 +3,11 @@ import { ArrowLeft } from "../../components/icons";
 import { PidKbd } from "../../components/kbd/PidKbd";
 import { NATIVE_OVERLAY_RESERVE_PX, reservesNativeOverlay } from "../../lib/platform";
 import { AppearanceSection } from "./sections/AppearanceSection";
+import { EditorSection } from "./sections/EditorSection";
 import { GitGitHubSection } from "./sections/GitGitHubSection";
 import { ProvidersSection } from "./sections/ProvidersSection";
 import {
   AdvancedSection,
-  EditorSection,
   KeybindsSection,
   McpServersSection,
   PrivacySection,
@@ -28,7 +28,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "tools", label: "Tools", stub: false },
   { id: "git-github", label: "Git & GitHub", stub: false },
   { id: "mcp-servers", label: "MCP Servers", stub: true },
-  { id: "editor", label: "Editor", stub: true },
+  { id: "editor", label: "Editor", stub: false },
   { id: "terminal", label: "Terminal", stub: false },
   { id: "keybinds", label: "Keybinds", stub: true },
   { id: "privacy", label: "Privacy", stub: true },

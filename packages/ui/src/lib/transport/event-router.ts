@@ -9,6 +9,9 @@ import {
   EVENT_GIT_STATUS_CHANGED,
   EVENT_GIT_TURN_TOUCHES_CHANGED,
   EVENT_HOST_ERROR,
+  EVENT_LSP_DIAGNOSTICS,
+  EVENT_LSP_MESSAGE,
+  EVENT_LSP_SERVER_STATUS,
   EVENT_PLAN_FILE_CHANGED,
   EVENT_PROVIDER_CHANGED,
   EVENT_REVIEW_AVAILABLE,
@@ -39,6 +42,11 @@ import {
   type ArtefactRecord,
   useArtefactsStore,
 } from "../../features/context/useArtefactsStore.js";
+import {
+  deliverLspDiagnostics,
+  deliverLspServerMessage,
+} from "../../features/editor/lsp/transport.js";
+import { useLspStore } from "../../features/editor/lsp/useLspStore.js";
 import { useFileTreeStore } from "../../features/files/useFileTreeStore.js";
 import { useGitStore } from "../../features/git/useGitStore.js";
 import { useProvidersStore } from "../../features/models/useProvidersStore.js";
@@ -137,6 +145,40 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
           : undefined;
     if (sid && path && content !== undefined) {
       usePlanStore.getState().applyPlanFileChanged(sid, path, content);
+    }
+    return;
+  }
+  if (topic === EVENT_LSP_MESSAGE) {
+    const key = typeof payload.key === "string" ? payload.key : "";
+    if (key && payload.message !== undefined) deliverLspServerMessage(key, payload.message);
+    return;
+  }
+  if (topic === EVENT_LSP_DIAGNOSTICS) {
+    const key = typeof payload.key === "string" ? payload.key : "";
+    const uri = typeof payload.uri === "string" ? payload.uri : "";
+    const diagnostics = Array.isArray(payload.diagnostics) ? payload.diagnostics : [];
+    if (key && uri) {
+      // Counts for the footer, then the raw notification for the editor's lint integration.
+      useLspStore.getState().applyDiagnostics(key, uri, diagnostics);
+      deliverLspDiagnostics(key, {
+        uri,
+        version: typeof payload.version === "number" ? payload.version : undefined,
+        diagnostics,
+      });
+    }
+    return;
+  }
+  if (topic === EVENT_LSP_SERVER_STATUS) {
+    const key = typeof payload.key === "string" ? payload.key : "";
+    const serverId = typeof payload.serverId === "string" ? payload.serverId : "";
+    const status = typeof payload.status === "string" ? payload.status : "";
+    if (key && serverId && status) {
+      useLspStore.getState().applyServerStatus({
+        key,
+        serverId,
+        status,
+        message: typeof payload.message === "string" ? payload.message : undefined,
+      });
     }
     return;
   }

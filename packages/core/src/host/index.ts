@@ -1,3 +1,4 @@
+import { LanguageServerManager } from "../lsp/manager.js";
 import { PROTOCOL_VERSION } from "../protocol/version.js";
 import { TerminalManager } from "../terminal/index.js";
 import { ArtefactsTracker } from "./artefacts-tracker.js";
@@ -108,6 +109,11 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     wsHandle?.broadcast(topic, payload);
   });
 
+  const languageServerManager = new LanguageServerManager();
+  languageServerManager.on("event", (topic, payload) => {
+    wsHandle?.broadcast(topic, payload);
+  });
+
   const router: RouterContext = {
     metadataStore,
     sessionManager,
@@ -120,6 +126,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     artefactsTracker,
     reviewStore,
     terminalManager,
+    languageServerManager,
     hostVersion: opts.hostVersion,
     protocolVersion: PROTOCOL_VERSION,
   };
@@ -132,6 +139,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     close: async () => {
       sessionManager.shutdown();
       terminalManager.shutdownAll();
+      languageServerManager.shutdownAll();
       await themeManager.shutdown();
       await gitWatchManager.shutdown();
       await fsWatchManager.shutdown();

@@ -37,17 +37,6 @@ export function McpServersSection() {
   );
 }
 
-export function EditorSection() {
-  return (
-    <StubSection
-      title="Editor"
-      kicker="Settings · Editor"
-      plan="a later plan"
-      description="Tab width, line endings, code-fence rendering, and other editor-level preferences."
-    />
-  );
-}
-
 export function KeybindsSection() {
   return (
     <StubSection

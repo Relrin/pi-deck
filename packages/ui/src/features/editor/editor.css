@@ -248,7 +248,43 @@
   background: transparent;
 }
 
-/* ---------- Live diff (dirty) markers vs HEAD ----------
+/* Editor popovers (autocomplete list, completion docs, LSP signature/reference surfaces) get
+   the same slim scrollbar as the session / diff screens. */
+.cm-tooltip-autocomplete > ul,
+.cm-tooltip.cm-completionInfo,
+.cm-lsp-signature-tooltip,
+.cm-lsp-reference-panel {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
+}
+.cm-tooltip-autocomplete > ul::-webkit-scrollbar,
+.cm-tooltip.cm-completionInfo::-webkit-scrollbar,
+.cm-lsp-signature-tooltip::-webkit-scrollbar,
+.cm-lsp-reference-panel::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.cm-tooltip-autocomplete > ul::-webkit-scrollbar-track,
+.cm-tooltip.cm-completionInfo::-webkit-scrollbar-track,
+.cm-lsp-signature-tooltip::-webkit-scrollbar-track,
+.cm-lsp-reference-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cm-tooltip-autocomplete > ul::-webkit-scrollbar-thumb,
+.cm-tooltip.cm-completionInfo::-webkit-scrollbar-thumb,
+.cm-lsp-signature-tooltip::-webkit-scrollbar-thumb,
+.cm-lsp-reference-panel::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 3px;
+}
+.cm-tooltip-autocomplete > ul::-webkit-scrollbar-thumb:hover,
+.cm-tooltip.cm-completionInfo::-webkit-scrollbar-thumb:hover,
+.cm-lsp-signature-tooltip::-webkit-scrollbar-thumb:hover,
+.cm-lsp-reference-panel::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
+}
+
+/* ---------- Live diff (dirty) markers vs HEAD ---------- */
 .pid-editor-cm .cm-line.pid-cm-diff-add {
   background: var(--add-soft);
 }

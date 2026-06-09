@@ -3,6 +3,7 @@ import { SessionModelRefSchema, ThinkingLevelSchema } from "../domain/session.js
 import { FsNodeSchema } from "../fs/types.js";
 import { GitStatusSchema } from "../git/types.js";
 import { ReviewTurnSchema } from "./commands.js";
+import { LspDiagnosticsPayload, LspMessagePayload, LspServerStatusPayload } from "./lsp.js";
 import { themeListingSchema } from "./theme.js";
 
 export const EVENT_SESSION_MESSAGE_DELTA = "session.message.delta" as const;
@@ -29,6 +30,9 @@ export const EVENT_PLAN_FILE_CHANGED = "plan.file.changed" as const;
 export const EVENT_FS_TREE_CHANGED = "fs.tree.changed" as const;
 export const EVENT_TERMINAL_OUTPUT = "terminal.output" as const;
 export const EVENT_TERMINAL_EXIT = "terminal.exit" as const;
+export const EVENT_LSP_MESSAGE = "lsp.message" as const;
+export const EVENT_LSP_DIAGNOSTICS = "lsp.diagnostics" as const;
+export const EVENT_LSP_SERVER_STATUS = "lsp.serverStatus" as const;
 
 export const SessionMessageDeltaPayload = z.object({
   sessionId: z.string(),
@@ -334,6 +338,9 @@ export const EventSchemas = {
   [EVENT_PLAN_FILE_CHANGED]: PlanFileChangedPayload,
   [EVENT_TERMINAL_OUTPUT]: TerminalOutputPayload,
   [EVENT_TERMINAL_EXIT]: TerminalExitPayload,
+  [EVENT_LSP_MESSAGE]: LspMessagePayload,
+  [EVENT_LSP_DIAGNOSTICS]: LspDiagnosticsPayload,
+  [EVENT_LSP_SERVER_STATUS]: LspServerStatusPayload,
 } as const;
 
 export type EventTopic = keyof typeof EventSchemas;

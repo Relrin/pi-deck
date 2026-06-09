@@ -18,6 +18,18 @@ import {
   ModelInfoSchema,
   ProviderSummarySchema,
 } from "../providers/types.js";
+import {
+  LspEnsureRequest,
+  LspEnsureResponse,
+  LspNotifyRequest,
+  LspNotifyResponse,
+  LspRequestRequest,
+  LspRequestResponse,
+  LspShutdownRequest,
+  LspShutdownResponse,
+  LspStatusRequest,
+  LspStatusResponse,
+} from "./lsp.js";
 import { themeListingSchema } from "./theme.js";
 
 export const PingRequest = z.object({}).strict();
@@ -850,6 +862,11 @@ export const CommandSchemas = {
     request: TerminalDetectShellsRequest,
     response: TerminalDetectShellsResponse,
   },
+  "lsp.status": { request: LspStatusRequest, response: LspStatusResponse },
+  "lsp.ensure": { request: LspEnsureRequest, response: LspEnsureResponse },
+  "lsp.request": { request: LspRequestRequest, response: LspRequestResponse },
+  "lsp.notify": { request: LspNotifyRequest, response: LspNotifyResponse },
+  "lsp.shutdown": { request: LspShutdownRequest, response: LspShutdownResponse },
 } as const;
 
 export type CommandName = keyof typeof CommandSchemas;

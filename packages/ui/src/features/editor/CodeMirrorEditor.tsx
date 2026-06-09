@@ -1,9 +1,4 @@
-import {
-  autocompletion,
-  closeBrackets,
-  closeBracketsKeymap,
-  completionKeymap,
-} from "@codemirror/autocomplete";
+import { closeBrackets, closeBracketsKeymap, completionKeymap } from "@codemirror/autocomplete";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import {
   bracketMatching,
@@ -44,6 +39,8 @@ import {
 import { cmHighlight, cmTheme } from "./editorTheme.js";
 import { registerEditorView } from "./editorViewBridge.js";
 import { languageForFile } from "./languages.js";
+import { languageAssist, lspCompartment } from "./lsp/extension.js";
+import { useLspStore } from "./lsp/useLspStore.js";
 import { PidDiffBlockToolbar } from "./PidDiffBlockToolbar.js";
 import { PidDiffMinimap } from "./PidDiffMinimap.js";
 import {
@@ -196,6 +193,8 @@ export function CodeMirrorEditor() {
         // Recompute dirty against the just-saved doc (it may differ if the user kept typing).
         // Only the live view reflects this tab if it's still the active one in its project.
         const tab = useEditorStore.getState().tabs[id];
+        // Keep the language server's view of the file in sync with disk.
+        if (tab) useLspStore.getState().notifyFileSaved(tab);
         const stillActive = tab
           ? useEditorStore.getState().byProject[tab.projectId]?.activeTabId === id
           : false;
@@ -250,7 +249,8 @@ export function CodeMirrorEditor() {
         indentOnInput(),
         bracketMatching(),
         closeBrackets(),
-        autocompletion(),
+        // Built-in completion or the LSP feature set, depending on live server state.
+        lspCompartment.of(languageAssist(tab)),
         highlightActiveLine(),
         highlightSelectionMatches(),
         diffGutter(),
@@ -342,7 +342,32 @@ export function CodeMirrorEditor() {
     view.scrollDOM.scrollTop = entry.scrollTop;
     if (!tab.readOnly) view.focus();
     refreshOverviewRef.current();
+    // Lazily bring up the language server for this tab's language (no-op when already
+    // running / missing / disabled). When it flips to ready, the revision effect below
+    // swaps the LSP extension in.
+    if (!tab.readOnly) useLspStore.getState().ensureForTab(tab);
   }, [activeTabId, status, buildState]);
+
+  // Swap the LSP slot (built-in completion ↔ server features) in the live view and every
+  // cached background-tab state whenever a server becomes or stops being usable. Mirrors the
+  // dark-flag effect above so background tabs keep their undo history.
+  const lspRevision = useLspStore((s) => s.revision);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `lspRevision` is the trigger; tab data is read from the live store.
+  useEffect(() => {
+    const tabs = useEditorStore.getState().tabs;
+    for (const [id, entry] of cacheRef.current) {
+      const tab = tabs[id];
+      if (!tab) continue;
+      entry.state = entry.state.update({
+        effects: lspCompartment.reconfigure(languageAssist(tab)),
+      }).state;
+    }
+    const view = viewRef.current;
+    const activeTab = prevIdRef.current ? tabs[prevIdRef.current] : undefined;
+    if (view && activeTab && activeTab.status === "ready") {
+      view.dispatch({ effects: lspCompartment.reconfigure(languageAssist(activeTab)) });
+    }
+  }, [lspRevision]);
 
   // Flip CodeMirror's dark flag live across the active view + every cached (inactive) state, so
   // switching themes never loses background-tab history.

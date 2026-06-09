@@ -15,6 +15,11 @@ export function registerEditorView(view: EditorView | null): void {
   activeView = view;
 }
 
+/** The mounted editor view, or null. Used by the LSP workspace to resolve cross-file jumps. */
+export function getEditorView(): EditorView | null {
+  return activeView;
+}
+
 /**
  * Move the caret to a 1-based line/column in the active editor and scroll it to the centre. Both
  * coordinates are clamped to the document bounds. No-ops when no editor is mounted.

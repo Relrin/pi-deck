@@ -33,6 +33,7 @@ import {
   resetSoftHeadParent,
 } from "../git/index.js";
 import { getRecentCommits } from "../git/log.js";
+import { type LanguageServerManager, LspManagerError } from "../lsp/manager.js";
 import { type CommandName, CommandSchemas } from "../protocol/commands.js";
 import type { TerminalManager } from "../terminal/index.js";
 import type { ArtefactsTracker } from "./artefacts-tracker.js";
@@ -58,6 +59,7 @@ export interface RouterContext {
   artefactsTracker: ArtefactsTracker;
   reviewStore: ReviewStore;
   terminalManager: TerminalManager;
+  languageServerManager: LanguageServerManager;
   hostVersion: string;
   protocolVersion: number;
 }
@@ -98,6 +100,13 @@ function mapGitError(err: unknown): never {
     throw new RouterError("not_a_repo", err.message);
   }
   throw err instanceof Error ? new RouterError("git_failed", err.message) : err;
+}
+
+function mapLspError(err: unknown): never {
+  if (err instanceof LspManagerError) {
+    throw new RouterError(err.code, err.message);
+  }
+  throw err instanceof Error ? new RouterError("lsp_failed", err.message) : err;
 }
 
 function mapFsError(err: unknown): never {
@@ -752,6 +761,52 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     return { dataB64: ctx.terminalManager.snapshot(parsed.terminalId) };
   },
   "terminal.detectShells": async (ctx) => ctx.terminalManager.detectShells(),
+  "lsp.status": async (ctx, payload) => {
+    const parsed = CommandSchemas["lsp.status"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    return ctx.languageServerManager.status({
+      projectId: project.id,
+      projectRoot: project.path,
+      refresh: parsed.refresh,
+    });
+  },
+  "lsp.ensure": async (ctx, payload) => {
+    const parsed = CommandSchemas["lsp.ensure"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      return await ctx.languageServerManager.ensure({
+        projectId: project.id,
+        projectRoot: project.path,
+        languageId: parsed.languageId,
+      });
+    } catch (err) {
+      mapLspError(err);
+    }
+  },
+  "lsp.request": async (ctx, payload) => {
+    const parsed = CommandSchemas["lsp.request"].request.parse(payload);
+    try {
+      return await ctx.languageServerManager.request(parsed);
+    } catch (err) {
+      mapLspError(err);
+    }
+  },
+  "lsp.notify": async (ctx, payload) => {
+    const parsed = CommandSchemas["lsp.notify"].request.parse(payload);
+    try {
+      ctx.languageServerManager.notify(parsed);
+    } catch (err) {
+      mapLspError(err);
+    }
+    return { ok: true as const };
+  },
+  "lsp.shutdown": async (ctx, payload) => {
+    const parsed = CommandSchemas["lsp.shutdown"].request.parse(payload);
+    await ctx.languageServerManager.shutdown(parsed.key);
+    return { ok: true as const };
+  },
 };
 
 export async function dispatch(
