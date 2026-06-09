@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import iconv from "iconv-lite";
 import { move, readTextFile, writeTextFile } from "../../src/fs/ops.js";
 import { FsExistsError, PathEscapeError } from "../../src/fs/types.js";
 
@@ -141,6 +142,33 @@ describe("readTextFile", () => {
     expect(res.content).toBe("");
   });
 
+  test("decodes a non-UTF-8 file with the requested encoding", async () => {
+    const p = join(root, "latin1.txt");
+    await writeFile(p, iconv.encode("café résumé", "win1252"));
+    // Decoded as UTF-8 the high bytes are mojibake; win1252 recovers the accents.
+    const utf8 = await readTextFile({ projectRoot: root, path: p });
+    expect(utf8.content).not.toBe("café résumé");
+    const res = await readTextFile({ projectRoot: root, path: p, encoding: "win1252" });
+    expect(res.content).toBe("café résumé");
+    expect(res.encoding).toBe("win1252");
+  });
+
+  test("reads a UTF-16LE file (NUL bytes are not treated as binary)", async () => {
+    const p = join(root, "utf16.txt");
+    await writeFile(p, iconv.encode("ünïcödé\nline", "utf-16le", { addBOM: true }));
+    const res = await readTextFile({ projectRoot: root, path: p, encoding: "utf-16le" });
+    expect(res.binary).toBe(false);
+    expect(res.content).toBe("ünïcödé\nline");
+  });
+
+  test("rejects an unsupported encoding", async () => {
+    const p = join(root, "x.txt");
+    await writeFile(p, "hi");
+    await expect(
+      readTextFile({ projectRoot: root, path: p, encoding: "not-a-real-encoding" }),
+    ).rejects.toThrow(/Unsupported encoding/);
+  });
+
   test("rejects a path outside the project root", async () => {
     await expect(
       readTextFile({ projectRoot: root, path: join(root, "..", "escape.txt") }),
@@ -159,6 +187,28 @@ describe("writeTextFile", () => {
     const p = join(root, "out-crlf.txt");
     await writeTextFile({ projectRoot: root, path: p, content: "x\ny\n", eol: "crlf" });
     expect((await readFile(p)).toString("utf8")).toBe("x\r\ny\r\n");
+  });
+
+  test("encodes with a non-UTF-8 encoding", async () => {
+    const p = join(root, "out-latin1.txt");
+    await writeTextFile({
+      projectRoot: root,
+      path: p,
+      content: "café\n",
+      eol: "lf",
+      encoding: "win1252",
+    });
+    const bytes = await readFile(p);
+    expect(iconv.decode(bytes, "win1252")).toBe("café\n");
+    // 'é' is a single 0xE9 byte in win1252, not the 2-byte UTF-8 sequence.
+    expect(bytes).toContain(0xe9);
+  });
+
+  test("prepends a UTF-8 BOM when bom is set", async () => {
+    const p = join(root, "out-bom.txt");
+    await writeTextFile({ projectRoot: root, path: p, content: "hi", eol: "lf", bom: true });
+    const bytes = await readFile(p);
+    expect([bytes[0], bytes[1], bytes[2]]).toEqual([0xef, 0xbb, 0xbf]);
   });
 
   test("rejects a path outside the project root", async () => {

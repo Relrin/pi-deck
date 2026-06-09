@@ -690,7 +690,11 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     const project = await ctx.metadataStore.readProject(parsed.projectId);
     if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
     try {
-      return await fsReadTextFile({ projectRoot: project.path, path: parsed.path });
+      return await fsReadTextFile({
+        projectRoot: project.path,
+        path: parsed.path,
+        encoding: parsed.encoding,
+      });
     } catch (err) {
       mapFsError(err);
     }
@@ -705,6 +709,8 @@ const handlers: { [C in CommandName]: CommandHandler } = {
         path: parsed.path,
         content: parsed.content,
         eol: parsed.eol,
+        encoding: parsed.encoding,
+        bom: parsed.bom,
       });
       return { ok: true as const };
     } catch (err) {

@@ -1,5 +1,6 @@
 import { rename as fsRename, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import iconv from "iconv-lite";
 import { FsExistsError, IllegalNameError, PathEscapeError } from "./types.js";
 
 /**
@@ -181,13 +182,17 @@ export interface ReadTextFileArgs {
   projectRoot: string;
   /** Absolute path of the file to read; must resolve inside the project root. */
   path: string;
+  /** iconv-lite encoding name to decode with. Defaults to UTF-8. */
+  encoding?: string;
 }
 
 export interface ReadTextFileResult {
-  /** UTF-8 text normalised to LF. Empty string when `binary` or `tooLarge`. */
+  /** Decoded text normalised to LF. Empty string when `binary` or `tooLarge`. */
   content: string;
   /** Dominant line ending detected on disk. */
   eol: Eol;
+  /** Encoding the bytes were decoded with (echoes the request, or the UTF-8 default). */
+  encoding: string;
   /** A NUL byte was found in the sniffed prefix — treat as non-editable. */
   binary: boolean;
   /** File exceeded `MAX_EDITABLE_BYTES`. */
@@ -202,6 +207,10 @@ export interface WriteTextFileArgs {
   content: string;
   /** Line ending to materialise on disk. */
   eol: Eol;
+  /** iconv-lite encoding name to write with. Defaults to UTF-8. */
+  encoding?: string;
+  /** Prepend a byte-order mark (UTF-8/UTF-16). Ignored for encodings without a BOM. */
+  bom?: boolean;
 }
 
 /**
@@ -214,46 +223,79 @@ export async function readTextFile(args: ReadTextFileArgs): Promise<ReadTextFile
   const root = resolve(args.projectRoot);
   const target = resolve(args.path);
   assertInsideRoot(target, root);
+  const encoding = args.encoding ?? "utf-8";
+  if (!iconv.encodingExists(encoding)) {
+    throw new Error(`Unsupported encoding: ${encoding}`);
+  }
+
   const info = await stat(target);
   const sizeBytes = info.size;
   if (sizeBytes > MAX_EDITABLE_BYTES) {
-    return { content: "", eol: "lf", binary: false, tooLarge: true, sizeBytes };
+    return { content: "", eol: "lf", encoding, binary: false, tooLarge: true, sizeBytes };
   }
+
   const buf = await readFile(target);
-  if (looksBinary(buf)) {
-    return { content: "", eol: "lf", binary: true, tooLarge: false, sizeBytes };
+  if (looksBinary(buf, encoding)) {
+    return { content: "", eol: "lf", encoding, binary: true, tooLarge: false, sizeBytes };
   }
-  let text = buf.toString("utf8");
-  // Strip a leading UTF-8 BOM so it doesn't surface as a stray glyph in the gutter.
+
+  // UTF-8 keeps the native fast path; everything else goes through iconv-lite.
+  let text = isUtf8(encoding) ? buf.toString("utf8") : iconv.decode(buf, encoding);
+
+  // Strip a leading BOM so it doesn't surface as a stray glyph in the gutter.
   if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
   const eol = detectEol(text);
   const content = text.replace(/\r\n?/g, "\n");
-  return { content, eol, binary: false, tooLarge: false, sizeBytes };
+  return { content, eol, encoding, binary: false, tooLarge: false, sizeBytes };
 }
 
-/** Persist editor content, re-applying `eol`. Content arrives LF-separated from the renderer. */
+/**
+ * Persist editor content, re-applying `eol` and re-encoding. Content arrives LF-separated from
+ * the renderer. UTF-8 without a BOM keeps the native write path; other encodings (and BOMs) go
+ * through iconv-lite.
+ */
 export async function writeTextFile(args: WriteTextFileArgs): Promise<void> {
   const root = resolve(args.projectRoot);
   const target = resolve(args.path);
   assertInsideRoot(target, root);
+  const encoding = args.encoding ?? "utf-8";
+  if (!iconv.encodingExists(encoding)) {
+    throw new Error(`Unsupported encoding: ${encoding}`);
+  }
+
   const lf = args.content.replace(/\r\n?/g, "\n");
   const body = args.eol === "crlf" ? lf.replace(/\n/g, "\r\n") : lf;
-  await writeFile(target, body, "utf8");
+
+  if (isUtf8(encoding) && !args.bom) {
+    await writeFile(target, body, "utf8");
+    return;
+  }
+
+  await writeFile(target, iconv.encode(body, encoding, { addBOM: args.bom }));
 }
 
 function detectEol(text: string): Eol {
   let crlf = 0;
   let lf = 0;
+
   for (let i = 0; i < text.length; i++) {
     if (text.charCodeAt(i) !== 10) continue; // \n
     if (i > 0 && text.charCodeAt(i - 1) === 13)
       crlf++; // \r\n
     else lf++;
   }
+
   return crlf > lf ? "crlf" : "lf";
 }
 
-function looksBinary(buf: Buffer): boolean {
+function isUtf8(encoding: string): boolean {
+  return /^utf-?8$/i.test(encoding);
+}
+
+function looksBinary(buf: Buffer, encoding: string): boolean {
+  // UTF-16 / UCS-2 legitimately carry NUL bytes (the high byte of every ASCII char), so the
+  // NUL sniff would misfire. When the caller explicitly asked for a wide encoding, trust it.
+  if (/^(utf-?16|ucs-?2)/i.test(encoding)) return false;
   const n = Math.min(buf.length, 8000);
   for (let i = 0; i < n; i++) {
     if (buf[i] === 0) return true;

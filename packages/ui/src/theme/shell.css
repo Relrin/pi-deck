@@ -326,6 +326,108 @@
   color: var(--accent);
 }
 
+.pid-footer .seg-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 5px;
+  margin: 0 -5px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background-color 0.12s,
+    color 0.12s;
+}
+.pid-footer .seg-btn:hover {
+  background: var(--bg-2);
+  color: var(--ink-1);
+}
+.pid-footer .seg-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* Footer popovers (encoding / line-ending menus). Mirrors `pid-diff-toolbar-menu` chrome but
+   sized for the footer's mono type; opens upward (`side="top"`). */
+.pid-footer-menu {
+  min-width: 220px;
+  padding: 4px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+  z-index: 1000;
+  font-family: var(--font-mono);
+}
+.pid-footer-menu-head {
+  display: block;
+  padding: 6px 8px 4px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.pid-footer-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--ink-1);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+.pid-footer-menu-item[data-highlighted] {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+.pid-footer-menu-item[data-active] {
+  color: var(--accent);
+}
+.pid-footer-menu-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  flex: 0 0 12px;
+  color: var(--accent);
+}
+.pid-footer-menu-desc {
+  margin-left: auto;
+  color: var(--ink-3);
+  font-size: 10px;
+}
+.pid-footer-menu-sep {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--line);
+}
+
+/* Go to Line:Column dialog input. */
+.pid-goto-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--t-13);
+  outline: none;
+}
+.pid-goto-input:focus-visible {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
 /* ---------- Screen switcher (in footer) ---------- */
 .pid-screen-switcher {
   display: flex;

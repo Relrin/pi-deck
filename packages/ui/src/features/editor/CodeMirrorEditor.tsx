@@ -42,6 +42,7 @@ import {
   setDiffBaseline,
 } from "./diffExtension.js";
 import { cmHighlight, cmTheme } from "./editorTheme.js";
+import { registerEditorView } from "./editorViewBridge.js";
 import { languageForFile } from "./languages.js";
 import { PidDiffBlockToolbar } from "./PidDiffBlockToolbar.js";
 import { PidDiffMinimap } from "./PidDiffMinimap.js";
@@ -65,6 +66,9 @@ interface TabCacheEntry {
   scrollTop: number;
   /** The doc as last loaded/saved; the dirty flag is `!doc.eq(savedText)`. */
   savedText: EditorState["doc"];
+  /** The tab's `reloadToken` when this state was built; a mismatch means the buffer was
+   * replaced out-of-band (reopen-in-encoding) and the cached state is stale. */
+  reloadToken: number;
 }
 
 /** Resolve whether the active theme is dark (drives CodeMirror's `dark` flag). */
@@ -280,12 +284,19 @@ export function CodeMirrorEditor() {
     if (!parent) return;
     const view = new EditorView({ parent, state: EditorState.create({ doc: "" }) });
     viewRef.current = view;
+
+    // Publish the single view so the footer's "Go to Line:Column" control can drive the caret.
+    registerEditorView(view);
+
     // Scrolling invalidates the toolbar's anchor — drop it.
     const onScroll = () => closeToolbarRef.current();
     view.scrollDOM.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       view.scrollDOM.removeEventListener("scroll", onScroll);
+
       if (overviewRafRef.current !== null) cancelAnimationFrame(overviewRafRef.current);
+
+      registerEditorView(null);
       view.destroy();
       viewRef.current = null;
     };
@@ -316,9 +327,15 @@ export function CodeMirrorEditor() {
       return;
     }
     let entry = cacheRef.current.get(activeTabId);
+    if (entry && entry.reloadToken !== tab.reloadToken) {
+      // The buffer was swapped underneath us (reopen-in-encoding) — discard the cached state so
+      // we rebuild from the freshly-decoded content rather than restoring the old doc.
+      cacheRef.current.delete(activeTabId);
+      entry = undefined;
+    }
     if (!entry) {
       const state = buildState(tab);
-      entry = { state, scrollTop: 0, savedText: state.doc };
+      entry = { state, scrollTop: 0, savedText: state.doc, reloadToken: tab.reloadToken };
       cacheRef.current.set(activeTabId, entry);
     }
     view.setState(entry.state);

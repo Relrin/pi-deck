@@ -591,10 +591,14 @@ export const FsReadFileRequest = z.object({
   projectId: z.string().uuid(),
   /** Absolute path of the file to read; must resolve inside the project root. */
   path: z.string().min(1),
+  /** Character encoding to decode the bytes with (iconv-lite name). Defaults to UTF-8. */
+  encoding: z.string().optional(),
 });
 export const FsReadFileResponse = z.object({
   content: z.string(),
   eol: z.enum(["lf", "crlf"]),
+  /** Encoding actually used to decode the file (echoes the request, or the UTF-8 default). */
+  encoding: z.string(),
   binary: z.boolean(),
   tooLarge: z.boolean(),
   sizeBytes: z.number().int().nonnegative(),
@@ -609,6 +613,10 @@ export const FsWriteFileRequest = z.object({
   path: z.string().min(1),
   content: z.string(),
   eol: z.enum(["lf", "crlf"]),
+  /** Character encoding to write the bytes as (iconv-lite name). Defaults to UTF-8. */
+  encoding: z.string().optional(),
+  /** Prepend a byte-order mark (for UTF-8/UTF-16). Ignored for encodings without a BOM. */
+  bom: z.boolean().optional(),
 });
 export const FsWriteFileResponse = z.object({ ok: z.literal(true) });
 

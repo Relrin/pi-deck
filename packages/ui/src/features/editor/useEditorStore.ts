@@ -32,6 +32,13 @@ export interface EditorTab {
   /** HEAD baseline for the diff gutter; `null` = untracked / no repo (no tints). */
   baseline: string | null;
   eol: Eol;
+  /** iconv-lite encoding the file is decoded/encoded with (status bar + read/write). */
+  encoding: string;
+  /** Whether to write a byte-order mark on save (UTF-8/UTF-16). */
+  bom: boolean;
+  /** Bumped whenever the buffer is replaced out-of-band (e.g. reopen-in-encoding) so the
+   * mounted CodeMirror view evicts its cached state and rebuilds from the new `content`. */
+  reloadToken: number;
   /** Non-editable: binary blob, oversized file, or a load error. */
   readOnly: boolean;
   /** Drives the read-only overlay copy. */
@@ -73,6 +80,12 @@ interface EditorStoreState {
   closeTab: (id: string) => void;
   setCursor: (id: string, cursor: EditorCursor) => void;
   setDirty: (id: string, dirty: boolean) => void;
+  /** Change the line ending. Marks the tab dirty so the next save materialises it on disk. */
+  setEol: (id: string, eol: Eol) => void;
+  /** Toggle the write-time BOM. Marks the tab dirty so the next save applies it. */
+  setBom: (id: string, bom: boolean) => void;
+  /** Reopen the file decoded with a different encoding, discarding any unsaved edits. */
+  setEncoding: (id: string, encoding: string) => void;
   /** Persist `content` to disk. Returns true on success. */
   saveTab: (id: string, content: string) => Promise<boolean>;
 }
@@ -159,6 +172,9 @@ export const useEditorStore = create<EditorStoreState>((set, get) => ({
       content: "",
       baseline: null,
       eol: "lf",
+      encoding: "utf-8",
+      bom: false,
+      reloadToken: 0,
       readOnly: false,
       dirty: false,
       cursor: { ...INITIAL_CURSOR },
@@ -225,6 +241,32 @@ export const useEditorStore = create<EditorStoreState>((set, get) => ({
     });
   },
 
+  setEol: (id, eol) => {
+    set((s) => {
+      const tab = s.tabs[id];
+      if (!tab || tab.readOnly || tab.eol === eol) return s;
+      // The buffer is unchanged but the on-disk bytes would differ, so mark dirty to prompt a save.
+      return { tabs: { ...s.tabs, [id]: { ...tab, eol, dirty: true } } };
+    });
+  },
+
+  setBom: (id, bom) => {
+    set((s) => {
+      const tab = s.tabs[id];
+      if (!tab || tab.readOnly || tab.bom === bom) return s;
+      return { tabs: { ...s.tabs, [id]: { ...tab, bom, dirty: true } } };
+    });
+  },
+
+  setEncoding: (id, encoding) => {
+    const tab = get().tabs[id];
+    if (!tab || tab.encoding === encoding) return;
+    // Re-decode the on-disk bytes with the new encoding. loadTab replaces `content` and bumps
+    // `reloadToken`, which forces the mounted editor to rebuild from the freshly-decoded buffer.
+    patchTab(id, set, get, { encoding, status: "loading", dirty: false });
+    void loadTab(id, set, get);
+  },
+
   saveTab: async (id, content) => {
     const tab = get().tabs[id];
     if (!tab || tab.readOnly) return false;
@@ -236,6 +278,8 @@ export const useEditorStore = create<EditorStoreState>((set, get) => ({
         path: tab.absPath,
         content,
         eol: tab.eol,
+        encoding: tab.encoding,
+        bom: tab.bom,
       });
       set((s) => {
         const current = s.tabs[id];
@@ -265,19 +309,25 @@ async function loadTab(
   }
   try {
     const [file, baseline] = await Promise.all([
-      client.call("fs.readFile", { projectId: tab.projectId, path: tab.absPath }),
+      client.call("fs.readFile", {
+        projectId: tab.projectId,
+        path: tab.absPath,
+        encoding: tab.encoding,
+      }),
       client
         .call("git.fileBaseline", { projectId: tab.projectId, path: tab.relPath })
         .then((r) => r.content)
         .catch(() => null),
     ]);
-    if (!get().tabs[id]) return; // closed while loading
+    const current = get().tabs[id];
+    if (!current) return; // closed while loading
     if (file.binary || file.tooLarge) {
       patchTab(id, set, get, {
         status: "ready",
         readOnly: true,
         blocked: file.binary ? "binary" : "tooLarge",
         eol: file.eol,
+        encoding: file.encoding,
       });
       return;
     }
@@ -287,9 +337,15 @@ async function loadTab(
       content: file.content,
       baseline,
       eol: file.eol,
+      encoding: file.encoding,
       readOnly: false,
+      dirty: false,
+      blocked: undefined,
       indentUseTabs: indent.useTabs,
       indentWidth: indent.width,
+      // Force the live editor to rebuild from this buffer (matters for reopen-in-encoding,
+      // where the same tab's content is swapped out underneath the mounted view).
+      reloadToken: current.reloadToken + 1,
     });
   } catch (err) {
     if (!get().tabs[id]) return;

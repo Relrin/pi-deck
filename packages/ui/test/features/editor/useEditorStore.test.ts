@@ -14,10 +14,11 @@ function mockClient(handlers: Record<string, (input: unknown) => unknown>) {
 }
 
 const readFileOk =
-  (content: string, eol: "lf" | "crlf" = "lf") =>
+  (content: string, eol: "lf" | "crlf" = "lf", encoding = "utf-8") =>
   () => ({
     content,
     eol,
+    encoding,
     binary: false,
     tooLarge: false,
     sizeBytes: content.length,
@@ -105,6 +106,7 @@ describe("useEditorStore.openFile", () => {
         "fs.readFile": () => ({
           content: "",
           eol: "lf",
+          encoding: "utf-8",
           binary: true,
           tooLarge: false,
           sizeBytes: 9,
@@ -147,6 +149,8 @@ describe("useEditorStore.saveTab", () => {
       path: "/proj/a.ts",
       content: "a changed",
       eol: "crlf",
+      encoding: "utf-8",
+      bom: false,
     });
     expect(useEditorStore.getState().tabs[id]?.dirty).toBe(false);
     expect(useEditorStore.getState().tabs[id]?.content).toBe("a changed");
@@ -176,6 +180,81 @@ describe("useEditorStore.closeTab", () => {
       "p1:/proj/c.ts",
     ]);
     expect(useEditorStore.getState().byProject.p1?.activeTabId).toBe("p1:/proj/c.ts");
+  });
+});
+
+describe("useEditorStore.setEol / setBom", () => {
+  test("setEol changes the ending and marks the tab dirty", async () => {
+    useSessionsStore.setState({
+      client: mockClient({
+        "fs.readFile": readFileOk("a\nb\n", "lf"),
+        "git.fileBaseline": () => ({ content: null }),
+      }) as never,
+    });
+    useEditorStore.getState().openFile({ projectId: "p1", absPath: "/proj/a.ts", relPath: "a.ts" });
+    await flush();
+    const id = "p1:/proj/a.ts";
+    expect(useEditorStore.getState().tabs[id]?.dirty).toBe(false);
+
+    useEditorStore.getState().setEol(id, "crlf");
+    expect(useEditorStore.getState().tabs[id]?.eol).toBe("crlf");
+    expect(useEditorStore.getState().tabs[id]?.dirty).toBe(true);
+  });
+
+  test("setBom toggles the BOM flag and marks dirty", async () => {
+    useSessionsStore.setState({
+      client: mockClient({
+        "fs.readFile": readFileOk("x"),
+        "git.fileBaseline": () => ({ content: null }),
+      }) as never,
+    });
+    useEditorStore.getState().openFile({ projectId: "p1", absPath: "/proj/a.ts", relPath: "a.ts" });
+    await flush();
+    const id = "p1:/proj/a.ts";
+
+    useEditorStore.getState().setBom(id, true);
+    expect(useEditorStore.getState().tabs[id]?.bom).toBe(true);
+    expect(useEditorStore.getState().tabs[id]?.dirty).toBe(true);
+  });
+});
+
+describe("useEditorStore.setEncoding", () => {
+  test("reopens the file decoded with the new encoding and bumps reloadToken", async () => {
+    const reads: unknown[] = [];
+    useSessionsStore.setState({
+      client: mockClient({
+        "fs.readFile": (input) => {
+          reads.push(input);
+          const enc = (input as { encoding?: string }).encoding ?? "utf-8";
+          // Stand-in for a real re-decode: the content differs per requested encoding.
+          return {
+            content: enc === "win1252" ? "café" : "cafÃ©",
+            eol: "lf" as const,
+            encoding: enc,
+            binary: false,
+            tooLarge: false,
+            sizeBytes: 4,
+          };
+        },
+        "git.fileBaseline": () => ({ content: null }),
+      }) as never,
+    });
+    useEditorStore
+      .getState()
+      .openFile({ projectId: "p1", absPath: "/proj/a.txt", relPath: "a.txt" });
+    await flush();
+    const id = "p1:/proj/a.txt";
+    const tokenBefore = useEditorStore.getState().tabs[id]?.reloadToken ?? 0;
+    expect(useEditorStore.getState().tabs[id]?.content).toBe("cafÃ©");
+
+    useEditorStore.getState().setEncoding(id, "win1252");
+    await flush();
+
+    const tab = useEditorStore.getState().tabs[id];
+    expect(tab?.encoding).toBe("win1252");
+    expect(tab?.content).toBe("café");
+    expect(tab?.reloadToken).toBe(tokenBefore + 1);
+    expect((reads[reads.length - 1] as { encoding?: string }).encoding).toBe("win1252");
   });
 });
 
