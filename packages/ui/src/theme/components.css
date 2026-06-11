@@ -768,6 +768,17 @@
 .pid-theme-swatch > span {
   display: block;
 }
+.pid-theme-syntax-strip {
+  display: flex;
+  gap: 4px;
+}
+.pid-theme-syntax-strip > span {
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  border: 1px solid var(--line);
+}
 .pid-theme-card-name {
   font-family: var(--font-mono);
   font-size: 10px;

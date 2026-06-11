@@ -189,11 +189,7 @@ function CodeBlock({
 
   return (
     <div
-      className={cn(
-        frameClass,
-        "bg-[var(--color-panel-2)]",
-        shouldHighlight && "motion-safe:opacity-90",
-      )}
+      className={cn(frameClass, "bg-[var(--code-bg)]", shouldHighlight && "motion-safe:opacity-90")}
       aria-busy={shouldHighlight && !html ? true : undefined}
     >
       <pre className="m-0 p-3 text-xs font-mono">

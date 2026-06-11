@@ -78,6 +78,21 @@ export function ThemePreviewCard({ listing, client, active, onSelect }: ThemePre
       }
     : {};
 
+  // Mirrors the tokens.css default chains (--syn-keyword → --accent, etc.) so cards preview
+  // syntax colours even for themes without an explicit syn section. Resolved from the spec
+  // directly — the inherited --syn-* vars are already substituted against the active theme
+  // at :root, so they can't be re-scoped per card.
+  const syntaxDots: Array<[string, string]> = spec
+    ? (
+        [
+          ["keyword", spec["syn-keyword"] ?? spec.accent],
+          ["string", spec["syn-string"] ?? spec.add],
+          ["function", spec["syn-function"] ?? spec.mod],
+          ["type", spec["syn-type"] ?? spec.info],
+        ] as Array<[string, string | undefined]>
+      ).filter((entry): entry is [string, string] => typeof entry[1] === "string")
+    : [];
+
   // Bundled themes ship with the app and are forkable but not deletable; user-sourced themes
   // come from disk and can be removed. The chip variant tracks the source so users can scan
   // the grid for things they've added themselves.
@@ -127,6 +142,13 @@ export function ThemePreviewCard({ listing, client, active, onSelect }: ThemePre
           <span style={{ background: "var(--accent)" }} />
           <span style={{ background: "var(--ink-0)" }} />
         </span>
+        {syntaxDots.length > 0 ? (
+          <span className="pid-theme-syntax-strip" aria-hidden>
+            {syntaxDots.map(([label, color]) => (
+              <span key={label} title={label} style={{ background: color }} />
+            ))}
+          </span>
+        ) : null}
         <span className="pid-theme-card-meta">
           <span className="pid-theme-card-name">{listing.name}</span>
           <PidChip variant={chipVariant}>{chipLabel}</PidChip>

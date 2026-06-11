@@ -4,7 +4,8 @@ import type { ThemeSpec } from "../../protocol/theme.js";
  * Best-effort adapter from a VS Code colour theme JSON into a pi-deck `ThemeSpec`.
  *
  * VS Code themes carry a flat `colors` map (UI chrome) and an array of `tokenColors` (syntax).
- * We map a handful of well-known UI keys onto our surface/ink/accent vocabulary; anything we
+ * We map well-known UI keys onto our surface/ink/accent vocabulary, TextMate scopes from
+ * `tokenColors` onto the `syn-*` palette, and `terminal.ansi*` onto `term-*`; anything we
  * cannot derive falls back to the CSS defaults in `tokens.css`. The raw JSON is also returned
  * so the Shiki bridge can pass it through unchanged for syntax highlighting.
  */
@@ -71,6 +72,141 @@ function withAlpha(hex: string, alpha: number): string {
     .toString(16)
     .padStart(2, "0");
   return `#${[p.r, p.g, p.b].map((n) => n.toString(16).padStart(2, "0")).join("")}${a}`;
+}
+
+interface TokenRule {
+  selector: string;
+  foreground?: string;
+  fontStyle?: string;
+  /** Position in the original tokenColors array — last rule wins specificity ties. */
+  index: number;
+}
+
+/**
+ * Flatten `tokenColors` into one entry per simple selector. Comma lists are split; descendant
+ * selectors (containing spaces) and empty-scope global rules are skipped — best effort, in
+ * keeping with the rest of this adapter.
+ */
+export function flattenTokenColors(tokenColors: VSCodeThemeJson["tokenColors"]): TokenRule[] {
+  const rules: TokenRule[] = [];
+  (tokenColors ?? []).forEach((entry, index) => {
+    const { scope, settings } = entry ?? {};
+    if (!settings) return;
+    const foreground = typeof settings.foreground === "string" ? settings.foreground : undefined;
+    const fontStyle = typeof settings.fontStyle === "string" ? settings.fontStyle : undefined;
+    if (foreground === undefined && fontStyle === undefined) return;
+    const parts = (Array.isArray(scope) ? scope : typeof scope === "string" ? [scope] : [])
+      .flatMap((s) => s.split(","))
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0 && !/\s/.test(s));
+    for (const selector of parts) rules.push({ selector, foreground, fontStyle, index });
+  });
+  return rules;
+}
+
+/**
+ * Resolve the style for a TextMate scope: a selector matches iff it equals the scope or is a
+ * dotted prefix of it. `foreground` and `fontStyle` are resolved independently (TextMate rules
+ * cascade per property) — longest selector wins, ties go to the later rule.
+ */
+export function resolveScope(
+  rules: TokenRule[],
+  scope: string,
+): { foreground?: string; fontStyle?: string } | undefined {
+  let fg: TokenRule | undefined;
+  let fs: TokenRule | undefined;
+  const better = (candidate: TokenRule, best: TokenRule | undefined): boolean =>
+    !best ||
+    candidate.selector.length > best.selector.length ||
+    (candidate.selector.length === best.selector.length && candidate.index >= best.index);
+  for (const rule of rules) {
+    if (scope !== rule.selector && !scope.startsWith(`${rule.selector}.`)) continue;
+    if (rule.foreground !== undefined && better(rule, fg)) fg = rule;
+    if (rule.fontStyle !== undefined && better(rule, fs)) fs = rule;
+  }
+  if (!fg && !fs) return undefined;
+  return { foreground: fg?.foreground, fontStyle: fs?.fontStyle };
+}
+
+/** First scope in priority order that resolves to a foreground colour. */
+function pickToken(rules: TokenRule[], ...scopes: string[]): string | undefined {
+  for (const scope of scopes) {
+    const resolved = resolveScope(rules, scope);
+    if (resolved?.foreground) return resolved.foreground;
+  }
+  return undefined;
+}
+
+/** Map `tokenColors` onto the `syn-*` palette. Unmatched tokens are omitted (CSS defaults win). */
+function adaptTokenColors(tokenColors: VSCodeThemeJson["tokenColors"]): ThemeSpec {
+  const rules = flattenTokenColors(tokenColors);
+  const syn: ThemeSpec = {};
+  const set = (key: string, ...scopes: string[]) => {
+    const fg = pickToken(rules, ...scopes);
+    if (fg) syn[key] = fg;
+  };
+  set("syn-keyword", "keyword.control", "keyword", "storage.modifier", "storage");
+  set("syn-string", "string");
+  set("syn-regexp", "string.regexp", "constant.character.escape");
+  set("syn-comment", "comment");
+  set("syn-doc-comment", "comment.block.documentation");
+  set("syn-number", "constant.numeric", "constant");
+  set("syn-constant", "constant.language", "variable.other.constant", "constant");
+  set("syn-type", "entity.name.type", "support.type", "storage.type");
+  set("syn-class", "entity.name.class", "entity.name.type.class", "support.class");
+  set("syn-function", "entity.name.function", "support.function");
+  set("syn-macro", "entity.name.function.macro", "entity.name.function.preprocessor");
+  set("syn-variable", "variable.other.readwrite", "variable");
+  set("syn-parameter", "variable.parameter");
+  set(
+    "syn-property",
+    "variable.other.property",
+    "support.type.property-name",
+    "meta.object-literal.key",
+  );
+  set("syn-attribute", "entity.other.attribute-name");
+  set("syn-tag", "entity.name.tag");
+  set("syn-operator", "keyword.operator");
+  set("syn-punctuation", "punctuation");
+  set("syn-meta", "meta.preprocessor", "storage.type.annotation", "entity.name.function.decorator");
+  set("syn-link", "markup.underline.link", "string.other.link");
+  set("syn-heading", "markup.heading", "entity.name.section");
+  set("syn-invalid", "invalid");
+
+  const comment = resolveScope(rules, "comment");
+  if (comment?.fontStyle !== undefined) {
+    syn["syn-comment-style"] = comment.fontStyle.includes("italic") ? "italic" : "normal";
+  }
+  return syn;
+}
+
+const ANSI_KEYS = [
+  ["term-black", "terminal.ansiBlack"],
+  ["term-red", "terminal.ansiRed"],
+  ["term-green", "terminal.ansiGreen"],
+  ["term-yellow", "terminal.ansiYellow"],
+  ["term-blue", "terminal.ansiBlue"],
+  ["term-magenta", "terminal.ansiMagenta"],
+  ["term-cyan", "terminal.ansiCyan"],
+  ["term-white", "terminal.ansiWhite"],
+  ["term-bright-black", "terminal.ansiBrightBlack"],
+  ["term-bright-red", "terminal.ansiBrightRed"],
+  ["term-bright-green", "terminal.ansiBrightGreen"],
+  ["term-bright-yellow", "terminal.ansiBrightYellow"],
+  ["term-bright-blue", "terminal.ansiBrightBlue"],
+  ["term-bright-magenta", "terminal.ansiBrightMagenta"],
+  ["term-bright-cyan", "terminal.ansiBrightCyan"],
+  ["term-bright-white", "terminal.ansiBrightWhite"],
+] as const;
+
+/** Map `terminal.ansi*` workbench colours onto the `term-*` palette; absent keys are omitted. */
+function adaptTerminalColors(colors: Record<string, string>): ThemeSpec {
+  const term: ThemeSpec = {};
+  for (const [token, vscodeKey] of ANSI_KEYS) {
+    const value = pick(colors, vscodeKey);
+    if (value) term[token] = value;
+  }
+  return term;
 }
 
 export function adaptVSCodeTheme(json: unknown, fallbackName?: string): AdaptedTheme {
@@ -157,6 +293,8 @@ export function adaptVSCodeTheme(json: unknown, fallbackName?: string): AdaptedT
     "mod-soft": withAlpha(mod, 0.12),
     info,
     warn,
+    ...adaptTokenColors(raw.tokenColors),
+    ...adaptTerminalColors(colors),
   };
 
   return { spec, raw };

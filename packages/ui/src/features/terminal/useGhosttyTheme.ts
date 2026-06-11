@@ -3,10 +3,11 @@ import { useThemeStore } from "../../theme/useThemeStore.js";
 import type { TerminalTheme } from "./TerminalRenderer.js";
 
 /**
- * Bridges the active pi-deck theme into the terminal emulator's colour scheme. pi-deck themes
- * expose semantic tokens (`--bg-0`, `--ink-0`, `--accent`, `--add`/`--del`/`--warn`/…) but no
- * ANSI-16 palette, so we map the base colours from the theme and derive a coherent palette from
- * the semantic colours, falling back to a sensible default per light/dark when a token is unset.
+ * Bridges the active pi-deck theme into the terminal emulator's colour scheme. The ANSI-16
+ * palette reads the `--term-*` tokens; their tokens.css defaults chain onto the semantic
+ * vocabulary (`--del`, `--add`, `--info`, …), so themes without a term section keep the
+ * historical derived look. Base colours (bg/fg/cursor/selection) stay derived from UI tokens.
+ * The hardcoded palettes below are last-resort fallbacks for non-DOM environments.
  *
  * Recomputed whenever the active theme changes (the loader has already written the new CSS
  * variables to `:root` by then, so reading computed styles yields fresh values).
@@ -106,22 +107,22 @@ function buildTerminalTheme(kind: "light" | "dark" | undefined): TerminalTheme {
     cursor: v("--accent", dark ? "#e6a23c" : "#c05621"),
     cursorAccent: v("--bg-0", dark ? "#0b0b0d" : "#ffffff"),
     selectionBackground: v("--accent-soft", dark ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.15)"),
-    black: v("--bg-2", ansi.black),
-    red: v("--del", ansi.red),
-    green: v("--add", ansi.green),
-    yellow: v("--warn", ansi.yellow),
-    blue: v("--info", ansi.blue),
-    magenta: v("--mod", ansi.magenta),
-    cyan: v("--accent", ansi.cyan),
-    white: v("--ink-1", ansi.white),
-    brightBlack: v("--ink-3", ansi.brightBlack),
-    brightRed: v("--del", ansi.brightRed),
-    brightGreen: v("--add", ansi.brightGreen),
-    brightYellow: v("--warn", ansi.brightYellow),
-    brightBlue: v("--info", ansi.brightBlue),
-    brightMagenta: v("--mod", ansi.brightMagenta),
-    brightCyan: v("--accent", ansi.brightCyan),
-    brightWhite: v("--ink-0", ansi.brightWhite),
+    black: v("--term-black", ansi.black),
+    red: v("--term-red", ansi.red),
+    green: v("--term-green", ansi.green),
+    yellow: v("--term-yellow", ansi.yellow),
+    blue: v("--term-blue", ansi.blue),
+    magenta: v("--term-magenta", ansi.magenta),
+    cyan: v("--term-cyan", ansi.cyan),
+    white: v("--term-white", ansi.white),
+    brightBlack: v("--term-bright-black", ansi.brightBlack),
+    brightRed: v("--term-bright-red", ansi.brightRed),
+    brightGreen: v("--term-bright-green", ansi.brightGreen),
+    brightYellow: v("--term-bright-yellow", ansi.brightYellow),
+    brightBlue: v("--term-bright-blue", ansi.brightBlue),
+    brightMagenta: v("--term-bright-magenta", ansi.brightMagenta),
+    brightCyan: v("--term-bright-cyan", ansi.brightCyan),
+    brightWhite: v("--term-bright-white", ansi.brightWhite),
   };
 }
 

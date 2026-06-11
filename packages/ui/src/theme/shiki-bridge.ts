@@ -1,8 +1,8 @@
-import type { ThemeKind } from "@pi-deck/core";
+import { PI_DECK_SHIKI_THEME } from "./shiki-theme.js";
 
 /**
  * Shiki receives one of:
- *   - a bundled theme name string (e.g. "github-dark-default"), or
+ *   - the native pi-deck theme (CSS-variable colours that track the active theme live), or
  *   - a raw VS Code theme JSON it interprets directly.
  *
  * The bridge holds whichever payload matches the active pi-deck theme so syntax highlighting
@@ -11,16 +11,18 @@ import type { ThemeKind } from "@pi-deck/core";
 
 export type ShikiThemePayload = { name: string; raw?: unknown };
 
-let active: ShikiThemePayload = { name: "github-dark-default" };
+const NATIVE: ShikiThemePayload = { name: "pi-deck", raw: PI_DECK_SHIKI_THEME };
+
+let active: ShikiThemePayload = NATIVE;
 
 /** Returns the Shiki theme payload for the currently active pi-deck theme. */
 export function getShikiThemeForActive(): ShikiThemePayload {
   return active;
 }
 
-/** Switch to a bundled Shiki theme by kind. Called when no VS Code raw payload is available. */
-export function setShikiThemeByKind(kind: ThemeKind): void {
-  active = { name: kind === "light" ? "github-light-default" : "github-dark-default" };
+/** Switch to the native var()-based theme. Called when no VS Code raw payload is available. */
+export function setShikiThemeNative(): void {
+  active = NATIVE;
 }
 
 /** Switch to a raw VS Code theme payload. The `name` is used as the cache key for the highlighter. */

@@ -8,9 +8,9 @@ import { COMPLETION_ICONS, completionIconMaskUrl } from "./codicon-symbols.js";
  * CodeMirror chrome theme + syntax highlight style, both expressed against pi-deck's CSS custom
  * properties (`packages/ui/src/theme/tokens.css`).
  *
- * Token → tag mapping follows the design mockup (`.pid-code .kw/.str/.com/.typ/.fn/.num`):
- *   keyword → accent · string → add · comment → ink-3 (italic) · type/class → info ·
- *   function → mod · number/atom → del.
+ * Syntax colours read the `--syn-*` palette. Its tokens.css defaults chain onto the semantic
+ * vocabulary from the design mockup (keyword → accent · string → add · comment → ink-3 italic ·
+ * type → info · function → mod · number → del), so themes without a syn section keep that look.
  */
 export function cmTheme(dark: boolean): Extension {
   return EditorView.theme(
@@ -142,36 +142,51 @@ const COMPLETION_ICON_RULES: Record<string, Record<string, string>> = Object.fro
 
 const highlight = HighlightStyle.define([
   {
-    tag: [t.keyword, t.controlKeyword, t.moduleKeyword, t.operatorKeyword],
-    color: "var(--accent)",
-  },
-  { tag: [t.definitionKeyword, t.modifier, t.self], color: "var(--accent)" },
-  { tag: [t.string, t.special(t.string), t.regexp, t.character], color: "var(--add)" },
-  {
-    tag: [t.comment, t.lineComment, t.blockComment, t.docComment],
-    color: "var(--ink-3)",
-    fontStyle: "italic",
-  },
-  { tag: [t.typeName, t.className, t.namespace, t.tagName], color: "var(--info)" },
-  {
     tag: [
-      t.function(t.variableName),
-      t.function(t.definition(t.variableName)),
-      t.labelName,
-      t.macroName,
+      t.keyword,
+      t.controlKeyword,
+      t.moduleKeyword,
+      t.operatorKeyword,
+      t.definitionKeyword,
+      t.modifier,
+      t.self,
     ],
-    color: "var(--mod)",
+    color: "var(--syn-keyword)",
   },
-  { tag: [t.number, t.bool, t.null, t.atom], color: "var(--del)" },
-  { tag: [t.propertyName, t.attributeName], color: "var(--ink-1)" },
-  { tag: [t.variableName, t.definition(t.variableName)], color: "var(--ink-1)" },
-  { tag: [t.operator, t.punctuation, t.bracket, t.separator], color: "var(--ink-2)" },
-  { tag: [t.meta, t.annotation, t.processingInstruction], color: "var(--info)" },
-  { tag: [t.heading], color: "var(--ink-0)", fontWeight: "600" },
+  { tag: [t.string, t.special(t.string), t.character], color: "var(--syn-string)" },
+  { tag: [t.regexp, t.escape], color: "var(--syn-regexp)" },
+  {
+    tag: [t.comment, t.lineComment, t.blockComment],
+    color: "var(--syn-comment)",
+    fontStyle: "var(--syn-comment-style, italic)",
+  },
+  {
+    tag: [t.docComment],
+    color: "var(--syn-doc-comment)",
+    fontStyle: "var(--syn-comment-style, italic)",
+  },
+  { tag: [t.number], color: "var(--syn-number)" },
+  { tag: [t.bool, t.null, t.atom, t.literal], color: "var(--syn-constant)" },
+  { tag: [t.typeName, t.namespace], color: "var(--syn-type)" },
+  { tag: [t.className], color: "var(--syn-class)" },
+  {
+    tag: [t.function(t.variableName), t.function(t.definition(t.variableName))],
+    color: "var(--syn-function)",
+  },
+  { tag: [t.macroName, t.labelName], color: "var(--syn-macro)" },
+  { tag: [t.variableName, t.definition(t.variableName)], color: "var(--syn-variable)" },
+  { tag: [t.local(t.variableName)], color: "var(--syn-parameter)" },
+  { tag: [t.propertyName, t.definition(t.propertyName)], color: "var(--syn-property)" },
+  { tag: [t.attributeName], color: "var(--syn-attribute)" },
+  { tag: [t.tagName], color: "var(--syn-tag)" },
+  { tag: [t.operator], color: "var(--syn-operator)" },
+  { tag: [t.punctuation, t.bracket, t.separator], color: "var(--syn-punctuation)" },
+  { tag: [t.meta, t.annotation, t.processingInstruction], color: "var(--syn-meta)" },
+  { tag: [t.heading], color: "var(--syn-heading)", fontWeight: "600" },
   { tag: [t.strong], fontWeight: "600" },
   { tag: [t.emphasis], fontStyle: "italic" },
-  { tag: [t.link, t.url], color: "var(--accent)", textDecoration: "underline" },
-  { tag: [t.invalid], color: "var(--del)" },
+  { tag: [t.link, t.url], color: "var(--syn-link)", textDecoration: "underline" },
+  { tag: [t.invalid], color: "var(--syn-invalid)" },
 ]);
 
 /** The shared syntax `HighlightStyle`. Colours are CSS vars, so it tracks the active theme. */

@@ -45,8 +45,13 @@ function getEntry(): HighlighterEntry {
   return current;
 }
 
-/** Drop the cached highlighter so the next render picks up the new active theme. */
+/**
+ * Drop the cached highlighter so the next render picks up the new active theme. No-op when the
+ * payload is unchanged — native pi-deck themes share one var()-based theme object, so switching
+ * between them recolours via CSS variables without rebuilding the highlighter.
+ */
 export function resetHighlighter(): void {
+  if (current && keyOf(getShikiThemeForActive()) === lastKey) return;
   current = undefined;
   lastKey = undefined;
 }

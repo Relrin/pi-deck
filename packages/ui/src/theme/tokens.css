@@ -76,6 +76,51 @@
   --diff-line-number: var(--ink-3);
   --code-bg: var(--bg-inset);
 
+  /* syntax palette — chained onto the semantic/ink vocabulary so themes without
+     a syn section keep the mockup-derived look. Themes override per token. */
+  --syn-keyword: var(--accent);
+  --syn-string: var(--add);
+  --syn-regexp: var(--syn-string);
+  --syn-comment: var(--ink-3);
+  --syn-doc-comment: var(--syn-comment);
+  --syn-comment-style: italic;
+  --syn-number: var(--del);
+  --syn-constant: var(--del);
+  --syn-type: var(--info);
+  --syn-class: var(--syn-type);
+  --syn-function: var(--mod);
+  --syn-macro: var(--syn-function);
+  --syn-variable: var(--ink-1);
+  --syn-parameter: var(--syn-variable);
+  --syn-property: var(--ink-1);
+  --syn-attribute: var(--syn-property);
+  --syn-tag: var(--info);
+  --syn-operator: var(--ink-2);
+  --syn-punctuation: var(--ink-2);
+  --syn-meta: var(--info);
+  --syn-link: var(--accent);
+  --syn-heading: var(--ink-0);
+  --syn-invalid: var(--del);
+
+  /* terminal ANSI palette — chained onto the same derivation useGhosttyTheme
+     used historically; themes override with curated palettes. */
+  --term-black: var(--bg-2);
+  --term-red: var(--del);
+  --term-green: var(--add);
+  --term-yellow: var(--warn);
+  --term-blue: var(--info);
+  --term-magenta: var(--mod);
+  --term-cyan: var(--accent);
+  --term-white: var(--ink-1);
+  --term-bright-black: var(--ink-3);
+  --term-bright-red: var(--del);
+  --term-bright-green: var(--add);
+  --term-bright-yellow: var(--warn);
+  --term-bright-blue: var(--info);
+  --term-bright-magenta: var(--mod);
+  --term-bright-cyan: var(--accent);
+  --term-bright-white: var(--ink-0);
+
   /* effects */
   --shadow-pop: 0 18px 60px -12px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.2);
   --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");

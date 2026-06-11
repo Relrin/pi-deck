@@ -18,4 +18,10 @@ describe("highlight", () => {
     const html = await highlight({ code: "<script>alert(1)</script>", lang: "text" });
     expect(html).not.toContain("<script>");
   });
+
+  test("native theme passes syn-* CSS variables through to inline styles", async () => {
+    const html = await highlight({ code: "const x = 1;", lang: "ts" });
+    expect(html).toContain("var(--syn-");
+    expect(html).toContain("var(--code-bg)");
+  });
 });

@@ -2,7 +2,7 @@ import type { ThemeListing, ThemeSpec } from "@pi-deck/core";
 import { create } from "zustand";
 import type { ProtocolClient } from "../lib/transport/protocol-client.js";
 import { applyTheme } from "./loader.js";
-import { setShikiThemeByKind, setShikiThemeFromVSCode } from "./shiki-bridge.js";
+import { setShikiThemeFromVSCode, setShikiThemeNative } from "./shiki-bridge.js";
 
 const STORAGE_KEY = "pi-deck:active-theme";
 const FALLBACK_THEME = "default-dark";
@@ -44,22 +44,15 @@ function writeStoredName(name: string): void {
   }
 }
 
-function syncShiki(
-  spec: ThemeSpec | undefined,
-  available: ThemeListing[],
-  name: string,
-  vscodeRaw: unknown,
-): void {
+function syncShiki(vscodeRaw: unknown): void {
   // Imported VS Code themes ship their original JSON; Shiki tokenises directly off that so
-  // syntax highlighting matches the source theme exactly. For bundled / pi-deck-format themes
-  // we fall back to a curated Shiki theme keyed by light/dark kind.
+  // syntax highlighting matches the source theme exactly. Native pi-deck themes use the
+  // var()-based Shiki theme, which follows the active `--syn-*` palette live.
   if (vscodeRaw !== undefined && vscodeRaw !== null) {
     setShikiThemeFromVSCode(vscodeRaw);
     return;
   }
-  const entry = available.find((t) => t.name === name);
-  const kind = spec?.meta?.kind ?? entry?.kind ?? "dark";
-  setShikiThemeByKind(kind);
+  setShikiThemeNative();
 }
 
 export const useThemeStore = create<ThemeStoreState>((set, get) => ({
@@ -100,7 +93,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => ({
   applySpec: (name, spec, available, vscodeRaw) => {
     writeStoredName(name);
     if (spec) applyTheme(spec);
-    syncShiki(spec, available, name, vscodeRaw);
+    syncShiki(vscodeRaw);
     set({ activeName: name, available, activeSpec: spec });
   },
 }));
