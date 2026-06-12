@@ -29,7 +29,8 @@ import { SessionModelPicker } from "./composer/SessionModelPicker.js";
 import { SlashCommandMenu } from "./composer/SlashCommandMenu.js";
 import { useComposerStore } from "./composer/useComposerStore.js";
 import { useImagePaste } from "./composer/useImagePaste.js";
-import { filterCommands, useSlashCommandsStore } from "./composer/useSlashCommandsStore.js";
+import { useSlashAutocomplete } from "./composer/useSlashAutocomplete.js";
+import { useSlashCommandsStore } from "./composer/useSlashCommandsStore.js";
 import type { UserMessageImage } from "./types.js";
 import { useDraftStore } from "./useDraftStore.js";
 import { selectTurnInFlight, useMessagesStore } from "./useMessagesStore.js";
@@ -68,58 +69,16 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   const ref = useRef<HTMLTextAreaElement | null>(null);
   const dragDepthRef = useRef(0);
 
-  // `/` autocomplete: active while the input is a single leading slash-token ("/sk…").
-  // Commands only mean anything at position 0, so a space or newline dismisses the menu.
-  const slashTokenActive = /^\/[^\s]*$/.test(text);
-  const startsWithSlash = text.startsWith("/");
-  const [slashDismissed, setSlashDismissed] = useState(false);
-  const [slashIndex, setSlashIndex] = useState(0);
   const sessionCommands = useSlashCommandsStore((s) => s.bySession[sessionId]);
   const fetchCommands = useSlashCommandsStore((s) => s.fetch);
-  const slashItems = slashTokenActive ? filterCommands(sessionCommands, text.slice(1)) : [];
-  const slashOpen = slashTokenActive && !slashDismissed && slashItems.length > 0;
-
-  // Fetch on any leading "/" — not just while the menu token is active — so a pasted full
-  // command ("/skill:x do it") still gets the list for the token highlight below.
-  useEffect(() => {
-    if (startsWithSlash) fetchCommands(sessionId);
-  }, [startsWithSlash, sessionId, fetchCommands]);
-
-  useEffect(() => {
-    if (!slashTokenActive) setSlashDismissed(false);
-    setSlashIndex(0);
-  }, [slashTokenActive]);
-
-  const pickSlashCommand = useCallback((name: string) => {
-    setText(`/${name} `);
-    setSlashDismissed(true);
-    ref.current?.focus();
-  }, []);
-
-  // The leading token when it names a command the agent actually knows. Drives the accent
-  // pill the mirror paints underneath the textarea (a textarea can't style partial text).
-  const commandToken = useMemo(() => {
-    if (!startsWithSlash || !sessionCommands) return null;
-    const ws = text.search(/\s/);
-    const token = ws === -1 ? text : text.slice(0, ws);
-    if (token.length < 2) return null;
-    return sessionCommands.some((c) => `/${c.name}` === token) ? token : null;
-  }, [text, startsWithSlash, sessionCommands]);
-
-  const mirrorRef = useRef<HTMLDivElement | null>(null);
-  const syncMirrorScroll = useCallback(() => {
-    const mirror = mirrorRef.current;
-    const area = ref.current;
-    if (mirror && area) mirror.scrollTop = area.scrollTop;
-  }, []);
-  // Re-sync after every text/highlight change — growth happens in useAutoGrowTextarea's
-  // layout effect, and the textarea can auto-scroll on input without firing onScroll.
-  // `text` / `commandToken` are signal-only deps (same pattern as useAutoGrowTextarea).
-  useEffect(() => {
-    void text;
-    void commandToken;
-    syncMirrorScroll();
-  }, [text, commandToken, syncMirrorScroll]);
+  const ensureCommands = useCallback(() => fetchCommands(sessionId), [fetchCommands, sessionId]);
+  const slash = useSlashAutocomplete({
+    text,
+    setText,
+    textareaRef: ref,
+    commands: sessionCommands,
+    ensureCommands,
+  });
 
   useAutoGrowTextarea(ref, text);
   const { onPaste, onDrop, onDragOver, chooseImage } = useImagePaste({ onImages: addImages });
@@ -269,31 +228,7 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   }, [isInFlight, cancel]);
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (slashOpen) {
-      const plain = !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey;
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setSlashIndex((i) => (i + 1) % slashItems.length);
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSlashIndex((i) => (i - 1 + slashItems.length) % slashItems.length);
-        return;
-      }
-      if ((e.key === "Enter" || e.key === "Tab") && plain) {
-        e.preventDefault();
-        const item = slashItems[Math.min(slashIndex, slashItems.length - 1)];
-        if (item) pickSlashCommand(item.name);
-        return;
-      }
-      if (e.key === "Escape" && plain) {
-        // preventDefault also keeps the global Esc-cancels-turn listener quiet.
-        e.preventDefault();
-        setSlashDismissed(true);
-        return;
-      }
-    }
+    if (slash.onKeyDown(e)) return;
     // `@` at a word boundary opens the repo file search modal — same UX as BLANK tab.
     if (e.key === "@" && !e.ctrlKey && !e.metaKey && !e.altKey) {
       const target = e.currentTarget;
@@ -420,19 +355,19 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
             ))}
           </div>
         )}
-        {slashOpen && (
+        {slash.open && (
           <SlashCommandMenu
-            items={slashItems}
-            activeIndex={Math.min(slashIndex, slashItems.length - 1)}
-            onPick={(item) => pickSlashCommand(item.name)}
-            onHover={setSlashIndex}
+            items={slash.items}
+            activeIndex={slash.activeIndex}
+            onPick={slash.pick}
+            onHover={slash.setActiveIndex}
           />
         )}
         <div className="pid-composer-input-wrap">
-          {commandToken && (
-            <div className="pid-composer-input-mirror" aria-hidden ref={mirrorRef}>
-              <span className="pid-composer-command-token">{commandToken}</span>
-              {text.slice(commandToken.length)}
+          {slash.commandToken && (
+            <div className="pid-composer-input-mirror" aria-hidden ref={slash.mirrorRef}>
+              <span className="pid-composer-command-token">{slash.commandToken}</span>
+              {text.slice(slash.commandToken.length)}
               {"\n"}
             </div>
           )}
@@ -442,7 +377,8 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
             onChange={(e) => setText(e.target.value)}
             onKeyDown={onKeyDown}
             onPaste={onPaste}
-            onScroll={syncMirrorScroll}
+            onScroll={slash.syncMirrorScroll}
+            onSelect={slash.onSelect}
             placeholder={PLACEHOLDER}
             aria-label="Message"
             aria-keyshortcuts="Enter"

@@ -1,9 +1,14 @@
 import { cp, mkdir, readdir, rm, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, isAbsolute, join, relative, resolve } from "node:path";
-import { getAgentDir, loadSkills, SettingsManager } from "@earendil-works/pi-coding-agent";
+import {
+  DefaultResourceLoader,
+  getAgentDir,
+  loadSkills,
+  SettingsManager,
+} from "@earendil-works/pi-coding-agent";
 import { runGit } from "../git/runner.js";
-import type { SkillInfo } from "../protocol/commands.js";
+import type { SessionCommandInfo, SkillInfo } from "../protocol/commands.js";
 
 /**
  * Host-side skill management. Listing reuses pi's own discovery (`loadSkills`) so what the
@@ -72,6 +77,46 @@ export function listSkills(projectPath: string, agentDir = getAgentDir()): Skill
       path: d.path,
     })),
   };
+}
+
+/**
+ * Slash commands derivable from disk alone, for composers with no live session yet (the
+ * BLANK screen). Covers prompt templates + skills via pi's own loader, with extensions
+ * disabled — extension commands only exist inside a running session and never execute
+ * host-side. Ordering mirrors pi's `getCommands()`: templates before skills.
+ */
+export async function listProjectCommands(
+  projectPath: string,
+  agentDir = getAgentDir(),
+): Promise<SessionCommandInfo[]> {
+  let settingsManager: SettingsManager | undefined;
+  try {
+    settingsManager = SettingsManager.create(projectPath, agentDir);
+  } catch {
+    settingsManager = undefined;
+  }
+  const loader = new DefaultResourceLoader({
+    cwd: projectPath,
+    agentDir,
+    ...(settingsManager ? { settingsManager } : {}),
+    noExtensions: true,
+    noThemes: true,
+    noContextFiles: true,
+  });
+  await loader.reload();
+  const templates = loader.getPrompts().prompts.map((t) => ({
+    name: t.name,
+    description: t.description,
+    source: "prompt" as const,
+    sourcePath: t.filePath,
+  }));
+  const skills = loader.getSkills().skills.map((s) => ({
+    name: `skill:${s.name}`,
+    description: s.description,
+    source: "skill" as const,
+    sourcePath: s.filePath,
+  }));
+  return [...templates, ...skills];
 }
 
 /** `https://github.com/foo/bar.git` / `git@host:foo/bar` → `bar`. */

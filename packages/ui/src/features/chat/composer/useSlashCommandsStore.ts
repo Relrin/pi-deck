@@ -3,25 +3,31 @@ import { create } from "zustand";
 import { useSessionsStore } from "../../sessions/useSessionsStore.js";
 
 /**
- * Per-session slash-command catalogue for the composer's `/` autocomplete. The list lives in
- * the session worker's resource loader, so it's fetched over `session.commands` — cached for
- * instant rendering and silently re-fetched every time the menu opens (skills can be
- * installed mid-session).
+ * Slash-command catalogues for the composers' `/` autocomplete, cached for instant rendering
+ * and silently re-fetched on every menu trigger (skills can be installed mid-run).
+ *
+ * Two scopes: `bySession` asks the live session worker (`session.commands` — the full list,
+ * including extension commands); `byProject` is the disk-derived list (`project.commands` —
+ * templates + skills only) for the BLANK screen, where no worker exists yet.
  */
 interface SlashCommandsState {
   bySession: Record<string, SessionCommandInfo[] | undefined>;
+  byProject: Record<string, SessionCommandInfo[] | undefined>;
   fetch: (sessionId: string) => void;
+  fetchForProject: (projectId: string) => void;
 }
 
 const inFlight = new Set<string>();
 
 export const useSlashCommandsStore = create<SlashCommandsState>((set) => ({
   bySession: {},
+  byProject: {},
 
   fetch: (sessionId) => {
     const client = useSessionsStore.getState().client;
-    if (!client || inFlight.has(sessionId)) return;
-    inFlight.add(sessionId);
+    const key = `s:${sessionId}`;
+    if (!client || inFlight.has(key)) return;
+    inFlight.add(key);
     void (async () => {
       try {
         const { commands } = await client.call("session.commands", { sessionId });
@@ -29,7 +35,24 @@ export const useSlashCommandsStore = create<SlashCommandsState>((set) => ({
       } catch {
         // Worker may be respawning; the cached list (if any) keeps serving the menu.
       } finally {
-        inFlight.delete(sessionId);
+        inFlight.delete(key);
+      }
+    })();
+  },
+
+  fetchForProject: (projectId) => {
+    const client = useSessionsStore.getState().client;
+    const key = `p:${projectId}`;
+    if (!client || inFlight.has(key)) return;
+    inFlight.add(key);
+    void (async () => {
+      try {
+        const { commands } = await client.call("project.commands", { projectId });
+        set((s) => ({ byProject: { ...s.byProject, [projectId]: commands } }));
+      } catch {
+        // Host hiccup — the cached list (if any) keeps serving the menu.
+      } finally {
+        inFlight.delete(key);
       }
     })();
   },

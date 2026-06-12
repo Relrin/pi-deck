@@ -230,13 +230,33 @@ describe("MessageInput", () => {
     expect(container.querySelector(".pid-composer-command-token")).toBeNull();
   });
 
-  test("a / mid-message does not open the command menu", async () => {
+  test("a mid-sentence / word opens the menu and completes in place", async () => {
+    useSlashCommandsStore.setState({
+      bySession: {
+        [SID]: [{ name: "skill:review", description: "Code review", source: "skill" }],
+      },
+    });
+    const user = userEvent.setup();
+    render(<MessageInput sessionId={SID} />);
+    const textarea = screen.getByLabelText("Message") as HTMLTextAreaElement;
+
+    await user.type(textarea, "what is /rev");
+    expect(screen.getByRole("listbox", { name: "Slash commands" })).toBeInTheDocument();
+    await user.keyboard("{Enter}");
+    expect(textarea.value).toBe("what is /skill:review ");
+
+    // Mid-sentence mentions are a typing aid only — pi executes commands solely at
+    // position 0, so no highlight pill here.
+    expect(document.querySelector(".pid-composer-command-token")).toBeNull();
+  });
+
+  test("a path-like / inside a word does not open the command menu", async () => {
     useSlashCommandsStore.setState({
       bySession: { [SID]: [{ name: "commit", source: "prompt" }] },
     });
     const user = userEvent.setup();
     render(<MessageInput sessionId={SID} />);
-    await user.type(screen.getByLabelText("Message"), "look at src/");
+    await user.type(screen.getByLabelText("Message"), "look at src/comp");
     expect(screen.queryByRole("listbox", { name: "Slash commands" })).toBeNull();
   });
 

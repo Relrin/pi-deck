@@ -48,6 +48,7 @@ import type { SessionManager, SessionRecord } from "./session-manager.js";
 import {
   installSkillFromFolder,
   installSkillFromGit,
+  listProjectCommands,
   listSkills,
   uninstallSkill,
 } from "./skills.js";
@@ -204,6 +205,12 @@ const handlers: { [C in CommandName]: CommandHandler } = {
   "session.commands": async (ctx, payload) => {
     const parsed = CommandSchemas["session.commands"].request.parse(payload);
     return await ctx.sessionManager.commands(parsed.sessionId);
+  },
+  "project.commands": async (ctx, payload) => {
+    const parsed = CommandSchemas["project.commands"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    return { commands: await listProjectCommands(project.path) };
   },
   "skills.list": async (ctx, payload) => {
     const parsed = CommandSchemas["skills.list"].request.parse(payload);

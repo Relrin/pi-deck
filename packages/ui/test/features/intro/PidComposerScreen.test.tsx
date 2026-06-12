@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, test } from "bun:test";
+import { useSlashCommandsStore } from "../../../src/features/chat/composer/useSlashCommandsStore";
 import { PidComposerScreen } from "../../../src/features/intro/PidComposerScreen";
 import { useIntroComposerStore } from "../../../src/features/intro/useIntroComposerStore";
 import { useTemplatesStore } from "../../../src/features/intro/useTemplatesStore";
 import { useProjectsStore } from "../../../src/features/sessions/useProjectsStore";
 import { useSessionsStore } from "../../../src/features/sessions/useSessionsStore";
 import { useNavStore } from "../../../src/lib/useNavStore";
-import { fireEvent, render, screen } from "../../utils";
+import { fireEvent, render, screen, userEvent } from "../../utils";
 
 function seedProject() {
   useProjectsStore.setState({
@@ -31,6 +32,7 @@ beforeEach(() => {
   });
   seedProject();
   useSessionsStore.setState((prev) => ({ ...prev, sessions: [] }));
+  useSlashCommandsStore.setState({ bySession: {}, byProject: {} });
 });
 
 describe("PidComposerScreen — editable templates", () => {
@@ -62,5 +64,48 @@ describe("PidComposerScreen — editable templates", () => {
 
     fireEvent.click(screen.getByText("Tame the flake"));
     expect(useIntroComposerStore.getState().text).toBe("my custom prompt body");
+  });
+});
+
+describe("PidComposerScreen — slash autocomplete", () => {
+  test("typing / opens the project-scoped command menu; Enter completes instead of submitting", async () => {
+    useSlashCommandsStore.setState({
+      byProject: {
+        "proj-1": [
+          { name: "skill:brave-search", description: "Web search", source: "skill" },
+          { name: "review", description: "Review template", source: "prompt" },
+        ],
+      },
+    });
+    const user = userEvent.setup();
+    render(<PidComposerScreen />);
+    const textarea = screen.getByLabelText("New prompt") as HTMLTextAreaElement;
+
+    await user.type(textarea, "/");
+    expect(screen.getByRole("listbox", { name: "Slash commands" })).toBeInTheDocument();
+    expect(screen.getByText("/skill:brave-search")).toBeInTheDocument();
+
+    await user.keyboard("{Enter}");
+    // Completed, not submitted — no session was created and the text holds the command.
+    expect(textarea.value).toBe("/skill:brave-search ");
+    expect(screen.queryByRole("listbox", { name: "Slash commands" })).toBeNull();
+  });
+
+  test("a recognized command token gets the highlight pill", async () => {
+    useSlashCommandsStore.setState({
+      byProject: {
+        "proj-1": [{ name: "skill:brave-search", description: "Web search", source: "skill" }],
+      },
+    });
+    const user = userEvent.setup();
+    const { container } = render(<PidComposerScreen />);
+    const textarea = screen.getByLabelText("New prompt") as HTMLTextAreaElement;
+
+    await user.type(textarea, "/");
+    await user.keyboard("{Enter}");
+    await user.type(textarea, "look things up");
+
+    const token = container.querySelector(".pid-composer-command-token");
+    expect(token?.textContent).toBe("/skill:brave-search");
   });
 });

@@ -18,7 +18,10 @@ import { useAutoGrowTextarea } from "../../lib/useAutoGrowTextarea.js";
 import { useNavStore } from "../../lib/useNavStore.js";
 import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { ImagePreviewDialog } from "../chat/composer/ImagePreviewDialog.js";
+import { SlashCommandMenu } from "../chat/composer/SlashCommandMenu.js";
 import { useImagePaste } from "../chat/composer/useImagePaste.js";
+import { useSlashAutocomplete } from "../chat/composer/useSlashAutocomplete.js";
+import { useSlashCommandsStore } from "../chat/composer/useSlashCommandsStore.js";
 import type { UserMessageImage } from "../chat/types.js";
 import { PIDECK_PATHS_MIME } from "../files/dragDrop.js";
 import { useComposerPathDrop } from "../files/useComposerPathDrop.js";
@@ -162,6 +165,23 @@ export function PidComposerScreen() {
 
   const projects = useProjectsStore((s) => s.projects);
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
+
+  // `/` autocomplete + command highlight, scoped to the project's disk-derived list (no
+  // session worker exists yet on this screen — templates + skills, no extension commands).
+  const projectCommands = useSlashCommandsStore((s) =>
+    activeProjectId ? s.byProject[activeProjectId] : undefined,
+  );
+  const fetchProjectCommands = useSlashCommandsStore((s) => s.fetchForProject);
+  const ensureCommands = useCallback(() => {
+    if (activeProjectId) fetchProjectCommands(activeProjectId);
+  }, [activeProjectId, fetchProjectCommands]);
+  const slash = useSlashAutocomplete({
+    text,
+    setText,
+    textareaRef,
+    commands: projectCommands,
+    ensureCommands,
+  });
   const activeProject = useProjectsStore((s) => s.projects.find((p) => p.id === s.activeProjectId));
   const setActiveProject = useProjectsStore((s) => s.setActive);
   const openProjectFromDialog = useProjectsStore((s) => s.openProjectFromDialog);
@@ -285,6 +305,7 @@ export function PidComposerScreen() {
   // Cmd/Ctrl+O variants are owned by `useAttachmentsHotkeys` at window scope so they
   // keep firing when focus leaves the textarea (e.g. while the attachments popover is open).
   const onComposerKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    if (slash.onKeyDown(event)) return;
     if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
       event.preventDefault();
       // requestSubmit fires the form's `onSubmit`, including any HTML validity check,
@@ -392,19 +413,38 @@ export function PidComposerScreen() {
               ))}
             </div>
           )}
+          {slash.open && (
+            <SlashCommandMenu
+              items={slash.items}
+              activeIndex={slash.activeIndex}
+              onPick={slash.pick}
+              onHover={slash.setActiveIndex}
+            />
+          )}
           <label className="sr-only" htmlFor="pid-composer-input">
             New prompt
           </label>
-          <textarea
-            id="pid-composer-input"
-            ref={textareaRef}
-            className="pid-composer-input"
-            placeholder="e.g. 'add a /share button to PostHeader that copies a tracked URL'"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={onComposerKeyDown}
-            onPaste={onPaste}
-          />
+          <div className="pid-composer-input-wrap">
+            {slash.commandToken && (
+              <div className="pid-composer-input-mirror" aria-hidden ref={slash.mirrorRef}>
+                <span className="pid-composer-command-token">{slash.commandToken}</span>
+                {text.slice(slash.commandToken.length)}
+                {"\n"}
+              </div>
+            )}
+            <textarea
+              id="pid-composer-input"
+              ref={textareaRef}
+              className="pid-composer-input"
+              placeholder="e.g. 'add a /share button to PostHeader that copies a tracked URL'"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={onComposerKeyDown}
+              onPaste={onPaste}
+              onScroll={slash.syncMirrorScroll}
+              onSelect={slash.onSelect}
+            />
+          </div>
           <div className="pid-composer-row">
             <PidAgentModePicker />
             <PidToolsButton />

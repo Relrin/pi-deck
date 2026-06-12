@@ -147,6 +147,15 @@ export const SessionCommandsResponse = z.object({
   commands: z.array(SessionCommandInfoSchema),
 });
 
+/**
+ * Disk-derived command list for composers without a live session (the BLANK screen):
+ * prompt templates + skills only — extension commands need a running agent.
+ */
+export const ProjectCommandsRequest = z.object({ projectId: z.string().uuid() });
+export const ProjectCommandsResponse = z.object({
+  commands: z.array(SessionCommandInfoSchema),
+});
+
 /** A skill discovered on disk (host-side scan; no live session needed). */
 export const SkillInfoSchema = z.object({
   name: z.string(),
@@ -807,6 +816,7 @@ export const CommandSchemas = {
   "session.cancel": { request: SessionCancelRequest, response: SessionCancelResponse },
   "session.forceStop": { request: SessionForceStopRequest, response: SessionForceStopResponse },
   "session.commands": { request: SessionCommandsRequest, response: SessionCommandsResponse },
+  "project.commands": { request: ProjectCommandsRequest, response: ProjectCommandsResponse },
   "skills.list": { request: SkillsListRequest, response: SkillsListResponse },
   "skills.install": { request: SkillsInstallRequest, response: SkillsInstallResponse },
   "skills.uninstall": { request: SkillsUninstallRequest, response: SkillsUninstallResponse },
