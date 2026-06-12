@@ -24,8 +24,49 @@ export const LspServerStatusInfoSchema = z.object({
   available: z.boolean(),
   running: z.boolean(),
   installHint: z.string(),
+  /** True for user-defined servers (editable in settings), false for built-ins. */
+  custom: z.boolean(),
 });
 export type LspServerStatusInfo = z.infer<typeof LspServerStatusInfoSchema>;
+
+/**
+ * A user-defined language server. Persisted host-side (`<userData>/lsp-servers.json`) so the
+ * host can spawn it; the renderer mirrors the list for file → languageId resolution.
+ */
+export const CustomLspServerSchema = z.object({
+  /** Stable slug; must not collide with a built-in server id. */
+  id: z
+    .string()
+    .min(1)
+    .max(40)
+    .regex(/^[a-z0-9][a-z0-9-]*$/, "lowercase letters, digits and hyphens only"),
+  label: z.string().min(1).max(80),
+  /** LSP languageIds this server handles (sent in `textDocument/didOpen`). */
+  languageIds: z.array(z.string().min(1)).min(1),
+  /**
+   * File extensions, no dot. A bare `"ex"` maps to `languageIds[0]`; `"heex:phoenix-heex"`
+   * maps the extension to another of the server's languageIds.
+   */
+  extensions: z.array(z.string().min(1)).min(1),
+  /** Bare command resolved on the environment's PATH (same rules as built-ins). */
+  command: z.string().min(1),
+  args: z.array(z.string()),
+  installHint: z.string().optional(),
+});
+export type CustomLspServer = z.infer<typeof CustomLspServerSchema>;
+
+export const LspCustomServersListRequest = z.object({});
+export const LspCustomServersListResponse = z.object({
+  servers: z.array(CustomLspServerSchema),
+});
+export const LspCustomServersUpsertRequest = z.object({ server: CustomLspServerSchema });
+export const LspCustomServersUpsertResponse = z.object({
+  servers: z.array(CustomLspServerSchema),
+});
+export const LspCustomServersDeleteRequest = z.object({ id: z.string().min(1) });
+export const LspCustomServersDeleteResponse = z.object({
+  servers: z.array(CustomLspServerSchema),
+});
 
 export const LspStatusRequest = z.object({
   projectId: z.string().uuid(),

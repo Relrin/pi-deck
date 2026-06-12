@@ -5,6 +5,7 @@ import { create } from "zustand";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore.js";
 import { createLspTransport, disposeLspTransport } from "./transport.js";
+import { currentCustomLspDefs } from "./useLspCustomServersStore.js";
 import { useLspSettingsStore } from "./useLspSettingsStore.js";
 import { PidLspWorkspace } from "./workspace.js";
 
@@ -80,9 +81,10 @@ function lspKeyForFile(
   serverId: string;
   languageId: string;
 } | null {
-  const languageId = languageIdForFile(fileName);
+  const custom = currentCustomLspDefs();
+  const languageId = languageIdForFile(fileName, custom);
   if (!languageId) return null;
-  const def = serverForLanguageId(languageId);
+  const def = serverForLanguageId(languageId, custom);
   if (!def) return null;
   return { key: `${projectId}:${def.id}`, serverId: def.id, languageId };
 }

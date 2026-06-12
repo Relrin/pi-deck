@@ -482,6 +482,9 @@
 .pid-settings-lsp-state[data-state="missing"] {
   color: var(--ink-3);
 }
+.pid-settings-lsp-state[data-state="custom"] {
+  color: var(--info);
+}
 .pid-settings-lsp-meta {
   margin-top: 2px;
   font-family: var(--font-mono);

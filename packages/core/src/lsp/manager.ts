@@ -19,6 +19,7 @@ import {
   type ServerLaunch,
 } from "./environment.js";
 import {
+  type CustomLanguageServerDef,
   LANGUAGE_SERVERS,
   type LanguageServerDef,
   LSP_NOTIFY_ALLOWLIST,
@@ -124,6 +125,7 @@ export interface StatusResult {
     available: boolean;
     running: boolean;
     installHint: string;
+    custom: boolean;
   }>;
 }
 
@@ -149,6 +151,7 @@ export class LanguageServerManager extends EventEmitter<LanguageServerManagerEve
   private readonly spawnServer: SpawnServerFn;
   private readonly detectionDeps: Partial<LspDetectionDeps>;
   private readonly idleShutdownMs: number;
+  private customServers: readonly CustomLanguageServerDef[] = [];
 
   constructor(options: LanguageServerManagerOptions = {}) {
     super();
@@ -157,13 +160,36 @@ export class LanguageServerManager extends EventEmitter<LanguageServerManagerEve
     this.idleShutdownMs = options.idleShutdownMs ?? IDLE_SHUTDOWN_MS;
   }
 
+  /**
+   * Replace the user-defined server list (startup load + every settings mutation). Running
+   * custom servers whose definition changed or disappeared are shut down — the next matching
+   * tab re-ensures them with the new command. Detection results are stale either way, so the
+   * PATH-probe cache is cleared wholesale.
+   */
+  setCustomServers(defs: readonly CustomLanguageServerDef[]): void {
+    const next = new Map(defs.map((d) => [d.id, d]));
+    for (const [key, entry] of this.entries) {
+      const wasCustom = this.customServers.some((d) => d.id === entry.def.id);
+      if (!wasCustom) continue;
+      const replacement = next.get(entry.def.id);
+      const unchanged =
+        replacement &&
+        replacement.command === entry.def.command &&
+        JSON.stringify(replacement.args) === JSON.stringify(entry.def.args) &&
+        JSON.stringify(replacement.languageIds) === JSON.stringify(entry.def.languageIds);
+      if (!unchanged) void this.shutdown(key);
+    }
+    this.customServers = defs;
+    clearLspDetectionCache();
+  }
+
   /** Lazily spawn (or reuse) the server covering `languageId` for a project root. */
   async ensure(args: {
     projectId: string;
     projectRoot: string;
     languageId: string;
   }): Promise<EnsureResult> {
-    const def = serverForLanguageId(args.languageId);
+    const def = serverForLanguageId(args.languageId, this.customServers);
     if (!def) return { status: "unsupported" };
     const env = environmentForRoot(args.projectRoot);
     if (!env) return { status: "unsupported" };
@@ -192,8 +218,10 @@ export class LanguageServerManager extends EventEmitter<LanguageServerManagerEve
     if (args.refresh) clearLspDetectionCache();
     const env = environmentForRoot(args.projectRoot);
     const mapping: LspMapping = env?.mapping ?? { kind: "local" };
+    const builtinIds = new Set(LANGUAGE_SERVERS.map((def) => def.id));
+    const allDefs: readonly LanguageServerDef[] = [...LANGUAGE_SERVERS, ...this.customServers];
     const servers = await Promise.all(
-      LANGUAGE_SERVERS.map(async (def) => ({
+      allDefs.map(async (def) => ({
         serverId: def.id,
         label: def.label,
         languageIds: [...def.languageIds],
@@ -201,6 +229,7 @@ export class LanguageServerManager extends EventEmitter<LanguageServerManagerEve
         available: env ? (await detectServer(def, mapping, this.detectionDeps)).available : false,
         running: this.entries.has(`${args.projectId}:${def.id}`),
         installHint: def.installHint,
+        custom: !builtinIds.has(def.id),
       })),
     );
     return { mapping, servers };

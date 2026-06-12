@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
+  type CustomLanguageServerDef,
+  customExtensionMap,
   LANGUAGE_ID_BY_EXTENSION,
   LANGUAGE_SERVERS,
   LSP_NOTIFY_ALLOWLIST,
@@ -48,6 +50,48 @@ describe("languageIdForFile", () => {
     expect(languageIdForFile("Makefile")).toBeNull();
     expect(languageIdForFile(".gitignore")).toBeNull();
     expect(languageIdForFile("notes.txt")).toBeNull();
+  });
+});
+
+const ELIXIR: CustomLanguageServerDef = {
+  id: "elixir",
+  label: "Elixir",
+  languageIds: ["elixir", "phoenix-heex"],
+  extensions: ["ex", "exs", "heex:phoenix-heex"],
+  command: "elixir-ls",
+  args: [],
+  installHint: "install elixir-ls",
+};
+
+describe("custom server lookups", () => {
+  test("bare extensions map to the first languageId; colon entries override", () => {
+    expect(customExtensionMap([ELIXIR])).toEqual({
+      ex: "elixir",
+      exs: "elixir",
+      heex: "phoenix-heex",
+    });
+  });
+
+  test("languageIdForFile consults custom defs after built-ins", () => {
+    expect(languageIdForFile("lib/app.ex", [ELIXIR])).toBe("elixir");
+    expect(languageIdForFile("lib/page.heex", [ELIXIR])).toBe("phoenix-heex");
+    expect(languageIdForFile("lib/app.ex")).toBeNull();
+  });
+
+  test("built-in extensions cannot be shadowed by a custom def", () => {
+    const squatter: CustomLanguageServerDef = {
+      ...ELIXIR,
+      id: "squatter",
+      languageIds: ["not-typescript"],
+      extensions: ["ts"],
+    };
+    expect(languageIdForFile("a.ts", [squatter])).toBe("typescript");
+  });
+
+  test("serverForLanguageId resolves custom languageIds, built-ins first", () => {
+    expect(serverForLanguageId("elixir", [ELIXIR])?.id).toBe("elixir");
+    expect(serverForLanguageId("typescript", [ELIXIR])?.id).toBe("typescript");
+    expect(serverForLanguageId("elixir")).toBeNull();
   });
 });
 

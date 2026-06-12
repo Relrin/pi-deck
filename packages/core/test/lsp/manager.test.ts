@@ -336,3 +336,59 @@ describe("lifecycle", () => {
     ).rejects.toThrow(LspManagerError);
   });
 });
+
+const ELIXIR_DEF = {
+  id: "elixir",
+  label: "Elixir",
+  languageIds: ["elixir"],
+  extensions: ["ex", "exs"],
+  command: "elixir-ls",
+  args: [],
+  installHint: "install elixir-ls",
+};
+
+describe("custom servers", () => {
+  test("ensure routes a custom languageId; status flags the row custom", async () => {
+    const h = makeHarness();
+    h.manager.setCustomServers([ELIXIR_DEF]);
+    const res = await h.manager.ensure({ ...ENSURE_TS, languageId: "elixir" });
+    expect(res.status).toBe("running");
+    if (res.status === "running") expect(res.serverId).toBe("elixir");
+
+    const status = await h.manager.status({ projectId: "p1", projectRoot: "/home/u/proj" });
+    const row = status.servers.find((s) => s.serverId === "elixir");
+    expect(row?.custom).toBe(true);
+    expect(row?.running).toBe(true);
+    expect(status.servers.find((s) => s.serverId === "typescript")?.custom).toBe(false);
+    h.manager.shutdownAll();
+  });
+
+  test("re-setting an unchanged def keeps the server; a changed def shuts it down", async () => {
+    const h = makeHarness();
+    h.manager.setCustomServers([ELIXIR_DEF]);
+    await h.manager.ensure({ ...ENSURE_TS, languageId: "elixir" });
+    expect(h.fakes).toHaveLength(1);
+
+    h.manager.setCustomServers([{ ...ELIXIR_DEF }]);
+    await sleep(50);
+    expect(h.fakes[0]?.killed).toBe(false);
+
+    h.manager.setCustomServers([{ ...ELIXIR_DEF, command: "language_server.sh" }]);
+    await sleep(50);
+    expect(h.fakes[0]?.killed).toBe(true);
+    h.manager.shutdownAll();
+  });
+
+  test("removing a custom def shuts its server down", async () => {
+    const h = makeHarness();
+    h.manager.setCustomServers([ELIXIR_DEF]);
+    await h.manager.ensure({ ...ENSURE_TS, languageId: "elixir" });
+    h.manager.setCustomServers([]);
+    await sleep(50);
+    expect(h.fakes[0]?.killed).toBe(true);
+    expect(await h.manager.ensure({ ...ENSURE_TS, languageId: "elixir" })).toEqual({
+      status: "unsupported",
+    });
+    h.manager.shutdownAll();
+  });
+});

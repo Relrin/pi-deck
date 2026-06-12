@@ -19,6 +19,12 @@ import {
   ProviderSummarySchema,
 } from "../providers/types.js";
 import {
+  LspCustomServersDeleteRequest,
+  LspCustomServersDeleteResponse,
+  LspCustomServersListRequest,
+  LspCustomServersListResponse,
+  LspCustomServersUpsertRequest,
+  LspCustomServersUpsertResponse,
   LspEnsureRequest,
   LspEnsureResponse,
   LspNotifyRequest,
@@ -872,6 +878,18 @@ export const CommandSchemas = {
   "lsp.request": { request: LspRequestRequest, response: LspRequestResponse },
   "lsp.notify": { request: LspNotifyRequest, response: LspNotifyResponse },
   "lsp.shutdown": { request: LspShutdownRequest, response: LspShutdownResponse },
+  "lsp.customServers.list": {
+    request: LspCustomServersListRequest,
+    response: LspCustomServersListResponse,
+  },
+  "lsp.customServers.upsert": {
+    request: LspCustomServersUpsertRequest,
+    response: LspCustomServersUpsertResponse,
+  },
+  "lsp.customServers.delete": {
+    request: LspCustomServersDeleteRequest,
+    response: LspCustomServersDeleteResponse,
+  },
 } as const;
 
 export type CommandName = keyof typeof CommandSchemas;

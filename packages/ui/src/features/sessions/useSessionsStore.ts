@@ -14,6 +14,7 @@ import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { useComposerStore } from "../chat/composer/useComposerStore.js";
 import type { UserMessageImage } from "../chat/types.js";
 import { useMessagesStore } from "../chat/useMessagesStore.js";
+import { useLspCustomServersStore } from "../editor/lsp/useLspCustomServersStore.js";
 import { useProvidersStore } from "../models/useProvidersStore.js";
 import { useToolsStore } from "../tools/useToolsStore.js";
 import { warmMostRecentSession } from "./sessionWarmup.js";
@@ -177,6 +178,12 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     // Fire-and-forget provider hydration — the picker can render its loading state in parallel
     // with the project / session hydration below.
     void useProvidersStore.getState().refreshProviders();
+    // Same for the user-defined LSP servers: the editor needs the list synchronously when a
+    // tab opens, so mirror it now rather than on first Settings visit.
+    void useLspCustomServersStore
+      .getState()
+      .refresh(client)
+      .catch(() => {});
     try {
       await useProjectsStore.getState().hydrateActive(client);
       const activeProjectId = useProjectsStore.getState().activeProjectId;

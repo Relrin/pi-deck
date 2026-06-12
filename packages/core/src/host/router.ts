@@ -33,6 +33,7 @@ import {
   resetSoftHeadParent,
 } from "../git/index.js";
 import { getRecentCommits } from "../git/log.js";
+import type { CustomLspServersStore } from "../lsp/custom-servers-store.js";
 import { type LanguageServerManager, LspManagerError } from "../lsp/manager.js";
 import { type CommandName, CommandSchemas } from "../protocol/commands.js";
 import type { TerminalManager } from "../terminal/index.js";
@@ -60,6 +61,7 @@ export interface RouterContext {
   reviewStore: ReviewStore;
   terminalManager: TerminalManager;
   languageServerManager: LanguageServerManager;
+  customLspServersStore: CustomLspServersStore;
   hostVersion: string;
   protocolVersion: number;
 }
@@ -811,6 +813,24 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     const parsed = CommandSchemas["lsp.shutdown"].request.parse(payload);
     await ctx.languageServerManager.shutdown(parsed.key);
     return { ok: true as const };
+  },
+  "lsp.customServers.list": async (ctx) => ({ servers: ctx.customLspServersStore.list() }),
+  "lsp.customServers.upsert": async (ctx, payload) => {
+    const parsed = CommandSchemas["lsp.customServers.upsert"].request.parse(payload);
+    let servers: Awaited<ReturnType<CustomLspServersStore["upsert"]>>;
+    try {
+      servers = await ctx.customLspServersStore.upsert(parsed.server);
+    } catch (err) {
+      throw new RouterError("invalid_request", (err as Error).message);
+    }
+    ctx.languageServerManager.setCustomServers(ctx.customLspServersStore.toDefs());
+    return { servers };
+  },
+  "lsp.customServers.delete": async (ctx, payload) => {
+    const parsed = CommandSchemas["lsp.customServers.delete"].request.parse(payload);
+    const servers = await ctx.customLspServersStore.delete(parsed.id);
+    ctx.languageServerManager.setCustomServers(ctx.customLspServersStore.toDefs());
+    return { servers };
   },
 };
 

@@ -26,6 +26,17 @@ export interface LanguageServerDef {
   installHint: string;
 }
 
+/**
+ * A user-defined server (Settings → Editor → Custom servers). Identical to a built-in def
+ * plus its own extension → languageId mapping, since `LANGUAGE_ID_BY_EXTENSION` only covers
+ * built-ins. Built-ins always win on conflicts — a custom def can't shadow a built-in
+ * extension, languageId, or id.
+ */
+export interface CustomLanguageServerDef extends LanguageServerDef {
+  /** File extensions, no dot. `"ex"` → `languageIds[0]`; `"heex:phoenix-heex"` overrides. */
+  extensions: readonly string[];
+}
+
 export const LANGUAGE_SERVERS: readonly LanguageServerDef[] = [
   {
     id: "typescript",
@@ -112,19 +123,58 @@ export const LANGUAGE_ID_BY_EXTENSION: Readonly<Record<string, string>> = {
   go: "go",
 };
 
+/**
+ * Parse one `extensions` entry of a custom def: `"ex"` → `[ext, languageIds[0]]`,
+ * `"heex:phoenix-heex"` → `[ext, override]`. Leading dots and case are normalised away.
+ */
+function parseCustomExtension(raw: string, def: CustomLanguageServerDef): [string, string] | null {
+  const colon = raw.indexOf(":");
+  const ext = (colon === -1 ? raw : raw.slice(0, colon)).trim().replace(/^\./, "").toLowerCase();
+  const languageId = colon === -1 ? def.languageIds[0] : raw.slice(colon + 1).trim();
+  if (!ext || !languageId) return null;
+  return [ext, languageId];
+}
+
+/** Extension → languageId map across a set of custom defs (first def claiming an ext wins). */
+export function customExtensionMap(
+  customServers: readonly CustomLanguageServerDef[],
+): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const def of customServers) {
+    for (const raw of def.extensions) {
+      const parsed = parseCustomExtension(raw, def);
+      if (parsed && !(parsed[0] in map)) map[parsed[0]] = parsed[1];
+    }
+  }
+  return map;
+}
+
 /** LSP languageId for a filename, or null when no server definition covers it. */
-export function languageIdForFile(fileName: string): string | null {
+export function languageIdForFile(
+  fileName: string,
+  customServers?: readonly CustomLanguageServerDef[],
+): string | null {
   const slash = Math.max(fileName.lastIndexOf("/"), fileName.lastIndexOf("\\"));
   const base = slash >= 0 ? fileName.slice(slash + 1) : fileName;
   const dot = base.lastIndexOf(".");
   if (dot <= 0) return null;
   const ext = base.slice(dot + 1).toLowerCase();
-  return LANGUAGE_ID_BY_EXTENSION[ext] ?? null;
+  const builtin = LANGUAGE_ID_BY_EXTENSION[ext];
+  if (builtin) return builtin;
+  if (customServers && customServers.length > 0) {
+    return customExtensionMap(customServers)[ext] ?? null;
+  }
+  return null;
 }
 
-/** The server definition that handles a languageId, or null. */
-export function serverForLanguageId(languageId: string): LanguageServerDef | null {
-  return LANGUAGE_SERVERS.find((def) => def.languageIds.includes(languageId)) ?? null;
+/** The server definition that handles a languageId, or null. Built-ins win on overlap. */
+export function serverForLanguageId(
+  languageId: string,
+  customServers?: readonly CustomLanguageServerDef[],
+): LanguageServerDef | null {
+  const builtin = LANGUAGE_SERVERS.find((def) => def.languageIds.includes(languageId));
+  if (builtin) return builtin;
+  return customServers?.find((def) => def.languageIds.includes(languageId)) ?? null;
 }
 
 export function serverById(serverId: string): LanguageServerDef | null {

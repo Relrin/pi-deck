@@ -4,6 +4,7 @@ import { Compartment, type Extension } from "@codemirror/state";
 import { tooltips } from "@codemirror/view";
 import { languageIdForFile, serverForLanguageId } from "@pi-deck/core/lsp/server-defs.js";
 import { deckPathToUri } from "@pi-deck/core/lsp/uri.js";
+import { currentCustomLspDefs } from "./useLspCustomServersStore.js";
 import { lspClientFor, useLspStore } from "./useLspStore.js";
 
 /**
@@ -28,8 +29,9 @@ export interface LanguageAssistTab {
 
 /** Current best content for the LSP compartment of a tab, given live server state. */
 export function languageAssist(tab: LanguageAssistTab): Extension {
-  const languageId = languageIdForFile(tab.fileName);
-  const def = languageId ? serverForLanguageId(languageId) : null;
+  const custom = currentCustomLspDefs();
+  const languageId = languageIdForFile(tab.fileName, custom);
+  const def = languageId ? serverForLanguageId(languageId, custom) : null;
   if (languageId && def) {
     const key = `${tab.projectId}:${def.id}`;
     const server = useLspStore.getState().servers[key];

@@ -1,7 +1,11 @@
 import type { CommandResponse } from "@pi-deck/core/protocol/commands.js";
+import type { CustomLspServer } from "@pi-deck/core/protocol/lsp.js";
 import { useCallback, useEffect, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
+import { Plus } from "../../../components/icons/index.js";
 import { PidTogglePill } from "../../../components/segmented/PidTogglePill";
+import { AddCustomLspServerDialog } from "../../editor/lsp/AddCustomLspServerDialog";
+import { useLspCustomServersStore } from "../../editor/lsp/useLspCustomServersStore";
 import { useLspSettingsStore } from "../../editor/lsp/useLspSettingsStore";
 import { useLspStore } from "../../editor/lsp/useLspStore";
 import { useProjectsStore } from "../../sessions/useProjectsStore";
@@ -13,14 +17,19 @@ type LspStatusData = CommandResponse<"lsp.status">;
  * Settings → Editor. Currently, hosts the language-server panel: which servers pi-deck found
  * for the active project's environment (local PATH, or inside the WSL distro for
  * `\\wsl.localhost` projects), per-language enable switches, and install hints for the rest.
+ * User-defined servers live in the same list (flagged "custom") with edit / remove actions.
  */
 export function EditorSection() {
   const projectId = useProjectsStore((s) => s.activeProjectId);
   const disabledServers = useLspSettingsStore((s) => s.disabledServers);
   const setServerEnabled = useLspStore((s) => s.setServerEnabled);
+  const customServers = useLspCustomServersStore((s) => s.servers);
+  const removeCustom = useLspCustomServersStore((s) => s.remove);
 
   const [data, setData] = useState<LspStatusData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<CustomLspServer | undefined>(undefined);
 
   const load = useCallback(
     async (refresh: boolean) => {
@@ -44,6 +53,13 @@ export function EditorSection() {
   useEffect(() => {
     void load(false);
   }, [load]);
+
+  const onRemoveCustom = async (id: string) => {
+    const client = useSessionsStore.getState().client;
+    if (!client) return;
+    await removeCustom(client, id);
+    void load(false);
+  };
 
   const envDesc =
     data?.mapping.kind === "wsl"
@@ -70,6 +86,9 @@ export function EditorSection() {
             {data.servers.map((server) => {
               const enabled = !disabledServers.includes(server.serverId);
               const state = server.running ? "running" : server.available ? "detected" : "missing";
+              const custom = server.custom
+                ? customServers.find((c) => c.id === server.serverId)
+                : undefined;
               return (
                 <div className="pid-settings-lsp-row" key={server.serverId}>
                   <div>
@@ -78,17 +97,45 @@ export function EditorSection() {
                       <span className="pid-settings-lsp-state" data-state={state}>
                         {state === "missing" ? "not found" : state}
                       </span>
+                      {server.custom ? (
+                        <span className="pid-settings-lsp-state" data-state="custom">
+                          custom
+                        </span>
+                      ) : null}
                     </div>
                     <div className="pid-settings-lsp-meta">
                       {server.available ? (
                         <code>{server.command}</code>
-                      ) : (
+                      ) : server.installHint ? (
                         <>
                           install: <code>{server.installHint}</code>
                         </>
+                      ) : (
+                        <code>{server.command}</code>
                       )}
                     </div>
                   </div>
+                  {custom ? (
+                    <>
+                      <PidButton
+                        variant="ghost"
+                        longLabel
+                        onClick={() => {
+                          setEditing(custom);
+                          setDialogOpen(true);
+                        }}
+                      >
+                        Edit
+                      </PidButton>
+                      <PidButton
+                        variant="danger"
+                        longLabel
+                        onClick={() => void onRemoveCustom(custom.id)}
+                      >
+                        Remove
+                      </PidButton>
+                    </>
+                  ) : null}
                   <PidTogglePill
                     label={enabled ? "On" : "Off"}
                     checked={enabled}
@@ -105,13 +152,30 @@ export function EditorSection() {
         ) : null}
 
         {projectId ? (
-          <div>
+          <div style={{ display: "flex", gap: 8 }}>
             <PidButton onClick={() => void load(true)} disabled={loading}>
               {loading ? "Detecting..." : "Re-detect servers"}
+            </PidButton>
+            <PidButton
+              icon={<Plus size={14} />}
+              longLabel
+              onClick={() => {
+                setEditing(undefined);
+                setDialogOpen(true);
+              }}
+            >
+              Add server
             </PidButton>
           </div>
         ) : null}
       </section>
+
+      <AddCustomLspServerDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        editing={editing}
+        onSaved={() => void load(false)}
+      />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { CustomLspServersStore } from "../lsp/custom-servers-store.js";
 import { LanguageServerManager } from "../lsp/manager.js";
 import { PROTOCOL_VERSION } from "../protocol/version.js";
 import { TerminalManager } from "../terminal/index.js";
@@ -114,6 +115,10 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     wsHandle?.broadcast(topic, payload);
   });
 
+  const customLspServersStore = new CustomLspServersStore(opts.userDataDir);
+  await customLspServersStore.load();
+  languageServerManager.setCustomServers(customLspServersStore.toDefs());
+
   const router: RouterContext = {
     metadataStore,
     sessionManager,
@@ -127,6 +132,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     reviewStore,
     terminalManager,
     languageServerManager,
+    customLspServersStore,
     hostVersion: opts.hostVersion,
     protocolVersion: PROTOCOL_VERSION,
   };
