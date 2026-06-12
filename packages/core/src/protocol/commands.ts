@@ -128,6 +128,66 @@ export const SessionCancelResponse = z.object({ ok: z.literal(true) });
 export const SessionForceStopRequest = z.object({ sessionId: z.string().min(1) });
 export const SessionForceStopResponse = z.object({ ok: z.literal(true) });
 
+/**
+ * One slash-command the session's agent understands: extension commands, prompt templates,
+ * and skills (already `skill:`-prefixed by pi). The composer's `/` autocomplete renders these;
+ * pi expands them inside `session.prompt()` — no client-side processing.
+ */
+export const SessionCommandInfoSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  source: z.enum(["extension", "prompt", "skill"]),
+  /** Where the command came from (skill file, template file, extension path), for tooltips. */
+  sourcePath: z.string().optional(),
+});
+export type SessionCommandInfo = z.infer<typeof SessionCommandInfoSchema>;
+
+export const SessionCommandsRequest = z.object({ sessionId: z.string().min(1) });
+export const SessionCommandsResponse = z.object({
+  commands: z.array(SessionCommandInfoSchema),
+});
+
+/** A skill discovered on disk (host-side scan; no live session needed). */
+export const SkillInfoSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  filePath: z.string(),
+  baseDir: z.string(),
+  scope: z.enum(["user", "project", "temporary"]),
+  /** Hidden from the system prompt; only invocable via /skill:name. */
+  disableModelInvocation: z.boolean(),
+  /** True when the skill lives in a directory pi-deck is allowed to delete from. */
+  removable: z.boolean(),
+});
+export type SkillInfo = z.infer<typeof SkillInfoSchema>;
+
+export const SkillDiagnosticSchema = z.object({
+  type: z.enum(["warning", "error", "collision"]),
+  message: z.string(),
+  path: z.string().optional(),
+});
+
+export const SkillsListRequest = z.object({ projectId: z.string().uuid() });
+export const SkillsListResponse = z.object({
+  skills: z.array(SkillInfoSchema),
+  diagnostics: z.array(SkillDiagnosticSchema),
+});
+
+export const SkillsInstallRequest = z.object({
+  source: z.discriminatedUnion("kind", [
+    z.object({ kind: z.literal("git"), url: z.string().min(1) }),
+    z.object({ kind: z.literal("folder"), path: z.string().min(1) }),
+  ]),
+});
+export const SkillsInstallResponse = z.object({ installedDir: z.string() });
+
+export const SkillsUninstallRequest = z.object({
+  projectId: z.string().uuid(),
+  filePath: z.string().min(1),
+  baseDir: z.string().min(1),
+});
+export const SkillsUninstallResponse = z.object({ ok: z.literal(true) });
+
 export const SessionArchiveRequest = z.object({ sessionId: z.string().min(1) });
 export const SessionArchiveResponse = z.object({ ok: z.literal(true) });
 
@@ -746,6 +806,10 @@ export const CommandSchemas = {
   "session.prompt": { request: SessionPromptRequest, response: SessionPromptResponse },
   "session.cancel": { request: SessionCancelRequest, response: SessionCancelResponse },
   "session.forceStop": { request: SessionForceStopRequest, response: SessionForceStopResponse },
+  "session.commands": { request: SessionCommandsRequest, response: SessionCommandsResponse },
+  "skills.list": { request: SkillsListRequest, response: SkillsListResponse },
+  "skills.install": { request: SkillsInstallRequest, response: SkillsInstallResponse },
+  "skills.uninstall": { request: SkillsUninstallRequest, response: SkillsUninstallResponse },
   "session.archive": { request: SessionArchiveRequest, response: SessionArchiveResponse },
   "session.unarchive": { request: SessionUnarchiveRequest, response: SessionUnarchiveResponse },
   "session.delete": { request: SessionDeleteRequest, response: SessionDeleteResponse },

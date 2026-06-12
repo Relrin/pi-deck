@@ -6,6 +6,8 @@ import {
   AuthStorage,
   createAgentSession,
   DefaultResourceLoader,
+  type ExtensionAPI,
+  type ExtensionFactory,
   getAgentDir,
   ModelRegistry,
   SessionManager as PiSessionManager,
@@ -15,7 +17,7 @@ import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/sessio
 import { type ApprovalDecision, createAgentModeExtension } from "../extensions/agent-mode/index.js";
 import { createAttachmentsExtension } from "../extensions/attachments/index.js";
 import { listProjectFiles } from "../git/files.js";
-import type { PromptAttachment, PromptImage } from "../protocol/commands.js";
+import type { PromptAttachment, PromptImage, SessionCommandInfo } from "../protocol/commands.js";
 import { EVENT_SESSION_TOOL_APPROVAL_REQUESTED } from "../protocol/events.js";
 import { validateAndChdir } from "./cwd.js";
 
@@ -69,6 +71,8 @@ export interface AgentBridge {
   resolveApproval: (approvalId: string, decision: ApprovalDecision, reason?: string) => void;
   /** Snapshot of all past messages + tool calls so the renderer can re-paint a resumed chat. */
   getHistory: () => HistorySnapshot;
+  /** Slash commands pi will recognize in `prompt()`: extension commands, templates, skills. */
+  getCommands: () => SessionCommandInfo[];
   dispose: () => void;
 }
 
@@ -136,12 +140,20 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     listProjectFiles: (cwd, limit) => listProjectFiles(cwd, limit),
   });
 
+  // `getCommands()` (extension commands + prompt templates + skills, pi's canonical list)
+  // only exists on the ExtensionAPI handed to factories — capture it with a probe factory so
+  // the bridge can serve the composer's `/` autocomplete without re-deriving the assembly.
+  let extensionApi: ExtensionAPI | undefined;
+  const commandsProbe: ExtensionFactory = (pi) => {
+    extensionApi = pi;
+  };
+
   const agentDir = getAgentDir();
   const resourceLoader = new DefaultResourceLoader({
     cwd: params.projectPath,
     agentDir,
     settingsManager: SettingsManager.create(params.projectPath, agentDir),
-    extensionFactories: [agentModeController.factory, attachmentsController.factory],
+    extensionFactories: [agentModeController.factory, attachmentsController.factory, commandsProbe],
   });
   // pi 0.74's `createAgentSession` only auto-calls `reload()` on the loader it constructs
   // itself; when we pass our own (which we must, to register the inline factories), we own
@@ -236,6 +248,33 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
       agentModeController.resolveApproval(approvalId, decision, reason);
     },
     getHistory: () => buildHistorySnapshot(session),
+    getCommands: () => {
+      if (extensionApi) {
+        return extensionApi.getCommands().map((c) => ({
+          name: c.name,
+          description: c.description,
+          source: c.source,
+          sourcePath: c.sourceInfo?.path,
+        }));
+      }
+      // Probe factory hasn't run (defensive — reload() executes factories before the session
+      // exists). The public surface still covers templates + skills, just not extension
+      // commands.
+      return [
+        ...session.promptTemplates.map((t) => ({
+          name: t.name,
+          description: t.description,
+          source: "prompt" as const,
+          sourcePath: t.filePath,
+        })),
+        ...session.resourceLoader.getSkills().skills.map((s) => ({
+          name: `skill:${s.name}`,
+          description: s.description,
+          source: "skill" as const,
+          sourcePath: s.filePath,
+        })),
+      ];
+    },
     dispose: () => {
       unsubscribe();
       agentModeController.dispose();

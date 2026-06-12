@@ -45,6 +45,12 @@ import { PlanFileWatcher } from "./plan-file-watcher.js";
 import type { ProviderManager } from "./provider-manager.js";
 import type { ReviewStore } from "./review-store.js";
 import type { SessionManager, SessionRecord } from "./session-manager.js";
+import {
+  installSkillFromFolder,
+  installSkillFromGit,
+  listSkills,
+  uninstallSkill,
+} from "./skills.js";
 import type { ThemeManager } from "./themes/index.js";
 import type { TurnTracker } from "./turn-tracker.js";
 
@@ -193,6 +199,38 @@ const handlers: { [C in CommandName]: CommandHandler } = {
   "session.forceStop": async (ctx, payload) => {
     const parsed = CommandSchemas["session.forceStop"].request.parse(payload);
     ctx.sessionManager.forceStop(parsed.sessionId);
+    return { ok: true as const };
+  },
+  "session.commands": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.commands"].request.parse(payload);
+    return await ctx.sessionManager.commands(parsed.sessionId);
+  },
+  "skills.list": async (ctx, payload) => {
+    const parsed = CommandSchemas["skills.list"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    return listSkills(project.path);
+  },
+  "skills.install": async (ctx, payload) => {
+    const parsed = CommandSchemas["skills.install"].request.parse(payload);
+    try {
+      const installedDir =
+        parsed.source.kind === "git"
+          ? await installSkillFromGit(parsed.source.url)
+          : await installSkillFromFolder(parsed.source.path);
+      return { installedDir };
+    } catch (err) {
+      throw new RouterError("invalid_request", (err as Error).message);
+    }
+  },
+  "skills.uninstall": async (ctx, payload) => {
+    const parsed = CommandSchemas["skills.uninstall"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    try {
+      await uninstallSkill({ filePath: parsed.filePath, baseDir: parsed.baseDir }, project?.path);
+    } catch (err) {
+      throw new RouterError("invalid_request", (err as Error).message);
+    }
     return { ok: true as const };
   },
   "session.archive": async (ctx, payload) => {

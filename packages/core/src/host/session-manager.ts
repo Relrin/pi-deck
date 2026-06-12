@@ -7,7 +7,7 @@ import {
 import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/session.js";
 import type { ApprovalDecision } from "../extensions/agent-mode/index.js";
 import { currentBranch } from "../git/branches.js";
-import type { PromptAttachment, PromptImage } from "../protocol/commands.js";
+import type { PromptAttachment, PromptImage, SessionCommandInfo } from "../protocol/commands.js";
 import {
   EVENT_HOST_ERROR,
   EVENT_SESSION_AGENT_EVENT,
@@ -518,6 +518,20 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     if (notice) {
       this.emit("event", EVENT_HOST_ERROR, { message: notice, sessionId });
     }
+  }
+
+  /**
+   * Slash commands the session's agent recognizes (extension commands, prompt templates,
+   * skills). Spawns the worker on demand like `prompt()` — the list lives in the worker's
+   * resource loader, which is only materialized inside a live pi session.
+   */
+  async commands(sessionId: string): Promise<{ commands: SessionCommandInfo[] }> {
+    const record = this.sessions.get(sessionId);
+    if (!record) throw new Error(`Unknown session ${sessionId}`);
+    if (!record.worker?.isAlive) await this.activate(sessionId);
+    const worker = record.worker;
+    if (!worker) throw new Error("Worker not running");
+    return (await worker.request("commands", {})) as { commands: SessionCommandInfo[] };
   }
 
   /** Mid-session model switch. Forwarded to the live worker if there is one. */

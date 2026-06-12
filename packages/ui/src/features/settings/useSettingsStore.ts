@@ -4,6 +4,7 @@ export type SettingsSectionId =
   | "appearance"
   | "agent-models"
   | "tools"
+  | "skills"
   | "git-github"
   | "mcp-servers"
   | "editor"

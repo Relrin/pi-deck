@@ -2407,6 +2407,36 @@
   scrollbar-width: thin;
   scrollbar-color: var(--bg-3) transparent;
 }
+/* Anchor for the command-highlight mirror. The textarea stacks above the mirror so caret,
+   selection and text rendering stay 100% native; the mirror only paints the token pill. */
+.pid-composer-input-wrap {
+  position: relative;
+}
+.pid-composer-input-wrap > .pid-composer-input {
+  position: relative;
+  display: block;
+}
+/* Invisible replica of the textarea's content. Text metrics MUST stay in lockstep with
+   .pid-composer-input (font, size, line-height, wrapping) or the pill drifts off the token. */
+.pid-composer-input-mirror {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  color: transparent;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+}
+/* The recognized /command token. Only the background paints — the glyphs on top come from
+   the real textarea. */
+.pid-composer-command-token {
+  border-radius: 4px;
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px var(--accent-line);
+}
 .pid-composer-input::-webkit-scrollbar {
   width: 6px;
 }
@@ -3635,6 +3665,71 @@
 .pid-composer-stop:hover {
   background: oklch(0.7 0.18 25 / 0.12);
 }
+/* ---------- Slash-command autocomplete (composer "/" menu) ---------- */
+.pid-slash-menu {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: calc(100% + 6px);
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  border: 1px solid var(--line-strong, var(--line));
+  border-radius: var(--radius);
+  background: var(--bg-1);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+  z-index: 30;
+}
+.pid-slash-menu-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink-1);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+.pid-slash-menu-item[data-active] {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+.pid-slash-menu-name {
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+.pid-slash-menu-desc {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--t-12);
+  color: var(--ink-3);
+}
+.pid-slash-menu-source {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.pid-slash-menu-source[data-source="skill"] {
+  color: var(--add);
+}
+.pid-slash-menu-source[data-source="prompt"] {
+  color: var(--info);
+}
+
 /* Escalated state: graceful cancel was requested but the turn is still running. */
 .pid-composer-stop[data-force="true"] {
   background: var(--del);

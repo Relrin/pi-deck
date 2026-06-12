@@ -6,6 +6,7 @@ import { AppearanceSection } from "./sections/AppearanceSection";
 import { EditorSection } from "./sections/EditorSection";
 import { GitGitHubSection } from "./sections/GitGitHubSection";
 import { ProvidersSection } from "./sections/ProvidersSection";
+import { SkillsSection } from "./sections/SkillsSection";
 import {
   AdvancedSection,
   KeybindsSection,
@@ -26,6 +27,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "appearance", label: "Appearance", stub: false },
   { id: "agent-models", label: "Providers & Models", stub: false },
   { id: "tools", label: "Tools", stub: false },
+  { id: "skills", label: "Skills", stub: false },
   { id: "git-github", label: "Git & GitHub", stub: false },
   { id: "mcp-servers", label: "MCP Servers", stub: true },
   { id: "editor", label: "Editor", stub: false },
@@ -39,6 +41,7 @@ const SECTION_RENDERERS: Record<SettingsSectionId, () => ReactNode> = {
   appearance: () => <AppearanceSection />,
   "agent-models": () => <ProvidersSection />,
   tools: () => <ToolsSection />,
+  skills: () => <SkillsSection />,
   "git-github": () => <GitGitHubSection />,
   "mcp-servers": () => <McpServersSection />,
   editor: () => <EditorSection />,

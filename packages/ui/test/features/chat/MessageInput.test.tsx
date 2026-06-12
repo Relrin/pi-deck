@@ -1,4 +1,5 @@
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
+import { useSlashCommandsStore } from "../../../src/features/chat/composer/useSlashCommandsStore";
 import { MessageInput } from "../../../src/features/chat/MessageInput";
 import { useMessagesStore } from "../../../src/features/chat/useMessagesStore";
 import { useIntroComposerStore } from "../../../src/features/intro/useIntroComposerStore";
@@ -27,6 +28,7 @@ beforeEach(() => {
   // The SESSION composer reads attachments from the same intro-composer store as the
   // BLANK tab — reset it so a leak from another test can't masquerade as stale state.
   useIntroComposerStore.setState({ attachments: [], images: [], text: "" });
+  useSlashCommandsStore.setState({ bySession: {} });
 });
 
 // Restore once at the very end so we don't leak mocks into sibling test files. Restoring
@@ -135,6 +137,107 @@ describe("MessageInput", () => {
     expect(stop).toBeInTheDocument();
     await user.click(stop);
     expect(cancelled).toBe(true);
+  });
+
+  test("typing / opens the command menu; Enter inserts the selected command", async () => {
+    useSlashCommandsStore.setState({
+      bySession: {
+        [SID]: [
+          { name: "skill:brave-search", description: "Web search", source: "skill" },
+          { name: "commit", description: "Commit changes", source: "prompt" },
+        ],
+      },
+    });
+    const user = userEvent.setup();
+    render(<MessageInput sessionId={SID} />);
+    const textarea = screen.getByLabelText("Message") as HTMLTextAreaElement;
+
+    await user.type(textarea, "/");
+    expect(screen.getByRole("listbox", { name: "Slash commands" })).toBeInTheDocument();
+    expect(screen.getByText("/skill:brave-search")).toBeInTheDocument();
+    expect(screen.getByText("/commit")).toBeInTheDocument();
+
+    // First item is active; Enter completes it instead of submitting.
+    await user.keyboard("{Enter}");
+    expect(textarea.value).toBe("/skill:brave-search ");
+    expect(screen.queryByRole("listbox", { name: "Slash commands" })).toBeNull();
+  });
+
+  test("the / menu filters by the typed token and arrows move the selection", async () => {
+    useSlashCommandsStore.setState({
+      bySession: {
+        [SID]: [
+          { name: "skill:brave-search", description: "Web search", source: "skill" },
+          { name: "commit", description: "Commit changes", source: "prompt" },
+          { name: "compact", description: "Compact context", source: "extension" },
+        ],
+      },
+    });
+    const user = userEvent.setup();
+    render(<MessageInput sessionId={SID} />);
+    const textarea = screen.getByLabelText("Message") as HTMLTextAreaElement;
+
+    await user.type(textarea, "/com");
+    expect(screen.queryByText("/skill:brave-search")).toBeNull();
+    expect(screen.getByText("/commit")).toBeInTheDocument();
+    expect(screen.getByText("/compact")).toBeInTheDocument();
+
+    await user.keyboard("{ArrowDown}{Enter}");
+    expect(textarea.value).toBe("/compact ");
+  });
+
+  test("Esc dismisses the / menu without clearing the input", async () => {
+    useSlashCommandsStore.setState({
+      bySession: { [SID]: [{ name: "commit", source: "prompt" }] },
+    });
+    const user = userEvent.setup();
+    render(<MessageInput sessionId={SID} />);
+    const textarea = screen.getByLabelText("Message") as HTMLTextAreaElement;
+
+    await user.type(textarea, "/co");
+    expect(screen.getByRole("listbox", { name: "Slash commands" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("listbox", { name: "Slash commands" })).toBeNull();
+    expect(textarea.value).toBe("/co");
+  });
+
+  test("a recognized command token gets the highlight pill", async () => {
+    useSlashCommandsStore.setState({
+      bySession: {
+        [SID]: [{ name: "skill:brave-search", description: "Web search", source: "skill" }],
+      },
+    });
+    const user = userEvent.setup();
+    const { container } = render(<MessageInput sessionId={SID} />);
+    const textarea = screen.getByLabelText("Message") as HTMLTextAreaElement;
+
+    await user.type(textarea, "/");
+    await user.keyboard("{Enter}"); // completes to "/skill:brave-search "
+    await user.type(textarea, "find the pi docs");
+
+    expect(textarea.value).toBe("/skill:brave-search find the pi docs");
+    const token = container.querySelector(".pid-composer-command-token");
+    expect(token?.textContent).toBe("/skill:brave-search");
+  });
+
+  test("an unknown leading token gets no highlight pill", async () => {
+    useSlashCommandsStore.setState({
+      bySession: { [SID]: [{ name: "commit", source: "prompt" }] },
+    });
+    const user = userEvent.setup();
+    const { container } = render(<MessageInput sessionId={SID} />);
+    await user.type(screen.getByLabelText("Message"), "/nope do things");
+    expect(container.querySelector(".pid-composer-command-token")).toBeNull();
+  });
+
+  test("a / mid-message does not open the command menu", async () => {
+    useSlashCommandsStore.setState({
+      bySession: { [SID]: [{ name: "commit", source: "prompt" }] },
+    });
+    const user = userEvent.setup();
+    render(<MessageInput sessionId={SID} />);
+    await user.type(screen.getByLabelText("Message"), "look at src/");
+    expect(screen.queryByRole("listbox", { name: "Slash commands" })).toBeNull();
   });
 
   test("after Stop, the button escalates to Force stop and fires forceStopPrompt", async () => {
