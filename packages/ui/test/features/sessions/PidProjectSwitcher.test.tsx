@@ -14,7 +14,6 @@ const project = {
 beforeEach(() => {
   useNavStore.setState({
     screen: "blank",
-    expandedProjectsOverview: {},
     expandedProjectsRail: {},
   });
   useSessionsStore.setState((prev) => ({

@@ -12,7 +12,6 @@ const originalActivate = useSessionsStore.getState().activateSession;
 beforeEach(() => {
   useNavStore.setState({
     screen: "blank",
-    expandedProjectsOverview: {},
     expandedProjectsRail: {},
   });
   useProjectsStore.setState({
@@ -112,7 +111,6 @@ describe("PidSessionsList", () => {
     // Expand both the project block and the archive block so all rows render.
     useNavStore.setState({
       screen: "blank",
-      expandedProjectsOverview: {},
       expandedProjectsRail: { "p-1": true, __archive__: true },
     });
 
@@ -166,7 +164,6 @@ describe("PidSessionsList", () => {
     }));
     useNavStore.setState({
       screen: "blank",
-      expandedProjectsOverview: {},
       expandedProjectsRail: { "p-1": true },
     });
 
@@ -210,7 +207,6 @@ describe("PidSessionsList", () => {
     }));
     useNavStore.setState({
       screen: "blank",
-      expandedProjectsOverview: {},
       expandedProjectsRail: { "p-1": true },
     });
 
@@ -251,7 +247,6 @@ describe("PidSessionsList", () => {
     }));
     useNavStore.setState({
       screen: "blank",
-      expandedProjectsOverview: {},
       expandedProjectsRail: { "p-1": true },
     });
 
@@ -291,7 +286,6 @@ describe("PidSessionsList", () => {
     }));
     useNavStore.setState({
       screen: "blank",
-      expandedProjectsOverview: {},
       expandedProjectsRail: { "p-1": true },
     });
 
@@ -324,7 +318,6 @@ describe("PidSessionsList", () => {
     }));
     useNavStore.setState({
       screen: "blank",
-      expandedProjectsOverview: {},
       expandedProjectsRail: { "p-1": true },
     });
 
@@ -389,7 +382,6 @@ describe("PidSessionsList", () => {
     }));
     useNavStore.setState({
       screen: "blank",
-      expandedProjectsOverview: {},
       expandedProjectsRail: { "p-1": true },
     });
 
@@ -426,7 +418,6 @@ describe("PidSessionsList", () => {
     }));
     useNavStore.setState({
       screen: "blank",
-      expandedProjectsOverview: {},
       expandedProjectsRail: { "p-1": true },
     });
 
@@ -579,7 +570,6 @@ describe("PidSessionsList", () => {
     }));
     useNavStore.setState({
       screen: "blank",
-      expandedProjectsOverview: {},
       expandedProjectsRail: { __archive__: false },
     });
 
@@ -606,7 +596,6 @@ describe("PidSessionsList", () => {
     }));
     useNavStore.setState({
       screen: "blank",
-      expandedProjectsOverview: {},
       expandedProjectsRail: { "p-1": true },
     });
 

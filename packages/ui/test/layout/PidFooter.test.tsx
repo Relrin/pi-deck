@@ -9,7 +9,6 @@ const NAV_STORAGE_KEY = "pi-deck:nav:v1";
 function resetStores() {
   useNavStore.setState({
     screen: "blank",
-    expandedProjectsOverview: {},
     expandedProjectsRail: {},
   });
   useSessionsStore.setState({
@@ -70,7 +69,7 @@ describe("PidFooter", () => {
     const labels = within(switcher)
       .getAllByRole("button")
       .map((b) => b.textContent);
-    expect(labels).toEqual(["SESSION", "EDITOR", "DIFF", "OVERVIEW", "BLANK"]);
+    expect(labels).toEqual(["SESSION", "EDITOR", "DIFF", "BLANK"]);
     expect(within(switcher).queryByRole("button", { name: "SETTINGS" })).toBeNull();
     expect(within(switcher).queryByRole("button", { name: "PR" })).toBeNull();
   });
@@ -100,16 +99,6 @@ describe("PidFooter", () => {
     expect(blank.getAttribute("aria-disabled")).toBeNull();
     expect(blank.getAttribute("data-disabled")).toBe("false");
     fireEvent.click(blank);
-    expect(useNavStore.getState().screen).toBe("blank");
-  });
-
-  test("clicking the disabled OVERVIEW button is a no-op", () => {
-    useNavStore.setState({ screen: "blank" });
-    render(<PidFooter />);
-    const overview = screen.getByRole("button", { name: "OVERVIEW" });
-    expect(overview.getAttribute("aria-disabled")).toBe("true");
-    expect(overview.getAttribute("data-disabled")).toBe("true");
-    fireEvent.click(overview);
     expect(useNavStore.getState().screen).toBe("blank");
   });
 

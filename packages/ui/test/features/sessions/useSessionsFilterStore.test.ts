@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import {
-  ALL_STATUSES,
   DEFAULTS,
   dirtyCount,
   isSectionDirty,
@@ -14,7 +13,6 @@ beforeEach(() => {
 describe("useSessionsFilterStore", () => {
   test("starts at defaults", () => {
     const s = useSessionsFilterStore.getState();
-    expect(s.status).toEqual([...DEFAULTS.status]);
     expect(s.project).toEqual({ kind: "all" });
     expect(s.since).toBe(DEFAULTS.since);
     expect(s.sort).toBe(DEFAULTS.sort);
@@ -36,13 +34,9 @@ describe("useSessionsFilterStore", () => {
     store.getState().setGroup("branch");
     expect(dirtyCount(store.getState())).toBe(3);
 
-    store.getState().toggleStatus("running");
-    expect(isSectionDirty(store.getState(), "status")).toBe(true);
-    expect(dirtyCount(store.getState())).toBe(4);
-
     store.getState().setProject({ kind: "subset", ids: ["a"] });
     expect(isSectionDirty(store.getState(), "project")).toBe(true);
-    expect(dirtyCount(store.getState())).toBe(5);
+    expect(dirtyCount(store.getState())).toBe(4);
   });
 
   test("reset returns every section to its default", () => {
@@ -72,20 +66,5 @@ describe("useSessionsFilterStore", () => {
     s.getState().toggleProject("b", ids);
     expect(s.getState().project).toEqual({ kind: "all" });
     expect(isSectionDirty(s.getState(), "project")).toBe(false);
-  });
-
-  test("toggleStatus removes an enabled status and re-adds it", () => {
-    const s = useSessionsFilterStore;
-    s.getState().toggleStatus("review");
-    expect(s.getState().status.includes("review")).toBe(false);
-    expect(s.getState().status.length).toBe(ALL_STATUSES.length - 1);
-
-    s.getState().toggleStatus("review");
-    expect(s.getState().status.includes("review")).toBe(true);
-    // Order may differ after a remove+add, but every default status must be back.
-    for (const st of ALL_STATUSES) {
-      expect(s.getState().status.includes(st)).toBe(true);
-    }
-    expect(isSectionDirty(s.getState(), "status")).toBe(false);
   });
 });

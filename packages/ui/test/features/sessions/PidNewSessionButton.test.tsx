@@ -7,7 +7,6 @@ import { fireEvent, render, screen } from "../../utils";
 beforeEach(() => {
   useNavStore.setState({
     screen: "session",
-    expandedProjectsOverview: {},
     expandedProjectsRail: {},
   });
 });

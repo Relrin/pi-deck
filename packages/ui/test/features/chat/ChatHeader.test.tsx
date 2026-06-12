@@ -18,7 +18,6 @@ const originalRename = useSessionsStore.getState().renameSession;
 beforeEach(() => {
   useNavStore.setState({
     screen: "session",
-    expandedProjectsOverview: {},
     expandedProjectsRail: {},
   });
 });

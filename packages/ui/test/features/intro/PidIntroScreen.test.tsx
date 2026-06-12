@@ -57,7 +57,6 @@ beforeEach(() => {
   useTemplatesStore.setState({ overrides: {} });
   useNavStore.setState({
     screen: "blank",
-    expandedProjectsOverview: {},
     expandedProjectsRail: {},
   });
   seedProject();

@@ -6,7 +6,6 @@ const STORAGE_KEY = "pi-deck:nav:v1";
 function resetStore() {
   useNavStore.setState({
     screen: "blank",
-    expandedProjectsOverview: {},
     expandedProjectsRail: {},
   });
 }
@@ -35,17 +34,11 @@ describe("useNavStore", () => {
     expect(useNavStore.getState().screen).toBe("session");
   });
 
-  test("toggleOverviewProject treats absent key as expanded=true and flips to false", () => {
-    useNavStore.getState().toggleOverviewProject("proj-a");
-    expect(useNavStore.getState().expandedProjectsOverview["proj-a"]).toBe(false);
-    useNavStore.getState().toggleOverviewProject("proj-a");
-    expect(useNavStore.getState().expandedProjectsOverview["proj-a"]).toBe(true);
-  });
-
-  test("toggleRailProject toggles independently of overview map", () => {
+  test("toggleRailProject treats absent key as expanded=true and flips to false", () => {
     useNavStore.getState().toggleRailProject("proj-b");
     expect(useNavStore.getState().expandedProjectsRail["proj-b"]).toBe(false);
-    expect(useNavStore.getState().expandedProjectsOverview["proj-b"]).toBeUndefined();
+    useNavStore.getState().toggleRailProject("proj-b");
+    expect(useNavStore.getState().expandedProjectsRail["proj-b"]).toBe(true);
   });
 
   test("rehydrate coerces transient screens to session", () => {
@@ -54,7 +47,6 @@ describe("useNavStore", () => {
       JSON.stringify({
         state: {
           screen: "editor",
-          expandedProjectsOverview: { x: false },
           expandedProjectsRail: {},
         },
         version: 0,
@@ -63,7 +55,6 @@ describe("useNavStore", () => {
     // Force a rehydrate.
     useNavStore.persist.rehydrate();
     expect(useNavStore.getState().screen).toBe("session");
-    expect(useNavStore.getState().expandedProjectsOverview.x).toBe(false);
   });
 
   test("rehydrate keeps blank and session as-is", () => {
@@ -72,7 +63,6 @@ describe("useNavStore", () => {
       JSON.stringify({
         state: {
           screen: "blank",
-          expandedProjectsOverview: {},
           expandedProjectsRail: {},
         },
         version: 0,
@@ -88,6 +78,7 @@ describe("useNavStore", () => {
       JSON.stringify({
         state: {
           screen: "overview",
+          // Legacy field from the removed overview screen; must be ignored without errors.
           expandedProjectsOverview: { x: true },
           expandedProjectsRail: {},
         },
@@ -96,6 +87,5 @@ describe("useNavStore", () => {
     );
     useNavStore.persist.rehydrate();
     expect(useNavStore.getState().screen).toBe("blank");
-    expect(useNavStore.getState().expandedProjectsOverview.x).toBe(true);
   });
 });

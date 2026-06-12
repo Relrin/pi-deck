@@ -127,7 +127,7 @@ function ProjectsListing({ query }: { query: string }) {
 
   if (visibleProjects.length === 0) {
     return (
-      <div className="pid-overview-empty" style={{ padding: "12px 14px" }}>
+      <div className="pid-list-empty" style={{ padding: "12px 14px" }}>
         {projects.length === 0 ? "no projects" : "no projects match the filter"}
       </div>
     );
@@ -178,7 +178,7 @@ function FlatListing({ query }: { query: string }) {
 
   if (visibleProjectIds.length === 0) {
     return (
-      <div className="pid-overview-empty" style={{ padding: "12px 14px" }}>
+      <div className="pid-list-empty" style={{ padding: "12px 14px" }}>
         {projects.length === 0 ? "no projects" : "no projects match the filter"}
       </div>
     );

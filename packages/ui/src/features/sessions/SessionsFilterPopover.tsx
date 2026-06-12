@@ -2,23 +2,14 @@ import { type ReactNode, useMemo, useState } from "react";
 import { Check, ChevronDown, ChevronRight, Search } from "../../components/icons/index.js";
 import { useProjectsStore } from "./useProjectsStore";
 import {
-  ALL_STATUSES,
   dirtyCount,
   isSectionDirty,
   type ProjectSelection,
-  type SessionStatus,
   type SessionsGroup,
   type SessionsSince,
   type SessionsSort,
   useSessionsFilterStore,
 } from "./useSessionsFilterStore";
-
-const STATUS_OPTIONS: { id: SessionStatus; label: string; toneVar: string }[] = [
-  { id: "running", label: "running", toneVar: "var(--add)" },
-  { id: "review", label: "review", toneVar: "var(--mod)" },
-  { id: "merged", label: "merged", toneVar: "var(--info)" },
-  { id: "idle", label: "idle", toneVar: "var(--ink-3)" },
-];
 
 const SINCE_OPTIONS: { id: SessionsSince; label: string }[] = [
   { id: "1d", label: "1d" },
@@ -71,25 +62,6 @@ export function SessionsFilterPopover({ onClose }: { onClose: () => void }) {
   return (
     <div className="pid-sessions-filter-pop" role="dialog" aria-label="Filter sessions">
       <div className="pid-sessions-filter-list">
-        <AccordionSection
-          id="status"
-          label="status"
-          summary={summariseStatus(state.status)}
-          dirty={isSectionDirty(state, "status")}
-          open={openSections.has("status")}
-          onToggle={() => toggleSection("status")}
-        >
-          {STATUS_OPTIONS.map((o) => (
-            <FilterCheckbox
-              key={o.id}
-              label={o.label}
-              tone={o.toneVar}
-              checked={state.status.includes(o.id)}
-              onChange={() => useSessionsFilterStore.getState().toggleStatus(o.id)}
-            />
-          ))}
-        </AccordionSection>
-
         <AccordionSection
           id="project"
           label="project"
@@ -224,12 +196,11 @@ function AccordionSection({
 
 interface FilterCheckboxProps {
   label: string;
-  tone?: string;
   checked: boolean;
   onChange: () => void;
 }
 
-function FilterCheckbox({ label, tone, checked, onChange }: FilterCheckboxProps) {
+function FilterCheckbox({ label, checked, onChange }: FilterCheckboxProps) {
   return (
     <button
       type="button"
@@ -240,12 +211,7 @@ function FilterCheckbox({ label, tone, checked, onChange }: FilterCheckboxProps)
       <span className="pid-sessions-filter-option-check" data-checked={checked || undefined}>
         {checked ? <Check size={8} /> : null}
       </span>
-      <span className="pid-sessions-filter-option-label">
-        {tone ? (
-          <span className="pid-sessions-filter-option-tone" style={{ background: tone }} />
-        ) : null}
-        {label}
-      </span>
+      <span className="pid-sessions-filter-option-label">{label}</span>
     </button>
   );
 }
@@ -353,14 +319,6 @@ function ProjectPicker() {
       </div>
     </div>
   );
-}
-
-function summariseStatus(selected: SessionStatus[]): string {
-  if (selected.length === ALL_STATUSES.length) return "all";
-  if (selected.length === 0) return "none";
-  const first = selected[0];
-  if (selected.length === 1 && first) return first;
-  return `${selected.length} selected`;
 }
 
 function summariseProject(selection: ProjectSelection, total: number): string {

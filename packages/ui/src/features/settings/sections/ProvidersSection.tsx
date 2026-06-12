@@ -75,7 +75,7 @@ export function ProvidersSection() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {customs.length === 0 ? (
-            <div className="pid-overview-empty">No custom providers yet.</div>
+            <div className="pid-list-empty">No custom providers yet.</div>
           ) : (
             customs.map((p) => (
               <CustomProviderRow

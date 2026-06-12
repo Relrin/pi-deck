@@ -22,7 +22,6 @@ const originalActivate = useSessionsStore.getState().activateSession;
 beforeEach(() => {
   useNavStore.setState({
     screen: "blank",
-    expandedProjectsOverview: {},
     expandedProjectsRail: {},
   });
   useSessionsStore.setState((prev) => ({

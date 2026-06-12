@@ -5,15 +5,13 @@ import { type NavScreen, useNavStore } from "../lib/useNavStore";
 type ScreenButton = {
   id: string;
   label: string;
-  target: NavScreen | null;
-  disabledTooltip?: string;
+  target: NavScreen;
 };
 
 const SCREENS: readonly ScreenButton[] = [
   { id: "session", label: "SESSION", target: "session" },
   { id: "editor", label: "EDITOR", target: "editor" },
   { id: "diff", label: "DIFF", target: "git-diff" },
-  { id: "overview", label: "OVERVIEW", target: null, disabledTooltip: "Coming soon" },
   { id: "blank", label: "BLANK", target: "blank" },
 ];
 
@@ -27,24 +25,18 @@ export function PidScreenSwitcher() {
     <div className="pid-screen-switcher" role="toolbar" aria-label="Switch screen">
       {SCREENS.map((btn) => {
         const isSessionGate = btn.target === "session" && !activeSessionId;
-        const isDisabled = btn.target === null || isSessionGate;
-        const isActive = btn.target !== null && btn.target === screen;
-        const tooltip = isSessionGate
-          ? SESSION_GATE_TOOLTIP
-          : btn.target === null
-            ? (btn.disabledTooltip ?? "Coming soon")
-            : null;
+        const isActive = btn.target === screen;
 
         const buttonEl = (
           <button
-            key={tooltip ? undefined : btn.id}
+            key={isSessionGate ? undefined : btn.id}
             type="button"
             data-active={isActive ? "true" : "false"}
-            data-disabled={isDisabled ? "true" : "false"}
+            data-disabled={isSessionGate ? "true" : "false"}
             aria-pressed={isActive}
-            aria-disabled={isDisabled || undefined}
+            aria-disabled={isSessionGate || undefined}
             onClick={(event) => {
-              if (isDisabled || btn.target === null) {
+              if (isSessionGate) {
                 event.preventDefault();
                 return;
               }
@@ -55,9 +47,9 @@ export function PidScreenSwitcher() {
           </button>
         );
 
-        if (tooltip) {
+        if (isSessionGate) {
           return (
-            <Tooltip key={btn.id} content={tooltip}>
+            <Tooltip key={btn.id} content={SESSION_GATE_TOOLTIP}>
               {buttonEl}
             </Tooltip>
           );

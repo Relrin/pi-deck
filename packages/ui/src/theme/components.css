@@ -884,27 +884,6 @@
   animation: pid-status-pulse 1.6s ease-in-out infinite;
 }
 
-/* ---------- Diff bar (compact activity sparkline) ---------- */
-.pid-diffbar {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 1px;
-  height: 8px;
-}
-.pid-diffbar > span {
-  display: block;
-  width: 2px;
-  height: 100%;
-  background: var(--muted, var(--ink-3));
-  border-radius: 1px;
-}
-.pid-diffbar > span[data-tone="accent"] {
-  background: var(--accent);
-}
-.pid-diffbar > span[data-tone="add"] {
-  background: var(--add);
-}
-
 /* ---------- Card primitive ---------- */
 .pid-card {
   display: flex;
@@ -1171,138 +1150,14 @@
   color: var(--ink-3);
 }
 
-/* ---------- Sessions overview dashboard ---------- */
-.pid-overview {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding: 28px 32px 40px;
-  height: 100%;
-  overflow-y: auto;
-}
-.pid-overview-heading {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.pid-overview-kicker {
-  font-family: var(--font-mono);
-  font-size: var(--t-12);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-.pid-overview-title {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: var(--t-display-lg);
-  color: var(--ink-0);
-  margin: 0;
-  line-height: 1;
-}
-.pid-overview-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.pid-overview-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 6px;
-}
-.pid-overview-header-button {
-  background: none;
-  border: 0;
-  padding: 0;
-  margin: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  color: var(--ink-0);
-  font: inherit;
-}
-.pid-overview-header-button:hover {
-  color: var(--accent);
-}
-.pid-overview-header-title {
-  font-family: var(--font-mono);
-  font-size: var(--t-12);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-2);
-}
-.pid-overview-header-actions {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.pid-overview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 10px;
-}
-.pid-overview-empty {
+/* ---------- Empty-list placeholder ---------- */
+.pid-list-empty {
   font-family: var(--font-mono);
   font-size: var(--t-12);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-3);
   padding: 12px 0;
-}
-.pid-overview-error {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: var(--radius);
-  border: 1px solid var(--del);
-  background: var(--del-soft);
-  color: var(--del);
-  font-family: var(--font-mono);
-  font-size: var(--t-12);
-}
-.pid-session-card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.pid-session-card-title {
-  font-family: var(--font-ui);
-  font-size: var(--t-14);
-  color: var(--ink-0);
-}
-.pid-session-card-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  color: var(--ink-3);
-}
-.pid-session-card-meta-branch {
-  text-transform: lowercase;
-}
-.pid-session-card-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.pid-session-card-status {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--ink-3);
-  flex: 0 0 auto;
-}
-.pid-session-card-status[data-tone="active"] {
-  background: var(--accent);
 }
 
 /* ---------- Compact rail sessions list ---------- */
@@ -1520,12 +1375,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.pid-sessions-filter-option-tone {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  flex: 0 0 auto;
 }
 .pid-sessions-filter-option-count {
   font-size: 10px;

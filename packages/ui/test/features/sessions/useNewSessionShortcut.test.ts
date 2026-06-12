@@ -22,7 +22,6 @@ function dispatchCmdN(target?: EventTarget) {
 beforeEach(() => {
   useNavStore.setState({
     screen: "session",
-    expandedProjectsOverview: {},
     expandedProjectsRail: {},
   });
   useProjectsStore.setState({

@@ -1,15 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-/**
- * Session status used by the Status filter. Only `running` (= turn in flight) and `idle`
- * are derivable from current data; `review` / `merged` are accepted into the state for
- * forward-compatibility with the mockup but currently no-op when applied. See
- * `applySessionsFilter` in `useSessionsStore`.
- */
-export type SessionStatus = "running" | "review" | "merged" | "idle";
-export const ALL_STATUSES: readonly SessionStatus[] = ["running", "review", "merged", "idle"];
-
 /** "Since" buckets the user can pick to hide stale sessions. `all` disables the cutoff. */
 export type SessionsSince = "1d" | "7d" | "14d" | "30d" | "all";
 export const ALL_SINCE: readonly SessionsSince[] = ["1d", "7d", "14d", "30d", "all"];
@@ -34,8 +25,6 @@ export const ALL_GROUP: readonly SessionsGroup[] = ["workspace", "branch", "stat
 export type ProjectSelection = { kind: "all" } | { kind: "subset"; ids: string[] };
 
 export interface SessionsFilterState {
-  /** Selected status filters. The mockup defaults to all four boxes checked. */
-  status: SessionStatus[];
   /** Project filter. `{ kind: "all" }` = every project visible, the default. */
   project: ProjectSelection;
   /** Recency cutoff. */
@@ -45,7 +34,6 @@ export interface SessionsFilterState {
   /** Grouping dimension. */
   group: SessionsGroup;
 
-  toggleStatus: (s: SessionStatus) => void;
   setProject: (selection: ProjectSelection) => void;
   toggleProject: (projectId: string, allKnownIds: readonly string[]) => void;
   setProjectAll: (allKnownIds: readonly string[]) => void;
@@ -57,7 +45,6 @@ export interface SessionsFilterState {
 }
 
 export const DEFAULTS = {
-  status: ALL_STATUSES.slice(),
   project: { kind: "all" } as ProjectSelection,
   since: "7d" as SessionsSince,
   sort: "recent" as SessionsSort,
@@ -71,7 +58,6 @@ export const DEFAULTS = {
  */
 export function dirtyCount(state: SessionsFilterState): number {
   let n = 0;
-  if (!sameStatusSet(state.status, DEFAULTS.status)) n++;
   if (state.project.kind !== "all") n++;
   if (state.since !== DEFAULTS.since) n++;
   if (state.sort !== DEFAULTS.sort) n++;
@@ -85,11 +71,9 @@ export function dirtyCount(state: SessionsFilterState): number {
  */
 export function isSectionDirty(
   state: SessionsFilterState,
-  section: "status" | "project" | "since" | "sort" | "group",
+  section: "project" | "since" | "sort" | "group",
 ): boolean {
   switch (section) {
-    case "status":
-      return !sameStatusSet(state.status, DEFAULTS.status);
     case "project":
       return state.project.kind !== "all";
     case "since":
@@ -101,26 +85,13 @@ export function isSectionDirty(
   }
 }
 
-function sameStatusSet(a: SessionStatus[], b: readonly SessionStatus[]): boolean {
-  if (a.length !== b.length) return false;
-  const set = new Set(a);
-  return b.every((x) => set.has(x));
-}
-
 export const useSessionsFilterStore = create<SessionsFilterState>()(
   persist(
     (set) => ({
-      status: DEFAULTS.status,
       project: DEFAULTS.project,
       since: DEFAULTS.since,
       sort: DEFAULTS.sort,
       group: DEFAULTS.group,
-
-      toggleStatus: (s) =>
-        set((state) => {
-          const has = state.status.includes(s);
-          return { status: has ? state.status.filter((x) => x !== s) : [...state.status, s] };
-        }),
 
       setProject: (selection) => set({ project: selection }),
 
@@ -153,7 +124,6 @@ export const useSessionsFilterStore = create<SessionsFilterState>()(
 
       reset: () =>
         set({
-          status: DEFAULTS.status,
           project: DEFAULTS.project,
           since: DEFAULTS.since,
           sort: DEFAULTS.sort,
@@ -162,8 +132,8 @@ export const useSessionsFilterStore = create<SessionsFilterState>()(
     }),
     {
       name: "pi-deck:sessions-filter:v1",
+      // A stale `status` key from older builds is dropped here simply by not being listed.
       partialize: (state) => ({
-        status: state.status,
         project: state.project,
         since: state.since,
         sort: state.sort,
