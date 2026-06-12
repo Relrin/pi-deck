@@ -188,6 +188,11 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     await ctx.sessionManager.cancel(parsed.sessionId);
     return { ok: true as const };
   },
+  "session.forceStop": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.forceStop"].request.parse(payload);
+    ctx.sessionManager.forceStop(parsed.sessionId);
+    return { ok: true as const };
+  },
   "session.archive": async (ctx, payload) => {
     const parsed = CommandSchemas["session.archive"].request.parse(payload);
     await ctx.sessionManager.archive(parsed.sessionId);

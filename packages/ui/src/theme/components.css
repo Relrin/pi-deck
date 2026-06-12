@@ -3632,6 +3632,14 @@
 .pid-composer-stop:hover {
   background: oklch(0.7 0.18 25 / 0.12);
 }
+/* Escalated state: graceful cancel was requested but the turn is still running. */
+.pid-composer-stop[data-force="true"] {
+  background: var(--del);
+  color: var(--bg-0);
+}
+.pid-composer-stop[data-force="true"]:hover {
+  filter: brightness(0.92);
+}
 
 /* ---------- Git sidebar (right pane "Git" tab) ---------- */
 /* Four-region flex column: branch header (top) · changes header · scrolling

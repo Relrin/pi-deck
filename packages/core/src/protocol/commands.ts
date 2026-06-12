@@ -118,6 +118,10 @@ export const SessionPromptResponse = z.object({
 export const SessionCancelRequest = z.object({ sessionId: z.string().min(1) });
 export const SessionCancelResponse = z.object({ ok: z.literal(true) });
 
+/** Hard-stop: kill the session's worker process tree without waiting for a graceful abort. */
+export const SessionForceStopRequest = z.object({ sessionId: z.string().min(1) });
+export const SessionForceStopResponse = z.object({ ok: z.literal(true) });
+
 export const SessionArchiveRequest = z.object({ sessionId: z.string().min(1) });
 export const SessionArchiveResponse = z.object({ ok: z.literal(true) });
 
@@ -735,6 +739,7 @@ export const CommandSchemas = {
   "session.deactivate": { request: SessionDeactivateRequest, response: SessionDeactivateResponse },
   "session.prompt": { request: SessionPromptRequest, response: SessionPromptResponse },
   "session.cancel": { request: SessionCancelRequest, response: SessionCancelResponse },
+  "session.forceStop": { request: SessionForceStopRequest, response: SessionForceStopResponse },
   "session.archive": { request: SessionArchiveRequest, response: SessionArchiveResponse },
   "session.unarchive": { request: SessionUnarchiveRequest, response: SessionUnarchiveResponse },
   "session.delete": { request: SessionDeleteRequest, response: SessionDeleteResponse },

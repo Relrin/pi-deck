@@ -83,6 +83,13 @@ const WORKER_TOPIC_MAP: Record<string, EventTopic> = {
   [EVENT_SESSION_TOOL_APPROVAL_REQUESTED]: EVENT_SESSION_TOOL_APPROVAL_REQUESTED,
 };
 
+/**
+ * How long a graceful cancel may take before the worker is presumed wedged and gets
+ * force-killed. Normal aborts resolve in well under a second; the generous window only
+ * matters when a tool subprocess needs a moment to die.
+ */
+const CANCEL_GRACE_MS = 10_000;
+
 export class SessionManager extends EventEmitter<SessionManagerEvents> {
   private readonly sessions = new Map<string, SessionRecord>();
   private readonly spawnWorker: () => WorkerHandle;
@@ -487,7 +494,30 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
   async cancel(sessionId: string): Promise<void> {
     const record = this.sessions.get(sessionId);
     if (!record?.worker?.isAlive) return;
-    await record.worker.request("cancel", {});
+    try {
+      await record.worker.request("cancel", {}, CANCEL_GRACE_MS);
+    } catch {
+      // pi's `session.abort()` waits for the agent to go idle; a provider stream or tool
+      // that ignores the abort signal leaves it (and this RPC) hanging forever. After the
+      // grace period assume the worker is wedged and escalate to a hard kill — the session
+      // file survives, so the next prompt respawns a fresh worker with full history.
+      this.forceStop(sessionId, "Agent did not respond to stop — session was force-stopped.");
+    }
+  }
+
+  /**
+   * Hard-stop a session by killing its worker process tree. Used when a graceful cancel
+   * times out, or directly by the renderer's "Force stop" escalation. The worker-exit
+   * handler takes care of the rest: it emits `EVENT_SESSION_WORKER_EXIT` (which resets the
+   * renderer's in-flight state) and clears `record.worker`.
+   */
+  forceStop(sessionId: string, notice?: string): void {
+    const record = this.sessions.get(sessionId);
+    if (!record?.worker?.isAlive) return;
+    record.worker.kill("SIGKILL");
+    if (notice) {
+      this.emit("event", EVENT_HOST_ERROR, { message: notice, sessionId });
+    }
   }
 
   /** Mid-session model switch. Forwarded to the live worker if there is one. */

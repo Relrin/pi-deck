@@ -11,6 +11,7 @@ const SID = "sess-1";
 // (Zustand stores live in module scope; setState is a partial merge with no auto-reset).
 const ORIGINAL_SEND = useSessionsStore.getState().sendPrompt;
 const ORIGINAL_CANCEL = useSessionsStore.getState().cancelPrompt;
+const ORIGINAL_FORCE_STOP = useSessionsStore.getState().forceStopPrompt;
 
 beforeEach(() => {
   useMessagesStore.setState({ bySession: {} });
@@ -21,6 +22,7 @@ beforeEach(() => {
     client: undefined,
     sendPrompt: ORIGINAL_SEND,
     cancelPrompt: ORIGINAL_CANCEL,
+    forceStopPrompt: ORIGINAL_FORCE_STOP,
   });
   // The SESSION composer reads attachments from the same intro-composer store as the
   // BLANK tab — reset it so a leak from another test can't masquerade as stale state.
@@ -34,6 +36,7 @@ afterAll(() => {
   useSessionsStore.setState({
     sendPrompt: ORIGINAL_SEND,
     cancelPrompt: ORIGINAL_CANCEL,
+    forceStopPrompt: ORIGINAL_FORCE_STOP,
   });
 });
 
@@ -132,6 +135,57 @@ describe("MessageInput", () => {
     expect(stop).toBeInTheDocument();
     await user.click(stop);
     expect(cancelled).toBe(true);
+  });
+
+  test("after Stop, the button escalates to Force stop and fires forceStopPrompt", async () => {
+    useMessagesStore.setState({
+      bySession: {
+        [SID]: { messages: [], toolCalls: {}, isTurnInFlight: true },
+      },
+    });
+    let forced = false;
+    useSessionsStore.setState({
+      cancelPrompt: (async () => {
+        // Simulate the wedged-agent case: cancel never ends the turn.
+      }) as never,
+      forceStopPrompt: (async () => {
+        forced = true;
+      }) as never,
+    });
+    const user = userEvent.setup();
+    render(<MessageInput sessionId={SID} />);
+
+    await user.click(screen.getByRole("button", { name: "Stop generating" }));
+    const force = screen.getByRole("button", { name: "Force stop" });
+    expect(force).toBeInTheDocument();
+    await user.click(force);
+    expect(forced).toBe(true);
+  });
+
+  test("escalation resets to plain Stop once the turn ends", async () => {
+    useMessagesStore.setState({
+      bySession: {
+        [SID]: { messages: [], toolCalls: {}, isTurnInFlight: true },
+      },
+    });
+    useSessionsStore.setState({ cancelPrompt: (async () => {}) as never });
+    const user = userEvent.setup();
+    render(<MessageInput sessionId={SID} />);
+
+    await user.click(screen.getByRole("button", { name: "Stop generating" }));
+    expect(screen.getByRole("button", { name: "Force stop" })).toBeInTheDocument();
+
+    // Turn ends (e.g. worker exit after a force-kill) — composer returns to Send, and the
+    // next in-flight turn starts back at the graceful Stop button.
+    useMessagesStore.setState({
+      bySession: { [SID]: { messages: [], toolCalls: {}, isTurnInFlight: false } },
+    });
+    expect(await screen.findByRole("button", { name: "Send message" })).toBeInTheDocument();
+
+    useMessagesStore.setState({
+      bySession: { [SID]: { messages: [], toolCalls: {}, isTurnInFlight: true } },
+    });
+    expect(await screen.findByRole("button", { name: "Stop generating" })).toBeInTheDocument();
   });
 
   test("Stop button advertises the Esc shortcut to assistive tech", () => {

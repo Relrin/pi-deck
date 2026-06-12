@@ -39,6 +39,10 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   const isInFlight = useMessagesStore(useMemo(() => selectTurnInFlight(sessionId), [sessionId]));
   const sendPrompt = useSessionsStore((s) => s.sendPrompt);
   const cancelPrompt = useSessionsStore((s) => s.cancelPrompt);
+  const forceStopPrompt = useSessionsStore((s) => s.forceStopPrompt);
+  // Flips after the first Stop click. While set, the button offers the hard-kill escape
+  // hatch for the case where pi's graceful abort never lands (wedged provider stream).
+  const [cancelRequested, setCancelRequested] = useState(false);
   const executionMode = useComposerStore((s) => s.getMode(sessionId));
   const pendingInsert = useDraftStore((s) => s.pendingInsert);
   const consumePendingInsert = useDraftStore((s) => s.consumePendingInsert);
@@ -180,8 +184,19 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   useAttachmentsHotkeys({ onChooseFiles: chooseFiles, onChooseFolder: chooseFolder });
 
   const cancel = useCallback(() => {
+    setCancelRequested(true);
     void cancelPrompt();
   }, [cancelPrompt]);
+
+  const forceStop = useCallback(() => {
+    void forceStopPrompt();
+  }, [forceStopPrompt]);
+
+  // Whatever ends the turn (graceful cancel, force-kill worker exit, prompt error) resets
+  // the escalation so the next turn starts back at the plain Stop button.
+  useEffect(() => {
+    if (!isInFlight) setCancelRequested(false);
+  }, [isInFlight]);
 
   // Esc cancels the in-flight turn. Mounted globally while a turn is in flight so the user
   // can interrupt from anywhere in the app, not only from the textarea.
@@ -351,18 +366,33 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
           <SessionModelPicker sessionId={sessionId} />
           <SessionEffortPicker sessionId={sessionId} />
           {isInFlight ? (
-            <Tooltip content="Stop generating · Esc" side="top">
-              <button
-                type="button"
-                onClick={cancel}
-                className="pid-composer-stop"
-                aria-label="Stop generating"
-                aria-keyshortcuts="Escape"
-              >
-                <Square size={12} aria-hidden />
-                <span>Stop</span>
-              </button>
-            </Tooltip>
+            cancelRequested ? (
+              <Tooltip content="Agent is still running — kill it and end the turn" side="top">
+                <button
+                  type="button"
+                  onClick={forceStop}
+                  className="pid-composer-stop"
+                  data-force="true"
+                  aria-label="Force stop"
+                >
+                  <Square size={12} aria-hidden />
+                  <span>Force stop</span>
+                </button>
+              </Tooltip>
+            ) : (
+              <Tooltip content="Stop generating · Esc" side="top">
+                <button
+                  type="button"
+                  onClick={cancel}
+                  className="pid-composer-stop"
+                  aria-label="Stop generating"
+                  aria-keyshortcuts="Escape"
+                >
+                  <Square size={12} aria-hidden />
+                  <span>Stop</span>
+                </button>
+              </Tooltip>
+            )
           ) : (
             <Tooltip content="Send message · Enter" side="top">
               <button

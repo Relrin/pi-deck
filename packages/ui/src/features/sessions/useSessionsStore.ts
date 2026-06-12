@@ -69,6 +69,8 @@ export interface SessionsStoreState {
     },
   ) => Promise<void>;
   cancelPrompt: () => Promise<void>;
+  /** Hard-stop escalation: kill the worker process when a graceful cancel doesn't bite. */
+  forceStopPrompt: () => Promise<void>;
   setActiveSessionId: (id: string | undefined) => void;
   /** Merge backend-pushed updates (e.g. title rename) into the local sessions list. */
   updateSessionMetadata: (sessionId: string, partial: Partial<SessionSummary>) => void;
@@ -474,6 +476,19 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       await client.call("session.cancel", { sessionId: id });
     } catch (err) {
       useNotificationStore.getState().error(humanizeError(err, "Failed to cancel"));
+    }
+  },
+
+  forceStopPrompt: async () => {
+    const client = get().client;
+    const id = get().activeSessionId;
+    if (!client || !id) return;
+    try {
+      await client.call("session.forceStop", { sessionId: id });
+      // The killed worker's exit event resets the in-flight flag; no optimistic flip here
+      // so the button state always mirrors what the host actually did.
+    } catch (err) {
+      useNotificationStore.getState().error(humanizeError(err, "Failed to force-stop"));
     }
   },
 
