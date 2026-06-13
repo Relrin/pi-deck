@@ -23,10 +23,10 @@ files:
 mac:
   category: public.app-category.developer-tools
   hardenedRuntime: false
-  # Arch is selected per runner by the release workflow (`--arm64` / `--x64`) so each build runs on
-  # a native macOS runner. node-pty ships per-(os,cpu) prebuilt binaries that only install on a
-  # matching host, so cross-compiling x64 on an Apple-Silicon runner would ship a broken PTY.
-  # A local `bun run dist` (no flag) builds the host arch only.
+  # Apple Silicon (arm64) only — the release workflow passes `--arm64` on a macos-14 runner.
+  # GitHub's last Intel runner (macos-13) is being retired, and node-pty ships per-(os,cpu) prebuilt
+  # binaries that only install on a matching host, so cross-compiling x64 on an arm64 runner would
+  # ship a broken PTY. A local `bun run dist` (no flag) builds the host arch only.
   target:
     - dmg
     - zip

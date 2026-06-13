@@ -17,14 +17,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Each macOS arch builds on its native runner — node-pty's prebuilt binary only installs
-          # for the host (os, cpu), so cross-compiling would ship a broken PTY.
+          # macOS is Apple Silicon (arm64) only: GitHub's last Intel runner image (macos-13) is
+          # being retired, and node-pty's prebuilt binary only installs for the host (os, cpu), so
+          # cross-compiling x64 on an arm64 runner would ship a broken PTY.
           - os: macos-14 # Apple Silicon
             artefact: pi-deck-macos-arm64
             builder_args: "--arm64"
-          - os: macos-13 # Intel
-            artefact: pi-deck-macos-x64
-            builder_args: "--x64"
           - os: ubuntu-latest
             artefact: pi-deck-linux
             builder_args: ""
