@@ -18,11 +18,11 @@
     "@lydell/node-pty": "1.2.0-beta.12",
     "@pi-deck/core": "workspace:*",
     "@pi-deck/ui": "workspace:*",
-    "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
   },
   "devDependencies": {
-    "@types/react": "19.2.14",
+    "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "electron": "42.0.1",
     "electron-builder": "26.8.1",
