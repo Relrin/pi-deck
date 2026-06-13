@@ -62,8 +62,19 @@ mock.module("ghostty-web", () => ({
   FitAddon: FakeFitAddon,
 }));
 
-// Imported AFTER the mocks so the adapter binds to the fakes.
-const { mountTerminal } = await import("../../../src/features/terminal/TerminalRenderer.js");
+// Imported AFTER the mocks so the adapter binds to the ghostty fakes above.
+//
+// bun's `mock.module` is process-global and cannot be reverted, so the sibling
+// `TerminalView.*.test.tsx` files — which replace this very module with a fake `mountTerminal` —
+// shadow the real implementation here whenever one of them loads first (Linux/CI walk the test
+// directory in readdir order, unlike Windows' sorted order). Load a fresh, separately-keyed
+// instance via a cache-busting query so that global mock can't reach the code under test. The
+// specifier is built at runtime so `tsc` treats the import as dynamic (no query-suffix resolution);
+// the cast restores the real types.
+const rendererModulePath = "../../../src/features/terminal/TerminalRenderer.js";
+const { mountTerminal } = (await import(
+  `${rendererModulePath}?real`
+)) as typeof import("../../../src/features/terminal/TerminalRenderer.js");
 
 function makeTheme(background: string): TerminalTheme {
   return {
