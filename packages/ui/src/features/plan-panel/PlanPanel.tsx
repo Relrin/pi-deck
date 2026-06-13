@@ -1,5 +1,8 @@
-import { useEffect } from "react";
-import { Map as MapIcon } from "../../components/icons/index.js";
+import { useEffect, useState } from "react";
+import { PidIconButton } from "../../components/buttons/PidIconButton.js";
+import { Check, Copy, Map as MapIcon } from "../../components/icons/index.js";
+import { Tooltip } from "../../components/ui/Tooltip.js";
+import { writeClipboard } from "../../lib/clipboard.js";
 import { Markdown } from "../chat/messages/Markdown.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { selectPlanSession, usePlanStore } from "./usePlanStore.js";
@@ -26,6 +29,19 @@ export function PlanPanel() {
   const client = useSessionsStore((s) => s.client);
   const plan = usePlanStore(selectPlanSession(activeSessionId));
   const applyPlanFileChanged = usePlanStore((s) => s.applyPlanFileChanged);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    if (!plan.fileContent) return;
+    writeClipboard(plan.fileContent)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      })
+      .catch(() => {
+        // Silent failure — the button remains clickable for retry
+      });
+  };
 
   // Prime the panel: pull the current content, kick the watcher if it isn't running yet. The
   // host returns `content: null` for sessions that haven't produced a plan yet, which the
@@ -63,11 +79,22 @@ export function PlanPanel() {
     <div className="pid-plan-panel" data-testid="plan-panel">
       <div className="pid-plan-panel-header">
         <span>Plan</span>
-        {plan.filePath && (
-          <span className="pid-plan-panel-path" title={plan.filePath}>
-            {shortenPath(plan.filePath)}
-          </span>
-        )}
+        <div className="pid-plan-panel-header-actions">
+          {plan.filePath && (
+            <span className="pid-plan-panel-path" title={plan.filePath}>
+              {shortenPath(plan.filePath)}
+            </span>
+          )}
+          {plan.fileContent && plan.fileContent.length > 0 && (
+            <Tooltip content={copied ? "Copied!" : "Copy as Markdown"}>
+              <PidIconButton
+                icon={copied ? <Check size={14} /> : <Copy size={14} />}
+                label="Copy plan as Markdown"
+                onClick={handleCopy}
+              />
+            </Tooltip>
+          )}
+        </div>
       </div>
       <div className="pid-plan-panel-body">
         {plan.fileContent && plan.fileContent.length > 0 ? (

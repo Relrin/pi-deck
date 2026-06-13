@@ -4,6 +4,29 @@
   box-sizing: border-box;
 }
 
+/* ---------- Scrollbars ---------- */
+/* Standards-track (Firefox + future web build) */
+:root {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
+}
+
+/* Chromium / Electron */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
+}
+
 html,
 body,
 #root {
