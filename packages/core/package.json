@@ -13,7 +13,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@earendil-works/pi-coding-agent": "0.78.1",
+    "@earendil-works/pi-coding-agent": "0.79.3",
     "@lydell/node-pty": "1.2.0-beta.12",
     "chokidar": "5.0.0",
     "iconv-lite": "0.6.3",

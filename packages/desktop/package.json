@@ -14,7 +14,7 @@
     "dist": "bun run build && electron-builder --config electron-builder.yml"
   },
   "dependencies": {
-    "@earendil-works/pi-coding-agent": "0.78.1",
+    "@earendil-works/pi-coding-agent": "0.79.3",
     "@lydell/node-pty": "1.2.0-beta.12",
     "@pi-deck/core": "workspace:*",
     "@pi-deck/ui": "workspace:*",
