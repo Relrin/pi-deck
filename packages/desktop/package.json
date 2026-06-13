@@ -2,6 +2,13 @@
   "name": "@pi-deck/desktop",
   "version": "0.1.0",
   "private": true,
+  "description": "Friendly desktop client for the pi coding agent.",
+  "homepage": "https://github.com/Relrin/pi-deck",
+  "author": {
+    "name": "Valeryi Savich",
+    "email": "relrin78@gmail.com"
+  },
+  "license": "MIT",
   "main": "./dist/main/index.mjs",
   "scripts": {
     "type-check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.main.json --noEmit",
