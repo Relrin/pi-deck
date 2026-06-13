@@ -8,14 +8,14 @@ A friendly desktop and web client for the [pi coding agent](https://github.com/e
 
 ## Stack
 
-- **Runtime:** Bun (package manager + script runner) and Node 20+ (for things Bun doesn't yet do well, like `node-pty`).
+- **Runtime:** Bun (package manager + script runner) and Node 24+ (for things Bun doesn't yet do well, like `node-pty`).
 - **Language:** TypeScript everywhere. No JavaScript except generated config.
 - **UI:** React 19 + Vite. CSS variables + Tailwind v4 for styling.
 - **Desktop shell:** Electron.
 - **Agent embedding:** `@earendil-works/pi-coding-agent` `AgentSession` API, one Node subprocess per active session.
 - **Renderer & backend transport:** WebSocket over localhost. Same protocol works for the standalone web target.
 - **Diffs:** `@pierre/diffs` (built on Shiki).
-- **PTY:** `@lydell/node-pty` (native module, runs in the host / Electron main). Ships per-platform prebuilt N-API binaries, so no electron-rebuild step; `node-pty` is a runtime fallback. Externalized in the main build + `asarUnpack`ed for packaging.
+- **PTY:** `@lydell/node-pty` (native module, runs in the host / Electron main). Ships per-`(os, cpu)` prebuilt N-API binaries (no source compile), but only the build host's arch installs — so cross-arch packaging needs a native runner, which is why macOS releases are Apple-Silicon-only (see the release matrix). `node-pty` is a runtime fallback. Externalized in the main build + `asarUnpack`ed for packaging.
 - **Terminal renderer:** `ghostty-web` (WASM) behind a single adapter.
 - **Lint / format:** Biome.
 - **Tests:** `bun test` for unit. Playwright for end-to-end (not wired yet).
@@ -103,12 +103,16 @@ bun run build         # Production build
 
 ### Dependencies
 
-- Pin exact versions (no `^` / no `~`) in every `package.json`. The lockfile (`bun.lockb`) must travel in the same commit as any dependency change.
+- Pin exact versions (no `^` / no `~`) in every `package.json`. The lockfile (`bun.lock`) must travel in the same commit as any dependency change.
 - Avoid adding dependencies without a clear reason — especially anything that adds a transitive native module, since those slow down install and Electron packaging.
 
 ### Logging
 
 - No `console.log` in committed code. Use the structured logger.
+
+### Testing
+
+- Unit tests run on `bun test`. `mock.module` is **process-global and can't be reverted** — a module one test file mocks stays mocked for every later file in the run, and `bun test`'s file order differs by OS (sorted on Windows, readdir on Linux/CI), so an order-dependent leak can pass locally yet fail in CI. Mock the narrowest seam; if a test needs the *real* module that a sibling test mocks, import a fresh, separately-keyed copy with a cache-busting query — `(await import(`${path}?real`))` — see `packages/ui/test/features/terminal/TerminalRenderer.theme.test.ts`.
 
 ## Do not
 
@@ -142,7 +146,7 @@ Append new entry points under the matching sub-heading. Keep entries to one line
 
 - **Root configs** — `package.json`, `tsconfig.base.json`, `biome.json`, `bunfig.toml`. All commands flow through Bun.
 - **Pre-commit hook** — `.husky/pre-commit` runs `bun run check`.
-- **CI/CD** — `.github/workflows/ci.yml` (PR gate) and `.github/workflows/release.yml` (tag-triggered builds). Release versioning via `scripts/version.ts`.
+- **CI/CD** — `.github/workflows/ci.yml` (PR gate) and `.github/workflows/release.yml` (tag-triggered electron-builder matrix: Windows x64, Linux x64, macOS arm64). Release versioning via `scripts/version.ts`.
 - **Electron packaging** — `packages/desktop/electron-builder.yml`.
 
 ### Electron shell
@@ -316,5 +320,5 @@ Before opening a PR:
 1. **`bun run check` is green** — lint, format, and type-check. The pre-commit hook already runs this; don't bypass it.
 2. **Plan alignment** — the change matches the file-by-file outline of the relevant plan.
 3. **Acceptance criteria are hand-verified.** CI green is necessary but not sufficient.
-4. **Dependency hygiene** — any new dependency is pinned exact-version (no `^` / no `~`), and `bun.lockb` is committed in the same change.
+4. **Dependency hygiene** — any new dependency is pinned exact-version (no `^` / no `~`), and `bun.lock` is committed in the same change.
 5. **Stage explicit paths.** When concurrent agent sessions are plausible, prefer `git add <path>` over `git add .` so an unrelated worktree change doesn't slip into the commit.
