@@ -1,6 +1,10 @@
 appId: dev.pi-deck
 productName: pi-deck
 copyright: Copyright © 2026 pi-deck
+# Every OS/arch is built in its own matrix job and attached to one GitHub release, so artefact
+# names must be unique across the whole matrix — include ${os} and ${arch} to avoid collisions
+# (the .deb keeps its conventional name via the `deb.artifactName` override below).
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 asar: true
 # Native modules can't be loaded from inside the asar archive — unpack node-pty (and its
 # platform-specific prebuilt binary package) so the *.node binding resolves at runtime.
@@ -39,3 +43,9 @@ linux:
       arch: [x64]
     - target: deb
       arch: [x64]
+
+# The deb target's default artefact-name template uses the npm package name, which is scoped
+# (@pi-deck/desktop). The "/" makes fpm try to write into a non-existent out/@pi-deck/ subdir, so
+# name the .deb after productName instead. (AppImage already uses productName by default.)
+deb:
+  artifactName: ${productName}_${version}_${arch}.${ext}

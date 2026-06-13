@@ -58,8 +58,10 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Package desktop app
+        # `--publish never`: the dedicated `release` job below attaches the artefacts, so the build
+        # jobs must not publish on the tag (also avoids electron-builder's implicit-publish path).
         working-directory: packages/desktop
-        run: bun run dist -- ${{ matrix.builder_args }}
+        run: bun run dist -- ${{ matrix.builder_args }} --publish never
 
       - name: Upload artefact
         uses: actions/upload-artifact@v7
