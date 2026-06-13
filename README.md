@@ -8,7 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-e8743c)](#quick-start)
 
-![pi-deck — an ongoing pi session: the conversation and plan approval on the left, an integrated terminal below, and the git changes panel on the right.](docs/screenshots/01-ongoing-session.png)
+![pi-deck - an ongoing pi session: the conversation and plan approval on the left, an integrated terminal below, and the git changes panel on the right.](docs/screenshots/01-ongoing-session.png)
 
 </div>
 
@@ -21,17 +21,17 @@ Because the [pi](https://github.com/earendil-works/pi) coding agent was made wit
 
 ## Features
 
-- **Works with your existing pi sessions** — pi-deck reads pi's own data directory, so sessions created in the `pi` CLI appear automatically, and nothing you do here locks you out of pi.
-- **Plan mode** — think a problem through with the agent and agree on a plan *before* an actual implementation
-- **Tool-call approvals** — decide which tools the agent may run, globally or per session, so nothing touches your machine without your say-so.
-- **Git review workflow** — a status sidebar with branch switching and commit / push / pull / stash, per-turn review of the agent's edits, and a dedicated diff view.
-- **Code editor** — Simple syntax highlighting, a live git diff gutter (per-block revert and jump-to-diff), search, go-to-line, and encoding / line-ending controls in the status bar.
-- **Optional LSP support** — With adding LSP you can add additional capabilities, such as inline diagnostics, signature help, go-to-definition, etc.
-- **Terminal support** — a PTY-backed bottom dock with OS-aware shell detection
-- **Multi-session UI** — a project switcher and parallel sessions, with conversations that accept attachments and drag-and-drop.
-- **Theming** — bundled dark / light palettes plus VS Code theme import
-- **WSL-aware** — open a project from `\\wsl.localhost\<distro>\...` and the file tree, terminal, and language servers all run against the distro.
-- **Cross-platform** — Windows, Linux, and macOS (Apple Silicon and Intel), with the same feature set everywhere.
+- **Works with your existing pi sessions** - pi-deck reads pi's own data directory, so sessions created in the `pi` CLI appear automatically, and nothing you do here locks you out of pi
+- **Plan mode** - think a problem through with the agent and agree on a plan *before* an actual implementation
+- **Tool-call approvals** - decide which tools the agent may run, globally or per session, so nothing touches your machine without your say-so
+- **Git review workflow** - a status sidebar with branch switching and commit / push / pull / stash, per-turn review of the agent's edits, and a dedicated diff view
+- **Code editor** - Simple syntax highlighting, a live git diff gutter (per-block revert and jump-to-diff), search, go-to-line, and encoding / line-ending controls in the status bar
+- **Optional LSP support** - With adding LSP you can add additional capabilities, such as inline diagnostics, signature help, go-to-definition, etc
+- **Terminal support** - a PTY-backed bottom dock with OS-aware shell detection
+- **Multi-session UI** - a project switcher and parallel sessions, with conversations that accept attachments and drag-and-drop
+- **Theming** - bundled dark / light palettes plus VS Code theme import
+- **WSL-aware** - open a project from `\\wsl.localhost\<distro>\...` and the file tree, terminal, and language servers all run against the distro
+- **Cross-platform** - Windows, Linux, and macOS (Apple Silicon), with the same feature set everywhere
 
 ### Language servers (LSP)
 
@@ -49,7 +49,7 @@ Nothing is bundled with the app. pi-deck detects servers on your `PATH` and star
 
 Good to know:
 
-- **WSL projects** — for projects opened from `\\wsl.localhost\<distro>\...`, servers are detected and run *inside* that distro. Install them there (e.g. `npm install -g typescript-language-server typescript` inside Ubuntu), not on Windows.
+- **WSL projects** - for projects opened from `\\wsl.localhost\<distro>\...`, servers are detected and run *inside* that distro. Install them there (e.g. `npm install -g typescript-language-server typescript` inside Ubuntu), not on Windows.
 - **Settings → Editor** lists every supported server for the current project (detected / running / not found, with the install hint), lets you toggle each one, and has a *Re-detect servers* button for after you install something.
 - Servers start lazily per project, shut down after sitting idle, and are always cleaned up when pi-deck quits.
 
@@ -57,9 +57,9 @@ Good to know:
 
 Grab the latest installer for your OS from [releases](https://github.com/Relrin/pi-deck/releases):
 
-- **macOS** — `.dmg` or `.zip` (Apple Silicon and Intel)
-- **Windows** — `.exe` installer or portable `.zip`
-- **Linux** — `.AppImage` or `.deb`
+- **macOS** - `.dmg` or `.zip` (Apple Silicon)
+- **Windows** - `.exe` installer or portable `.zip`
+- **Linux** - `.AppImage` or `.deb`
 
 You'll also need:
 
@@ -79,14 +79,14 @@ Then run the following commands to make sure everything is in order:
 
 ```bash
 bun install
-bun run check        # lint + format + type-check — must be green before commits
+bun run check        # lint + format + type-check - must be green before commits
 bun run test         # the full test suite
 bun run desktop:dev  # run the Electron app in dev mode
 ```
 
 `bun run check` is wired into the pre-commit hook via Husky. Don't disable it.
 
-Before opening a PR, please read [AGENTS.md](AGENTS.md) — it covers the architecture, conventions, and where data lives.
+Before opening a PR, please read [AGENTS.md](AGENTS.md) - it covers the architecture, conventions, and where data lives.
 
 ## License
 
