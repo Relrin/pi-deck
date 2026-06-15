@@ -1,8 +1,8 @@
 import type { ThemeSpec } from "../../protocol/theme.js";
 import defaultLight from "./bundled/default-light.json";
 import forge from "./bundled/forge.json";
-import nightshadeDark from "./bundled/nightshade-dark.json";
 import nightshadeLight from "./bundled/nightshade-light.json";
+import obsidian from "./bundled/obsidian.json";
 
 /**
  * The bundled pi-deck themes. These live in-memory only and are the authoritative source — they are
@@ -11,8 +11,8 @@ import nightshadeLight from "./bundled/nightshade-light.json";
  */
 export const BUNDLED_THEMES: readonly ThemeSpec[] = [
   forge as ThemeSpec,
+  obsidian as ThemeSpec,
   defaultLight as ThemeSpec,
-  nightshadeDark as ThemeSpec,
   nightshadeLight as ThemeSpec,
 ];
 
