@@ -108,7 +108,7 @@ describe("TerminalView — live theme switch reaches the emulator", () => {
     await act(async () => {
       // Minimal spec stub — only `meta.kind` is read by `useTerminalTheme`.
       const activeSpec = { meta: { kind: "light" } } as unknown as ThemeSpec;
-      useThemeStore.setState({ activeName: "default-light", activeSpec });
+      useThemeStore.setState({ activeName: "almanac", activeSpec });
     });
 
     const live = handles.find((h) => !h.disposed);

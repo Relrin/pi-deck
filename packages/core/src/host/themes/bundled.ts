@@ -1,5 +1,5 @@
 import type { ThemeSpec } from "../../protocol/theme.js";
-import defaultLight from "./bundled/default-light.json";
+import almanac from "./bundled/almanac.json";
 import forge from "./bundled/forge.json";
 import nightshadeLight from "./bundled/nightshade-light.json";
 import obsidian from "./bundled/obsidian.json";
@@ -12,7 +12,7 @@ import obsidian from "./bundled/obsidian.json";
 export const BUNDLED_THEMES: readonly ThemeSpec[] = [
   forge as ThemeSpec,
   obsidian as ThemeSpec,
-  defaultLight as ThemeSpec,
+  almanac as ThemeSpec,
   nightshadeLight as ThemeSpec,
 ];
 
