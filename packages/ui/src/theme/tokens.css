@@ -127,12 +127,6 @@
 }
 
 /* ---------- Accent variants ---------- */
-[data-accent="phosphor"] {
-  --accent: oklch(0.88 0.21 145);
-  --accent-soft: oklch(0.88 0.21 145 / 0.12);
-  --accent-line: oklch(0.88 0.21 145 / 0.32);
-  --accent-ink: oklch(0.18 0.08 145);
-}
 [data-accent="nightshade"] {
   --accent: oklch(0.72 0.18 295);
   --accent-soft: oklch(0.72 0.18 295 / 0.14);
@@ -175,9 +169,6 @@
   --warn-soft: oklch(0.7 0.16 80 / 0.12);
 
   --shadow-pop: 0 18px 60px -16px rgba(40, 20, 0, 0.18), 0 2px 6px rgba(40, 20, 0, 0.06);
-}
-[data-theme="light"][data-accent="phosphor"] {
-  --accent: oklch(0.55 0.2 145);
 }
 [data-theme="light"][data-accent="nightshade"] {
   --accent: oklch(0.5 0.2 295);

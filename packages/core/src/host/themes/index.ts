@@ -28,9 +28,10 @@ export interface ThemeManagerEvents {
 /**
  * Single source of truth for available themes, the active selection, and disk hot-reload.
  *
- * - Bundled themes are always present and authoritative — they cannot be removed by deleting the
- *   forkable example written to disk on first launch.
- * - User themes (pi-deck-format or VS Code-format) override a bundled name if they share it.
+ * - Bundled themes are always present and authoritative — they live in-memory only and are not
+ *   written to disk, so they cannot be removed or shadowed by user files.
+ * - User themes (pi-deck-format or VS Code-format) are loaded from the themes dir; a file whose
+ *   name collides with a bundled theme is ignored (bundled names are reserved).
  * - Watcher fires `theme.changed` whenever the user themes dir is touched; if the active theme's
  *   spec changed, the new spec ships in the event payload so the renderer can re-apply without an
  *   extra round-trip.

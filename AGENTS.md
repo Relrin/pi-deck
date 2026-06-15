@@ -227,7 +227,7 @@ Append new entry points under the matching sub-heading. Keep entries to one line
 
 - **Tokens** — `packages/ui/src/theme/tokens.css`. Descriptive names (`--bg-0..3`, `--ink-0..3`, `--accent*`, `--add/del/mod`, `--diff-*`).
 - **Loader & Shiki bridge** — `packages/ui/src/theme/loader.ts` applies the active theme as inline custom properties on `<html>`. `shiki-bridge.ts` keeps syntax highlighting aligned: when a VS Code theme is active the bridge feeds Shiki the original VS Code JSON for key-for-key tokenisation; otherwise it picks a bundled Shiki theme by light/dark kind.
-- **Bundled palettes** — six: default / phosphor / nightshade × dark / light. Canonical Zod schema lives in `packages/core/src/protocol/theme.ts` and is re-exported via `@pi-deck/core`.
+- **Bundled palettes** — four self-contained flavours: **Forge** (orange dark, default), **Obsidian** (dark), **Almanac** (light), **Sandstone** (light). Each theme JSON specifies its full palette inline. Canonical Zod schema lives in `packages/core/src/protocol/theme.ts` and is re-exported via `@pi-deck/core`.
 - **Renderer prefs** — `packages/ui/src/theme/usePreferencesStore.ts`. Density (compact/cozy) and font-pair (default/sans-only/mono-only). Persisted to localStorage under `pi-deck:prefs`. Hydrated pre-mount via the inline script in `packages/desktop/index.html` so the first paint matches the user's preference.
 
 ### Settings UI
