@@ -40,7 +40,7 @@
     "@fontsource/instrument-serif": "^5.2.8",
     "@iconify/react": "6.0.2",
     "@lezer/highlight": "1.2.3",
-    "@lobehub/icons": "5.8.0",
+    "@lobehub/icons": "5.10.0",
     "@pi-deck/core": "workspace:*",
     "@pierre/diffs": "1.2.0",
     "@pierre/trees": "1.0.0-beta.4",
