@@ -5,6 +5,7 @@ import { applyTheme } from "./loader.js";
 import { setShikiThemeFromVSCode, setShikiThemeNative } from "./shiki-bridge.js";
 
 const STORAGE_KEY = "pi-deck:active-theme";
+const KIND_STORAGE_KEY = "pi-deck:active-theme-kind";
 const FALLBACK_THEME = "forge";
 
 export interface ThemeStoreState {
@@ -36,9 +37,12 @@ function readStoredName(): string {
   }
 }
 
-function writeStoredName(name: string): void {
+function writeStoredName(name: string, kind?: "dark" | "light"): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, name);
+    // Persist the kind so the pre-mount script in index.html can set data-theme="light" on the
+    // first paint — theme names no longer encode light/dark, so the name alone can't tell.
+    if (kind) window.localStorage.setItem(KIND_STORAGE_KEY, kind);
   } catch {
     // localStorage may be disabled in some Electron profiles; ignore.
   }
@@ -91,7 +95,7 @@ export const useThemeStore = create<ThemeStoreState>((set, get) => ({
   },
 
   applySpec: (name, spec, available, vscodeRaw) => {
-    writeStoredName(name);
+    writeStoredName(name, spec?.meta?.kind);
     if (spec) applyTheme(spec);
     syncShiki(vscodeRaw);
     set({ activeName: name, available, activeSpec: spec });

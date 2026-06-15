@@ -13,6 +13,7 @@
         var raw = null;
         var prefs = {};
         var themeName = null;
+        var themeKind = null;
         var mql = null;
         try {
           raw = localStorage.getItem("pi-deck:prefs");
@@ -24,12 +25,22 @@
             }
           }
           themeName = localStorage.getItem("pi-deck:active-theme");
+          themeKind = localStorage.getItem("pi-deck:active-theme-kind");
           if (!themeName) {
             mql = window.matchMedia?.("(prefers-color-scheme: light)");
-            themeName = mql?.matches ? "almanac" : "forge";
+            if (mql?.matches) {
+              themeName = "almanac";
+              themeKind = "light";
+            } else {
+              themeName = "forge";
+              themeKind = "dark";
+            }
           }
-          if (themeName.indexOf("-light") !== -1) root.setAttribute("data-theme", "light");
-          if (themeName.indexOf("nightshade") === 0) root.setAttribute("data-accent", "nightshade");
+          // Theme names no longer encode light/dark, so the persisted kind drives the first paint.
+          // The "-light" suffix stays as a fallback for any legacy/user theme named that way.
+          if (themeKind === "light" || themeName.indexOf("-light") !== -1) {
+            root.setAttribute("data-theme", "light");
+          }
           if (prefs.density === "cozy") root.setAttribute("data-density", "cozy");
           if (prefs.fonts && prefs.fonts !== "default") root.setAttribute("data-fonts", prefs.fonts);
         } catch {

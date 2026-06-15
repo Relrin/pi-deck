@@ -126,14 +126,6 @@
   --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
 
-/* ---------- Accent variants ---------- */
-[data-accent="nightshade"] {
-  --accent: oklch(0.72 0.18 295);
-  --accent-soft: oklch(0.72 0.18 295 / 0.14);
-  --accent-line: oklch(0.72 0.18 295 / 0.35);
-  --accent-ink: oklch(0.22 0.08 295);
-}
-
 /* ---------- Light theme ---------- */
 [data-theme="light"] {
   color-scheme: light;
@@ -169,9 +161,6 @@
   --warn-soft: oklch(0.7 0.16 80 / 0.12);
 
   --shadow-pop: 0 18px 60px -16px rgba(40, 20, 0, 0.18), 0 2px 6px rgba(40, 20, 0, 0.06);
-}
-[data-theme="light"][data-accent="nightshade"] {
-  --accent: oklch(0.5 0.2 295);
 }
 
 /* ---------- Density ---------- */

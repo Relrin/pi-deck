@@ -102,7 +102,7 @@ const tokens = {
   grain: tokenString.optional(),
 };
 
-export const themeAccentSchema = z.enum(["plasma", "phosphor", "nightshade", "custom"]);
+export const themeAccentSchema = z.enum(["plasma", "custom"]);
 export type ThemeAccent = z.infer<typeof themeAccentSchema>;
 
 export const themeKindSchema = z.enum(["dark", "light"]);

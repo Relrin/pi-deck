@@ -18,15 +18,10 @@ export function applyTheme(spec: unknown): void {
   const data = parsed.data as Record<string, unknown> & ThemeSpec;
   if (data.meta) {
     root.dataset.themeName = data.meta.name;
-    if (data.meta.kind === "light" || data.meta.kind === "dark") {
-      if (data.meta.kind === "light") root.setAttribute("data-theme", "light");
-      else root.removeAttribute("data-theme");
-    }
-    if (data.meta.accent === "phosphor" || data.meta.accent === "nightshade") {
-      root.setAttribute("data-accent", data.meta.accent);
-    } else {
-      root.removeAttribute("data-accent");
-    }
+    if (data.meta.kind === "light") root.setAttribute("data-theme", "light");
+    else root.removeAttribute("data-theme");
+    // Accent variants were retired — themes are fully self-contained. Clear any stale attribute.
+    root.removeAttribute("data-accent");
   }
 
   for (const key of themeTokenKeys) {
