@@ -8,7 +8,7 @@ import { readUserThemes, type UserThemeRead } from "./loader.js";
 import { ThemeStorage } from "./storage.js";
 import { ThemeWatcher } from "./watcher.js";
 
-const DEFAULT_THEME_NAME = "default-dark";
+const DEFAULT_THEME_NAME = "forge";
 
 interface RegistryEntry {
   name: string;
@@ -170,7 +170,7 @@ export class ThemeManager extends EventEmitter {
   /**
    * Delete a user-imported theme. Bundled themes are refused — the in-memory registry is the
    * authoritative source for them. If the deleted theme is the active one we fall back to
-   * `default-dark` so the UI never lands on a dangling reference. The chokidar watcher will
+   * `forge` so the UI never lands on a dangling reference. The chokidar watcher will
    * also fire on the unlink, but we drop the entry eagerly so the next `theme.changed` event
    * already reflects the deletion and the renderer doesn't briefly re-render a card we are
    * about to remove.

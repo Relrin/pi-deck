@@ -1,6 +1,6 @@
 import type { ThemeSpec } from "../../protocol/theme.js";
-import defaultDark from "./bundled/default-dark.json";
 import defaultLight from "./bundled/default-light.json";
+import forge from "./bundled/forge.json";
 import nightshadeDark from "./bundled/nightshade-dark.json";
 import nightshadeLight from "./bundled/nightshade-light.json";
 
@@ -10,7 +10,7 @@ import nightshadeLight from "./bundled/nightshade-light.json";
  * the themes dir (a disk file colliding with a bundled name is ignored; see `upsertUserEntry`).
  */
 export const BUNDLED_THEMES: readonly ThemeSpec[] = [
-  defaultDark as ThemeSpec,
+  forge as ThemeSpec,
   defaultLight as ThemeSpec,
   nightshadeDark as ThemeSpec,
   nightshadeLight as ThemeSpec,

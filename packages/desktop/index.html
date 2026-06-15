@@ -26,7 +26,7 @@
           themeName = localStorage.getItem("pi-deck:active-theme");
           if (!themeName) {
             mql = window.matchMedia?.("(prefers-color-scheme: light)");
-            themeName = mql?.matches ? "default-light" : "default-dark";
+            themeName = mql?.matches ? "default-light" : "forge";
           }
           if (themeName.indexOf("-light") !== -1) root.setAttribute("data-theme", "light");
           if (themeName.indexOf("nightshade") === 0) root.setAttribute("data-accent", "nightshade");

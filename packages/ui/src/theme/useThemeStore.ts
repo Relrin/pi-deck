@@ -5,7 +5,7 @@ import { applyTheme } from "./loader.js";
 import { setShikiThemeFromVSCode, setShikiThemeNative } from "./shiki-bridge.js";
 
 const STORAGE_KEY = "pi-deck:active-theme";
-const FALLBACK_THEME = "default-dark";
+const FALLBACK_THEME = "forge";
 
 export interface ThemeStoreState {
   activeName: string;

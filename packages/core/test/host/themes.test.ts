@@ -37,14 +37,14 @@ describe("ThemeManager", () => {
     mgr = new ThemeManager(userDataDir);
     await mgr.init();
     // Seed AFTER init so we can simulate a stale file already on disk.
-    await seedUserTheme("default-dark", {
-      meta: { name: "default-dark", kind: "dark", accent: "plasma" },
+    await seedUserTheme("forge", {
+      meta: { name: "forge", kind: "dark", accent: "plasma" },
     });
     await mgr.shutdown();
 
     mgr = new ThemeManager(userDataDir);
     await mgr.init();
-    const listing = mgr.list().find((t) => t.name === "default-dark");
+    const listing = mgr.list().find((t) => t.name === "forge");
     expect(listing?.source).toBe("bundled");
   });
 
@@ -73,9 +73,7 @@ describe("ThemeManager", () => {
   test("deleteUserTheme on a bundled theme is rejected", async () => {
     mgr = new ThemeManager(userDataDir);
     await mgr.init();
-    await expect(mgr.deleteUserTheme("default-dark")).rejects.toThrow(
-      /Cannot delete bundled theme/,
-    );
+    await expect(mgr.deleteUserTheme("forge")).rejects.toThrow(/Cannot delete bundled theme/);
   });
 
   test("deleteUserTheme on an unknown name is rejected", async () => {
@@ -84,7 +82,7 @@ describe("ThemeManager", () => {
     await expect(mgr.deleteUserTheme("does-not-exist")).rejects.toThrow(/Unknown theme/);
   });
 
-  test("deleting the active theme falls back to default-dark", async () => {
+  test("deleting the active theme falls back to forge", async () => {
     mgr = new ThemeManager(userDataDir);
     await mgr.init();
     await seedUserTheme("custom-active", {
@@ -97,7 +95,7 @@ describe("ThemeManager", () => {
     expect(mgr.getActiveName()).toBe("custom-active");
 
     await mgr.deleteUserTheme("custom-active");
-    expect(mgr.getActiveName()).toBe("default-dark");
+    expect(mgr.getActiveName()).toBe("forge");
   });
 
   test("emits theme.changed when a user theme is deleted", async () => {

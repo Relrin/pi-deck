@@ -86,14 +86,14 @@ describe("TerminalView — live theme switch reaches the emulator", () => {
     handles.length = 0;
     mountThemes.length = 0;
     // Start from a dark active theme.
-    useThemeStore.setState({ activeName: "default-dark", activeSpec: undefined });
+    useThemeStore.setState({ activeName: "forge", activeSpec: undefined });
     // biome-ignore lint/suspicious/noExplicitAny: minimal client stub for the mount path
     useSessionsStore.setState({ client: fakeClient() as any });
   });
 
   afterEach(() => {
     useSessionsStore.setState({ client: undefined });
-    useThemeStore.setState({ activeName: "default-dark", activeSpec: undefined });
+    useThemeStore.setState({ activeName: "forge", activeSpec: undefined });
   });
 
   test("changing the active theme pushes a refreshed theme to the mounted terminal", async () => {

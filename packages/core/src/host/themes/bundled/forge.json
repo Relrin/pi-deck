@@ -1,5 +1,5 @@
 {
-  "meta": { "name": "default-dark", "kind": "dark", "accent": "plasma" },
+  "meta": { "name": "forge", "kind": "dark", "accent": "plasma" },
   "bg-0": "oklch(0.16 0.008 60)",
   "bg-1": "oklch(0.19 0.008 60)",
   "bg-2": "oklch(0.22 0.010 60)",

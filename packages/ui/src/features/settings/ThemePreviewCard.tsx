@@ -101,7 +101,7 @@ export function ThemePreviewCard({ listing, client, active, onSelect }: ThemePre
   const chipVariant = isUser ? "accent" : "info";
 
   // Delete is one-click intentionally — the theme file lives in the user themes dir and can
-  // be re-imported, and if it's the active theme the host falls back to `default-dark`. The
+  // be re-imported, and if it's the active theme the host falls back to `forge`. The
   // confirmation toast doubles as the only feedback the user needs.
   async function handleDeleteClick(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
