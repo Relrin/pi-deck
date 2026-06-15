@@ -2,6 +2,7 @@
 .claude/
 .opencode/
 .pi/
+.pi-deck/
 
 # Dependencies
 node_modules/
