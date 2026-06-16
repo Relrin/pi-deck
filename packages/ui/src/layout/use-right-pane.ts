@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type RightPaneTab = "git" | "context";
+export type RightPaneTab = "chat" | "git" | "context";
 
 export interface RightPaneState {
   tab: RightPaneTab;

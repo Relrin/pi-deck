@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import { type CSSProperties, type ReactNode, useEffect } from "react";
 import { useRailState } from "./use-rail-state";
 
 export interface PidAppShellProps {
@@ -8,6 +8,15 @@ export interface PidAppShellProps {
 }
 
 export function PidAppShell({ top, body, bottom }: PidAppShellProps) {
+  // Panels have no fixed max — they're capped against the window. When the window shrinks,
+  // re-clamp so an over-wide panel can't push the center below its minimum (which would
+  // otherwise overflow the body grid into a horizontal scrollbar).
+  useEffect(() => {
+    const onResize = () => useRailState.getState().clampToWindow();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   // Drive --rail-w / --rightpane-w from the persisted store so both the topbar grid and
   // the body grid stay in sync without each subtree re-reading the state. When a panel
   // is hidden, collapse its column to 0 so the center cell expands cleanly.

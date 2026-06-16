@@ -3,6 +3,12 @@ import { persist } from "zustand/middleware";
 
 export type Density = "compact" | "cozy";
 export type FontPair = "default" | "sans-only" | "mono-only";
+/**
+ * App layout shape. `agent` is the linear session → editor → diff flow (default);
+ * `ide` docks the chat as a right-pane tab beside the editor. NB: unrelated to pi's
+ * execution `agentMode` (ask/accept-edits/plan).
+ */
+export type ViewMode = "agent" | "ide";
 export type DiffIndicators = "bars" | "classic" | "none";
 export type DiffLayout = "split" | "unified";
 export type DiffLineDiffType = "word-alt" | "word" | "char" | "none";
@@ -10,6 +16,8 @@ export type DiffLineDiffType = "word-alt" | "word" | "char" | "none";
 export interface PreferencesState {
   density: Density;
   fonts: FontPair;
+  /** Layout shape: `agent` (linear) or `ide` (chat docked beside the editor). */
+  viewMode: ViewMode;
   diffIndicators: DiffIndicators;
   /** Full-width add/del row background in the diff viewer. */
   diffBackground: boolean;
@@ -27,6 +35,7 @@ export interface PreferencesState {
   diffThemeDark: string;
   setDensity: (d: Density) => void;
   setFonts: (f: FontPair) => void;
+  setViewMode: (v: ViewMode) => void;
   setDiffIndicators: (style: DiffIndicators) => void;
   setDiffBackground: (on: boolean) => void;
   setDiffLineNumbers: (on: boolean) => void;
@@ -56,6 +65,7 @@ export const usePreferencesStore = create<PreferencesState>()(
     (set) => ({
       density: "compact",
       fonts: "default",
+      viewMode: "agent",
       diffIndicators: "classic",
       diffBackground: true,
       diffLineNumbers: true,
@@ -78,6 +88,7 @@ export const usePreferencesStore = create<PreferencesState>()(
         applyFonts(fonts);
         set({ fonts });
       },
+      setViewMode: (viewMode) => set({ viewMode }),
       setDiffIndicators: (diffIndicators) => set({ diffIndicators }),
       setDiffBackground: (diffBackground) => set({ diffBackground }),
       setDiffLineNumbers: (diffLineNumbers) => set({ diffLineNumbers }),

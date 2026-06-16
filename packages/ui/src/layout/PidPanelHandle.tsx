@@ -14,6 +14,10 @@ export function PidPanelHandle({ side, ariaLabel, currentWidth, onResize }: PidP
   // commit composer. Surface the side-specific min through `aria-valuemin` so assistive
   // tech reads the same number that the store actually enforces on the value.
   const minWidth = side === "right" ? RAIL_LIMITS.minRight : RAIL_LIMITS.minLeft;
+  // No fixed ceiling: the upper bound is whatever the window leaves after the protected
+  // center minimum. Report that to assistive tech; omit it entirely when there's no window.
+  const maxWidth =
+    typeof window === "undefined" ? undefined : window.innerWidth - RAIL_LIMITS.minCenter;
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     event.preventDefault();
@@ -44,7 +48,7 @@ export function PidPanelHandle({ side, ariaLabel, currentWidth, onResize }: PidP
       aria-label={ariaLabel}
       aria-valuenow={currentWidth}
       aria-valuemin={minWidth}
-      aria-valuemax={RAIL_LIMITS.max}
+      aria-valuemax={maxWidth}
       tabIndex={0}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}

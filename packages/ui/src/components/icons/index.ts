@@ -40,6 +40,7 @@ export {
   List,
   Loader2,
   Map,
+  MessageSquare,
   Mic,
   Minus,
   MoreHorizontal,

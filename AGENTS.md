@@ -133,9 +133,10 @@ bun run build         # Production build
 
 ## App shell rules
 
-- **Rails are drag-resizable.** Defaults are 264px left / 360px right; users drag the boundary between rail and center (or center and right pane). Widths are clamped 200–520px and persisted via `useRailState` (`packages/ui/src/layout/use-rail-state.ts`, localStorage key `pi-deck:rails`). The `--rail-w` and `--rightpane-w` CSS vars are driven by the store from `PidAppShell` so the topbar and body grids stay in sync.
+- **Rails are drag-resizable.** Defaults are 264px left / 360px right; users drag the boundary between rail and center (or center and right pane). Widths floor at 200px (left) / 280px (right); there is **no fixed max** — each side is clamped against the live window so it can grow but never squeezes the center below `MIN_CENTER_WIDTH` (360px). `PidAppShell` re-clamps on window resize via `clampToWindow()`. Persisted via `useRailState` (`packages/ui/src/layout/use-rail-state.ts`, localStorage key `pi-deck:rails`). The `--rail-w` and `--rightpane-w` CSS vars are driven by the store from `PidAppShell` so the topbar and body grids stay in sync.
 - **Overlays must portal.** Every overlay-shaped component (`Dialog`, `DropdownMenu`, `ContextMenu`, `Tooltip`, command palette) renders into a `document.body` portal so it sits above the `.pid-app::before` grain (`z-index: 999`, `mix-blend-mode: overlay`). Non-portaled overlays render below the grain and look muddy.
-- **The footer never shows a "screen switcher".** That's a tour helper in the design prototype, not production.
+- **The footer's screen switcher** (`PidScreenSwitcher`) toggles the center screen: `[SESSION][EDITOR][DIFF][BLANK]` in Agent view, `[EDITOR][DIFF][BLANK]` in IDE view (the docked session tab makes the SESSION button redundant). It reads `useNavStore.screen` + `usePreferencesStore.viewMode`.
+- **View mode (Agent vs IDE).** `usePreferencesStore.viewMode` (`"agent"` default / `"ide"`) is a global, persisted Appearance preference (Settings → Appearance → View). Agent is the linear session → editor → diff flow. IDE docks the chat as the first right-pane tab (`[Session | Git | Context]`) beside a center-resident editor, via `PidSessionPane` (the shared chat surface, also used by the center router's `session` route). NB: distinct from pi's execution `agentMode` (ask/accept-edits/plan).
 - `packages/desktop/src/main/window.ts` controls native title bar config. Don't change `titleBarStyle` or `titleBarOverlay` without re-verifying the topbar drag region on all three OSes.
 
 ## Subsystems
@@ -186,7 +187,8 @@ Append new entry points under the matching sub-heading. Keep entries to one line
 ### App shell & layout
 
 - **Shell components** — `packages/ui/src/layout/PidAppShell.tsx` (+ `PidTopBar`, `PidBody`, `PidLeftRail`, `PidRightPane`, `PidFooter`). Layout CSS in `packages/ui/src/theme/shell.css`. Resizable rails per *App shell rules*. The previous shell is preserved at `packages/ui/src/layout/AppShell.legacy.tsx` (+ siblings) and is unwired.
-- **Center router** — `packages/ui/src/layout/PidCenterRouter.tsx`. Reads `useNavStore.screen` and renders overview / session (chat or inline-intro) / editor / git-diff. The `editor` screen renders the CodeMirror editor (see *Code editor*); `git-diff` the diff view.
+- **Center router** — `packages/ui/src/layout/PidCenterRouter.tsx`. Reads `useNavStore.screen` and renders overview / session (chat or inline-intro) / editor / git-diff. The `session` route delegates to `PidSessionPane` (`packages/ui/src/layout/PidSessionPane.tsx` — the shared chat surface: composer when no active session, else loading / inline-intro / `ChatView`). The `editor` screen renders the CodeMirror editor (see *Code editor*); `git-diff` the diff view. In IDE view mode the router coerces a `session` screen to `editor` (the session is docked in the right pane instead).
+- **Right pane** — `packages/ui/src/layout/PidRightPane.tsx`. Tabs persisted in `use-right-pane.ts` (`useRightPaneStore`, key `pi-deck:rightpane`). Agent view: `[Git | Context]`. IDE view: a leading `Session` tab (renders `PidSessionPane`) → `[Session | Git | Context]`, defaulting to Session and refocusing it when the active session changes.
 - **Nav store** — `packages/ui/src/lib/useNavStore.ts`. Single source of truth for the center screen + per-project expand state. Persists under `pi-deck:nav:v1`. Transient screens coerce back to `session` on rehydrate. Settings stays a modal — it is not a nav route.
 
 ### Chat
@@ -228,7 +230,7 @@ Append new entry points under the matching sub-heading. Keep entries to one line
 - **Tokens** — `packages/ui/src/theme/tokens.css`. Descriptive names (`--bg-0..3`, `--ink-0..3`, `--accent*`, `--add/del/mod`, `--diff-*`).
 - **Loader & Shiki bridge** — `packages/ui/src/theme/loader.ts` applies the active theme as inline custom properties on `<html>`. `shiki-bridge.ts` keeps syntax highlighting aligned: when a VS Code theme is active the bridge feeds Shiki the original VS Code JSON for key-for-key tokenisation; otherwise it picks a bundled Shiki theme by light/dark kind.
 - **Bundled palettes** — four self-contained flavours: **Forge** (orange dark, default), **Obsidian** (dark), **Almanac** (light), **Sandstone** (light). Each theme JSON specifies its full palette inline. Canonical Zod schema lives in `packages/core/src/protocol/theme.ts` and is re-exported via `@pi-deck/core`.
-- **Renderer prefs** — `packages/ui/src/theme/usePreferencesStore.ts`. Density (compact/cozy) and font-pair (default/sans-only/mono-only). Persisted to localStorage under `pi-deck:prefs`. Hydrated pre-mount via the inline script in `packages/desktop/index.html` so the first paint matches the user's preference.
+- **Renderer prefs** — `packages/ui/src/theme/usePreferencesStore.ts`. Density (compact/cozy), font-pair (default/sans-only/mono-only), and `viewMode` (agent/ide — see *App shell rules*). Persisted to localStorage under `pi-deck:prefs`. Density + fonts are hydrated pre-mount via the inline script in `packages/desktop/index.html` so the first paint matches the user's preference; `viewMode` is React-structural so it hydrates with the store (no inline script).
 
 ### Settings UI
 

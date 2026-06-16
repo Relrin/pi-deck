@@ -21,6 +21,7 @@ import { PidCenterRouter } from "./layout/PidCenterRouter";
 import { PidFooter } from "./layout/PidFooter";
 import { PidLeftRail } from "./layout/PidLeftRail";
 import { PidRightPane } from "./layout/PidRightPane";
+import { PidSessionPane } from "./layout/PidSessionPane";
 import { PidTopBar } from "./layout/PidTopBar";
 import { installPideckDevHatch } from "./lib/dev/__pideck";
 import { isSessionContextScreen, useNavStore } from "./lib/useNavStore";
@@ -77,13 +78,13 @@ export function App() {
                 center={<PidCenterRouter />}
                 right={
                   <PidRightPane
+                    chat={<PidSessionPane />}
                     git={<GitSidebar />}
                     context={
                       <PidContextPane sessionId={inSessionContext ? activeSessionId : undefined} />
                     }
                     gitCount={gitCount}
                     contextCount={contextCount}
-                    initialTab="git"
                   />
                 }
               />

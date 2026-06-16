@@ -257,6 +257,19 @@
   display: flex;
   flex-direction: column;
 }
+/* Chat tab (IDE mode): same as git — ChatView owns its own scroll (virtualized
+ * message list) and pins the composer at the bottom, so the pane just fills height. */
+.pid-right-body[data-tab="chat"] {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+/* The docked chat surface fills the tab body; its inner regions (message list,
+ * composer) manage their own layout, mirroring the center-screen chat. */
+.pid-right-body[data-tab="chat"] > * {
+  flex: 1;
+  min-height: 0;
+}
 
 /* ---------- Center column ---------- */
 .pid-center {
