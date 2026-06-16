@@ -14,23 +14,23 @@
 
 ## Why pi-deck
 Because the [pi](https://github.com/earendil-works/pi) coding agent was made with the intention to be adaptable to the devs workflows, I have decided to make something that would fit my needs. Specifically:
-- Have something close to the out-of-the-box feel of Cursor
+- Have something similar to the out-of-the-box feel of Cursor 
 - Provides a plan mode & tools approvals, because it helps to me to be in control
 - Better experience with reviewing changes
 - Be in touch with code & terminals (per session) 
 
 ## Features
 
-- **Works with your existing pi sessions** - pi-deck reads pi's own data directory, so sessions created in the `pi` CLI appear automatically, and nothing you do here locks you out of pi
-- **Plan mode** - think a problem through with the agent and agree on a plan *before* an actual implementation
-- **Tool-call approvals** - decide which tools the agent may run, globally or per session, so nothing touches your machine without your say-so
-- **Git review workflow** - a status sidebar with branch switching and commit / push / pull / stash, per-turn review of the agent's edits, and a dedicated diff view
+- **Compatible with pi sessions** - Sessions created in the `pi` CLI appear automatically
+- **Plan mode** - Think a problem through with the agent and agree on a plan *before* an actual implementation
+- **Tool-call approvals** - Decide which tools the agent may run, globally or per session
+- **Git review workflow** - A status sidebar with branch switching and commit / push / pull / stash, per-turn review of the agent's edits, and a dedicated diff view
 - **Code editor** - Simple syntax highlighting, a live git diff gutter (per-block revert and jump-to-diff), search, go-to-line, and encoding / line-ending controls in the status bar
-- **Optional LSP support** - With adding LSP you can add additional capabilities, such as inline diagnostics, signature help, go-to-definition, etc
-- **Terminal support** - a PTY-backed bottom dock with OS-aware shell detection
-- **Multi-session UI** - a project switcher and parallel sessions, with conversations that accept attachments and drag-and-drop
-- **Theming** - bundled dark / light palettes plus VS Code theme import
-- **WSL-aware** - open a project from `\\wsl.localhost\<distro>\...` and the file tree, terminal, and language servers all run against the distro
+- **Optional LSP support** - With enabling LSP you can add additional capabilities, such as inline diagnostics, signature help, go-to-definition, etc
+- **Terminal support** - A PTY-backed bottom dock with OS-aware shell detection
+- **Multi-session UI** - A project switcher and parallel sessions, with conversations and attachments
+- **Theming** - Bundled dark / light palettes plus VS Code theme import
+- **WSL-aware** - Open a project from `\\wsl.localhost\<distro>\...` and the file tree, terminal, and language servers all run against the distro
 - **Cross-platform** - Windows, Linux, and macOS (Apple Silicon), with the same feature set everywhere
 
 ### Language servers (LSP)
