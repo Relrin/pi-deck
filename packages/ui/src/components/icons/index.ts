@@ -10,6 +10,7 @@ export {
   ArrowUpFromLine,
   Bot,
   Box,
+  Brain,
   Check,
   CheckCheck,
   ChevronDown,

@@ -2455,9 +2455,49 @@
   align-items: center;
   gap: 8px;
   margin-top: 2px;
+  /* Query container so the chip pickers below can collapse to icons when the composer is
+     narrow (e.g. the IDE-mode docked chat pane) instead of overflowing the input bounds. */
+  container: composer-row / inline-size;
 }
 .pid-composer-row-spacer {
   flex: 1;
+}
+
+/* Let the pickers shrink and their labels ellipsis-truncate rather than push the row wider
+   than the composer — the failsafe between the labelled and icon-only states. */
+.pid-composer-row > * {
+  min-width: 0;
+}
+.pid-composer-row .pid-picker-trigger-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Narrow composer: drop the chip text and keep icon-only triggers (agent mode → its mode
+   icon, model → provider icon, effort → brain). Tied to the row's real width via a container
+   query, so a small window in Agent mode collapses the same way as the docked IDE pane. */
+@container composer-row (max-width: 560px) {
+  .pid-composer-row .pid-picker-trigger-label,
+  .pid-composer-row .pid-picker-trigger-chev,
+  .pid-composer-row .pid-picker-trigger .pid-chip {
+    display: none;
+  }
+  .pid-composer-row .pid-picker-trigger {
+    gap: 0;
+    padding: 0 8px;
+  }
+}
+/* Tighter still: even the primary send/stop button sheds its label. */
+@container composer-row (max-width: 380px) {
+  .pid-composer-row .pid-composer-send > span,
+  .pid-composer-row .pid-composer-stop > span {
+    display: none;
+  }
+  .pid-composer-row .pid-composer-send,
+  .pid-composer-row .pid-composer-stop {
+    gap: 0;
+    padding: 0 9px;
+  }
 }
 .pid-composer-send {
   display: inline-flex;

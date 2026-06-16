@@ -2,11 +2,11 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 const MIN_LEFT_WIDTH = 200;
-// The right pane hosts the git commit composer; its two buttons ("commit" + "commit & push")
-// are right-aligned and live on a single row. Below ~280px the second button starts to wrap
-// or get clipped, which looks broken. Lock the right pane min to that floor so the composer
-// always renders cleanly, independent of what the left rail's min is.
-const MIN_RIGHT_WIDTH = 280;
+// The right pane hosts the git commit composer (two single-row buttons) and, in IDE view mode,
+// the docked chat composer. The git buttons need ~280px; the chat composer's control row needs
+// a bit more before its chips collapse to icons. We floor at 336px (~20% above the old 280) so
+// both render cleanly. The chat row still collapses gracefully via its container query below it.
+const MIN_RIGHT_WIDTH = 336;
 // The center column (editor / chat / diff) is never allowed below this — panels can grow
 // freely (no fixed max) but stop before they would squeeze the center away. Enforced in JS
 // against the live window so the `1fr` body grid never overflows into a horizontal scrollbar.

@@ -70,16 +70,16 @@ describe("useRailState — visibility", () => {
   });
 
   test("hiding then re-showing preserves the last right width", () => {
-    useRailState.getState().setRightWidth(310);
-    expect(useRailState.getState().rightWidth).toBe(310);
+    useRailState.getState().setRightWidth(360);
+    expect(useRailState.getState().rightWidth).toBe(360);
 
     useRailState.getState().toggleRight();
     expect(useRailState.getState().rightVisible).toBe(false);
-    expect(useRailState.getState().rightWidth).toBe(310);
+    expect(useRailState.getState().rightWidth).toBe(360);
 
     useRailState.getState().toggleRight();
     expect(useRailState.getState().rightVisible).toBe(true);
-    expect(useRailState.getState().rightWidth).toBe(310);
+    expect(useRailState.getState().rightWidth).toBe(360);
   });
 
   test("setLeftVisible / setRightVisible set the flag directly", () => {

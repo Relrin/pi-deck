@@ -1,5 +1,6 @@
 import type { ThinkingLevel } from "@pi-deck/core/domain/session.js";
 import { useMemo } from "react";
+import { Brain } from "../../../components/icons/index.js";
 import {
   PidChipPicker,
   type PidChipPickerOption,
@@ -53,6 +54,7 @@ export function SessionEffortPicker({ sessionId }: SessionEffortPickerProps) {
         data-static
         title="Adaptive thinking — managed by the model"
       >
+        <Brain size={12} className="pid-picker-trigger-icon" aria-hidden />
         <span className="pid-picker-trigger-label">Adaptive</span>
       </span>
     );
@@ -69,7 +71,7 @@ export function SessionEffortPicker({ sessionId }: SessionEffortPickerProps) {
 
   return (
     <PidChipPicker
-      triggerLeading={null}
+      triggerLeading={<Brain size={12} className="pid-picker-trigger-icon" aria-hidden />}
       header="Effort"
       ariaLabel="Select thinking effort"
       value={activeValue}
