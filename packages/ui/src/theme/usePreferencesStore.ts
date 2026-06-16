@@ -9,6 +9,12 @@ export type FontPair = "default" | "sans-only" | "mono-only";
  * execution `agentMode` (ask/accept-edits/plan).
  */
 export type ViewMode = "agent" | "ide";
+/**
+ * How much horizontal space the integrated terminal dock takes when open. `center` (default)
+ * keeps it within the center column; the others let it span over the left rail and/or right
+ * pane, with the covered panel shrinking vertically to make room.
+ */
+export type TerminalWidth = "center" | "center-left" | "center-right" | "all";
 export type DiffIndicators = "bars" | "classic" | "none";
 export type DiffLayout = "split" | "unified";
 export type DiffLineDiffType = "word-alt" | "word" | "char" | "none";
@@ -18,6 +24,8 @@ export interface PreferencesState {
   fonts: FontPair;
   /** Layout shape: `agent` (linear) or `ide` (chat docked beside the editor). */
   viewMode: ViewMode;
+  /** How wide the integrated terminal dock is when open. */
+  terminalWidth: TerminalWidth;
   diffIndicators: DiffIndicators;
   /** Full-width add/del row background in the diff viewer. */
   diffBackground: boolean;
@@ -36,6 +44,7 @@ export interface PreferencesState {
   setDensity: (d: Density) => void;
   setFonts: (f: FontPair) => void;
   setViewMode: (v: ViewMode) => void;
+  setTerminalWidth: (w: TerminalWidth) => void;
   setDiffIndicators: (style: DiffIndicators) => void;
   setDiffBackground: (on: boolean) => void;
   setDiffLineNumbers: (on: boolean) => void;
@@ -66,6 +75,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       density: "compact",
       fonts: "default",
       viewMode: "agent",
+      terminalWidth: "center",
       diffIndicators: "classic",
       diffBackground: true,
       diffLineNumbers: true,
@@ -89,6 +99,7 @@ export const usePreferencesStore = create<PreferencesState>()(
         set({ fonts });
       },
       setViewMode: (viewMode) => set({ viewMode }),
+      setTerminalWidth: (terminalWidth) => set({ terminalWidth }),
       setDiffIndicators: (diffIndicators) => set({ diffIndicators }),
       setDiffBackground: (diffBackground) => set({ diffBackground }),
       setDiffLineNumbers: (diffLineNumbers) => set({ diffLineNumbers }),

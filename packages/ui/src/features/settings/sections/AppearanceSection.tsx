@@ -5,6 +5,7 @@ import { useNavStore } from "../../../lib/useNavStore";
 import {
   type Density,
   type FontPair,
+  type TerminalWidth,
   usePreferencesStore,
   type ViewMode,
 } from "../../../theme/usePreferencesStore";
@@ -29,6 +30,15 @@ const FONT_OPTIONS: Array<{ value: FontPair; label: string }> = [
   { value: "mono-only", label: "Mono only" },
 ];
 
+// Ordered spatially (left → right → all) so the segmented control reads like the layout it
+// describes. `center` is the default and sits in the middle.
+const TERMINAL_WIDTH_OPTIONS: Array<{ value: TerminalWidth; label: string }> = [
+  { value: "center-left", label: "Center + Left" },
+  { value: "center", label: "Center" },
+  { value: "center-right", label: "Center + Right" },
+  { value: "all", label: "All" },
+];
+
 export function AppearanceSection() {
   const client = useSessionsStore((s) => s.client);
   const available = useThemeStore((s) => s.available);
@@ -41,6 +51,8 @@ export function AppearanceSection() {
   const setFonts = usePreferencesStore((s) => s.setFonts);
   const viewMode = usePreferencesStore((s) => s.viewMode);
   const setViewMode = usePreferencesStore((s) => s.setViewMode);
+  const terminalWidth = usePreferencesStore((s) => s.terminalWidth);
+  const setTerminalWidth = usePreferencesStore((s) => s.setTerminalWidth);
 
   function handleSelectTheme(name: string) {
     if (!client) return;
@@ -98,7 +110,7 @@ export function AppearanceSection() {
       <section className="pid-settings-block">
         <div className="pid-settings-block-label">View</div>
         <div className="pid-settings-block-desc">
-          Agent keeps the linear session → editor → diff flow. IDE docks the chat beside the editor
+          Agent keeps the linear session - editor - diff flow. IDE docks the chat beside the editor
           as a right-pane tab.
         </div>
         <div className="pid-segmented" role="radiogroup" aria-label="View mode">
@@ -149,6 +161,27 @@ export function AppearanceSection() {
               aria-checked={fonts === option.value}
               active={fonts === option.value}
               onClick={() => setFonts(option.value)}
+            >
+              {option.label}
+            </PidButton>
+          ))}
+        </div>
+      </section>
+
+      <section className="pid-settings-block">
+        <div className="pid-settings-block-label">Terminal width</div>
+        <div className="pid-settings-block-desc">
+          How much horizontal space the integrated terminal takes when open — keep it in the center,
+          or let it span over the left rail, right pane, or both.
+        </div>
+        <div className="pid-segmented" role="radiogroup" aria-label="Terminal width">
+          {TERMINAL_WIDTH_OPTIONS.map((option) => (
+            <PidButton
+              key={option.value}
+              role="radio"
+              aria-checked={terminalWidth === option.value}
+              active={terminalWidth === option.value}
+              onClick={() => setTerminalWidth(option.value)}
             >
               {option.label}
             </PidButton>

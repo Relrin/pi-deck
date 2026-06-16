@@ -33,20 +33,52 @@
 }
 
 .pid-body {
+  /* Two rows: content (row 1) + the integrated terminal dock (row 2). The three columns are
+     always present; a hidden rail/pane collapses to 0 because --rail-w / --rightpane-w are set
+     to 0px in PidAppShell. Keeping the column lines stable (1–4) lets the dock span a
+     configurable set of columns via grid-column. */
   display: grid;
   grid-template-columns: var(--rail-w) 1fr var(--rightpane-w);
+  grid-template-rows: 1fr auto;
   min-height: 0;
   border-top: 1px solid var(--line);
   position: relative; /* host for the absolutely-positioned resize handles */
 }
-.pid-body[data-rightpane="off"] {
-  grid-template-columns: var(--rail-w) 1fr;
+
+/* ---------- Body grid placement ---------- */
+.pid-rail {
+  grid-column: 1;
+  grid-row: 1 / 3; /* full height unless the terminal covers this column */
 }
-.pid-body[data-leftrail="off"] {
-  grid-template-columns: 1fr var(--rightpane-w);
+.pid-center {
+  grid-column: 2;
+  grid-row: 1 / 2;
 }
-.pid-body[data-leftrail="off"][data-rightpane="off"] {
-  grid-template-columns: 1fr;
+.pid-rightpane {
+  grid-column: 3;
+  grid-row: 1 / 3; /* full height unless the terminal covers this column */
+}
+
+/* The terminal dock occupies row 2. By default it sits under the center column; the coverage
+   attributes below extend its span over the rail and/or right pane and pull the covered panel
+   back to row 1 so it shortens to make room. */
+.pid-dock {
+  /* Explicit start/end (not the `2` shorthand) so the cover-* overrides below, which set only
+     one edge, extend the span instead of collapsing it to a single track. */
+  grid-column: 2 / 3;
+  grid-row: 2 / 3;
+}
+.pid-body[data-term-cover-left="true"] .pid-dock {
+  grid-column-start: 1;
+}
+.pid-body[data-term-cover-right="true"] .pid-dock {
+  grid-column-end: 4;
+}
+.pid-body[data-term-cover-left="true"] .pid-rail {
+  grid-row: 1 / 2;
+}
+.pid-body[data-term-cover-right="true"] .pid-rightpane {
+  grid-row: 1 / 2;
 }
 
 /* ---------- Rail/pane resize handles ---------- */
@@ -74,6 +106,12 @@
 .pid-panel-handle--right {
   /* sit on the right pane's left border */
   right: calc(var(--rightpane-w) - 3px);
+}
+/* Keep the rail/pane resize handles within the content row so they don't cross a terminal
+   that spans their column (--term-dock-h is the open dock's height, set on .pid-body). */
+.pid-body[data-term-cover-left="true"] .pid-panel-handle--left,
+.pid-body[data-term-cover-right="true"] .pid-panel-handle--right {
+  bottom: var(--term-dock-h, 0px);
 }
 
 /* ---------- Topbar ---------- */
@@ -834,7 +872,6 @@
 
 /* ---------- Bottom terminal dock ---------- */
 .pid-dock {
-  flex: 0 0 auto;
   min-height: 0;
   max-height: 80vh;
   display: flex;
