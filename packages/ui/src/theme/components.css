@@ -277,10 +277,6 @@
   padding: 0 16px;
   border-bottom: 1px solid var(--line);
   background: var(--bg-0);
-  /* This header sits inside the Electron title bar region on Win/Linux. Mark it
-     as draggable so the user can move the window by the header, then opt the
-     interactive elements back out via no-drag below. Without this, the OS
-     swallows clicks on the back button when titleBarOverlay is enabled. */
   -webkit-app-region: drag;
 }
 .pid-settings-header-actions {
@@ -328,6 +324,15 @@
   font-style: italic;
   font-size: 20px;
   color: var(--ink-0);
+}
+.pid-settings-header-right {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  gap: 14px;
+}
+.pid-settings-header[data-window-controls] {
+  padding-right: 0;
 }
 .pid-settings-header-hint {
   display: flex;

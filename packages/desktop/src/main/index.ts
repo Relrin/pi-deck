@@ -1,7 +1,7 @@
 import { app, BrowserWindow } from "electron";
 import { type BackendHandle, startBackend } from "./backend";
 import { waitForViteServer } from "./dev";
-import { registerBridgeIpc } from "./ipc";
+import { registerBridgeIpc, registerWindowControlIpc } from "./ipc";
 import { installAppMenu } from "./menu";
 import { installCspHeaders } from "./security";
 import { createWindow } from "./window";
@@ -33,6 +33,7 @@ process.on("SIGTERM", () => void shutdown("SIGTERM"));
 app.whenReady().then(async () => {
   installCspHeaders();
   installAppMenu();
+  registerWindowControlIpc();
 
   try {
     backend = await startBackend(app);

@@ -30,6 +30,18 @@ export type ReadImageResult = {
   byteSize: number;
 };
 
+contextBridge.exposeInMainWorld("windowControls", {
+  minimize: (): Promise<void> => ipcRenderer.invoke("window:minimize"),
+  toggleMaximize: (): Promise<void> => ipcRenderer.invoke("window:toggle-maximize"),
+  close: (): Promise<void> => ipcRenderer.invoke("window:close"),
+  isMaximized: (): Promise<boolean> => ipcRenderer.invoke("window:is-maximized"),
+  onMaximizedChange: (cb: (maximized: boolean) => void): (() => void) => {
+    const listener = (_event: unknown, maximized: boolean) => cb(maximized);
+    ipcRenderer.on("window:maximized-changed", listener);
+    return () => ipcRenderer.removeListener("window:maximized-changed", listener);
+  },
+});
+
 contextBridge.exposeInMainWorld("bridge", {
   connect: (): Promise<BridgeConnectInfo | undefined> => ipcRenderer.invoke("bridge:connect"),
   openDirectory: (): Promise<string | undefined> => ipcRenderer.invoke("bridge:openDirectory"),

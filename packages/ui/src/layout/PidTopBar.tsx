@@ -1,16 +1,12 @@
-import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { ArrowLeft, PanelBottom, PanelLeft, PanelRight, Settings } from "../components/icons";
 import { Tooltip } from "../components/ui/Tooltip";
 import { useSettingsStore } from "../features/settings/useSettingsStore";
 import { useTerminalStore } from "../features/terminal/useTerminalStore";
-import {
-  getPlatformOs,
-  isMacOs,
-  NATIVE_OVERLAY_RESERVE_PX,
-  reservesNativeOverlay,
-} from "../lib/platform";
+import { getPlatformOs, isMacOs, usesCustomWindowControls } from "../lib/platform";
 import { useNavStore } from "../lib/useNavStore";
 import { useRailState } from "./use-rail-state";
+import { WindowControls } from "./WindowControls";
 
 interface ToggleButtonProps {
   pressed: boolean;
@@ -78,10 +74,7 @@ export function PidTopBar() {
   const toggleLeft = useRailState((s) => s.toggleLeft);
   const toggleRight = useRailState((s) => s.toggleRight);
   const terminalOpen = useTerminalStore((s) => s.bySession[s.currentKey]?.open ?? false);
-
-  const rightStyle: CSSProperties | undefined = reservesNativeOverlay()
-    ? { paddingRight: NATIVE_OVERLAY_RESERVE_PX }
-    : undefined;
+  const showWindowControls = usesCustomWindowControls();
 
   return (
     <div className="pid-topbar">
@@ -97,8 +90,8 @@ export function PidTopBar() {
           {showBack ? <BackToStartButton /> : null}
         </div>
       ) : (
-        // Non-mac: the native min/max/close are painted on the right via titleBarOverlay.
-        // The left cluster just holds the back button when the user isn't on the blank screen.
+        // Non-mac: min/max/close are our own <WindowControls /> at the end of the right
+        // cluster. The left cluster just holds the back button off the blank screen.
         <div
           className="pid-topbar-left"
           aria-hidden
@@ -108,15 +101,15 @@ export function PidTopBar() {
         </div>
       )}
 
-      <div className="pid-topbar-right" style={rightStyle}>
+      <div className="pid-topbar-right" data-window-controls={showWindowControls || undefined}>
         {/* Settings is normally housed in the left-rail footer; surface it here
             when the rail is hidden so the user keeps a visible affordance. */}
         {!leftVisible && <TopBarSettingsButton />}
         <ToggleButton
           pressed={leftVisible}
           onToggle={toggleLeft}
-          showLabel="Show left rail"
-          hideLabel="Hide left rail"
+          showLabel="Show left panel"
+          hideLabel="Hide left panel"
           icon={<PanelLeft size={14} />}
         />
         <ToggleButton
@@ -132,10 +125,11 @@ export function PidTopBar() {
         <ToggleButton
           pressed={rightVisible}
           onToggle={toggleRight}
-          showLabel="Show right pane"
-          hideLabel="Hide right pane"
+          showLabel="Show right panel"
+          hideLabel="Hide right panel"
           icon={<PanelRight size={14} />}
         />
+        {showWindowControls && <WindowControls />}
       </div>
     </div>
   );

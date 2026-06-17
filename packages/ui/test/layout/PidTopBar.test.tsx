@@ -33,8 +33,8 @@ describe("PidTopBar — panel toggles", () => {
 
   test("renders the three pane-toggle buttons; all three are interactive toggles", () => {
     render(<PidTopBar />);
-    const left = screen.getByRole("button", { name: "Hide left rail" });
-    const right = screen.getByRole("button", { name: "Hide right pane" });
+    const left = screen.getByRole("button", { name: "Hide left panel" });
+    const right = screen.getByRole("button", { name: "Hide right panel" });
     // Terminal starts closed, so the bottom toggle reads "Show".
     const bottom = screen.getByRole("button", { name: "Show bottom panel" });
 
@@ -51,25 +51,25 @@ describe("PidTopBar — panel toggles", () => {
     expect(bottom.getAttribute("aria-pressed")).toBe("false");
   });
 
-  test("clicking the left toggle hides the left rail and updates the label", () => {
+  test("clicking the left toggle hides the left panel and updates the label", () => {
     render(<PidTopBar />);
-    fireEvent.click(screen.getByRole("button", { name: "Hide left rail" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hide left panel" }));
     expect(useRailState.getState().leftVisible).toBe(false);
 
     // After toggling, the label flips so the next click reads as "Show".
-    const left = screen.getByRole("button", { name: "Show left rail" });
+    const left = screen.getByRole("button", { name: "Show left panel" });
     expect(left.getAttribute("aria-pressed")).toBe("false");
 
     fireEvent.click(left);
     expect(useRailState.getState().leftVisible).toBe(true);
   });
 
-  test("clicking the right toggle hides the right pane and updates the label", () => {
+  test("clicking the right toggle hides the right panel and updates the label", () => {
     render(<PidTopBar />);
-    fireEvent.click(screen.getByRole("button", { name: "Hide right pane" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hide right panel" }));
     expect(useRailState.getState().rightVisible).toBe(false);
 
-    const right = screen.getByRole("button", { name: "Show right pane" });
+    const right = screen.getByRole("button", { name: "Show right panel" });
     expect(right.getAttribute("aria-pressed")).toBe("false");
 
     fireEvent.click(right);
@@ -89,12 +89,12 @@ describe("PidTopBar — panel toggles", () => {
     expect(selectCurrentScope(useTerminalStore.getState()).open).toBe(false);
   });
 
-  test("settings button appears in the topbar only when the left rail is hidden", () => {
+  test("settings button appears in the topbar only when the left panel is hidden", () => {
     render(<PidTopBar />);
-    // While the rail is visible, settings lives in the rail footer — not the topbar.
+    // While the panel is visible, settings lives in the rail footer — not the topbar.
     expect(screen.queryByRole("button", { name: "Open settings" })).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Hide left rail" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hide left panel" }));
     const settings = screen.getByRole("button", { name: "Open settings" });
     expect(settings).toBeInTheDocument();
 
@@ -103,7 +103,7 @@ describe("PidTopBar — panel toggles", () => {
 
     // Reset and re-show the rail; the topbar settings affordance should disappear again.
     useSettingsStore.setState({ open: false, section: "appearance" });
-    fireEvent.click(screen.getByRole("button", { name: "Show left rail" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show left panel" }));
     expect(screen.queryByRole("button", { name: "Open settings" })).toBeNull();
   });
 
@@ -119,8 +119,8 @@ describe("PidTopBar — panel toggles", () => {
     expect(topbar?.getAttribute("data-rightpane")).toBeNull();
 
     // Toggling panels must not add the attributes either.
-    fireEvent.click(screen.getByRole("button", { name: "Hide left rail" }));
-    fireEvent.click(screen.getByRole("button", { name: "Hide right pane" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hide left panel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hide right panel" }));
     expect(topbar?.getAttribute("data-leftrail")).toBeNull();
     expect(topbar?.getAttribute("data-rightpane")).toBeNull();
   });

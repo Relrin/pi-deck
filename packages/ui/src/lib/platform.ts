@@ -23,14 +23,7 @@ export function shiftSymbol(): string {
   return isMacOs() ? "⇧" : "Shift";
 }
 
-// Windows + Linux paint native min/max/close inside the topbar area via
-// BrowserWindow.titleBarOverlay. Those buttons sit on top of our DOM, so any
-// full-width header (the app topbar, the settings overlay header, …) must pad
-// its right edge to leave room. Empirically ~140px covers Windows 1.0 DPI;
-// tighter scales fit comfortably under it.
-export const NATIVE_OVERLAY_RESERVE_PX = 144;
-
-export function reservesNativeOverlay(): boolean {
+export function usesCustomWindowControls(): boolean {
   const os = getPlatformOs();
   return os === "win32" || os === "linux";
 }

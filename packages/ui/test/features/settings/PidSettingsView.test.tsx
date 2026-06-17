@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { PidSettingsView } from "../../../src/features/settings/PidSettingsView";
 import { useSettingsStore } from "../../../src/features/settings/useSettingsStore";
-import { NATIVE_OVERLAY_RESERVE_PX } from "../../../src/lib/platform";
 import { fireEvent, render, screen } from "../../utils";
 
 const PLATFORM_KEY = "platform";
@@ -65,45 +64,45 @@ describe("PidSettingsView — header layout", () => {
     const { container } = render(<PidSettingsView />);
 
     const header = container.querySelector(".pid-settings-header");
-    const hint = header?.querySelector(".pid-settings-header-hint");
+    const right = header?.querySelector(".pid-settings-header-right");
+    const hint = right?.querySelector(".pid-settings-header-hint");
+    expect(right).not.toBeNull();
     expect(hint).not.toBeNull();
     expect(hint?.textContent?.toLowerCase()).toContain("esc");
     expect(hint?.textContent?.toLowerCase()).toContain("to close");
 
-    // Hint is the *last* child of the header, after the left-cluster actions span.
+    // The right cluster is the *last* child of the header, after the left-cluster actions span.
     const headerChildren = Array.from(header?.children ?? []);
-    expect(headerChildren[headerChildren.length - 1]).toBe(hint as Element);
+    expect(headerChildren[headerChildren.length - 1]).toBe(right as Element);
 
-    // No button lives in the hint cluster — the close action moved left.
+    // No button lives in the hint itself — the close action moved to the left cluster.
     expect(hint?.querySelector("button")).toBeNull();
   });
 
-  test("on Windows, the hint cluster reserves space for the native window controls", () => {
+  test("on Windows, the header carries custom window controls", () => {
     setPlatformOs("win32");
     useSettingsStore.setState({ open: true });
     const { container } = render(<PidSettingsView />);
 
-    const hint = container.querySelector<HTMLElement>(".pid-settings-header-hint");
-    expect(hint).not.toBeNull();
-    expect(hint?.style.paddingRight).toBe(`${NATIVE_OVERLAY_RESERVE_PX}px`);
+    const controls = container.querySelector(".pid-settings-header-right .pid-window-controls");
+    expect(controls).not.toBeNull();
+    expect(controls?.querySelector("button[aria-label='Close']")).not.toBeNull();
   });
 
-  test("on Linux, the hint cluster reserves space for the native window controls", () => {
+  test("on Linux, the header carries custom window controls", () => {
     setPlatformOs("linux");
     useSettingsStore.setState({ open: true });
     const { container } = render(<PidSettingsView />);
 
-    const hint = container.querySelector<HTMLElement>(".pid-settings-header-hint");
-    expect(hint?.style.paddingRight).toBe(`${NATIVE_OVERLAY_RESERVE_PX}px`);
+    expect(container.querySelector(".pid-window-controls")).not.toBeNull();
   });
 
-  test("on macOS, no native-overlay padding is applied (traffic lights live elsewhere)", () => {
+  test("on macOS, no custom window controls render (native traffic lights live elsewhere)", () => {
     setPlatformOs("darwin");
     useSettingsStore.setState({ open: true });
     const { container } = render(<PidSettingsView />);
 
-    const hint = container.querySelector<HTMLElement>(".pid-settings-header-hint");
-    expect(hint?.style.paddingRight).toBe("");
+    expect(container.querySelector(".pid-window-controls")).toBeNull();
   });
 
   test("clicking the back-arrow button closes the settings overlay", () => {

@@ -29,6 +29,14 @@ declare global {
       showItemInFolder?: (path: string) => Promise<void>;
       readImage?: (path: string) => Promise<BridgeReadImageResult>;
     };
+    windowControls?: {
+      minimize?: () => Promise<void>;
+      toggleMaximize?: () => Promise<void>;
+      close?: () => Promise<void>;
+      isMaximized?: () => Promise<boolean>;
+      /** Subscribe to OS maximize/unmaximize; returns an unsubscribe fn. */
+      onMaximizedChange?: (cb: (maximized: boolean) => void) => () => void;
+    };
     appVersion?: string;
   }
 }

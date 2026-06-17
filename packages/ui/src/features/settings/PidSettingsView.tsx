@@ -1,7 +1,8 @@
-import { type CSSProperties, type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect } from "react";
 import { ArrowLeft } from "../../components/icons";
 import { PidKbd } from "../../components/kbd/PidKbd";
-import { NATIVE_OVERLAY_RESERVE_PX, reservesNativeOverlay } from "../../lib/platform";
+import { WindowControls } from "../../layout/WindowControls";
+import { usesCustomWindowControls } from "../../lib/platform";
 import { AppearanceSection } from "./sections/AppearanceSection";
 import { EditorSection } from "./sections/EditorSection";
 import { GitGitHubSection } from "./sections/GitGitHubSection";
@@ -71,15 +72,17 @@ export function PidSettingsView() {
 
   if (!open) return null;
 
-  // Win/Linux paint native min/max/close inside the topbar area; pad the right
-  // cluster so the Esc hint doesn't get covered by the system controls.
-  const rightStyle: CSSProperties | undefined = reservesNativeOverlay()
-    ? { paddingRight: NATIVE_OVERLAY_RESERVE_PX }
-    : undefined;
+  // The overlay covers the whole window (including the app topbar), so on Win/Linux it has
+  // to carry its own window controls — otherwise there'd be no min/max/close while settings
+  // is open.
+  const showWindowControls = usesCustomWindowControls();
 
   return (
     <div className="pid-settings-root" role="dialog" aria-modal aria-label="Settings">
-      <header className="pid-settings-header">
+      <header
+        className="pid-settings-header"
+        data-window-controls={showWindowControls || undefined}
+      >
         <span className="pid-settings-header-actions">
           <button
             type="button"
@@ -92,8 +95,11 @@ export function PidSettingsView() {
           </button>
           <span className="pid-settings-header-title">Settings</span>
         </span>
-        <span className="pid-settings-header-hint" style={rightStyle}>
-          <PidKbd keys={["Esc"]} /> to close
+        <span className="pid-settings-header-right">
+          <span className="pid-settings-header-hint">
+            <PidKbd keys={["Esc"]} /> to close
+          </span>
+          {showWindowControls && <WindowControls />}
         </span>
       </header>
       <div className="pid-settings-grid">

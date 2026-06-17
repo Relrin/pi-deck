@@ -29,6 +29,28 @@ const IMAGE_EXT_TO_MIME: Record<string, string> = {
 
 let bridgeInfo: BridgeInfo | undefined;
 let registered = false;
+let windowControlsRegistered = false;
+
+export function registerWindowControlIpc(): void {
+  if (windowControlsRegistered) return;
+  windowControlsRegistered = true;
+  ipcMain.handle("window:minimize", (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.minimize();
+  });
+  ipcMain.handle("window:toggle-maximize", (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) return;
+    if (win.isMaximized()) win.unmaximize();
+    else win.maximize();
+  });
+  ipcMain.handle("window:close", (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.close();
+  });
+  ipcMain.handle(
+    "window:is-maximized",
+    (event) => BrowserWindow.fromWebContents(event.sender)?.isMaximized() ?? false,
+  );
+}
 
 export function registerBridgeIpc(info: BridgeInfo): void {
   bridgeInfo = info;

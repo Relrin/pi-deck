@@ -29,12 +29,6 @@ export function createWindow(): BrowserWindow {
     backgroundColor: "#0e0f12",
     title: "pi-deck",
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden",
-    // symbolColor matches --ink-0 in the dark theme; light-mode users get a slight contrast
-    // hit on the overlay symbols until nativeTheme updates are wired
-    titleBarOverlay:
-      process.platform !== "darwin"
-        ? { color: "#00000000", symbolColor: "#e7e9ee", height: 44 }
-        : undefined,
     webPreferences: {
       // app.getAppPath() rather than __dirname: Bun inlines __dirname to the source
       // directory at build time, so we have to root paths from the Electron app root.
@@ -48,6 +42,10 @@ export function createWindow(): BrowserWindow {
   win.once("ready-to-show", () => {
     win.show();
   });
+
+  // Keep the custom maximize/restore button in sync with the OS
+  win.on("maximize", () => win.webContents.send("window:maximized-changed", true));
+  win.on("unmaximize", () => win.webContents.send("window:maximized-changed", false));
 
   let saveTimer: NodeJS.Timeout | null = null;
   const persistBounds = () => {
@@ -77,7 +75,13 @@ export function createWindow(): BrowserWindow {
     const devUrl =
       process.env.ELECTRON_RENDERER_URL ?? process.env.VITE_DEV_SERVER_URL ?? DEV_URL_DEFAULT;
     win.loadURL(devUrl);
-    win.webContents.openDevTools({ mode: "detach" });
+    // DevTools is opt-in: while it's open Chromium paints a "W × H" resize badge in the page's
+    // top-right that overlaps our window controls on every resize/maximize. Keep it off by
+    // default — toggle anytime via View ▸ Toggle Developer Tools (Ctrl+Shift+I), or set
+    // PIDECK_DEVTOOLS=1 to auto-open on launch.
+    if (process.env.PIDECK_DEVTOOLS === "1") {
+      win.webContents.openDevTools({ mode: "detach" });
+    }
   } else {
     win.loadFile(join(app.getAppPath(), "dist", "renderer", "index.html"));
   }
