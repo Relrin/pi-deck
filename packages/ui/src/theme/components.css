@@ -5526,17 +5526,22 @@
 
 .pid-tools-menu {
   padding-bottom: 12px;
+  max-width: 240px;
 }
 .pid-tools-menu-blurb {
   margin: 0 0 12px;
-  padding: 0 12px;
+  padding: 0 10px;
   font-size: var(--t-12);
   font-style: italic;
   color: var(--ink-2);
   line-height: 1.4;
 }
 .pid-tools-menu .pid-tools-list {
-  padding: 0 12px;
+  gap: 10px;
+  padding: 0 10px;
+}
+.pid-tools-menu .pid-tools-list-row {
+  gap: 10px;
 }
 
 .pid-tools-settings-blurb {

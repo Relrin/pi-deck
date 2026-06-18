@@ -55,7 +55,6 @@ export function SessionToolsButton() {
           side="top"
           sideOffset={6}
           className="pid-picker-menu pid-tools-menu"
-          style={{ minWidth: 320 }}
         >
           <div className="pid-picker-menu-header">Session tools</div>
           <p className="pid-tools-menu-blurb">
