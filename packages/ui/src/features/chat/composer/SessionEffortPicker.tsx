@@ -78,7 +78,7 @@ export function SessionEffortPicker({ sessionId }: SessionEffortPickerProps) {
       options={options}
       onChange={(v) => void setSessionThinkingLevel(sessionId, v as ThinkingLevel)}
       triggerLabel={activeLabel}
-      minPopoverWidth={140}
+      minPopoverWidth={110}
     />
   );
 }

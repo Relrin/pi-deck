@@ -65,7 +65,7 @@ export function PidEffortPicker() {
       options={options}
       onChange={(v) => setPendingThinkingLevel(v as ThinkingLevel)}
       triggerLabel={activeLabel}
-      minPopoverWidth={140}
+      minPopoverWidth={110}
     />
   );
 }
