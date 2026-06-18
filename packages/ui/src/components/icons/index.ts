@@ -69,6 +69,7 @@ export {
   Terminal,
   ToolCase,
   Trash2,
+  TriangleAlert,
   Undo2,
   User,
   X,

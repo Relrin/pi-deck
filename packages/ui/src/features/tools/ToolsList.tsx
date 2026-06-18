@@ -35,7 +35,7 @@ export function ToolsList({ excludedTools, onChange }: ToolsListProps) {
       {BUILT_IN_TOOLS.map((tool) => {
         const on = !excluded.has(tool.id);
         return (
-          <li key={tool.id} className="pid-tools-list-row">
+          <li key={tool.id} className="pid-tools-list-row" data-on={on || undefined}>
             <div className="pid-tools-list-body">
               <span className="pid-tools-list-name">{tool.label}</span>
               <span className="pid-tools-list-desc">{tool.description}</span>

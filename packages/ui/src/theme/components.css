@@ -5519,6 +5519,10 @@
   color: var(--ink-2);
   line-height: 1.35;
 }
+.pid-tools-list-row:not([data-on]) .pid-tools-list-name,
+.pid-tools-list-row:not([data-on]) .pid-tools-list-desc {
+  color: var(--ink-3);
+}
 
 .pid-tools-menu {
   padding-bottom: 12px;
@@ -5537,8 +5541,34 @@
 
 .pid-tools-settings-blurb {
   max-width: 64ch;
-  margin-bottom: 28px;
 }
 .pid-tools-settings-block {
-  padding-top: 8px;
+  padding-top: 0;
+}
+.pid-tools-settings-block .pid-tools-list {
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+.pid-tools-settings-block .pid-tools-list-row {
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Quiet "all tools off" warning — heads-up, never an error. */
+.pid-tools-alloff {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--mod-soft);
+  color: var(--warn);
+  font-family: var(--font-ui);
+  font-size: var(--t-12);
+  line-height: 1.45;
+}
+.pid-tools-alloff-icon {
+  flex: 0 0 auto;
+  margin-top: 1px;
 }
