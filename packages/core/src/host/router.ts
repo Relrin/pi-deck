@@ -46,10 +46,11 @@ import type { ProviderManager } from "./provider-manager.js";
 import type { ReviewStore } from "./review-store.js";
 import type { SessionManager, SessionRecord } from "./session-manager.js";
 import {
-  installSkillFromFolder,
-  installSkillFromGit,
+  installSelectedSkills,
+  installSkillFolder,
   listProjectCommands,
   listSkills,
+  scanRepoSkills,
   uninstallSkill,
 } from "./skills.js";
 import type { ThemeManager } from "./themes/index.js";
@@ -218,14 +219,20 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
     return listSkills(project.path);
   },
-  "skills.install": async (ctx, payload) => {
+  "skills.scan": async (_ctx, payload) => {
+    const parsed = CommandSchemas["skills.scan"].request.parse(payload);
+    try {
+      return await scanRepoSkills(parsed.url);
+    } catch (err) {
+      throw new RouterError("invalid_request", (err as Error).message);
+    }
+  },
+  "skills.install": async (_ctx, payload) => {
     const parsed = CommandSchemas["skills.install"].request.parse(payload);
     try {
-      const installedDir =
-        parsed.source.kind === "git"
-          ? await installSkillFromGit(parsed.source.url)
-          : await installSkillFromFolder(parsed.source.path);
-      return { installedDir };
+      return parsed.source.kind === "scan"
+        ? await installSelectedSkills(parsed.source.scanId, parsed.source.skillIds)
+        : await installSkillFolder(parsed.source.path);
     } catch (err) {
       throw new RouterError("invalid_request", (err as Error).message);
     }

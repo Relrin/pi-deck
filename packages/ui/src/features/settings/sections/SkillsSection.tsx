@@ -1,26 +1,37 @@
 import type { CommandResponse, SkillInfo } from "@pi-deck/core/protocol/commands.js";
-import { useCallback, useEffect, useState } from "react";
+import { FolderOpen, GitBranch, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
 import { PidChip } from "../../../components/chip/PidChip";
 import { humanizeError } from "../../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
 import { useProjectsStore } from "../../sessions/useProjectsStore";
 import { useSessionsStore } from "../../sessions/useSessionsStore";
+import { InstallSkillsModal } from "./InstallSkillsModal";
 
 type SkillsData = CommandResponse<"skills.list">;
 
+const THIN_CTL = {
+  height: 28,
+  paddingTop: 0,
+  paddingBottom: 0,
+  boxSizing: "border-box",
+} as const;
+
 /**
  * Settings → Skills. Lists every skill pi discovers for the active project (global dirs like
- * `~/.pi/agent/skills` plus project `.pi/skills` / `.agents/skills`), with install (git clone
- * or local folder copy into the global dir) and uninstall. Skills become `/skill:name`
- * commands in the composer and are advertised to the model via the system prompt.
+ * `~/.pi/agent/skills` plus project `.pi/skills` / `.agents/skills`). Install via the repo
+ * scan/select modal (clone → pick a subset → copy into the global dir) or from a local folder;
+ * remove deletes the skill off disk. Skills become `/skill:name` commands in the composer and
+ * are advertised to the model via the system prompt.
  */
 export function SkillsSection() {
   const projectId = useProjectsStore((s) => s.activeProjectId);
   const [data, setData] = useState<SkillsData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [gitUrl, setGitUrl] = useState("");
   const [installing, setInstalling] = useState(false);
+  const [installOpen, setInstallOpen] = useState(false);
+  const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
     const client = useSessionsStore.getState().client;
@@ -42,23 +53,6 @@ export function SkillsSection() {
     void load();
   }, [load]);
 
-  const install = async (
-    source: { kind: "git"; url: string } | { kind: "folder"; path: string },
-  ) => {
-    const client = useSessionsStore.getState().client;
-    if (!client) return;
-    setInstalling(true);
-    try {
-      await client.call("skills.install", { source });
-      setGitUrl("");
-      await load();
-    } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to install skill"));
-    } finally {
-      setInstalling(false);
-    }
-  };
-
   const installFromFolder = async () => {
     const picker = window.bridge?.openDirectory;
     if (!picker) {
@@ -67,7 +61,19 @@ export function SkillsSection() {
     }
     const path = await picker();
     if (!path) return;
-    await install({ kind: "folder", path });
+    const client = useSessionsStore.getState().client;
+    if (!client) return;
+    setInstalling(true);
+    try {
+      const res = await client.call("skills.install", { source: { kind: "folder", path } });
+      const name = res.installed[0]?.name;
+      useNotificationStore.getState().success(name ? `Installed ${name}` : "Installed skill");
+      await load();
+    } catch (err) {
+      useNotificationStore.getState().error(humanizeError(err, "Failed to install skill"));
+    } finally {
+      setInstalling(false);
+    }
   };
 
   const uninstall = async (skill: SkillInfo) => {
@@ -85,14 +91,50 @@ export function SkillsSection() {
     }
   };
 
-  const globalSkills = data?.skills.filter((s) => s.scope !== "project") ?? [];
-  const projectSkills = data?.skills.filter((s) => s.scope === "project") ?? [];
+  const allSkills = data?.skills ?? [];
+  const q = query.trim().toLowerCase();
+  const filtered = useMemo(
+    () =>
+      q
+        ? allSkills.filter((s) =>
+            `${s.name} ${s.description} ${s.filePath}`.toLowerCase().includes(q),
+          )
+        : allSkills,
+    [allSkills, q],
+  );
+
+  const groups = [
+    {
+      key: "installed",
+      label: "Installed",
+      hint: "global",
+      rows: filtered.filter((s) => s.scope !== "project"),
+    },
+    {
+      key: "project",
+      label: "Project",
+      hint: "this repo",
+      rows: filtered.filter((s) => s.scope === "project"),
+    },
+  ].filter((g) => g.rows.length > 0);
 
   return (
     <div className="pid-settings-panel-inner">
       <header>
         <div className="pid-settings-section-kicker">Settings · Skills</div>
-        <h1 className="pid-settings-section-title">Agent Skills</h1>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+          <h1 className="pid-settings-section-title">Agent Skills</h1>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "var(--ink-3)",
+              letterSpacing: "0.08em",
+            }}
+          >
+            <span style={{ color: "var(--accent)" }}>{allSkills.length}</span> installed
+          </span>
+        </div>
       </header>
 
       <section className="pid-settings-block">
@@ -109,24 +151,120 @@ export function SkillsSection() {
       </section>
 
       <section className="pid-settings-block">
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-          }}
-        >
-          <div className="pid-settings-block-label">
-            Installed skills{projectId ? "" : " (open a project to list)"}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              height: 28,
+              boxSizing: "border-box",
+              padding: "0 10px",
+              background: "var(--bg-1)",
+              border: "1px solid var(--line)",
+              borderRadius: "var(--radius)",
+              color: "var(--ink-3)",
+            }}
+          >
+            <Search size={13} aria-hidden />
+            <input
+              style={{
+                flex: 1,
+                alignSelf: "stretch",
+                border: 0,
+                outline: "none",
+                background: "transparent",
+                padding: 0,
+                color: "var(--ink-0)",
+                fontFamily: "var(--font-ui)",
+                fontSize: "var(--t-13)",
+              }}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filter skills…"
+              spellCheck={false}
+            />
+            {query && (
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}>
+                {filtered.length}
+              </span>
+            )}
           </div>
-          <PidButton onClick={() => void load()} disabled={loading || !projectId}>
-            {loading ? "Scanning..." : "Refresh"}
+          <PidButton
+            variant="primary"
+            longLabel
+            style={THIN_CTL}
+            icon={<GitBranch size={12} aria-hidden />}
+            onClick={() => setInstallOpen(true)}
+          >
+            Install from repo
+          </PidButton>
+          <PidButton
+            longLabel
+            style={THIN_CTL}
+            icon={<FolderOpen size={12} aria-hidden />}
+            disabled={installing}
+            onClick={() => void installFromFolder()}
+          >
+            {installing ? "Installing…" : "From folder…"}
           </PidButton>
         </div>
 
-        <SkillGroup title="Global" skills={globalSkills} onUninstall={uninstall} />
-        <SkillGroup title="Project" skills={projectSkills} onUninstall={uninstall} />
+        {!projectId ? (
+          <div className="pid-list-empty" style={{ marginTop: 12 }}>
+            Open a project to list its skills.
+          </div>
+        ) : (
+          <div
+            style={{
+              marginTop: 12,
+              border: "1px solid var(--line)",
+              borderRadius: "var(--radius)",
+              background: "var(--bg-1)",
+              overflow: "hidden",
+            }}
+          >
+            {groups.length === 0 ? (
+              <div className="pid-list-empty" style={{ padding: "20px 14px" }}>
+                {loading
+                  ? "Scanning…"
+                  : query
+                    ? `No skills match “${query}”.`
+                    : "No skills installed yet — install from a repo or a local folder."}
+              </div>
+            ) : (
+              groups.map((g, gi) => (
+                <div key={g.key}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "baseline",
+                      gap: 8,
+                      padding: "10px 14px 8px",
+                      borderTop: gi === 0 ? "none" : "1px solid var(--line)",
+                      borderBottom: "1px solid var(--line)",
+                      background: "var(--bg-2)",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 10,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    <span style={{ color: "var(--ink-1)" }}>{g.label}</span>
+                    <span style={{ color: "var(--ink-3)" }}>· {g.hint}</span>
+                    <span style={{ marginLeft: "auto", color: "var(--ink-3)" }}>
+                      {g.rows.length}
+                    </span>
+                  </div>
+                  {g.rows.map((skill) => (
+                    <SkillRow key={skill.filePath} skill={skill} onUninstall={uninstall} />
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
+        )}
 
         {data && data.diagnostics.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
@@ -144,65 +282,11 @@ export function SkillsSection() {
         ) : null}
       </section>
 
-      <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Install</div>
-        <div className="pid-settings-block-desc">
-          Installs into <code>~/.pi/agent/skills/</code>. Clone a skills repository (e.g.{" "}
-          <code>https://github.com/anthropics/skills</code>) or copy a local folder containing a{" "}
-          <code>SKILL.md</code>. Sessions load skills when their agent starts — a session that is
-          already running picks up new installs the next time it's reopened.
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input
-            className="pid-form-input"
-            style={{ flex: 1 }}
-            value={gitUrl}
-            onChange={(e) => setGitUrl(e.target.value)}
-            placeholder="https://github.com/owner/skills-repo.git"
-            spellCheck={false}
-          />
-          <PidButton
-            variant="primary"
-            longLabel
-            disabled={!gitUrl.trim() || installing}
-            onClick={() => void install({ kind: "git", url: gitUrl.trim() })}
-          >
-            {installing ? "Installing…" : "Clone"}
-          </PidButton>
-          <PidButton longLabel disabled={installing} onClick={() => void installFromFolder()}>
-            From folder…
-          </PidButton>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function SkillGroup({
-  title,
-  skills,
-  onUninstall,
-}: {
-  title: string;
-  skills: SkillInfo[];
-  onUninstall: (skill: SkillInfo) => Promise<void>;
-}) {
-  if (skills.length === 0) {
-    return (
-      <div style={{ marginTop: 8 }}>
-        <div className="pid-settings-block-label">{title}</div>
-        <div className="pid-list-empty">No {title.toLowerCase()} skills found.</div>
-      </div>
-    );
-  }
-  return (
-    <div style={{ marginTop: 8 }}>
-      <div className="pid-settings-block-label">{title}</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {skills.map((skill) => (
-          <SkillRow key={skill.filePath} skill={skill} onUninstall={onUninstall} />
-        ))}
-      </div>
+      <InstallSkillsModal
+        open={installOpen}
+        onOpenChange={setInstallOpen}
+        onInstalled={() => void load()}
+      />
     </div>
   );
 }
@@ -225,23 +309,22 @@ function SkillRow({
   return (
     <div
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "10px 12px",
-        border: "1px solid var(--line)",
-        borderRadius: "var(--radius)",
-        background: "var(--bg-1)",
+        display: "grid",
+        gridTemplateColumns: "1fr auto",
+        gap: 14,
+        alignItems: "start",
+        padding: "14px",
+        borderTop: "1px solid var(--line)",
       }}
     >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ color: "var(--ink-0)", fontSize: "var(--t-13)" }}>
-            <code>/skill:{skill.name}</code>
-          </span>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <code style={{ color: "var(--ink-0)", fontSize: "var(--t-13)" }}>
+            /skill:{skill.name}
+          </code>
           {skill.disableModelInvocation ? <PidChip variant="info">manual only</PidChip> : null}
         </div>
-        <div style={{ color: "var(--ink-2)", fontSize: "var(--t-12)", marginTop: 2 }}>
+        <div style={{ color: "var(--ink-2)", fontSize: "var(--t-12)", marginTop: 3 }}>
           {skill.description}
         </div>
         <div
@@ -250,7 +333,7 @@ function SkillRow({
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             letterSpacing: "0.04em",
-            marginTop: 2,
+            marginTop: 3,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -264,6 +347,7 @@ function SkillRow({
         <PidButton
           variant={armed ? "danger" : "ghost"}
           longLabel
+          style={THIN_CTL}
           onClick={() => {
             if (!armed) {
               setArmed(true);

@@ -1,14 +1,16 @@
-import { cp, mkdir, readdir, rm, stat } from "node:fs/promises";
-import { homedir } from "node:os";
+import { randomUUID } from "node:crypto";
+import { cp, mkdir, mkdtemp, readdir, rm, stat } from "node:fs/promises";
+import { homedir, tmpdir } from "node:os";
 import { basename, isAbsolute, join, relative, resolve } from "node:path";
 import {
   DefaultResourceLoader,
   getAgentDir,
   loadSkills,
+  loadSkillsFromDir,
   SettingsManager,
 } from "@earendil-works/pi-coding-agent";
 import { runGit } from "../git/runner.js";
-import type { SessionCommandInfo, SkillInfo } from "../protocol/commands.js";
+import type { ScannedSkill, SessionCommandInfo, SkillInfo } from "../protocol/commands.js";
 
 /**
  * Host-side skill management. Listing reuses pi's own discovery (`loadSkills`) so what the
@@ -177,6 +179,188 @@ export async function installSkillFromFolder(
   await ensureAbsent(target);
   await cp(src, target, { recursive: true });
   return target;
+}
+
+/**
+ * Expand bare GitHub shorthands (`owner/repo`, `github.com/owner/repo`) to an https URL so the
+ * placeholder examples and quick-links actually clone. Anything that already carries a scheme,
+ * an scp-style `git@…` host, or looks like a local path is returned untouched.
+ */
+export function normalizeRepoUrl(raw: string): string {
+  const url = raw.trim();
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(url) || url.startsWith("git@") || url.startsWith("file:")) {
+    return url;
+  }
+  const slug = url.replace(/^github\.com\//i, "");
+  return /^[\w.-]+\/[\w.-]+$/.test(slug) ? `https://github.com/${slug}` : url;
+}
+
+/** Best-effort `owner/repo` slug for display (toast meta). Falls back to the folder name. */
+export function repoSlug(url: string): string {
+  const cleaned = url
+    .trim()
+    .replace(/^git@[^:]+:/, "")
+    .replace(/^[a-z]+:\/\/(www\.)?[^/]+\//i, "")
+    .replace(/\.git$/i, "")
+    .replace(/\/+$/, "");
+  const parts = cleaned.split("/").filter(Boolean);
+  if (parts.length >= 2) return `${parts[parts.length - 2]}/${parts[parts.length - 1]}`;
+  return repoDirName(url) ?? cleaned;
+}
+
+/** A skill discovered inside a cloned repo, retained between `scanRepoSkills` and install. */
+interface ScannedSkillEntry extends ScannedSkill {
+  /** Absolute path of the skill's directory inside the clone — copied on install. */
+  baseDir: string;
+}
+
+interface ScanCache {
+  /** Temp dir holding the shallow clone; removed after install or when swept. */
+  tempRoot: string;
+  repo: { slug: string; branch: string; commit: string };
+  skills: ScannedSkillEntry[];
+  createdAt: number;
+}
+
+const scanCache = new Map<string, ScanCache>();
+/** Scans older than this are dropped (and their temp clones deleted) on the next scan. */
+const SCAN_TTL_MS = 30 * 60_000;
+
+async function sweepStaleScans(): Promise<void> {
+  const now = Date.now();
+  for (const [id, entry] of scanCache) {
+    if (now - entry.createdAt > SCAN_TTL_MS) {
+      scanCache.delete(id);
+      await rm(entry.tempRoot, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+}
+
+/**
+ * Shallow-clone a repo into a temp dir and enumerate the skills inside it using pi's own
+ * discovery (so what we list is exactly what pi would load). The clone is kept under `scanId`
+ * so a follow-up `installSelectedSkills` can copy just the chosen folders without re-cloning.
+ */
+export async function scanRepoSkills(
+  url: string,
+  agentDir = getAgentDir(),
+): Promise<{
+  scanId: string;
+  repo: { slug: string; branch: string; commit: string };
+  skills: ScannedSkill[];
+}> {
+  await sweepStaleScans();
+  const cloneUrl = normalizeRepoUrl(url);
+  const name = repoDirName(cloneUrl);
+  if (!name) throw new Error("Could not derive a folder name from the repository URL");
+
+  const tempRoot = await mkdtemp(join(tmpdir(), "pi-deck-skill-scan-"));
+  const repoDir = join(tempRoot, name);
+  try {
+    await runGit(tempRoot, ["clone", "--depth", "1", cloneUrl, name], {
+      timeoutMs: 120_000,
+      detectNotARepo: false,
+    });
+  } catch (err) {
+    await rm(tempRoot, { recursive: true, force: true }).catch(() => {});
+    throw err;
+  }
+
+  // Branch/commit are cosmetic (toast meta); a repo missing them still installs fine.
+  let branch = "";
+  let commit = "";
+  try {
+    branch = (await runGit(repoDir, ["rev-parse", "--abbrev-ref", "HEAD"])).stdout.trim();
+    commit = (await runGit(repoDir, ["rev-parse", "--short", "HEAD"])).stdout.trim();
+  } catch {
+    /* ignore */
+  }
+
+  const installedNames = new Set(
+    loadSkillsFromDir({ dir: join(agentDir, "skills"), source: "user" }).skills.map((s) => s.name),
+  );
+
+  // pi's recursive discovery skips dot-dirs (so `.git`) and `node_modules` for us.
+  const found = loadSkillsFromDir({ dir: repoDir, source: "path" }).skills;
+  const usedIds = new Set<string>();
+  const skills: ScannedSkillEntry[] = found.map((s) => {
+    let id = s.name;
+    for (let n = 2; usedIds.has(id); n++) id = `${s.name}-${n}`;
+    usedIds.add(id);
+    return {
+      id,
+      name: s.name,
+      description: s.description,
+      alreadyInstalled: installedNames.has(s.name),
+      baseDir: s.baseDir,
+    };
+  });
+
+  const scanId = randomUUID();
+  const repo = { slug: repoSlug(cloneUrl), branch, commit };
+  scanCache.set(scanId, { tempRoot, repo, skills, createdAt: Date.now() });
+
+  return {
+    scanId,
+    repo,
+    skills: skills.map(({ id, name, description, alreadyInstalled }) => ({
+      id,
+      name,
+      description,
+      alreadyInstalled,
+    })),
+  };
+}
+
+/**
+ * Copy the chosen skills from a prior scan's clone into the global skills dir. Selections
+ * whose target name already exists are reported as `skipped` rather than overwritten. The
+ * temp clone is removed once we're done with it.
+ */
+export async function installSelectedSkills(
+  scanId: string,
+  skillIds: string[],
+  agentDir = getAgentDir(),
+): Promise<{ installed: Array<{ name: string }>; skipped: string[] }> {
+  const cache = scanCache.get(scanId);
+  if (!cache) {
+    throw new Error("This scan has expired — rescan the repository and try again");
+  }
+  const skillsDir = join(agentDir, "skills");
+  await mkdir(skillsDir, { recursive: true });
+
+  const wanted = new Set(skillIds);
+  const installed: Array<{ name: string }> = [];
+  const skipped: string[] = [];
+
+  for (const entry of cache.skills) {
+    if (!wanted.has(entry.id)) continue;
+    const target = join(skillsDir, basename(entry.baseDir));
+    if (await stat(target).catch(() => null)) {
+      skipped.push(entry.name);
+      continue;
+    }
+    await cp(entry.baseDir, target, {
+      recursive: true,
+      // Guard the rare case where the skill is the repo root itself.
+      filter: (src) => !src.split(/[/\\]/).includes(".git"),
+    });
+    installed.push({ name: entry.name });
+  }
+
+  scanCache.delete(scanId);
+  await rm(cache.tempRoot, { recursive: true, force: true }).catch(() => {});
+
+  return { installed, skipped };
+}
+
+/** Folder install, normalised to the shared `skills.install` response shape. */
+export async function installSkillFolder(
+  srcPath: string,
+  agentDir = getAgentDir(),
+): Promise<{ installed: Array<{ name: string }>; skipped: string[] }> {
+  const target = await installSkillFromFolder(srcPath, agentDir);
+  return { installed: [{ name: basename(target) }], skipped: [] };
 }
 
 /**

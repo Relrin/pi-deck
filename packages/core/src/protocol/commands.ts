@@ -182,13 +182,46 @@ export const SkillsListResponse = z.object({
   diagnostics: z.array(SkillDiagnosticSchema),
 });
 
+/** One skill discovered inside a freshly-cloned repo during `skills.scan`. */
+export const ScannedSkillSchema = z.object({
+  /** Stable key for this scan (skill name, de-duplicated). Echoed back in `skills.install`. */
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  /** True when a global skill of the same name is already installed. */
+  alreadyInstalled: z.boolean(),
+});
+export type ScannedSkill = z.infer<typeof ScannedSkillSchema>;
+
+export const SkillsScanRequest = z.object({ url: z.string().min(1) });
+export const SkillsScanResponse = z.object({
+  /** Opaque handle the renderer passes to `skills.install` to install a chosen subset. */
+  scanId: z.string().min(1),
+  repo: z.object({
+    slug: z.string(),
+    branch: z.string(),
+    commit: z.string(),
+  }),
+  skills: z.array(ScannedSkillSchema),
+});
+
 export const SkillsInstallRequest = z.object({
   source: z.discriminatedUnion("kind", [
-    z.object({ kind: z.literal("git"), url: z.string().min(1) }),
+    /** Install a chosen subset from a prior `skills.scan` (by scan handle + skill ids). */
+    z.object({
+      kind: z.literal("scan"),
+      scanId: z.string().min(1),
+      skillIds: z.array(z.string().min(1)).min(1),
+    }),
+    /** Copy a local folder containing a SKILL.md (or .md files) into the global skills dir. */
     z.object({ kind: z.literal("folder"), path: z.string().min(1) }),
   ]),
 });
-export const SkillsInstallResponse = z.object({ installedDir: z.string() });
+export const SkillsInstallResponse = z.object({
+  installed: z.array(z.object({ name: z.string() })),
+  /** Names of selected skills skipped because they were already installed. */
+  skipped: z.array(z.string()),
+});
 
 export const SkillsUninstallRequest = z.object({
   projectId: z.string().uuid(),
@@ -818,6 +851,7 @@ export const CommandSchemas = {
   "session.commands": { request: SessionCommandsRequest, response: SessionCommandsResponse },
   "project.commands": { request: ProjectCommandsRequest, response: ProjectCommandsResponse },
   "skills.list": { request: SkillsListRequest, response: SkillsListResponse },
+  "skills.scan": { request: SkillsScanRequest, response: SkillsScanResponse },
   "skills.install": { request: SkillsInstallRequest, response: SkillsInstallResponse },
   "skills.uninstall": { request: SkillsUninstallRequest, response: SkillsUninstallResponse },
   "session.archive": { request: SessionArchiveRequest, response: SessionArchiveResponse },

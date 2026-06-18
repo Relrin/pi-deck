@@ -2,10 +2,15 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { runGit } from "../../src/git/runner.js";
 import {
+  installSelectedSkills,
   installSkillFromFolder,
   listSkills,
+  normalizeRepoUrl,
   repoDirName,
+  repoSlug,
+  scanRepoSkills,
   uninstallSkill,
 } from "../../src/host/skills.js";
 
@@ -87,6 +92,77 @@ describe("installSkillFromFolder", () => {
     const src = await writeSkill(tmpDir, "dup-skill");
     await installSkillFromFolder(src, agentDir);
     expect(installSkillFromFolder(src, agentDir)).rejects.toThrow(/already exists/);
+  });
+});
+
+describe("normalizeRepoUrl", () => {
+  test("expands bare GitHub shorthands to https URLs", () => {
+    expect(normalizeRepoUrl("anthropics/skills")).toBe("https://github.com/anthropics/skills");
+    expect(normalizeRepoUrl("github.com/mattpocock/skills")).toBe(
+      "https://github.com/mattpocock/skills",
+    );
+  });
+
+  test("leaves full URLs, scp-style, and local paths untouched", () => {
+    expect(normalizeRepoUrl("https://github.com/anthropics/skills.git")).toBe(
+      "https://github.com/anthropics/skills.git",
+    );
+    expect(normalizeRepoUrl("git@github.com:badlogic/pi-skills.git")).toBe(
+      "git@github.com:badlogic/pi-skills.git",
+    );
+    expect(normalizeRepoUrl("/tmp/local/fixture-repo")).toBe("/tmp/local/fixture-repo");
+    expect(normalizeRepoUrl("C:\\Users\\me\\fixture-repo")).toBe("C:\\Users\\me\\fixture-repo");
+  });
+});
+
+describe("repoSlug", () => {
+  test("derives owner/repo from common git URL shapes", () => {
+    expect(repoSlug("https://github.com/anthropics/skills.git")).toBe("anthropics/skills");
+    expect(repoSlug("git@github.com:badlogic/pi-skills.git")).toBe("badlogic/pi-skills");
+  });
+});
+
+describe("scanRepoSkills + installSelectedSkills", () => {
+  /** Turn a directory holding skills into a committed git repo we can clone from. */
+  async function makeFixtureRepo(dir: string): Promise<void> {
+    const env = {
+      GIT_AUTHOR_NAME: "t",
+      GIT_AUTHOR_EMAIL: "t@t",
+      GIT_COMMITTER_NAME: "t",
+      GIT_COMMITTER_EMAIL: "t@t",
+    };
+    await runGit(dir, ["init"], { detectNotARepo: false });
+    await runGit(dir, ["add", "-A"], { detectNotARepo: false });
+    await runGit(dir, ["commit", "-m", "init"], { detectNotARepo: false, env });
+  }
+
+  test("scans a repo, then installs only the selected skills and skips already-installed ones", async () => {
+    // Two skills in a fixture repo; "alpha" is also already installed globally.
+    const repo = join(tmpDir, "fixture-repo");
+    await writeSkill(repo, "alpha");
+    await writeSkill(repo, "beta");
+    await makeFixtureRepo(repo);
+    await writeSkill(join(agentDir, "skills"), "alpha");
+
+    const scan = await scanRepoSkills(repo, agentDir);
+    const alpha = scan.skills.find((s) => s.name === "alpha");
+    const beta = scan.skills.find((s) => s.name === "beta");
+    expect(alpha?.alreadyInstalled).toBe(true);
+    expect(beta?.alreadyInstalled).toBe(false);
+
+    const result = await installSelectedSkills(
+      scan.scanId,
+      [alpha?.id ?? "", beta?.id ?? ""],
+      agentDir,
+    );
+
+    expect(result.installed.map((s) => s.name)).toContain("beta");
+    expect(result.skipped).toContain("alpha");
+    expect((await stat(join(agentDir, "skills", "beta", "SKILL.md"))).isFile()).toBe(true);
+  });
+
+  test("rejects installing against an unknown or consumed scan handle", async () => {
+    expect(installSelectedSkills("does-not-exist", ["x"], agentDir)).rejects.toThrow(/expired/);
   });
 });
 
