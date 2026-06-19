@@ -26,17 +26,6 @@ function StubSection({ title, kicker, plan, description }: StubProps) {
   );
 }
 
-export function McpServersSection() {
-  return (
-    <StubSection
-      title="MCP Servers"
-      kicker="Settings · MCP Servers"
-      plan="plan 011"
-      description="Register Model Context Protocol servers, scope their tools, and review their permissions."
-    />
-  );
-}
-
 export function KeybindsSection() {
   return (
     <StubSection

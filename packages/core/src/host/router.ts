@@ -40,6 +40,14 @@ import type { TerminalManager } from "../terminal/index.js";
 import type { ArtefactsTracker } from "./artefacts-tracker.js";
 import type { FsWatchManager } from "./fs-watch-manager.js";
 import type { GitWatchManager } from "./git-watch-manager.js";
+import {
+  getAdapterStatus,
+  listServers as listMcpServers,
+  type McpCatalogStore,
+  searchRegistry,
+  setProjectServer,
+  toAdapterEntry,
+} from "./mcp.js";
 import type { MetadataStore } from "./metadata-store.js";
 import { PlanFileWatcher } from "./plan-file-watcher.js";
 import type { ProviderManager } from "./provider-manager.js";
@@ -70,6 +78,9 @@ export interface RouterContext {
   terminalManager: TerminalManager;
   languageServerManager: LanguageServerManager;
   customLspServersStore: CustomLspServersStore;
+  mcpCatalogStore: McpCatalogStore;
+  /** Bundled pi-mcp-adapter version resolved by the desktop app, or null when absent. */
+  mcpAdapterVersion: string | null;
   hostVersion: string;
   protocolVersion: number;
 }
@@ -242,6 +253,69 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     const project = await ctx.metadataStore.readProject(parsed.projectId);
     try {
       await uninstallSkill({ filePath: parsed.filePath, baseDir: parsed.baseDir }, project?.path);
+    } catch (err) {
+      throw new RouterError("invalid_request", (err as Error).message);
+    }
+    return { ok: true as const };
+  },
+  "mcp.list": async (ctx, payload) => {
+    const parsed = CommandSchemas["mcp.list"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    const servers = await listMcpServers(project.path, ctx.mcpCatalogStore.list());
+    // Prefer the version the desktop app resolved from its own node_modules; fall back to
+    // probing the agent's extensions dir (covers a manual `pi install`).
+    const adapter = ctx.mcpAdapterVersion
+      ? { installed: true, version: ctx.mcpAdapterVersion }
+      : await getAdapterStatus();
+    return { servers, adapter };
+  },
+  "mcp.registrySearch": async (_ctx, payload) => {
+    const parsed = CommandSchemas["mcp.registrySearch"].request.parse(payload);
+    try {
+      return await searchRegistry(parsed.query, parsed.cursor);
+    } catch (err) {
+      throw new RouterError("registry_failed", (err as Error).message);
+    }
+  },
+  "mcp.install": async (ctx, payload) => {
+    const parsed = CommandSchemas["mcp.install"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      await ctx.mcpCatalogStore.upsert(parsed.spec);
+      await setProjectServer(project.path, parsed.spec.name, toAdapterEntry(parsed.spec));
+    } catch (err) {
+      throw new RouterError("invalid_request", (err as Error).message);
+    }
+    return { ok: true as const, name: parsed.spec.name };
+  },
+  "mcp.setProjectEnabled": async (ctx, payload) => {
+    const parsed = CommandSchemas["mcp.setProjectEnabled"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      if (parsed.enabled) {
+        const spec = ctx.mcpCatalogStore.get(parsed.name);
+        if (!spec) {
+          throw new Error(`"${parsed.name}" is not in the catalog — reinstall it first`);
+        }
+        await setProjectServer(project.path, parsed.name, toAdapterEntry(spec));
+      } else {
+        await setProjectServer(project.path, parsed.name, null);
+      }
+    } catch (err) {
+      throw new RouterError("invalid_request", (err as Error).message);
+    }
+    return { ok: true as const };
+  },
+  "mcp.uninstall": async (ctx, payload) => {
+    const parsed = CommandSchemas["mcp.uninstall"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      await ctx.mcpCatalogStore.delete(parsed.name);
+      await setProjectServer(project.path, parsed.name, null);
     } catch (err) {
       throw new RouterError("invalid_request", (err as Error).message);
     }

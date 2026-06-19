@@ -230,6 +230,101 @@ export const SkillsUninstallRequest = z.object({
 });
 export const SkillsUninstallResponse = z.object({ ok: z.literal(true) });
 
+/**
+ * MCP servers. pi-deck keeps its own catalog of installed servers (a JSON file in the host's
+ * userData dir, never read by the adapter); a project's `.pi/mcp.json` is the authoritative
+ * enabled set the pi-mcp-adapter reads. A catalog spec carries the adapter-recognized config
+ * fields plus display-only metadata — only the adapter-recognized subset is written into
+ * `.pi/mcp.json`.
+ */
+export const McpTransportSchema = z.enum(["stdio", "http"]);
+export const McpLifecycleSchema = z.enum(["lazy", "eager", "keep-alive"]);
+
+export const McpServerSpecSchema = z.object({
+  /** Stable key used under `mcpServers` in mcp.json. */
+  name: z.string().min(1),
+  transport: McpTransportSchema,
+  /** stdio transport. */
+  command: z.string().min(1).optional(),
+  args: z.array(z.string()).optional(),
+  /** http transport. */
+  url: z.string().min(1).optional(),
+  env: z.record(z.string(), z.string()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+  /** Only set when the registry/source advertises auth. */
+  auth: z.enum(["bearer", "oauth"]).optional(),
+  lifecycle: McpLifecycleSchema.default("lazy"),
+  idleTimeout: z.number().int().positive().optional(),
+  /** Display-only catalog fields — never written into mcp.json. */
+  description: z.string().optional(),
+  publisher: z.string().optional(),
+  packageId: z.string().optional(),
+});
+export type McpServerSpec = z.infer<typeof McpServerSpecSchema>;
+
+export const McpServerInfoSchema = McpServerSpecSchema.extend({
+  /** True when the server is present in the active project's `.pi/mcp.json`. */
+  enabledInProject: z.boolean(),
+  /** Where the server is known from: pi-deck catalog, the project file, or both. */
+  source: z.enum(["catalog", "project", "both"]),
+});
+export type McpServerInfo = z.infer<typeof McpServerInfoSchema>;
+
+/** A normalized registry result, with a ready-to-install spec derived host-side. */
+export const RegistryServerSchema = z.object({
+  /** Registry reverse-DNS name (stable list key). */
+  id: z.string(),
+  /** Friendly display name. */
+  name: z.string(),
+  description: z.string(),
+  publisher: z.string(),
+  transport: McpTransportSchema,
+  packageId: z.string(),
+  spec: McpServerSpecSchema,
+});
+export type RegistryServer = z.infer<typeof RegistryServerSchema>;
+
+export const McpAdapterStatusSchema = z.object({
+  installed: z.boolean(),
+  version: z.string().nullable(),
+});
+
+export const McpListRequest = z.object({ projectId: z.string().uuid() });
+export const McpListResponse = z.object({
+  servers: z.array(McpServerInfoSchema),
+  adapter: McpAdapterStatusSchema,
+});
+
+export const McpRegistrySearchRequest = z.object({
+  /** Name substring (the official registry only supports name search). */
+  query: z.string().optional(),
+  /** Opaque pagination cursor from a prior response. */
+  cursor: z.string().optional(),
+});
+export const McpRegistrySearchResponse = z.object({
+  servers: z.array(RegistryServerSchema),
+  nextCursor: z.string().optional(),
+});
+
+export const McpInstallRequest = z.object({
+  projectId: z.string().uuid(),
+  spec: McpServerSpecSchema,
+});
+export const McpInstallResponse = z.object({ ok: z.literal(true), name: z.string() });
+
+export const McpSetProjectEnabledRequest = z.object({
+  projectId: z.string().uuid(),
+  name: z.string().min(1),
+  enabled: z.boolean(),
+});
+export const McpSetProjectEnabledResponse = z.object({ ok: z.literal(true) });
+
+export const McpUninstallRequest = z.object({
+  projectId: z.string().uuid(),
+  name: z.string().min(1),
+});
+export const McpUninstallResponse = z.object({ ok: z.literal(true) });
+
 export const SessionArchiveRequest = z.object({ sessionId: z.string().min(1) });
 export const SessionArchiveResponse = z.object({ ok: z.literal(true) });
 
@@ -854,6 +949,17 @@ export const CommandSchemas = {
   "skills.scan": { request: SkillsScanRequest, response: SkillsScanResponse },
   "skills.install": { request: SkillsInstallRequest, response: SkillsInstallResponse },
   "skills.uninstall": { request: SkillsUninstallRequest, response: SkillsUninstallResponse },
+  "mcp.list": { request: McpListRequest, response: McpListResponse },
+  "mcp.registrySearch": {
+    request: McpRegistrySearchRequest,
+    response: McpRegistrySearchResponse,
+  },
+  "mcp.install": { request: McpInstallRequest, response: McpInstallResponse },
+  "mcp.setProjectEnabled": {
+    request: McpSetProjectEnabledRequest,
+    response: McpSetProjectEnabledResponse,
+  },
+  "mcp.uninstall": { request: McpUninstallRequest, response: McpUninstallResponse },
   "session.archive": { request: SessionArchiveRequest, response: SessionArchiveResponse },
   "session.unarchive": { request: SessionUnarchiveRequest, response: SessionUnarchiveResponse },
   "session.delete": { request: SessionDeleteRequest, response: SessionDeleteResponse },

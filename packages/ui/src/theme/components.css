@@ -3317,6 +3317,22 @@
     box-shadow: 0 0 0 6px oklch(0.78 0.16 145 / 0);
   }
 }
+.pid-mcp-installing-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mod);
+  animation: pid-pulse-amber 1.2s ease-out infinite;
+}
+@keyframes pid-pulse-amber {
+  0% {
+    box-shadow: 0 0 0 0 var(--mod-soft);
+  }
+  100% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
 .pid-chat-header-title {
   appearance: none;
   background: transparent;

@@ -1,7 +1,18 @@
+import { createRequire } from "node:module";
 import { join } from "node:path";
 import { setTrashImpl } from "@pi-deck/core/fs/index.js";
 import { startHost } from "@pi-deck/core/host/index.js";
 import { type App, shell } from "electron";
+
+function resolveMcpAdapterVersion(): string | null {
+  try {
+    const require = createRequire(import.meta.url);
+    const pkg = require("pi-mcp-adapter/package.json") as { version?: unknown };
+    return typeof pkg.version === "string" ? pkg.version : null;
+  } catch {
+    return null;
+  }
+}
 
 export interface BackendHandle {
   port: number;
@@ -27,6 +38,7 @@ export async function startBackend(app: App): Promise<BackendHandle> {
   const host = await startHost({
     userDataDir,
     hostVersion: app.getVersion() ?? "dev",
+    mcpAdapterVersion: resolveMcpAdapterVersion(),
     worker: {
       entry: workerEntry,
       execPath: process.execPath,

@@ -6,14 +6,10 @@ import { usesCustomWindowControls } from "../../lib/platform";
 import { AppearanceSection } from "./sections/AppearanceSection";
 import { EditorSection } from "./sections/EditorSection";
 import { GitGitHubSection } from "./sections/GitGitHubSection";
+import { McpServersSection } from "./sections/McpServersSection";
 import { ProvidersSection } from "./sections/ProvidersSection";
 import { SkillsSection } from "./sections/SkillsSection";
-import {
-  AdvancedSection,
-  KeybindsSection,
-  McpServersSection,
-  PrivacySection,
-} from "./sections/stubs";
+import { AdvancedSection, KeybindsSection, PrivacySection } from "./sections/stubs";
 import { TerminalSection } from "./sections/TerminalSection";
 import { ToolsSection } from "./sections/ToolsSection";
 import { type SettingsSectionId, useSettingsStore } from "./useSettingsStore";
@@ -29,9 +25,9 @@ const NAV_ITEMS: NavItem[] = [
   { id: "agent-models", label: "Providers & Models", stub: false },
   { id: "tools", label: "Tools", stub: false },
   { id: "skills", label: "Skills", stub: false },
-  { id: "git-github", label: "Git & GitHub", stub: false },
-  { id: "mcp-servers", label: "MCP Servers", stub: true },
+  { id: "mcp-servers", label: "MCP Servers", stub: false },
   { id: "editor", label: "Editor", stub: false },
+  { id: "git-github", label: "Git & GitHub", stub: false },
   { id: "terminal", label: "Terminal", stub: false },
   { id: "keybinds", label: "Keybinds", stub: true },
   { id: "privacy", label: "Privacy", stub: true },

@@ -6,6 +6,7 @@ import { ArtefactsTracker } from "./artefacts-tracker.js";
 import { generateToken } from "./auth.js";
 import { FsWatchManager } from "./fs-watch-manager.js";
 import { GitWatchManager } from "./git-watch-manager.js";
+import { McpCatalogStore } from "./mcp.js";
 import { MetadataStore } from "./metadata-store.js";
 import { PlanFileWatcher } from "./plan-file-watcher.js";
 import { ProviderManager } from "./provider-manager.js";
@@ -20,6 +21,7 @@ import { startWsServer, type WsServerHandle } from "./ws-server.js";
 export interface StartHostOptions {
   userDataDir: string;
   hostVersion: string;
+  mcpAdapterVersion?: string | null;
   worker: {
     entry: string;
     execPath: string;
@@ -119,6 +121,9 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
   await customLspServersStore.load();
   languageServerManager.setCustomServers(customLspServersStore.toDefs());
 
+  const mcpCatalogStore = new McpCatalogStore(opts.userDataDir);
+  await mcpCatalogStore.load();
+
   const router: RouterContext = {
     metadataStore,
     sessionManager,
@@ -133,6 +138,8 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
     terminalManager,
     languageServerManager,
     customLspServersStore,
+    mcpCatalogStore,
+    mcpAdapterVersion: opts.mcpAdapterVersion ?? null,
     hostVersion: opts.hostVersion,
     protocolVersion: PROTOCOL_VERSION,
   };

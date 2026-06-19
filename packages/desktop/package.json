@@ -25,6 +25,7 @@
     "@lydell/node-pty": "1.2.0-beta.12",
     "@pi-deck/core": "workspace:*",
     "@pi-deck/ui": "workspace:*",
+    "pi-mcp-adapter": "2.10.0",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },
