@@ -7,6 +7,7 @@ import {
   McpServerSpecSchema,
   type RegistryServer,
 } from "../protocol/commands.js";
+import { type McpSecretsStore, mcpTokenEnvVar } from "./mcp-secrets.js";
 
 /**
  * Host-side MCP server management for the pi-mcp-adapter.
@@ -110,6 +111,11 @@ function projectMcpPath(projectPath: string): string {
   return join(projectPath, ".pi", "mcp.json");
 }
 
+/** Absolute path of a project's `.pi/mcp.json` — the per-project install location. */
+export function projectMcpConfigPath(projectPath: string): string {
+  return projectMcpPath(projectPath);
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -162,8 +168,14 @@ export function toAdapterEntry(spec: McpServerSpec): Record<string, unknown> {
   }
   if (spec.env) entry.env = spec.env;
   if (spec.auth) entry.auth = spec.auth;
+  if (spec.bearerTokenEnv) entry.bearerTokenEnv = spec.bearerTokenEnv;
   if (spec.lifecycle) entry.lifecycle = spec.lifecycle;
-  if (spec.idleTimeout) entry.idleTimeout = spec.idleTimeout;
+  // Idle timeout only disconnects lazy servers; the adapter ignores it otherwise. 0 = never.
+  if (spec.lifecycle === "lazy" && spec.idleTimeout !== undefined) {
+    entry.idleTimeout = spec.idleTimeout;
+  }
+  // "direct" promotes every tool to a first-class tool; "proxy" (default) omits the key.
+  if (spec.expose === "direct") entry.directTools = true;
   return entry;
 }
 
@@ -174,8 +186,11 @@ function stringRecord(value: unknown): Record<string, string> | undefined {
   return Object.keys(out).length ? out : undefined;
 }
 
+/** Server info before the adapter's per-server cache stats are attached. */
+type McpServerBaseInfo = Omit<McpServerInfo, "toolCount" | "cached" | "hasToken">;
+
 /** Build a display spec for a server that lives only in a project file (hand-added). */
-function specFromProjectEntry(name: string, value: unknown): McpServerInfo {
+function specFromProjectEntry(name: string, value: unknown): McpServerBaseInfo {
   const entry = asRecord(value);
   const url = typeof entry.url === "string" ? entry.url : undefined;
   const lifecycle =
@@ -189,33 +204,160 @@ function specFromProjectEntry(name: string, value: unknown): McpServerInfo {
     env: stringRecord(entry.env),
     headers: stringRecord(entry.headers),
     auth: entry.auth === "bearer" || entry.auth === "oauth" ? entry.auth : undefined,
+    bearerTokenEnv: typeof entry.bearerTokenEnv === "string" ? entry.bearerTokenEnv : undefined,
     lifecycle,
     idleTimeout: typeof entry.idleTimeout === "number" ? entry.idleTimeout : undefined,
+    expose: entry.directTools ? "direct" : "proxy",
     enabledInProject: true,
     source: "project",
   };
 }
 
+/** Read the adapter's tool-metadata cache (`<agentDir>/mcp-cache.json`); best-effort. */
+export async function loadAdapterCache(
+  agentDir = getAgentDir(),
+): Promise<Map<string, { toolCount: number; cachedAt: number }>> {
+  const out = new Map<string, { toolCount: number; cachedAt: number }>();
+  try {
+    const parsed = JSON.parse(await readFile(join(agentDir, "mcp-cache.json"), "utf8"));
+    const servers = asRecord(asRecord(parsed).servers);
+    for (const [name, value] of Object.entries(servers)) {
+      const entry = asRecord(value);
+      const tools = Array.isArray(entry.tools) ? entry.tools.length : 0;
+      const resources = Array.isArray(entry.resources) ? entry.resources.length : 0;
+      const cachedAt = typeof entry.cachedAt === "number" ? entry.cachedAt : 0;
+      out.set(name, { toolCount: tools + resources, cachedAt });
+    }
+  } catch {
+    /* no cache yet */
+  }
+  return out;
+}
+
+/** Drop a server's cached metadata so the adapter reconnects and re-discovers tools next run. */
+export async function clearAdapterCacheEntry(
+  name: string,
+  agentDir = getAgentDir(),
+): Promise<void> {
+  const file = join(agentDir, "mcp-cache.json");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(await readFile(file, "utf8"));
+  } catch {
+    return;
+  }
+  const servers = asRecord(asRecord(parsed).servers);
+  if (!(name in servers)) return;
+  delete servers[name];
+  const next = { ...asRecord(parsed), servers };
+  const tmp = `${file}.tmp`;
+  await writeFile(tmp, `${JSON.stringify(next, null, 2)}\n`, "utf8");
+  await rename(tmp, file);
+}
+
 /**
  * The servers shown on the MCP page for a project: the union of the catalog and whatever the
- * project's `.pi/mcp.json` already enables, with per-project enablement flags.
+ * project's `.pi/mcp.json` already enables, with per-project enablement flags and the adapter's
+ * cached tool counts.
  */
 export async function listServers(
   projectPath: string,
   catalog: McpServerSpec[],
+  opts: { agentDir?: string; tokenNames?: Set<string> } = {},
 ): Promise<McpServerInfo[]> {
+  const agentDir = opts.agentDir ?? getAgentDir();
+  const tokenNames = opts.tokenNames ?? new Set<string>();
   const { mcpServers } = await readProjectMcp(projectPath);
+  const cache = await loadAdapterCache(agentDir);
   const enabled = new Set(Object.keys(mcpServers));
+  const attach = (base: McpServerBaseInfo): McpServerInfo => {
+    const hit = cache.get(base.name);
+    return {
+      ...base,
+      toolCount: hit ? hit.toolCount : null,
+      cached: hit !== undefined,
+      hasToken: tokenNames.has(base.name),
+    };
+  };
   const byName = new Map<string, McpServerInfo>();
   for (const spec of catalog) {
     const on = enabled.has(spec.name);
-    byName.set(spec.name, { ...spec, enabledInProject: on, source: on ? "both" : "catalog" });
+    byName.set(
+      spec.name,
+      attach({ ...spec, enabledInProject: on, source: on ? "both" : "catalog" }),
+    );
   }
   for (const name of enabled) {
     if (byName.has(name)) continue;
-    byName.set(name, specFromProjectEntry(name, mcpServers[name]));
+    byName.set(name, attach(specFromProjectEntry(name, mcpServers[name])));
   }
   return [...byName.values()];
+}
+
+/**
+ * Apply a Configure-panel change. A catalog server is updated in the catalog and — when it's
+ * enabled for the project — its `.pi/mcp.json` entry is re-written. A project-only (hand-added)
+ * server is edited in place in the project file.
+ */
+export async function applyServerConfig(
+  catalog: McpCatalogStore,
+  projectPath: string,
+  name: string,
+  changes: Partial<Pick<McpServerSpec, "lifecycle" | "expose" | "idleTimeout">>,
+): Promise<void> {
+  const inCatalog = catalog.get(name);
+  if (inCatalog) {
+    const updated: McpServerSpec = { ...inCatalog, ...changes };
+    await catalog.upsert(updated);
+    const { mcpServers } = await readProjectMcp(projectPath);
+    if (name in mcpServers) await setProjectServer(projectPath, name, toAdapterEntry(updated));
+    return;
+  }
+  const { mcpServers } = await readProjectMcp(projectPath);
+  if (!(name in mcpServers)) throw new Error(`"${name}" is not installed`);
+  const updated: McpServerSpec = { ...specFromProjectEntry(name, mcpServers[name]), ...changes };
+  await setProjectServer(projectPath, name, toAdapterEntry(updated));
+}
+
+/**
+ * Store (or clear, with `token: null`) a server's bearer token. The secret is encrypted in the
+ * secrets store; the config only gains a `bearerTokenEnv` reference (+ `auth: "bearer"`). Catalog
+ * servers update the catalog and their enabled project entry; project-only servers are edited in
+ * place. The decrypted token reaches the adapter as a worker env var on the next spawn.
+ */
+export async function applyServerToken(
+  catalog: McpCatalogStore,
+  secrets: McpSecretsStore,
+  projectPath: string,
+  name: string,
+  token: string | null,
+): Promise<void> {
+  const trimmed = token?.trim() ?? "";
+  const set = trimmed.length > 0;
+  if (set) await secrets.set(name, trimmed);
+  else await secrets.delete(name);
+
+  const apply = (spec: McpServerSpec): McpServerSpec => {
+    if (set) return { ...spec, auth: "bearer", bearerTokenEnv: mcpTokenEnvVar(name) };
+    const next: McpServerSpec = { ...spec };
+    delete next.bearerTokenEnv;
+    return next;
+  };
+
+  const inCatalog = catalog.get(name);
+  if (inCatalog) {
+    const updated = apply(inCatalog);
+    await catalog.upsert(updated);
+    const { mcpServers } = await readProjectMcp(projectPath);
+    if (name in mcpServers) await setProjectServer(projectPath, name, toAdapterEntry(updated));
+    return;
+  }
+  // Project-only server: edit the entry in place. (If it isn't in the file, the secret is still
+  // saved and will apply once the server is enabled.)
+  const { mcpServers } = await readProjectMcp(projectPath);
+  if (!(name in mcpServers)) return;
+  const updated = apply(specFromProjectEntry(name, mcpServers[name]));
+  await setProjectServer(projectPath, name, toAdapterEntry(updated));
 }
 
 /* ============================================================

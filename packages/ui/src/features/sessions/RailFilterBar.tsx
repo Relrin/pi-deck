@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Search, Sliders } from "../../components/icons/index.js";
+import { Search, Settings2 } from "../../components/icons/index.js";
 import { SessionsFilterPopover } from "./SessionsFilterPopover";
 
 export function RailFilterBar({
@@ -43,7 +43,7 @@ export function RailFilterBar({
         aria-label="Sort, group, and filter sessions"
         onClick={() => setOpen((v) => !v)}
       >
-        <Sliders size={12} />
+        <Settings2 size={12} />
       </button>
       {open ? <SessionsFilterPopover onClose={() => setOpen(false)} /> : null}
     </div>

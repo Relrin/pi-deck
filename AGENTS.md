@@ -117,7 +117,6 @@ bun run build         # Production build
 ## Do not
 
 - Modify pi's source or wrap its protocol in incompatible ways. We are building *client* on the top of original Pi, not a fork.
-- Add MCP support. pi doesn't have it and we don't either. (If a user wants MCP, they can install or write our own a pi extension.)
 - Touch `~/.pi/` directly except for the two documented provider files (see *Where data lives*). Everywhere else, go through pi's API.
 - Log API keys, OAuth tokens, or session content to disk outside the documented locations. Never log provider credentials in any form — even truncated.
 - Send API keys to the renderer. The renderer can request "is provider X authenticated?" but the secret itself stays in the host.

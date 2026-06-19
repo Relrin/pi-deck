@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { join as pathJoin } from "node:path";
 import {
   type AgentSession,
@@ -22,6 +24,36 @@ import { EVENT_SESSION_TOOL_APPROVAL_REQUESTED } from "../protocol/events.js";
 import { validateAndChdir } from "./cwd.js";
 
 export type EventEmitter = (topic: string, payload: unknown) => void;
+
+/**
+ * Absolute path to the bundled pi-mcp-adapter extension entry (TypeScript source pi loads via
+ * jiti), or undefined when the package isn't installed. Resolved from this module's location,
+ * which at runtime lives alongside the desktop app's node_modules.
+ */
+function resolveMcpAdapterPath(): string | undefined {
+  try {
+    return createRequire(import.meta.url).resolve("pi-mcp-adapter/index.ts");
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * True when the project's `.pi/mcp.json` (or the agent's global `mcp.json`) defines at least one
+ * server. We only load the adapter then, so projects without MCP don't pay for its proxy tool.
+ */
+async function hasMcpServers(projectPath: string, agentDir: string): Promise<boolean> {
+  for (const file of [pathJoin(projectPath, ".pi", "mcp.json"), pathJoin(agentDir, "mcp.json")]) {
+    try {
+      const parsed = JSON.parse(await readFile(file, "utf8")) as { mcpServers?: unknown };
+      const servers = parsed.mcpServers;
+      if (servers && typeof servers === "object" && Object.keys(servers).length > 0) return true;
+    } catch {
+      /* missing / malformed config is fine */
+    }
+  }
+  return false;
+}
 
 export interface HistoryToolCall {
   id: string;
@@ -149,17 +181,19 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
   };
 
   const agentDir = getAgentDir();
+  // MCP support is a pi extension, not built in: point pi at the bundled pi-mcp-adapter so it
+  // reads `.pi/mcp.json` and bridges MCP servers into the agent's tools. Only when the project
+  // actually configures servers (otherwise the extension's proxy tool is dead weight).
+  const mcpAdapterPath = resolveMcpAdapterPath();
+  const loadMcpAdapter = mcpAdapterPath ? await hasMcpServers(params.projectPath, agentDir) : false;
   const resourceLoader = new DefaultResourceLoader({
     cwd: params.projectPath,
     agentDir,
     settingsManager: SettingsManager.create(params.projectPath, agentDir),
     extensionFactories: [agentModeController.factory, attachmentsController.factory, commandsProbe],
+    ...(loadMcpAdapter && mcpAdapterPath ? { additionalExtensionPaths: [mcpAdapterPath] } : {}),
   });
-  // pi 0.74's `createAgentSession` only auto-calls `reload()` on the loader it constructs
-  // itself; when we pass our own (which we must, to register the inline factories), we own
-  // the lifecycle. Without this call the factories never run, so `pi.on("input", ...)` and
-  // `pi.on("tool_call", ...)` are never registered and our built-in extensions are silent
-  // no-ops.
+
   await resourceLoader.reload();
 
   // Resume from a persisted session file when we have one — otherwise pi creates a brand
@@ -196,6 +230,18 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
   const unsubscribe = session.subscribe((event: AgentSessionEvent) => {
     forwardEvent(event, emit, session);
   });
+
+  // Fire the extension `session_start` lifecycle. pi only emits it from bindExtensions()/reload(),
+  // so a headless host must call this itself — otherwise path-loaded extensions that initialize on
+  // session_start (the MCP adapter) never run and their tools report "not initialized".
+  try {
+    await session.bindExtensions({});
+  } catch (err) {
+    emit("agent.event", {
+      type: "prompt_error",
+      message: `Extension startup failed: ${err instanceof Error ? err.message : String(err)}`,
+    });
+  }
 
   return {
     session,

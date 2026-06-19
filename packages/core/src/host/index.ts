@@ -7,6 +7,7 @@ import { generateToken } from "./auth.js";
 import { FsWatchManager } from "./fs-watch-manager.js";
 import { GitWatchManager } from "./git-watch-manager.js";
 import { McpCatalogStore } from "./mcp.js";
+import { McpSecretsStore } from "./mcp-secrets.js";
 import { MetadataStore } from "./metadata-store.js";
 import { PlanFileWatcher } from "./plan-file-watcher.js";
 import { ProviderManager } from "./provider-manager.js";
@@ -17,6 +18,8 @@ import { ThemeManager } from "./themes/index.js";
 import { TurnTracker } from "./turn-tracker.js";
 import { WorkerHandle, type WorkerSpawnOptions } from "./worker-handle.js";
 import { startWsServer, type WsServerHandle } from "./ws-server.js";
+
+export { type SecretCrypto, setSecretCrypto } from "./mcp-secrets.js";
 
 export interface StartHostOptions {
   userDataDir: string;
@@ -43,6 +46,10 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
 
   const providerManager = await ProviderManager.create(opts.userDataDir);
 
+  // Loaded before any worker spawns so the first one already carries MCP token env vars.
+  const mcpSecretsStore = new McpSecretsStore(opts.userDataDir);
+  await mcpSecretsStore.load();
+
   let wsHandle: WsServerHandle | undefined;
 
   const spawnWorker = (): WorkerHandle => {
@@ -50,7 +57,8 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
       workerEntry: opts.worker.entry,
       execPath: opts.worker.execPath,
       execArgv: opts.worker.execArgv,
-      env: opts.worker.env,
+      // Inject decrypted MCP bearer tokens as env vars the adapter resolves via bearerTokenEnv.
+      env: { ...opts.worker.env, ...mcpSecretsStore.envVars() },
     };
     return new WorkerHandle(spawnOpts);
   };
@@ -125,6 +133,7 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
   await mcpCatalogStore.load();
 
   const router: RouterContext = {
+    mcpSecretsStore,
     metadataStore,
     sessionManager,
     themeManager,

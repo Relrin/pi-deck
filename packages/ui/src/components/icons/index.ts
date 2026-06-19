@@ -56,6 +56,7 @@ export {
   Search,
   Send,
   Settings,
+  Settings2,
   ShieldCheck,
   Sliders,
   Sparkles,

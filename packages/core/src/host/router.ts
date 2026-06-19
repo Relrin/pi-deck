@@ -41,13 +41,18 @@ import type { ArtefactsTracker } from "./artefacts-tracker.js";
 import type { FsWatchManager } from "./fs-watch-manager.js";
 import type { GitWatchManager } from "./git-watch-manager.js";
 import {
+  applyServerConfig,
+  applyServerToken,
+  clearAdapterCacheEntry,
   getAdapterStatus,
   listServers as listMcpServers,
   type McpCatalogStore,
+  projectMcpConfigPath,
   searchRegistry,
   setProjectServer,
   toAdapterEntry,
 } from "./mcp.js";
+import type { McpSecretsStore } from "./mcp-secrets.js";
 import type { MetadataStore } from "./metadata-store.js";
 import { PlanFileWatcher } from "./plan-file-watcher.js";
 import type { ProviderManager } from "./provider-manager.js";
@@ -79,6 +84,7 @@ export interface RouterContext {
   languageServerManager: LanguageServerManager;
   customLspServersStore: CustomLspServersStore;
   mcpCatalogStore: McpCatalogStore;
+  mcpSecretsStore: McpSecretsStore;
   /** Bundled pi-mcp-adapter version resolved by the desktop app, or null when absent. */
   mcpAdapterVersion: string | null;
   hostVersion: string;
@@ -262,13 +268,15 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     const parsed = CommandSchemas["mcp.list"].request.parse(payload);
     const project = await ctx.metadataStore.readProject(parsed.projectId);
     if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
-    const servers = await listMcpServers(project.path, ctx.mcpCatalogStore.list());
+    const servers = await listMcpServers(project.path, ctx.mcpCatalogStore.list(), {
+      tokenNames: new Set(ctx.mcpSecretsStore.names()),
+    });
     // Prefer the version the desktop app resolved from its own node_modules; fall back to
     // probing the agent's extensions dir (covers a manual `pi install`).
     const adapter = ctx.mcpAdapterVersion
       ? { installed: true, version: ctx.mcpAdapterVersion }
       : await getAdapterStatus();
-    return { servers, adapter };
+    return { servers, adapter, configPath: projectMcpConfigPath(project.path) };
   },
   "mcp.registrySearch": async (_ctx, payload) => {
     const parsed = CommandSchemas["mcp.registrySearch"].request.parse(payload);
@@ -316,6 +324,47 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     try {
       await ctx.mcpCatalogStore.delete(parsed.name);
       await setProjectServer(project.path, parsed.name, null);
+    } catch (err) {
+      throw new RouterError("invalid_request", (err as Error).message);
+    }
+    return { ok: true as const };
+  },
+  "mcp.setConfig": async (ctx, payload) => {
+    const parsed = CommandSchemas["mcp.setConfig"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    const changes: Partial<{
+      lifecycle: typeof parsed.lifecycle;
+      expose: typeof parsed.expose;
+      idleTimeout: number;
+    }> = {};
+    if (parsed.lifecycle !== undefined) changes.lifecycle = parsed.lifecycle;
+    if (parsed.expose !== undefined) changes.expose = parsed.expose;
+    if (parsed.idleTimeout !== undefined) changes.idleTimeout = parsed.idleTimeout;
+    try {
+      await applyServerConfig(ctx.mcpCatalogStore, project.path, parsed.name, changes);
+    } catch (err) {
+      throw new RouterError("invalid_request", (err as Error).message);
+    }
+    return { ok: true as const };
+  },
+  "mcp.reconnect": async (_ctx, payload) => {
+    const parsed = CommandSchemas["mcp.reconnect"].request.parse(payload);
+    await clearAdapterCacheEntry(parsed.name);
+    return { ok: true as const };
+  },
+  "mcp.setToken": async (ctx, payload) => {
+    const parsed = CommandSchemas["mcp.setToken"].request.parse(payload);
+    const project = await ctx.metadataStore.readProject(parsed.projectId);
+    if (!project) throw new RouterError("not_found", `Project ${parsed.projectId} not found`);
+    try {
+      await applyServerToken(
+        ctx.mcpCatalogStore,
+        ctx.mcpSecretsStore,
+        project.path,
+        parsed.name,
+        parsed.token,
+      );
     } catch (err) {
       throw new RouterError("invalid_request", (err as Error).message);
     }

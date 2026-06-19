@@ -253,8 +253,14 @@ export const McpServerSpecSchema = z.object({
   headers: z.record(z.string(), z.string()).optional(),
   /** Only set when the registry/source advertises auth. */
   auth: z.enum(["bearer", "oauth"]).optional(),
+  /** Env var the adapter reads the bearer token from; the secret itself is stored encrypted. */
+  bearerTokenEnv: z.string().optional(),
   lifecycle: McpLifecycleSchema.default("lazy"),
-  idleTimeout: z.number().int().positive().optional(),
+  /** Idle disconnect in minutes; 0 = never. Only meaningful for the lazy lifecycle. */
+  idleTimeout: z.number().int().nonnegative().optional(),
+  /** "proxy" (default) routes through the single mcp tool; "direct" promotes the server's
+   * tools as first-class tools (writes `directTools: true`). */
+  expose: z.enum(["proxy", "direct"]).optional(),
   /** Display-only catalog fields — never written into mcp.json. */
   description: z.string().optional(),
   publisher: z.string().optional(),
@@ -267,6 +273,12 @@ export const McpServerInfoSchema = McpServerSpecSchema.extend({
   enabledInProject: z.boolean(),
   /** Where the server is known from: pi-deck catalog, the project file, or both. */
   source: z.enum(["catalog", "project", "both"]),
+  /** Tool count from the adapter's metadata cache, or null when it hasn't been connected. */
+  toolCount: z.number().int().nonnegative().nullable(),
+  /** Whether the adapter has cached this server's tool metadata. */
+  cached: z.boolean(),
+  /** Whether an encrypted bearer token is stored for this server. */
+  hasToken: z.boolean(),
 });
 export type McpServerInfo = z.infer<typeof McpServerInfoSchema>;
 
@@ -293,6 +305,8 @@ export const McpListRequest = z.object({ projectId: z.string().uuid() });
 export const McpListResponse = z.object({
   servers: z.array(McpServerInfoSchema),
   adapter: McpAdapterStatusSchema,
+  /** Absolute path of the project's `.pi/mcp.json` (the install location). */
+  configPath: z.string(),
 });
 
 export const McpRegistrySearchRequest = z.object({
@@ -324,6 +338,29 @@ export const McpUninstallRequest = z.object({
   name: z.string().min(1),
 });
 export const McpUninstallResponse = z.object({ ok: z.literal(true) });
+
+/** Update a server's runtime config (Configure panel). Re-writes the project entry if enabled. */
+export const McpSetConfigRequest = z.object({
+  projectId: z.string().uuid(),
+  name: z.string().min(1),
+  lifecycle: McpLifecycleSchema.optional(),
+  expose: z.enum(["proxy", "direct"]).optional(),
+  /** Minutes; 0 = never. */
+  idleTimeout: z.number().int().nonnegative().optional(),
+});
+export const McpSetConfigResponse = z.object({ ok: z.literal(true) });
+
+/** Drop the adapter's cached tool metadata for a server so it reconnects on next use. */
+export const McpReconnectRequest = z.object({ name: z.string().min(1) });
+export const McpReconnectResponse = z.object({ ok: z.literal(true) });
+
+/** Store (or clear, with `token: null`) a server's encrypted bearer token. Renderer → host only. */
+export const McpSetTokenRequest = z.object({
+  projectId: z.string().uuid(),
+  name: z.string().min(1),
+  token: z.string().nullable(),
+});
+export const McpSetTokenResponse = z.object({ ok: z.literal(true) });
 
 export const SessionArchiveRequest = z.object({ sessionId: z.string().min(1) });
 export const SessionArchiveResponse = z.object({ ok: z.literal(true) });
@@ -960,6 +997,9 @@ export const CommandSchemas = {
     response: McpSetProjectEnabledResponse,
   },
   "mcp.uninstall": { request: McpUninstallRequest, response: McpUninstallResponse },
+  "mcp.setConfig": { request: McpSetConfigRequest, response: McpSetConfigResponse },
+  "mcp.reconnect": { request: McpReconnectRequest, response: McpReconnectResponse },
+  "mcp.setToken": { request: McpSetTokenRequest, response: McpSetTokenResponse },
   "session.archive": { request: SessionArchiveRequest, response: SessionArchiveResponse },
   "session.unarchive": { request: SessionUnarchiveRequest, response: SessionUnarchiveResponse },
   "session.delete": { request: SessionDeleteRequest, response: SessionDeleteResponse },

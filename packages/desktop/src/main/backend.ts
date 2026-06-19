@@ -1,8 +1,8 @@
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { setTrashImpl } from "@pi-deck/core/fs/index.js";
-import { startHost } from "@pi-deck/core/host/index.js";
-import { type App, shell } from "electron";
+import { setSecretCrypto, startHost } from "@pi-deck/core/host/index.js";
+import { type App, safeStorage, shell } from "electron";
 
 function resolveMcpAdapterVersion(): string | null {
   try {
@@ -23,6 +23,13 @@ export interface BackendHandle {
 export async function startBackend(app: App): Promise<BackendHandle> {
   setTrashImpl(async (absPath) => {
     await shell.trashItem(absPath);
+  });
+
+  // OS-backed encryption for MCP bearer tokens (stored encrypted, never written to mcp.json).
+  setSecretCrypto({
+    available: () => safeStorage.isEncryptionAvailable(),
+    encrypt: (plain) => safeStorage.encryptString(plain).toString("base64"),
+    decrypt: (b64) => safeStorage.decryptString(Buffer.from(b64, "base64")),
   });
 
   const userDataDir = app.getPath("userData");

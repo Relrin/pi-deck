@@ -18,6 +18,7 @@ const THIN_CTL = {
   paddingTop: 0,
   paddingBottom: 0,
   boxSizing: "border-box",
+  lineHeight: 1,
 } as const;
 
 interface Props {
@@ -25,6 +26,8 @@ interface Props {
   onOpenChange: (next: boolean) => void;
   projectId: string | undefined;
   projectName: string | undefined;
+  /** Absolute path of the project's `.pi/mcp.json`, shown as the install location. */
+  configPath: string | undefined;
   /** Catalog server names already installed — rendered as "Installed". */
   installedNames: Set<string>;
   /** Called after a successful install so the parent refreshes its server list. */
@@ -42,6 +45,7 @@ export function InstallMcpServerModal({
   onOpenChange,
   projectId,
   projectName,
+  configPath,
   installedNames,
   onInstalled,
 }: Props) {
@@ -133,7 +137,9 @@ export function InstallMcpServerModal({
               <div className="pid-settings-section-kicker">
                 mcp registry · registry.modelcontextprotocol.io
               </div>
-              <RadixDialog.Title className="pid-modal-title">Install MCP server</RadixDialog.Title>
+              <RadixDialog.Title className="pid-modal-title" style={{ fontStyle: "normal" }}>
+                Install MCP server
+              </RadixDialog.Title>
             </div>
             <RadixDialog.Description className="pid-modal-description">
               Search the official registry and install a server into your catalog — it's enabled for
@@ -260,8 +266,18 @@ export function InstallMcpServerModal({
             }}
           >
             <span>{results.length} shown</span>
-            <span style={{ marginLeft: "auto", color: "var(--ink-2)" }}>
-              Installs into your MCP catalog
+            <span
+              style={{
+                marginLeft: "auto",
+                color: "var(--ink-2)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+              title={configPath}
+            >
+              installs to{" "}
+              <span style={{ color: "var(--accent)" }}>{configPath ?? ".pi/mcp.json"}</span>
             </span>
           </div>
         </RadixDialog.Content>

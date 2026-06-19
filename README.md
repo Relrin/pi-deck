@@ -14,10 +14,10 @@
 
 ## Why pi-deck
 Because the [pi](https://github.com/earendil-works/pi) coding agent was made with the intention to be adaptable to the devs workflows, I have decided to make something that would fit my needs. Specifically:
-- Have something similar to the out-of-the-box feel of Cursor 
+- Have something that close Cursor and/or Claude
 - Provides a plan mode & tools approvals, because it helps to me to be in control
 - Better experience with reviewing changes
-- Be in touch with code & terminals (per session) 
+- Be in touch with code & terminals (per session)
 
 ## Features
 
@@ -27,9 +27,9 @@ Because the [pi](https://github.com/earendil-works/pi) coding agent was made wit
 - **Git review workflow** - A status sidebar with branch switching and commit / push / pull / stash, per-turn review of the agent's edits, and a dedicated diff view
 - **Code editor** - Simple syntax highlighting, a live git diff gutter (per-block revert and jump-to-diff), search, go-to-line, and encoding / line-ending controls in the status bar
 - **Optional LSP support** - With enabling LSP you can add additional capabilities, such as inline diagnostics, signature help, go-to-definition, etc
+- **MCP support** - Allow agents to interact with external systems via MCPs that can be configured per-project
 - **Terminal support** - A PTY-backed bottom dock with OS-aware shell detection
 - **Multi-session UI** - A project switcher and parallel sessions, with conversations and attachments
-- **Theming** - Bundled dark / light palettes plus VS Code theme import
 - **WSL-aware** - Open a project from `\\wsl.localhost\<distro>\...` and the file tree, terminal, and language servers all run against the distro
 - **Cross-platform** - Windows, Linux, and macOS (Apple Silicon), with the same feature set everywhere
 
@@ -37,7 +37,7 @@ Because the [pi](https://github.com/earendil-works/pi) coding agent was made wit
 
 Out of the box the editor offers basic, buffer-only completion. Installing a language server unlocks the rest: project-wide completion, hover types and docs, live diagnostics (underlines, gutter markers, and error / warning counts in the footer), signature help, rename, and go-to-definition across files.
 
-Nothing is bundled with the app. pi-deck detects servers on your `PATH` and starts them automatically when you open a matching file. A missing server just shows an installation hint in the footer and in **Settings → Editor**.
+Nothing is bundled with the app. pi-deck detects servers on your `PATH` and starts them automatically when you open a matching file. A missing server just shows an installation hint in the footer and in **Settings -> Editor**.
 
 | Language | Server | How to install |
 | --- | --- | --- |
