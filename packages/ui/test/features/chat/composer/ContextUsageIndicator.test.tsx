@@ -40,4 +40,41 @@ describe("ContextUsageIndicator", () => {
     render(<ContextUsageIndicator sessionId={SID} />);
     expect(screen.getByRole("button", { name: /Context usage: 100%/i })).toBeInTheDocument();
   });
+
+  test("an MCP estimate does not inflate the headline percent (it only re-slices `used`)", () => {
+    useUsageStore.getState().setMcpUsage(SID, { tokens: 8_000, toolCount: 4 });
+    useUsageStore
+      .getState()
+      .setTurnUsage(
+        SID,
+        { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+        { tokens: 50_000, contextWindow: 200_000, percent: 0.25 },
+      );
+    render(<ContextUsageIndicator sessionId={SID} />);
+    expect(screen.getByRole("button", { name: /Context usage: 25%/i })).toBeInTheDocument();
+  });
+});
+
+describe("useUsageStore — MCP usage", () => {
+  test("setMcpUsage and setTurnUsage preserve one another", () => {
+    useUsageStore.getState().setMcpUsage(SID, { tokens: 1_200, toolCount: 3 });
+    useUsageStore
+      .getState()
+      .setTurnUsage(
+        SID,
+        { input: 1, output: 2, cacheRead: 0, cacheWrite: 0, total: 3 },
+        { tokens: 10_000, contextWindow: 200_000, percent: 0.05 },
+      );
+
+    const entry = useUsageStore.getState().bySession[SID];
+    // The MCP estimate survives the turn, and the turn's context lands intact.
+    expect(entry?.mcp).toEqual({ tokens: 1_200, toolCount: 3 });
+    expect(entry?.context?.tokens).toBe(10_000);
+
+    // A later MCP push keeps the most recent turn/context.
+    useUsageStore.getState().setMcpUsage(SID, { tokens: 1_500, toolCount: 4 });
+    const after = useUsageStore.getState().bySession[SID];
+    expect(after?.mcp).toEqual({ tokens: 1_500, toolCount: 4 });
+    expect(after?.context?.tokens).toBe(10_000);
+  });
 });

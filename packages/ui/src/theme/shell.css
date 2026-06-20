@@ -822,6 +822,9 @@
 .pid-context-bar-tools {
   background: var(--info);
 }
+.pid-context-bar-mcp {
+  background: var(--mod);
+}
 .pid-context-bar-free {
   background: transparent;
 }
@@ -849,6 +852,12 @@
 }
 .pid-context-swatch.pid-context-bar-free {
   background: var(--bg-3);
+}
+.pid-context-mcp-line {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
 }
 .pid-context-rows {
   list-style: none;

@@ -275,6 +275,11 @@ export const McpServerInfoSchema = McpServerSpecSchema.extend({
   source: z.enum(["catalog", "project", "both"]),
   /** Tool count from the adapter's metadata cache, or null when it hasn't been connected. */
   toolCount: z.number().int().nonnegative().nullable(),
+  /**
+   * Estimated tokens this server's tool/resource defs add to context when registered directly
+   * (chars/4 over the cached defs), or null when the adapter hasn't cached metadata yet.
+   */
+  estimatedTokens: z.number().int().nonnegative().nullable(),
   /** Whether the adapter has cached this server's tool metadata. */
   cached: z.boolean(),
   /** Whether an encrypted bearer token is stored for this server. */

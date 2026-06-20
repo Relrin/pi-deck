@@ -19,6 +19,7 @@ import {
   EVENT_SESSION_AGENT_EVENT,
   EVENT_SESSION_ARTEFACTS_CHANGED,
   EVENT_SESSION_HISTORY_LOADED,
+  EVENT_SESSION_MCP_USAGE,
   EVENT_SESSION_MESSAGE_DELTA,
   EVENT_SESSION_MODEL_CHANGED,
   EVENT_SESSION_TOOL_APPROVAL_REQUESTED,
@@ -118,6 +119,15 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
       : [];
     if (sessionId) {
       useArtefactsStore.getState().setForSession(sessionId, artefacts);
+    }
+    return;
+  }
+  if (topic === EVENT_SESSION_MCP_USAGE) {
+    const sessionId = typeof payload.sessionId === "string" ? payload.sessionId : "";
+    const tokens = typeof payload.tokens === "number" ? payload.tokens : 0;
+    const toolCount = typeof payload.toolCount === "number" ? payload.toolCount : 0;
+    if (sessionId) {
+      useUsageStore.getState().setMcpUsage(sessionId, { tokens, toolCount });
     }
     return;
   }

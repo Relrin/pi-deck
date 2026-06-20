@@ -33,8 +33,6 @@ const THIN_CTL = {
   lineHeight: 1,
 } as const;
 
-const TOKENS_PER_TOOL = 200;
-
 const LIFECYCLES: { value: Lifecycle; label: string; hint: string }[] = [
   { value: "lazy", label: "Lazy", hint: "connect on first call" },
   { value: "eager", label: "Eager", hint: "connect at startup" },
@@ -678,9 +676,13 @@ function ServerConfigPanel({
   const exposureHint =
     expose === "direct"
       ? server.toolCount != null
-        ? `${server.toolCount} tools registered directly (~${(server.toolCount * TOKENS_PER_TOOL).toLocaleString()} tokens)`
+        ? `${server.toolCount} tools registered directly${
+            server.estimatedTokens != null
+              ? ` (~${server.estimatedTokens.toLocaleString()} tokens)`
+              : ""
+          }`
         : "Tools registered directly as first-class tools"
-      : "Routed through the mcp proxy (~200 tokens)";
+      : "Routed through the mcp proxy (~200 tokens, shared)";
 
   return (
     <div

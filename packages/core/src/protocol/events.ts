@@ -26,6 +26,7 @@ export const EVENT_GIT_TURN_TOUCHES_CHANGED = "git.turnTouches.changed" as const
 export const EVENT_REVIEW_AVAILABLE = "review.available" as const;
 export const EVENT_REVIEW_CLEARED = "review.cleared" as const;
 export const EVENT_SESSION_ARTEFACTS_CHANGED = "session.artefacts.changed" as const;
+export const EVENT_SESSION_MCP_USAGE = "session.mcp.usage" as const;
 export const EVENT_PLAN_FILE_CHANGED = "plan.file.changed" as const;
 export const EVENT_FS_TREE_CHANGED = "fs.tree.changed" as const;
 export const EVENT_TERMINAL_OUTPUT = "terminal.output" as const;
@@ -106,6 +107,21 @@ export const SessionWorkerExitPayload = z.object({
   code: z.number().nullable(),
   signal: z.string().nullable(),
 });
+
+/**
+ * Estimated context cost of the MCP tools registered for this session. Emitted by the worker once
+ * its extensions are bound (and again on every respawn, e.g. after toggling a server), so the
+ * Context tab and composer ring can attribute MCP's slice of the context window. It's a chars/4
+ * estimate over the real registered tool definitions — pi's aggregate can't be decomposed.
+ */
+export const SessionMcpUsagePayload = z.object({
+  sessionId: z.string(),
+  /** Estimated tokens consumed by MCP tool definitions (proxy tool + any direct-exposed tools). */
+  tokens: z.number(),
+  /** Number of MCP-origin tools registered (the `mcp` proxy counts as one). */
+  toolCount: z.number(),
+});
+export type SessionMcpUsage = z.infer<typeof SessionMcpUsagePayload>;
 
 /**
  * Snapshot of past session messages + tool calls, broadcast by the host after `activate`
@@ -334,6 +350,7 @@ export const EventSchemas = {
   [EVENT_REVIEW_AVAILABLE]: ReviewAvailablePayload,
   [EVENT_REVIEW_CLEARED]: ReviewClearedPayload,
   [EVENT_SESSION_ARTEFACTS_CHANGED]: SessionArtefactsChangedPayload,
+  [EVENT_SESSION_MCP_USAGE]: SessionMcpUsagePayload,
   [EVENT_FS_TREE_CHANGED]: FsTreeChangedPayload,
   [EVENT_PLAN_FILE_CHANGED]: PlanFileChangedPayload,
   [EVENT_TERMINAL_OUTPUT]: TerminalOutputPayload,

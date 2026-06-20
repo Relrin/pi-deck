@@ -307,6 +307,10 @@ describe("adapter cache", () => {
     const loaded = await loadAdapterCache(project);
     expect(loaded.get("server-foo")?.toolCount).toBe(3);
     expect(loaded.get("other")?.toolCount).toBe(1);
+    // chars/4 estimate over each def: a sparse `{ name }` def is 12 tokens; server-foo has two
+    // tools + one resource (3 × 12 = 36), "other" a single tool (12).
+    expect(loaded.get("server-foo")?.estimatedTokens).toBe(36);
+    expect(loaded.get("other")?.estimatedTokens).toBe(12);
 
     await clearAdapterCacheEntry("server-foo", project);
     const after = await loadAdapterCache(project);
@@ -382,6 +386,7 @@ describe("listServers", () => {
       source: "both",
       cached: true,
       toolCount: 2,
+      estimatedTokens: 24, // two sparse tool defs × 12
       hasToken: true,
     });
     expect(byName.get("baz")).toMatchObject({
@@ -389,6 +394,7 @@ describe("listServers", () => {
       source: "catalog",
       cached: false,
       toolCount: null,
+      estimatedTokens: null,
       hasToken: false,
     });
     expect(byName.get("handadded")).toMatchObject({

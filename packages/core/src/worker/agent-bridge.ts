@@ -19,8 +19,12 @@ import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/sessio
 import { type ApprovalDecision, createAgentModeExtension } from "../extensions/agent-mode/index.js";
 import { createAttachmentsExtension } from "../extensions/attachments/index.js";
 import { listProjectFiles } from "../git/files.js";
+import { estimateToolsTokens, isMcpTool } from "../host/mcp-tokens.js";
 import type { PromptAttachment, PromptImage, SessionCommandInfo } from "../protocol/commands.js";
-import { EVENT_SESSION_TOOL_APPROVAL_REQUESTED } from "../protocol/events.js";
+import {
+  EVENT_SESSION_MCP_USAGE,
+  EVENT_SESSION_TOOL_APPROVAL_REQUESTED,
+} from "../protocol/events.js";
 import { validateAndChdir } from "./cwd.js";
 
 export type EventEmitter = (topic: string, payload: unknown) => void;
@@ -133,6 +137,27 @@ function toPiThinkingLevel(level: ThinkingLevel | undefined): PiThinkingLevel | 
   return level;
 }
 
+/**
+ * Estimate the MCP tools' context cost and emit it to the host. Filters pi's registered tools to
+ * those the MCP adapter contributed (matched by name / source path), then sums a chars/4 estimate
+ * over their definitions.
+ */
+function emitMcpUsage(
+  session: AgentSession,
+  adapterPath: string | undefined,
+  emit: EventEmitter,
+): void {
+  try {
+    const mcpTools = session.getAllTools().filter((tool) => isMcpTool(tool, adapterPath));
+    emit(EVENT_SESSION_MCP_USAGE, {
+      tokens: estimateToolsTokens(mcpTools),
+      toolCount: mcpTools.length,
+    });
+  } catch {
+    // Non-fatal: the Context tab simply shows no MCP slice until the next successful emit.
+  }
+}
+
 export async function initBridge(params: InitParams, emit: EventEmitter): Promise<AgentBridge> {
   validateAndChdir(params.projectPath);
 
@@ -242,6 +267,12 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
       message: `Extension startup failed: ${err instanceof Error ? err.message : String(err)}`,
     });
   }
+
+  // Now that extensions are bound, pi has registered the MCP adapter's tools (the `mcp` proxy +
+  // any direct-exposed tools). Estimate their context cost and push it to the renderer so the
+  // Context tab / composer ring can show MCP's slice of the window. Fires on every (re)spawn, so
+  // toggling a server refreshes the figure.
+  emitMcpUsage(session, mcpAdapterPath, emit);
 
   return {
     session,

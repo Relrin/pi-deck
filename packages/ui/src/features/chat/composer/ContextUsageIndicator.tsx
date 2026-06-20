@@ -6,7 +6,7 @@ import {
   formatTokens,
 } from "../../context/contextBreakdown.js";
 import { selectMessages, useMessagesStore } from "../useMessagesStore.js";
-import { selectSessionUsage, useUsageStore } from "../useUsageStore.js";
+import { selectSessionMcp, selectSessionUsage, useUsageStore } from "../useUsageStore.js";
 
 interface ContextUsageIndicatorProps {
   sessionId: string;
@@ -26,11 +26,12 @@ interface ContextUsageIndicatorProps {
  */
 export function ContextUsageIndicator({ sessionId }: ContextUsageIndicatorProps) {
   const usage = useUsageStore(selectSessionUsage(sessionId));
+  const mcp = useUsageStore(selectSessionMcp(sessionId));
   const messages = useMessagesStore(selectMessages(sessionId));
 
   const breakdown = useMemo(
-    () => computeContextBreakdown(usage?.context, messages),
-    [usage?.context, messages],
+    () => computeContextBreakdown(usage?.context, messages, mcp?.tokens ?? 0),
+    [usage?.context, messages, mcp?.tokens],
   );
 
   // No turn has happened yet — show a placeholder. Once usage data lands, the ring fills.
@@ -127,6 +128,9 @@ function BreakdownCard({ breakdown, percent }: { breakdown: ContextBreakdown; pe
           tokens={breakdown.tools}
           total={breakdown.contextWindow}
         />
+        {breakdown.mcp > 0 && (
+          <Row label="MCP tools" tokens={breakdown.mcp} total={breakdown.contextWindow} />
+        )}
         <Row
           label="Free space remaining"
           tokens={breakdown.free}

@@ -8,6 +8,7 @@ import {
   type RegistryServer,
 } from "../protocol/commands.js";
 import { type McpSecretsStore, mcpTokenEnvVar } from "./mcp-secrets.js";
+import { estimateToolsTokens, type ToolLike } from "./mcp-tokens.js";
 
 /**
  * Host-side MCP server management for the pi-mcp-adapter.
@@ -187,7 +188,10 @@ function stringRecord(value: unknown): Record<string, string> | undefined {
 }
 
 /** Server info before the adapter's per-server cache stats are attached. */
-type McpServerBaseInfo = Omit<McpServerInfo, "toolCount" | "cached" | "hasToken">;
+type McpServerBaseInfo = Omit<
+  McpServerInfo,
+  "toolCount" | "cached" | "hasToken" | "estimatedTokens"
+>;
 
 /** Build a display spec for a server that lives only in a project file (hand-added). */
 function specFromProjectEntry(name: string, value: unknown): McpServerBaseInfo {
@@ -213,25 +217,49 @@ function specFromProjectEntry(name: string, value: unknown): McpServerBaseInfo {
   };
 }
 
+interface AdapterCacheEntry {
+  toolCount: number;
+  cachedAt: number;
+  /** chars/4 estimate of the tokens this server's tool/resource defs add when registered directly. */
+  estimatedTokens: number;
+}
+
 /** Read the adapter's tool-metadata cache (`<agentDir>/mcp-cache.json`); best-effort. */
 export async function loadAdapterCache(
   agentDir = getAgentDir(),
-): Promise<Map<string, { toolCount: number; cachedAt: number }>> {
-  const out = new Map<string, { toolCount: number; cachedAt: number }>();
+): Promise<Map<string, AdapterCacheEntry>> {
+  const out = new Map<string, AdapterCacheEntry>();
   try {
     const parsed = JSON.parse(await readFile(join(agentDir, "mcp-cache.json"), "utf8"));
     const servers = asRecord(asRecord(parsed).servers);
     for (const [name, value] of Object.entries(servers)) {
       const entry = asRecord(value);
-      const tools = Array.isArray(entry.tools) ? entry.tools.length : 0;
-      const resources = Array.isArray(entry.resources) ? entry.resources.length : 0;
+      const toolDefs = Array.isArray(entry.tools) ? entry.tools : [];
+      const resourceDefs = Array.isArray(entry.resources) ? entry.resources : [];
       const cachedAt = typeof entry.cachedAt === "number" ? entry.cachedAt : 0;
-      out.set(name, { toolCount: tools + resources, cachedAt });
+      const estimatedTokens = estimateToolsTokens([
+        ...toolDefs.map((t) => cachedToolLike(asRecord(t))),
+        ...resourceDefs.map((r) => cachedToolLike(asRecord(r))),
+      ]);
+      out.set(name, {
+        toolCount: toolDefs.length + resourceDefs.length,
+        cachedAt,
+        estimatedTokens,
+      });
     }
   } catch {
     /* no cache yet */
   }
   return out;
+}
+
+/** Coerce a cached tool/resource record into the estimator's loose `ToolLike` shape. */
+function cachedToolLike(rec: Record<string, unknown>): ToolLike {
+  return {
+    name: typeof rec.name === "string" ? rec.name : undefined,
+    description: typeof rec.description === "string" ? rec.description : undefined,
+    inputSchema: rec.inputSchema,
+  };
 }
 
 /** Drop a server's cached metadata so the adapter reconnects and re-discovers tools next run. */
@@ -277,6 +305,7 @@ export async function listServers(
       toolCount: hit ? hit.toolCount : null,
       cached: hit !== undefined,
       hasToken: tokenNames.has(base.name),
+      estimatedTokens: hit ? hit.estimatedTokens : null,
     };
   };
   const byName = new Map<string, McpServerInfo>();

@@ -12,6 +12,7 @@ import {
   EVENT_HOST_ERROR,
   EVENT_SESSION_AGENT_EVENT,
   EVENT_SESSION_HISTORY_LOADED,
+  EVENT_SESSION_MCP_USAGE,
   EVENT_SESSION_MESSAGE_DELTA,
   EVENT_SESSION_TOOL_APPROVAL_REQUESTED,
   EVENT_SESSION_TOOL_CALL_END,
@@ -77,6 +78,7 @@ const WORKER_TOPIC_MAP: Record<string, EventTopic> = {
   "tool.call.update": EVENT_SESSION_TOOL_CALL_UPDATE,
   "tool.call.end": EVENT_SESSION_TOOL_CALL_END,
   "turn.end": EVENT_SESSION_TURN_END,
+  "session.mcp.usage": EVENT_SESSION_MCP_USAGE,
   "agent.event": EVENT_SESSION_AGENT_EVENT,
   // The agent-mode plugin emits this topic verbatim from the worker; we expose it under the
   // canonical EventTopic name so renderer code subscribes via the same constant.

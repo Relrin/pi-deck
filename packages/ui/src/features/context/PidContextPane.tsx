@@ -73,8 +73,8 @@ export function PidContextPane({ sessionId }: PidContextPaneProps) {
   }, [sessionId, client]);
 
   const breakdown = useMemo(
-    () => computeContextBreakdown(usage?.context, messages),
-    [usage?.context, messages],
+    () => computeContextBreakdown(usage?.context, messages, usage?.mcp?.tokens ?? 0),
+    [usage?.context, messages, usage?.mcp?.tokens],
   );
 
   const scope = useMemo(() => collectScope(messages), [messages]);
@@ -95,7 +95,12 @@ export function PidContextPane({ sessionId }: PidContextPaneProps) {
 
   return (
     <div className="pid-context-pane">
-      <ContextWindowSection breakdown={breakdown} percent={percent} active={hasData} />
+      <ContextWindowSection
+        breakdown={breakdown}
+        percent={percent}
+        active={hasData}
+        mcpToolCount={usage?.mcp?.toolCount ?? 0}
+      />
       <ScopeSection entries={scope} />
       <ArtefactsSection entries={artefactRows} />
     </div>
@@ -106,13 +111,16 @@ function ContextWindowSection({
   breakdown,
   percent,
   active,
+  mcpToolCount,
 }: {
   breakdown: ContextBreakdown;
   percent: number;
   active: boolean;
+  mcpToolCount: number;
 }) {
-  const { messages, systemPrompt, tools, free, contextWindow, used } = breakdown;
+  const { messages, systemPrompt, tools, mcp, free, contextWindow, used } = breakdown;
   const seg = (n: number): number => (contextWindow > 0 ? (n / contextWindow) * 100 : 0);
+  const mcpPercent = contextWindow > 0 ? Math.round((mcp / contextWindow) * 100) : 0;
   return (
     <section className="pid-context-section">
       <div className="pid-mono-label pid-context-section-label">context window</div>
@@ -139,6 +147,11 @@ function ContextWindowSection({
           title={`Skills / tool definitions — ${formatTokens(tools)} tok`}
         />
         <span
+          className="pid-context-bar-segment pid-context-bar-mcp"
+          style={{ width: `${seg(mcp)}%` }}
+          title={`MCP tools — ${formatTokens(mcp)} tok`}
+        />
+        <span
           className="pid-context-bar-segment pid-context-bar-free"
           style={{ width: `${seg(free)}%` }}
           title={`Free space — ${formatTokens(free)} tok`}
@@ -156,6 +169,10 @@ function ContextWindowSection({
         <li>
           <span className="pid-context-swatch pid-context-bar-tools" />
           tools
+        </li>
+        <li>
+          <span className="pid-context-swatch pid-context-bar-mcp" />
+          mcp
         </li>
         <li>
           <span className="pid-context-swatch pid-context-bar-free" />
