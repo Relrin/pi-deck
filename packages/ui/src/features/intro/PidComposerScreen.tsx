@@ -29,6 +29,7 @@ import { usePathDragStore } from "../files/usePathDragStore.js";
 import { useGitStore } from "../git/useGitStore.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
+import { useSessionDefaultsStore } from "../settings/useSessionDefaultsStore.js";
 import { PidToolsButton } from "../tools/PidToolsButton.js";
 import { useToolsStore } from "../tools/useToolsStore.js";
 import { EditTemplateDialog } from "./EditTemplateDialog.js";
@@ -51,8 +52,8 @@ export function PidComposerScreen() {
   const setText = useIntroComposerStore((s) => s.setText);
   const clear = useIntroComposerStore((s) => s.clear);
   const pendingModelRef = useIntroComposerStore((s) => s.pendingModelRef);
-  const pendingThinkingLevel = useIntroComposerStore((s) => s.pendingThinkingLevel);
-  const agentMode = useIntroComposerStore((s) => s.agentMode);
+  const defaultThinkingLevel = useSessionDefaultsStore((s) => s.defaultThinkingLevel);
+  const agentMode = useSessionDefaultsStore((s) => s.defaultAgentMode);
   const pendingExcludedTools = useIntroComposerStore((s) => s.pendingExcludedTools);
   const defaultExcludedTools = useToolsStore((s) => s.defaultExcludedTools);
   const attachments = useIntroComposerStore((s) => s.attachments);
@@ -258,7 +259,7 @@ export function PidComposerScreen() {
       const excludedTools = pendingExcludedTools ?? defaultExcludedTools;
       await store.createSession(activeProjectId, {
         modelRef: pendingModelRef,
-        thinkingLevel: pendingThinkingLevel,
+        thinkingLevel: defaultThinkingLevel,
         agentMode,
         excludedTools: excludedTools.length > 0 ? excludedTools : undefined,
       });

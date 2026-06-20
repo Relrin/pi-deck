@@ -1,4 +1,4 @@
-import type { AgentMode, SessionModelRef, ThinkingLevel } from "@pi-deck/core/domain/session.js";
+import type { SessionModelRef } from "@pi-deck/core/domain/session.js";
 import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -27,10 +27,6 @@ interface IntroComposerState {
   text: string;
   /** Last-selected model on the intro composer; applied to the session created on Send. */
   pendingModelRef: SessionModelRef | undefined;
-  /** Last-selected thinking level on the intro composer; applied to the session created on Send. */
-  pendingThinkingLevel: ThinkingLevel | undefined;
-  /** Last-selected agent mode; defaults to "plan" on a fresh install. */
-  agentMode: AgentMode;
   /**
    * Per-create tool exclusion override. `undefined` = use the global default from
    * `useToolsStore`; a (possibly empty) array = explicit override applied to the next
@@ -44,8 +40,6 @@ interface IntroComposerState {
 
   setText: (text: string) => void;
   setPendingModel: (ref: SessionModelRef | undefined) => void;
-  setPendingThinkingLevel: (level: ThinkingLevel | undefined) => void;
-  setAgentMode: (mode: AgentMode) => void;
   setPendingExcludedTools: (tools: string[] | undefined) => void;
   addAttachments: (next: PromptAttachment[]) => void;
   removeAttachment: (path: string) => void;
@@ -59,24 +53,21 @@ interface IntroComposerState {
 /**
  * Standalone draft state for the intro-screen composer. We don't reuse the chat composer's
  * draft store because the intro composer lives outside any session — text is consumed once
- * on dispatch (creates a session, seeds the prompt) and cleared, while model/effort
- * preferences persist across launches so the next session opens with the user's last pick.
+ * on dispatch (creates a session, seeds the prompt) and cleared, while the last-picked model
+ * persists across launches so the next session opens with the user's last pick. Default
+ * effort and agent mode live in `useSessionDefaultsStore` (shared with Settings).
  */
 export const useIntroComposerStore = create<IntroComposerState>()(
   persist(
     (set) => ({
       text: "",
       pendingModelRef: undefined,
-      pendingThinkingLevel: undefined,
-      agentMode: "plan",
       pendingExcludedTools: undefined,
       attachments: [],
       images: [],
 
       setText: (text) => set({ text }),
       setPendingModel: (pendingModelRef) => set({ pendingModelRef }),
-      setPendingThinkingLevel: (pendingThinkingLevel) => set({ pendingThinkingLevel }),
-      setAgentMode: (agentMode) => set({ agentMode }),
       setPendingExcludedTools: (pendingExcludedTools) => set({ pendingExcludedTools }),
       addAttachments: (next) =>
         set((s) => {
@@ -117,8 +108,6 @@ export const useIntroComposerStore = create<IntroComposerState>()(
       // Persist user picks across reloads; in-flight `text` and `attachments` are session-scoped.
       partialize: (state) => ({
         pendingModelRef: state.pendingModelRef,
-        pendingThinkingLevel: state.pendingThinkingLevel,
-        agentMode: state.agentMode,
         pendingExcludedTools: state.pendingExcludedTools,
       }),
     },

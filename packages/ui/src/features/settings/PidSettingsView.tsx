@@ -22,7 +22,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: "appearance", label: "Appearance", stub: false },
-  { id: "agent-models", label: "Providers & Models", stub: false },
+  { id: "agent-models", label: "Agents & Models", stub: false },
   { id: "tools", label: "Tools", stub: false },
   { id: "skills", label: "Skills", stub: false },
   { id: "mcp-servers", label: "MCP Servers", stub: false },

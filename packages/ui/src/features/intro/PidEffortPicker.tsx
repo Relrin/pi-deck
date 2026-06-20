@@ -2,6 +2,7 @@ import type { ThinkingLevel } from "@pi-deck/core/domain/session.js";
 import { useMemo } from "react";
 import { PidChipPicker, type PidChipPickerOption } from "../../components/picker/PidChipPicker.js";
 import { useProvidersStore } from "../models/useProvidersStore.js";
+import { useSessionDefaultsStore } from "../settings/useSessionDefaultsStore.js";
 import { useIntroComposerStore } from "./useIntroComposerStore.js";
 
 interface EffortLevel {
@@ -15,16 +16,14 @@ const LEVELS: EffortLevel[] = [
   { value: "high", label: "High" },
 ];
 
-const DEFAULT_LEVEL: ThinkingLevel = "medium";
-
 export function PidEffortPicker() {
   const providers = useProvidersStore((s) => s.providers);
   const modelsByProvider = useProvidersStore((s) => s.modelsByProvider);
   const defaultModel = useProvidersStore((s) => s.defaultModel);
 
   const pendingModelRef = useIntroComposerStore((s) => s.pendingModelRef);
-  const pendingThinkingLevel = useIntroComposerStore((s) => s.pendingThinkingLevel);
-  const setPendingThinkingLevel = useIntroComposerStore((s) => s.setPendingThinkingLevel);
+  const defaultThinkingLevel = useSessionDefaultsStore((s) => s.defaultThinkingLevel);
+  const setDefaultThinkingLevel = useSessionDefaultsStore((s) => s.setDefaultThinkingLevel);
 
   const activeRef = pendingModelRef ?? defaultModel;
   const activeModel = useMemo(() => {
@@ -47,7 +46,7 @@ export function PidEffortPicker() {
   // Force the suppression of unused-providers warning while still subscribing for re-renders.
   void providers;
 
-  const activeValue = pendingThinkingLevel ?? DEFAULT_LEVEL;
+  const activeValue = defaultThinkingLevel;
   const options: PidChipPickerOption[] = LEVELS.map((l) => ({
     value: l.value,
     label: l.label,
@@ -63,7 +62,7 @@ export function PidEffortPicker() {
       ariaLabel="Select thinking effort"
       value={activeValue}
       options={options}
-      onChange={(v) => setPendingThinkingLevel(v as ThinkingLevel)}
+      onChange={(v) => setDefaultThinkingLevel(v as ThinkingLevel)}
       triggerLabel={activeLabel}
       minPopoverWidth={110}
     />

@@ -1,12 +1,48 @@
+import type { AgentMode, ThinkingLevel } from "@pi-deck/core/domain/session.js";
 import type { ProviderSummary } from "@pi-deck/core/providers/types.js";
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
 import { PidChip } from "../../../components/chip/PidChip";
-import { Plus } from "../../../components/icons/index.js";
+import { CheckCheck, Map as MapIcon, Plus, ShieldCheck } from "../../../components/icons/index.js";
+import {
+  PidSegmentedPill,
+  type PidSegmentedPillOption,
+} from "../../../components/segmented/PidSegmentedPill.js";
 import { AddCustomProviderDialog } from "../../models/AddCustomProviderDialog.js";
 import { AuthenticateProviderDialog } from "../../models/AuthenticateProviderDialog.js";
 import { ProviderAvatar } from "../../models/icons";
 import { useProvidersStore } from "../../models/useProvidersStore.js";
+import { useSessionDefaultsStore } from "../useSessionDefaultsStore.js";
+
+// UI exposes the three effort levels the composer pickers support (low/medium/high); the
+// wider ThinkingLevel enum (off/minimal/xhigh) isn't surfaced here.
+const EFFORT_OPTIONS: PidSegmentedPillOption<ThinkingLevel>[] = [
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+];
+
+const AGENT_MODE_OPTIONS: PidSegmentedPillOption<AgentMode>[] = [
+  {
+    value: "ask",
+    label: "Ask",
+    icon: <ShieldCheck size={13} />,
+    description: "Confirm before each write or shell command.",
+  },
+  {
+    value: "accept-edits",
+    label: "Accept edits",
+    icon: <CheckCheck size={13} />,
+    description: "Auto-accept edits to listed files & paths.",
+  },
+  {
+    value: "plan",
+    label: "Plan",
+    icon: <MapIcon size={13} />,
+    description: "Plan-only - no writes, no commands.",
+  },
+];
 
 /**
  * Settings → Providers. Lists built-in providers with auth status and "Set / replace API
@@ -21,6 +57,11 @@ export function ProvidersSection() {
   const [auth, setAuth] = useState<ProviderSummary | undefined>(undefined);
   const [addOpen, setAddOpen] = useState(false);
 
+  const defaultThinkingLevel = useSessionDefaultsStore((s) => s.defaultThinkingLevel);
+  const setDefaultThinkingLevel = useSessionDefaultsStore((s) => s.setDefaultThinkingLevel);
+  const defaultAgentMode = useSessionDefaultsStore((s) => s.defaultAgentMode);
+  const setDefaultAgentMode = useSessionDefaultsStore((s) => s.setDefaultAgentMode);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
@@ -31,9 +72,33 @@ export function ProvidersSection() {
   return (
     <div className="pid-settings-panel-inner">
       <header>
-        <div className="pid-settings-section-kicker">Settings · Providers</div>
-        <h1 className="pid-settings-section-title">Providers & Models</h1>
+        <div className="pid-settings-section-kicker">Settings · Agents</div>
+        <h1 className="pid-settings-section-title">Agents & Models</h1>
       </header>
+
+      <DefaultBlock
+        label="Default effort"
+        desc="How deeply agent thinks. Higher effort means more thorought responses at cost of longer processing time and consuming more tokens. Applies to new conversations."
+      >
+        <PidSegmentedPill
+          ariaLabel="Default thinking effort"
+          value={defaultThinkingLevel}
+          options={EFFORT_OPTIONS}
+          onChange={setDefaultThinkingLevel}
+        />
+      </DefaultBlock>
+
+      <DefaultBlock
+        label="Default agent mode"
+        desc="How the agent handles writes & shell commands in new conversations."
+      >
+        <PidSegmentedPill
+          ariaLabel="Default agent mode"
+          value={defaultAgentMode}
+          options={AGENT_MODE_OPTIONS}
+          onChange={setDefaultAgentMode}
+        />
+      </DefaultBlock>
 
       <section className="pid-settings-block">
         <div className="pid-settings-block-label">Built-in providers</div>
@@ -98,6 +163,24 @@ export function ProvidersSection() {
       />
       <AddCustomProviderDialog open={addOpen} onOpenChange={setAddOpen} />
     </div>
+  );
+}
+
+function DefaultBlock({
+  label,
+  desc,
+  children,
+}: {
+  label: string;
+  desc: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="pid-settings-block">
+      <div className="pid-settings-block-label">{label}</div>
+      <p className="pid-settings-block-desc">{desc}</p>
+      {children}
+    </section>
   );
 }
 

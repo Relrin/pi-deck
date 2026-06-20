@@ -8,7 +8,7 @@ import {
   Map as MapIcon,
   ShieldCheck,
 } from "../../components/icons/index.js";
-import { useIntroComposerStore } from "./useIntroComposerStore.js";
+import { useSessionDefaultsStore } from "../settings/useSessionDefaultsStore.js";
 
 interface ModeEntry {
   value: AgentMode;
@@ -38,17 +38,19 @@ const MODES: ModeEntry[] = [
   },
 ];
 
-const PLAN_MODE: ModeEntry = MODES[2] ?? {
-  value: "plan",
-  label: "Plan",
-  blurb: "Plan-only — no writes, no commands.",
-  Icon: MapIcon,
+// Fallback display when the stored mode somehow isn't one of MODES — matches the built-in
+// default (accept-edits) rather than plan.
+const FALLBACK_MODE: ModeEntry = MODES[1] ?? {
+  value: "accept-edits",
+  label: "Accept edits",
+  blurb: "Auto-accept edits to listed files & paths.",
+  Icon: CheckCheck,
 };
 
 export function PidAgentModePicker() {
-  const agentMode = useIntroComposerStore((s) => s.agentMode);
-  const setAgentMode = useIntroComposerStore((s) => s.setAgentMode);
-  const active = MODES.find((m) => m.value === agentMode) ?? PLAN_MODE;
+  const agentMode = useSessionDefaultsStore((s) => s.defaultAgentMode);
+  const setAgentMode = useSessionDefaultsStore((s) => s.setDefaultAgentMode);
+  const active = MODES.find((m) => m.value === agentMode) ?? FALLBACK_MODE;
   const ActiveIcon = active.Icon;
 
   return (
