@@ -1,8 +1,8 @@
 /**
  * Plan-mode system prompt assembly. We append a focused "Plan Mode" section to the original
  * system prompt pi-ai built for the turn so the agent keeps its tool descriptions and project
- * context but adopts a planning posture: read-only exploration, structured plan output, and a
- * single durable plan file the renderer can pin.
+ * context but adopts a planning posture: read-only exploration (including read-only shell
+ * commands), structured plan output, and a single durable plan file the renderer can pin.
  *
  * Kept in one place so the wording is reviewable and easy to tune without touching the hook
  * site in `agent-mode.ts`.
@@ -17,8 +17,9 @@ const PLAN_MODE_HEADER = "# Plan Mode";
 
 /**
  * Append plan-mode instructions to pi-ai's assembled system prompt. The agent is told to
- * explore via read-only tools, produce a single structured plan as its final message, and
- * also overwrite the per-session plan file so the plan survives restarts.
+ * explore via read-only tools and read-only shell commands, produce a single structured plan
+ * as its final message, and also overwrite the per-session plan file so the plan survives
+ * restarts.
  */
 export function composePlanPrompt(originalPrompt: string, opts: ComposePlanPromptOptions): string {
   return `${originalPrompt.trimEnd()}\n\n${PLAN_MODE_HEADER}\n${planSection(opts.planFilePath)}\n`;

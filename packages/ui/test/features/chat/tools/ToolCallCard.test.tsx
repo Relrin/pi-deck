@@ -33,14 +33,20 @@ describe("ToolCallCard", () => {
     expect(screen.getByRole("button", { expanded: false })).toBeInTheDocument();
   });
 
-  test("collapsed by default for error status; the error text stays visible in the stat column", () => {
+  test("error status shows a compact 'error' marker collapsed, full text on expand", () => {
     render(
       <ToolCallCard
         sessionId="s-test"
         call={call({ status: "error", errorText: "permission denied" })}
       />,
     );
+    // Collapsed: a short red marker, NOT the (potentially very long) error string.
     expect(screen.getByRole("button", { expanded: false })).toBeInTheDocument();
+    expect(screen.getByText("error")).toBeInTheDocument();
+    expect(screen.queryByText("permission denied")).toBeNull();
+
+    // Clicking the chip expands and reveals the full error detail.
+    fireEvent.click(screen.getByRole("button", { expanded: false }));
     expect(screen.getByText("permission denied")).toBeInTheDocument();
   });
 

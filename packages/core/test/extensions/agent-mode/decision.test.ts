@@ -39,6 +39,33 @@ describe("decideToolCall", () => {
     }
   });
 
+  test("plan mode allows read-only bash commands", () => {
+    for (const command of ["ls -la", "grep -rn TODO src", "find . -name '*.ts'", "git log"]) {
+      const d = decideToolCall({
+        mode: "plan",
+        toolName: "bash",
+        input: { command },
+        editAllowlist: [],
+        projectPath: PROJECT,
+      });
+      expect(d.kind).toBe("allow");
+    }
+  });
+
+  test("plan mode blocks mutating bash with a shell-specific reason", () => {
+    const d = decideToolCall({
+      mode: "plan",
+      toolName: "bash",
+      input: { command: "rm -rf node_modules" },
+      editAllowlist: [],
+      projectPath: PROJECT,
+    });
+    expect(d.kind).toBe("block");
+    if (d.kind === "block") {
+      expect(d.reason).toContain("Read-only shell commands");
+    }
+  });
+
   test("ask mode prompts for every mutating tool", () => {
     for (const toolName of ["bash", "edit", "write"]) {
       const d = decideToolCall({

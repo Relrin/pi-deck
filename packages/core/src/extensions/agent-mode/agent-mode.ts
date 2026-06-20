@@ -86,7 +86,9 @@ interface PendingEntry {
 /**
  * Built-in pi-deck plugin that enforces the composer's agent mode:
  *
- * - `plan`   — every mutating tool call (bash/edit/write) is blocked with a stable reason.
+ * - `plan`   — edit/write and workspace-mutating bash calls are blocked with a stable reason;
+ *              read-only bash (ls/cat/grep/find/git log/...) is allowed so the agent can
+ *              explore the repo while planning (see `bash-safety.ts`).
  * - `ask`    — every mutating tool call routes through `onApprovalRequest`. Read-only tools
  *              (read/grep/find/ls and any other non-mutating tool) flow through untouched.
  * - `accept-edits` — `edit` calls inside `editAllowlist` auto-approve; everything else

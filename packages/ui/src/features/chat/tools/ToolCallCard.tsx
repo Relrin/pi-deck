@@ -13,12 +13,31 @@ import { getRenderer, getSummarizer } from "./ToolRendererRegistry.js";
 import { deriveToolFileDiff, isFileDiffTool } from "./toolFileDiff.js";
 import { useToolCardExpansionStore } from "./useToolCardExpansionStore.js";
 
-function statusStat(call: ToolCallEntry): { text: string; tone: "ok" | "error" } | undefined {
+function statusStat(
+  call: ToolCallEntry,
+): { text: string; tone: "ok" | "error"; title?: string } | undefined {
   if (call.status === "done") return { text: "ok", tone: "ok" };
   if (call.status === "error") {
-    return { text: call.errorText ?? "error", tone: "error" };
+    // Keep the header to one line - error strings are often far too long to fit. Show a short
+    // red "error" marker (full text on hover) and surface the detail in the expanded body.
+    return { text: "error", tone: "error", title: call.errorText };
   }
   return undefined;
+}
+
+/** Full error text shown in the expanded body - wrapped in a styled block so long, multi-line
+ *  errors are readable at once instead of overflowing the header. */
+function ToolErrorDetail({ text }: { text: string }) {
+  return (
+    <div className="mb-2">
+      <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-[var(--color-danger)]">
+        Error
+      </div>
+      <pre className="m-0 max-h-[20rem] overflow-auto whitespace-pre-wrap break-words rounded-[var(--radius-sm)] border border-[color-mix(in_oklab,var(--color-danger)_35%,transparent)] bg-[var(--color-panel-2)] p-2 font-mono text-xs text-[var(--color-text)]">
+        {text}
+      </pre>
+    </div>
+  );
 }
 
 export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; sessionId: string }) {
@@ -168,6 +187,7 @@ export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; session
             <span
               className="pid-tool-row-stat"
               data-tone={stat.tone === "error" ? "error" : undefined}
+              title={stat.title}
             >
               {stat.text}
             </span>
@@ -185,6 +205,9 @@ export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; session
       </div>
       {expanded && (
         <div id={`tool-call-body-${call.id}`} className="pid-tool-row-detail">
+          {call.status === "error" && call.errorText ? (
+            <ToolErrorDetail text={call.errorText} />
+          ) : null}
           <Renderer call={call} />
         </div>
       )}

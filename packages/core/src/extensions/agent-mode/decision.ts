@@ -1,5 +1,6 @@
 import { isAbsolute, normalize, resolve, sep } from "node:path";
 import type { AgentMode } from "../../domain/session.js";
+import { isReadOnlyBashCommand } from "./bash-safety.js";
 
 /** Built-in tools considered mutating by default. */
 export const DEFAULT_MUTATING_TOOLS: ReadonlySet<string> = new Set(["bash", "edit", "write"]);
@@ -37,11 +38,26 @@ export function decideToolCall(opts: DecideOptions): AgentModeDecision {
     if (isPlanFileWrite(opts.toolName, opts.input, opts.planFilePath, opts.projectPath)) {
       return { kind: "allow" };
     }
+    if (shell.has(opts.toolName)) {
+      // Read-only shell commands (ls, cat, grep, find, sed, awk, git log, …) are safe while
+      // planning, so let them through instead of blocking every bash call.
+      if (isReadOnlyBashCommand(opts.input)) {
+        return { kind: "allow" };
+      }
+      return {
+        kind: "block",
+        reason:
+          "Plan mode is active. Read-only shell commands (ls, cat, grep, find, etc.) are allowed, " +
+          "but this command looks like it could modify the workspace, so it's blocked. Use a " +
+          "read-only command to inspect things, or describe the change you would make and stop; " +
+          "do not retry.",
+      };
+    }
     return {
       kind: "block",
       reason:
-        "Plan mode is active. The user wants a plan only — no edits, writes, or shell commands. " +
-        "Describe the changes you would make and stop; do not retry.",
+        "Plan mode is active. The user wants a plan only — no edits, writes, or shell commands " +
+        "that modify the workspace. Describe the changes you would make and stop; do not retry.",
     };
   }
 
