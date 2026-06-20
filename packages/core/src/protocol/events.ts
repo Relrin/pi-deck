@@ -26,7 +26,7 @@ export const EVENT_GIT_TURN_TOUCHES_CHANGED = "git.turnTouches.changed" as const
 export const EVENT_REVIEW_AVAILABLE = "review.available" as const;
 export const EVENT_REVIEW_CLEARED = "review.cleared" as const;
 export const EVENT_SESSION_ARTEFACTS_CHANGED = "session.artefacts.changed" as const;
-export const EVENT_SESSION_MCP_USAGE = "session.mcp.usage" as const;
+export const EVENT_SESSION_CONTEXT_COST = "session.context.cost" as const;
 export const EVENT_PLAN_FILE_CHANGED = "plan.file.changed" as const;
 export const EVENT_FS_TREE_CHANGED = "fs.tree.changed" as const;
 export const EVENT_TERMINAL_OUTPUT = "terminal.output" as const;
@@ -109,19 +109,27 @@ export const SessionWorkerExitPayload = z.object({
 });
 
 /**
- * Estimated context cost of the MCP tools registered for this session. Emitted by the worker once
- * its extensions are bound (and again on every respawn, e.g. after toggling a server), so the
- * Context tab and composer ring can attribute MCP's slice of the context window. It's a chars/4
- * estimate over the real registered tool definitions — pi's aggregate can't be decomposed.
+ * Estimated breakdown of this session's fixed context overhead — the system prompt and the tool
+ * definitions (built-in + MCP) pi sends every turn. Emitted by the worker once its extensions are
+ * bound (and again on every respawn, e.g. after toggling a server), so the Context tab and composer
+ * ring can attribute each slice of the context window instead of guessing with constants.
+ *
+ * pi only reports an aggregate token count, so these are derived from the real artefacts pi holds:
+ * `session.systemPrompt` (chars/4) and `session.getAllTools()` (chars/4 per definition). Stable for
+ * the worker's lifetime — the conversation is everything in `used` beyond this overhead.
  */
-export const SessionMcpUsagePayload = z.object({
+export const SessionContextCostPayload = z.object({
   sessionId: z.string(),
-  /** Estimated tokens consumed by MCP tool definitions (proxy tool + any direct-exposed tools). */
-  tokens: z.number(),
+  /** Estimated tokens for the assembled system prompt text (`session.systemPrompt`). */
+  systemPrompt: z.number(),
+  /** Estimated tokens for built-in (non-MCP) tool definitions. */
+  builtinTools: z.number(),
+  /** Estimated tokens for MCP tool definitions (the `mcp` proxy + any direct-exposed tools). */
+  mcp: z.number(),
   /** Number of MCP-origin tools registered (the `mcp` proxy counts as one). */
-  toolCount: z.number(),
+  mcpToolCount: z.number(),
 });
-export type SessionMcpUsage = z.infer<typeof SessionMcpUsagePayload>;
+export type SessionContextCost = z.infer<typeof SessionContextCostPayload>;
 
 /**
  * Snapshot of past session messages + tool calls, broadcast by the host after `activate`
@@ -350,7 +358,7 @@ export const EventSchemas = {
   [EVENT_REVIEW_AVAILABLE]: ReviewAvailablePayload,
   [EVENT_REVIEW_CLEARED]: ReviewClearedPayload,
   [EVENT_SESSION_ARTEFACTS_CHANGED]: SessionArtefactsChangedPayload,
-  [EVENT_SESSION_MCP_USAGE]: SessionMcpUsagePayload,
+  [EVENT_SESSION_CONTEXT_COST]: SessionContextCostPayload,
   [EVENT_FS_TREE_CHANGED]: FsTreeChangedPayload,
   [EVENT_PLAN_FILE_CHANGED]: PlanFileChangedPayload,
   [EVENT_TERMINAL_OUTPUT]: TerminalOutputPayload,

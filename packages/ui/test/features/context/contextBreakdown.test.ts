@@ -16,38 +16,56 @@ function bucketSum(b: ContextBreakdown): number {
   return b.messages + b.systemPrompt + b.tools + b.mcp;
 }
 
-describe("computeContextBreakdown — mcp bucket", () => {
+describe("computeContextBreakdown", () => {
   const messages = [{ text: "x".repeat(4_000) }]; // ~1,000 tokens (chars/4).
 
-  test("defaults to 0 and keeps today's split when no MCP estimate is given", () => {
+  test("falls back to the floor constants when the worker hasn't reported overhead", () => {
     const b = computeContextBreakdown(ctx(50_000), messages);
-    expect(b.mcp).toBe(0);
-    expect(b.messages).toBe(1_000);
     expect(b.systemPrompt).toBe(1_500);
-    expect(b.tools).toBe(47_500);
-    expect(bucketSum(b)).toBe(b.used);
-  });
-
-  test("carves the MCP estimate out of the built-in tools bucket post-turn", () => {
-    const b = computeContextBreakdown(ctx(50_000), messages, 5_000);
-    expect(b.mcp).toBe(5_000);
-    expect(b.tools).toBe(42_500);
-    expect(bucketSum(b)).toBe(50_000);
-  });
-
-  test("clamps the MCP estimate so it never exceeds the real aggregate", () => {
-    const b = computeContextBreakdown(ctx(50_000), messages, 100_000);
-    expect(b.mcp).toBe(47_500); // everything left after messages + system prompt
-    expect(b.tools).toBe(0);
-    expect(bucketSum(b)).toBe(50_000);
-  });
-
-  test("folds the MCP estimate into the pre-turn floor so the bar reflects it immediately", () => {
-    const b = computeContextBreakdown(undefined, [], 3_000);
-    // floor = messages(0) + system(1_500) + builtin tools(4_500) + mcp(3_000)
-    expect(b.used).toBe(9_000);
-    expect(b.mcp).toBe(3_000);
     expect(b.tools).toBe(4_500);
-    expect(b.free).toBe(191_000);
+    expect(b.mcp).toBe(0);
+    // Messages is the residual of the real aggregate — everything not accounted for as overhead.
+    expect(b.messages).toBe(44_000);
+    expect(bucketSum(b)).toBe(50_000);
+  });
+
+  test("uses the worker's computed overhead instead of the floors; messages is the residual", () => {
+    const b = computeContextBreakdown(ctx(50_000), messages, {
+      systemPrompt: 2_000,
+      builtinTools: 6_000,
+      mcp: 5_000,
+    });
+    expect(b.systemPrompt).toBe(2_000);
+    expect(b.tools).toBe(6_000);
+    expect(b.mcp).toBe(5_000);
+    expect(b.messages).toBe(37_000);
+    expect(bucketSum(b)).toBe(50_000);
+  });
+
+  test("clamps overhead to the aggregate so the buckets never exceed `used`", () => {
+    const b = computeContextBreakdown(ctx(3_000), messages, {
+      systemPrompt: 2_000,
+      builtinTools: 6_000,
+      mcp: 5_000,
+    });
+    expect(b.systemPrompt).toBe(2_000);
+    expect(b.tools).toBe(1_000); // only 1k left after the system prompt
+    expect(b.mcp).toBe(0);
+    expect(b.messages).toBe(0);
+    expect(bucketSum(b)).toBe(3_000);
+  });
+
+  test("pre-turn: used = overhead + a chars/4 estimate of the visible messages", () => {
+    const b = computeContextBreakdown(undefined, messages, {
+      systemPrompt: 2_000,
+      builtinTools: 6_000,
+      mcp: 3_000,
+    });
+    expect(b.used).toBe(12_000); // 2_000 + 6_000 + 3_000 + 1_000
+    expect(b.systemPrompt).toBe(2_000);
+    expect(b.tools).toBe(6_000);
+    expect(b.mcp).toBe(3_000);
+    expect(b.messages).toBe(1_000);
+    expect(b.free).toBe(188_000);
   });
 });

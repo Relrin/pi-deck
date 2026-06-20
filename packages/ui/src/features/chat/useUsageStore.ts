@@ -1,10 +1,16 @@
 import type { ContextUsage, TokenUsage } from "@pi-deck/core/protocol/events.js";
 import { create } from "zustand";
 
-/** Estimated context cost of this session's MCP tools, pushed by the worker after extensions bind. */
-export interface McpUsage {
-  tokens: number;
-  toolCount: number;
+/**
+ * This session's fixed context overhead, pushed by the worker once its extensions bind. Estimated
+ * from the real system prompt + registered tool definitions (chars/4), so the breakdown can
+ * attribute each slice instead of guessing with constants.
+ */
+export interface ContextCost {
+  systemPrompt: number;
+  builtinTools: number;
+  mcp: number;
+  mcpToolCount: number;
 }
 
 interface SessionUsage {
@@ -12,14 +18,14 @@ interface SessionUsage {
   lastTurn: TokenUsage;
   /** Aggregate context window state at the end of that turn. */
   context: ContextUsage | undefined;
-  /** MCP tools' estimated slice of the context window, when the worker has reported it. */
-  mcp: McpUsage | undefined;
+  /** Per-category context overhead (system prompt + tool defs), when the worker has reported it. */
+  cost: ContextCost | undefined;
 }
 
 interface UsageStoreState {
   bySession: Record<string, SessionUsage>;
   setTurnUsage: (sessionId: string, usage: TokenUsage, context: ContextUsage | undefined) => void;
-  setMcpUsage: (sessionId: string, mcp: McpUsage) => void;
+  setContextCost: (sessionId: string, cost: ContextCost) => void;
   clearSession: (sessionId: string) => void;
 }
 
@@ -33,15 +39,15 @@ export const useUsageStore = create<UsageStoreState>((set) => ({
       bySession: {
         ...state.bySession,
         [sessionId]: {
-          // Preserve the MCP estimate across turns — it's pushed once on worker spawn, not per turn.
-          mcp: state.bySession[sessionId]?.mcp,
+          // Preserve the cost estimate across turns — it's pushed once on worker spawn, not per turn.
+          cost: state.bySession[sessionId]?.cost,
           lastTurn: usage,
           context,
         },
       },
     })),
 
-  setMcpUsage: (sessionId, mcp) =>
+  setContextCost: (sessionId, cost) =>
     set((state) => {
       const prev = state.bySession[sessionId];
       return {
@@ -50,7 +56,7 @@ export const useUsageStore = create<UsageStoreState>((set) => ({
           [sessionId]: {
             lastTurn: prev?.lastTurn ?? EMPTY_TURN,
             context: prev?.context,
-            mcp,
+            cost,
           },
         },
       };
@@ -70,7 +76,7 @@ export function selectSessionUsage(sessionId: string | undefined) {
     sessionId ? state.bySession[sessionId] : undefined;
 }
 
-export function selectSessionMcp(sessionId: string | undefined) {
-  return (state: UsageStoreState): McpUsage | undefined =>
-    sessionId ? state.bySession[sessionId]?.mcp : undefined;
+export function selectSessionCost(sessionId: string | undefined) {
+  return (state: UsageStoreState): ContextCost | undefined =>
+    sessionId ? state.bySession[sessionId]?.cost : undefined;
 }

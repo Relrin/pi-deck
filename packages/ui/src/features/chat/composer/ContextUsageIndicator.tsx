@@ -6,7 +6,7 @@ import {
   formatTokens,
 } from "../../context/contextBreakdown.js";
 import { selectMessages, useMessagesStore } from "../useMessagesStore.js";
-import { selectSessionMcp, selectSessionUsage, useUsageStore } from "../useUsageStore.js";
+import { selectSessionCost, selectSessionUsage, useUsageStore } from "../useUsageStore.js";
 
 interface ContextUsageIndicatorProps {
   sessionId: string;
@@ -26,12 +26,12 @@ interface ContextUsageIndicatorProps {
  */
 export function ContextUsageIndicator({ sessionId }: ContextUsageIndicatorProps) {
   const usage = useUsageStore(selectSessionUsage(sessionId));
-  const mcp = useUsageStore(selectSessionMcp(sessionId));
+  const cost = useUsageStore(selectSessionCost(sessionId));
   const messages = useMessagesStore(selectMessages(sessionId));
 
   const breakdown = useMemo(
-    () => computeContextBreakdown(usage?.context, messages, mcp?.tokens ?? 0),
-    [usage?.context, messages, mcp?.tokens],
+    () => computeContextBreakdown(usage?.context, messages, cost),
+    [usage?.context, messages, cost],
   );
 
   // No turn has happened yet — show a placeholder. Once usage data lands, the ring fills.

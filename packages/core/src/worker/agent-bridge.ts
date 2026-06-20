@@ -19,10 +19,10 @@ import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/sessio
 import { type ApprovalDecision, createAgentModeExtension } from "../extensions/agent-mode/index.js";
 import { createAttachmentsExtension } from "../extensions/attachments/index.js";
 import { listProjectFiles } from "../git/files.js";
-import { estimateToolsTokens, isMcpTool } from "../host/mcp-tokens.js";
+import { estimateToolTokens, isMcpTool } from "../host/mcp-tokens.js";
 import type { PromptAttachment, PromptImage, SessionCommandInfo } from "../protocol/commands.js";
 import {
-  EVENT_SESSION_MCP_USAGE,
+  EVENT_SESSION_CONTEXT_COST,
   EVENT_SESSION_TOOL_APPROVAL_REQUESTED,
 } from "../protocol/events.js";
 import { validateAndChdir } from "./cwd.js";
@@ -138,23 +138,38 @@ function toPiThinkingLevel(level: ThinkingLevel | undefined): PiThinkingLevel | 
 }
 
 /**
- * Estimate the MCP tools' context cost and emit it to the host. Filters pi's registered tools to
- * those the MCP adapter contributed (matched by name / source path), then sums a chars/4 estimate
- * over their definitions.
+ * Estimate this session's fixed context overhead and emit it to the host: the system prompt text,
+ * the built-in tool definitions, and the MCP tool definitions. pi only reports an aggregate token
+ * count, so we derive these from the real artefacts it holds — `session.systemPrompt` and
+ * `session.getAllTools()` — with the same chars/4 heuristic pi uses internally. This lets the
+ * Context tab attribute each slice instead of guessing with constants. Best-effort: a failure here
+ * must never break session startup.
  */
-function emitMcpUsage(
+function emitContextCost(
   session: AgentSession,
   adapterPath: string | undefined,
   emit: EventEmitter,
 ): void {
   try {
-    const mcpTools = session.getAllTools().filter((tool) => isMcpTool(tool, adapterPath));
-    emit(EVENT_SESSION_MCP_USAGE, {
-      tokens: estimateToolsTokens(mcpTools),
-      toolCount: mcpTools.length,
+    let builtinTools = 0;
+    let mcp = 0;
+    let mcpToolCount = 0;
+    for (const tool of session.getAllTools()) {
+      if (isMcpTool(tool, adapterPath)) {
+        mcp += estimateToolTokens(tool);
+        mcpToolCount += 1;
+      } else {
+        builtinTools += estimateToolTokens(tool);
+      }
+    }
+    emit(EVENT_SESSION_CONTEXT_COST, {
+      systemPrompt: Math.ceil(session.systemPrompt.length / 4),
+      builtinTools,
+      mcp,
+      mcpToolCount,
     });
   } catch {
-    // Non-fatal: the Context tab simply shows no MCP slice until the next successful emit.
+    // Non-fatal: the Context tab falls back to its floor estimates until the next successful emit.
   }
 }
 
@@ -268,11 +283,11 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     });
   }
 
-  // Now that extensions are bound, pi has registered the MCP adapter's tools (the `mcp` proxy +
-  // any direct-exposed tools). Estimate their context cost and push it to the renderer so the
-  // Context tab / composer ring can show MCP's slice of the window. Fires on every (re)spawn, so
-  // toggling a server refreshes the figure.
-  emitMcpUsage(session, mcpAdapterPath, emit);
+  // Now that extensions are bound, pi has assembled the system prompt and registered every tool
+  // (built-in + the MCP adapter's proxy/direct tools). Estimate that fixed overhead and push it to
+  // the renderer so the Context tab / composer ring can attribute each slice of the window. Fires
+  // on every (re)spawn, so toggling a server refreshes the figure.
+  emitContextCost(session, mcpAdapterPath, emit);
 
   return {
     session,

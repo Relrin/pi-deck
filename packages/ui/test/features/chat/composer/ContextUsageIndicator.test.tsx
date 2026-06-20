@@ -41,8 +41,13 @@ describe("ContextUsageIndicator", () => {
     expect(screen.getByRole("button", { name: /Context usage: 100%/i })).toBeInTheDocument();
   });
 
-  test("an MCP estimate does not inflate the headline percent (it only re-slices `used`)", () => {
-    useUsageStore.getState().setMcpUsage(SID, { tokens: 8_000, toolCount: 4 });
+  test("the overhead estimate does not inflate the headline percent (it only re-slices `used`)", () => {
+    useUsageStore.getState().setContextCost(SID, {
+      systemPrompt: 1_500,
+      builtinTools: 4_500,
+      mcp: 8_000,
+      mcpToolCount: 4,
+    });
     useUsageStore
       .getState()
       .setTurnUsage(
@@ -55,9 +60,10 @@ describe("ContextUsageIndicator", () => {
   });
 });
 
-describe("useUsageStore — MCP usage", () => {
-  test("setMcpUsage and setTurnUsage preserve one another", () => {
-    useUsageStore.getState().setMcpUsage(SID, { tokens: 1_200, toolCount: 3 });
+describe("useUsageStore — context cost", () => {
+  test("setContextCost and setTurnUsage preserve one another", () => {
+    const cost = { systemPrompt: 1_500, builtinTools: 4_500, mcp: 1_200, mcpToolCount: 3 };
+    useUsageStore.getState().setContextCost(SID, cost);
     useUsageStore
       .getState()
       .setTurnUsage(
@@ -67,14 +73,15 @@ describe("useUsageStore — MCP usage", () => {
       );
 
     const entry = useUsageStore.getState().bySession[SID];
-    // The MCP estimate survives the turn, and the turn's context lands intact.
-    expect(entry?.mcp).toEqual({ tokens: 1_200, toolCount: 3 });
+    // The overhead estimate survives the turn, and the turn's context lands intact.
+    expect(entry?.cost).toEqual(cost);
     expect(entry?.context?.tokens).toBe(10_000);
 
-    // A later MCP push keeps the most recent turn/context.
-    useUsageStore.getState().setMcpUsage(SID, { tokens: 1_500, toolCount: 4 });
+    // A later overhead push keeps the most recent turn/context.
+    const next = { systemPrompt: 1_500, builtinTools: 4_500, mcp: 1_500, mcpToolCount: 4 };
+    useUsageStore.getState().setContextCost(SID, next);
     const after = useUsageStore.getState().bySession[SID];
-    expect(after?.mcp).toEqual({ tokens: 1_500, toolCount: 4 });
+    expect(after?.cost).toEqual(next);
     expect(after?.context?.tokens).toBe(10_000);
   });
 });

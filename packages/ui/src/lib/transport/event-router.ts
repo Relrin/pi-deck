@@ -18,8 +18,8 @@ import {
   EVENT_REVIEW_CLEARED,
   EVENT_SESSION_AGENT_EVENT,
   EVENT_SESSION_ARTEFACTS_CHANGED,
+  EVENT_SESSION_CONTEXT_COST,
   EVENT_SESSION_HISTORY_LOADED,
-  EVENT_SESSION_MCP_USAGE,
   EVENT_SESSION_MESSAGE_DELTA,
   EVENT_SESSION_MODEL_CHANGED,
   EVENT_SESSION_TOOL_APPROVAL_REQUESTED,
@@ -122,12 +122,16 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
     }
     return;
   }
-  if (topic === EVENT_SESSION_MCP_USAGE) {
+  if (topic === EVENT_SESSION_CONTEXT_COST) {
     const sessionId = typeof payload.sessionId === "string" ? payload.sessionId : "";
-    const tokens = typeof payload.tokens === "number" ? payload.tokens : 0;
-    const toolCount = typeof payload.toolCount === "number" ? payload.toolCount : 0;
+    const num = (v: unknown): number => (typeof v === "number" ? v : 0);
     if (sessionId) {
-      useUsageStore.getState().setMcpUsage(sessionId, { tokens, toolCount });
+      useUsageStore.getState().setContextCost(sessionId, {
+        systemPrompt: num(payload.systemPrompt),
+        builtinTools: num(payload.builtinTools),
+        mcp: num(payload.mcp),
+        mcpToolCount: num(payload.mcpToolCount),
+      });
     }
     return;
   }

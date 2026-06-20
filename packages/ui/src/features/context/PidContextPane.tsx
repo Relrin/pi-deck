@@ -73,8 +73,8 @@ export function PidContextPane({ sessionId }: PidContextPaneProps) {
   }, [sessionId, client]);
 
   const breakdown = useMemo(
-    () => computeContextBreakdown(usage?.context, messages, usage?.mcp?.tokens ?? 0),
-    [usage?.context, messages, usage?.mcp?.tokens],
+    () => computeContextBreakdown(usage?.context, messages, usage?.cost),
+    [usage?.context, messages, usage?.cost],
   );
 
   const scope = useMemo(() => collectScope(messages), [messages]);
@@ -99,7 +99,7 @@ export function PidContextPane({ sessionId }: PidContextPaneProps) {
         breakdown={breakdown}
         percent={percent}
         active={hasData}
-        mcpToolCount={usage?.mcp?.toolCount ?? 0}
+        mcpToolCount={usage?.cost?.mcpToolCount ?? 0}
       />
       <ScopeSection entries={scope} />
       <ArtefactsSection entries={artefactRows} />

@@ -22,42 +22,63 @@ export interface ContextBreakdown {
   free: number;
 }
 
+/**
+ * This session's fixed context overhead, estimated worker-side from the real system prompt + tool
+ * definitions (see `ContextCost` / the `session.context.cost` event). Optional: until the worker
+ * has reported it we fall back to the floor constants below.
+ */
+export interface ContextOverhead {
+  systemPrompt?: number;
+  builtinTools?: number;
+  mcp?: number;
+}
+
 const DEFAULT_CONTEXT_WINDOW = 200_000;
-const SYSTEM_PROMPT_FLOOR = 1_500; // ballpark — pi's base prompt + envelopes.
-const BUILTIN_TOOLS_FLOOR = 4_500; // ballpark — pi's built-in tool definitions (excludes MCP).
+// Fallbacks used only until the worker reports the real per-session overhead. Ballparks: pi's base
+// prompt + envelopes, and its built-in tool definitions (excludes MCP).
+const SYSTEM_PROMPT_FLOOR = 1_500;
+const BUILTIN_TOOLS_FLOOR = 4_500;
 
 /**
- * Derive a per-category breakdown from `ContextUsage` (aggregate, from pi), the visible messages
- * (used to estimate the messages bucket), and the worker's MCP-tools estimate. When pi hasn't
- * reported usage yet (`ctx` is undefined) we still surface a floor estimate — including the MCP
- * figure when known — so the Context tab paints something useful before the first turn.
+ * Derive a per-category breakdown from `ContextUsage` (aggregate, from pi), the visible messages,
+ * and the worker's overhead estimate. pi only reports an aggregate `used`, so the breakdown is an
+ * *attribution* of that single number — not an independent recount.
  *
- * pi only reports an aggregate `used`, so we carve the buckets out of it in priority order
- * (messages → system prompt → MCP → built-in tools) and they always sum to `used`. Post-turn the
- * aggregate already includes MCP (those tools are in the real payload), so carving is correct;
- * pre-turn we fold the MCP estimate into the floor so the bar reflects it immediately.
+ * The overhead buckets (system prompt + built-in tools + MCP tools) are fixed for the worker's
+ * lifetime and known precisely, so they're laid down first; **messages is the residual** — whatever
+ * of `used` is left once the overhead is accounted for. That's the honest split: `used` is
+ * dominated by the conversation, and the residual captures history + tool results + attachments the
+ * visible message text alone can't see. The four buckets always sum to `used`.
+ *
+ * Before the first turn (`ctx` undefined) there's no aggregate, so `used` is the overhead plus a
+ * chars/4 estimate of the visible messages. When the worker hasn't reported overhead yet, the floor
+ * constants stand in.
  */
 export function computeContextBreakdown(
   ctx: ContextUsage | undefined,
   messages: ReadonlyArray<{ text?: string }>,
-  mcpTokens = 0,
+  overhead: ContextOverhead = {},
 ): ContextBreakdown {
-  const messagesTokens = estimateMessagesTokens(messages);
   const contextWindow = ctx?.contextWindow ?? DEFAULT_CONTEXT_WINDOW;
-  const mcp = Math.max(0, mcpTokens);
+  const systemFixed = Math.max(0, overhead.systemPrompt ?? SYSTEM_PROMPT_FLOOR);
+  const toolsFixed = Math.max(0, overhead.builtinTools ?? BUILTIN_TOOLS_FLOOR);
+  const mcpFixed = Math.max(0, overhead.mcp ?? 0);
+
+  const messagesTokens = estimateMessagesTokens(messages);
   const used =
     typeof ctx?.tokens === "number" && ctx.tokens > 0
       ? ctx.tokens
-      : messagesTokens + SYSTEM_PROMPT_FLOOR + BUILTIN_TOOLS_FLOOR + mcp;
+      : systemFixed + toolsFixed + mcpFixed + messagesTokens;
 
-  const messagesBucket = Math.min(messagesTokens, used);
-  const afterMessages = Math.max(0, used - messagesBucket);
-  const systemPrompt = Math.min(SYSTEM_PROMPT_FLOOR, afterMessages);
-  const afterSystem = Math.max(0, afterMessages - systemPrompt);
-  // MCP claims its estimate next, clamped so it never exceeds the real aggregate; built-in tools
-  // take whatever remains.
-  const mcpBucket = Math.min(mcp, afterSystem);
-  const tools = Math.max(0, afterSystem - mcpBucket);
+  // Lay down the fixed overhead in priority order, each clamped to what's left of `used` (so a
+  // small real aggregate can't push the buckets past it), then hand the remainder to messages.
+  const systemPrompt = Math.min(systemFixed, used);
+  let remaining = used - systemPrompt;
+  const tools = Math.min(toolsFixed, remaining);
+  remaining -= tools;
+  const mcp = Math.min(mcpFixed, remaining);
+  remaining -= mcp;
+  const messagesBucket = remaining; // residual — the conversation fills whatever overhead doesn't.
   const free = Math.max(0, contextWindow - used);
 
   return {
@@ -66,7 +87,7 @@ export function computeContextBreakdown(
     messages: messagesBucket,
     systemPrompt,
     tools,
-    mcp: mcpBucket,
+    mcp,
     free,
   };
 }
