@@ -4,6 +4,7 @@ import { EditRenderer, editSummary } from "./EditRenderer.js";
 import { FindRenderer, findSummary } from "./FindRenderer.js";
 import { GrepRenderer, grepSummary } from "./GrepRenderer.js";
 import { LsRenderer, lsSummary } from "./LsRenderer.js";
+import { McpRenderer, mcpSummary } from "./McpRenderer.js";
 import { ReadRenderer, readSummary } from "./ReadRenderer.js";
 import { WriteRenderer, writeSummary } from "./WriteRenderer.js";
 
@@ -19,4 +20,5 @@ export function registerBuiltInRenderers(): void {
   registerToolRenderer("grep", GrepRenderer, grepSummary);
   registerToolRenderer("find", FindRenderer, findSummary);
   registerToolRenderer("ls", LsRenderer, lsSummary);
+  registerToolRenderer("mcp", McpRenderer, mcpSummary);
 }

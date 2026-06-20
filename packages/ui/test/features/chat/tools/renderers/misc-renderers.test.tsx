@@ -10,6 +10,10 @@ import {
 } from "../../../../../src/features/chat/tools/renderers/GrepRenderer";
 import { LsRenderer, lsSummary } from "../../../../../src/features/chat/tools/renderers/LsRenderer";
 import {
+  McpRenderer,
+  mcpSummary,
+} from "../../../../../src/features/chat/tools/renderers/McpRenderer";
+import {
   ReadRenderer,
   readSummary,
 } from "../../../../../src/features/chat/tools/renderers/ReadRenderer";
@@ -111,6 +115,38 @@ describe("LsRenderer", () => {
 
   test("lsSummary defaults to '.' when no path", () => {
     expect(lsSummary({}).text).toBe(".");
+  });
+});
+
+describe("McpRenderer", () => {
+  test("mcpSummary surfaces the real tool name (with full title)", () => {
+    const out = mcpSummary({ tool: "exa_web_search_exa", args: '{"query":"x"}' });
+    expect(out.text).toBe("exa_web_search_exa");
+    expect(out.title).toBe("exa_web_search_exa");
+  });
+
+  test("mcpSummary returns empty when the tool name isn't a string yet (streaming)", () => {
+    expect(mcpSummary({})).toEqual({});
+    expect(mcpSummary(null)).toEqual({});
+  });
+
+  test("renders the tool name and parses a JSON-string args payload", () => {
+    render(
+      <McpRenderer
+        call={call(
+          "mcp",
+          { tool: "exa_web_search_exa", args: '{"query":"what is the day today"}' },
+          { content: [{ type: "text", text: "today is Friday" }] },
+        )}
+      />,
+    );
+    expect(screen.getByText("Tool")).toBeInTheDocument();
+    expect(screen.getByText("exa_web_search_exa")).toBeInTheDocument();
+    expect(screen.getByText("Arguments")).toBeInTheDocument();
+    // The escaped JSON string is parsed and pretty-printed, so the key appears unquoted-as-string.
+    expect(screen.getByText(/"query": "what is the day today"/)).toBeInTheDocument();
+    expect(screen.getByText("Result")).toBeInTheDocument();
+    expect(screen.getByText("today is Friday")).toBeInTheDocument();
   });
 });
 
