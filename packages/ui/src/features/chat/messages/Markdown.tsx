@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "../../../lib/cn.js";
 import { CheckboxItem, TaskListItem } from "../markdown/CheckboxItem.js";
-import { highlight } from "./code-highlight.js";
+import { getCachedHighlight, highlight } from "./code-highlight.js";
 
 /**
  * Recursively concatenate the text content of a React children tree. Used in the fenced
@@ -151,11 +151,21 @@ function CodeBlock({
   lang: string;
   highlight: boolean;
 }) {
-  const [html, setHtml] = useState<string | undefined>(undefined);
+  // Seed from the synchronous cache so a block remounted by the virtualized message list (on
+  // scroll) paints already-highlighted on the first frame — no flash back to the uncoloured
+  // fallback. A cache miss (first highlight / streaming) still resolves async below.
+  const [html, setHtml] = useState<string | undefined>(() =>
+    shouldHighlight ? getCachedHighlight(code, lang) : undefined,
+  );
 
   useEffect(() => {
     if (!shouldHighlight) {
       setHtml(undefined);
+      return;
+    }
+    const cached = getCachedHighlight(code, lang);
+    if (cached) {
+      setHtml(cached);
       return;
     }
     let cancelled = false;

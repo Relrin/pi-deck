@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { highlight } from "../../../../src/features/chat/messages/code-highlight";
+import {
+  getCachedHighlight,
+  highlight,
+} from "../../../../src/features/chat/messages/code-highlight";
 
 describe("highlight", () => {
   test("returns Shiki HTML for a known language", async () => {
@@ -23,5 +26,16 @@ describe("highlight", () => {
     const html = await highlight({ code: "const x = 1;", lang: "ts" });
     expect(html).toContain("var(--syn-");
     expect(html).toContain("var(--code-bg)");
+  });
+
+  test("caches highlighted HTML so a virtualized remount can seed synchronously", async () => {
+    const code = "const cachedForRemount = 42;";
+    // Not cached until the first highlight resolves.
+    expect(getCachedHighlight(code, "ts")).toBeUndefined();
+    const html = await highlight({ code, lang: "ts" });
+    // Subsequent (synchronous) lookups return the same HTML — no re-highlight on remount.
+    expect(getCachedHighlight(code, "ts")).toBe(html);
+    // Keyed by language too.
+    expect(getCachedHighlight(code, "js")).toBeUndefined();
   });
 });
