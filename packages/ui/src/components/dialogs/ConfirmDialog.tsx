@@ -40,7 +40,7 @@ export function ConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title={title} description={description}>
       <div className="flex justify-end gap-2">
-        <PidButton variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>
+        <PidButton variant="ghost" longLabel onClick={() => onOpenChange(false)} disabled={busy}>
           {cancelLabel}
         </PidButton>
         <PidButton
