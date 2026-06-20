@@ -9,7 +9,10 @@ import { createMockExtensionApi } from "../helpers/mock-api.js";
 
 const PROJECT = isAbsolute("/repo") ? "/repo" : resolve("C:\\repo");
 
-function setup(initialMode: "ask" | "accept-edits" | "plan" = "plan") {
+function setup(
+  initialMode: "ask" | "accept-edits" | "plan" = "plan",
+  initialPlanGatePolicy?: "block" | "approve",
+) {
   const api = createMockExtensionApi();
   const requests: ToolApprovalRequest[] = [];
   let pendingTimers: Array<{ cb: () => void; ms: number }> = [];
@@ -26,6 +29,7 @@ function setup(initialMode: "ask" | "accept-edits" | "plan" = "plan") {
   const controller = createAgentModeExtension({
     projectPath: PROJECT,
     initialMode,
+    initialPlanGatePolicy,
     onApprovalRequest: (req) => requests.push(req),
     timers,
   });
@@ -54,14 +58,37 @@ function firstRequest(requests: ToolApprovalRequest[]): ToolApprovalRequest {
 }
 
 describe("createAgentModeExtension — tool_call enforcement", () => {
-  test("plan mode synchronously blocks bash without asking the user", async () => {
-    const { api, requests } = setup("plan");
+  test("plan mode (block policy) synchronously blocks mutating bash without asking", async () => {
+    const { api, requests } = setup("plan", "block");
     const result = await api.fire<ToolCallEventResult>(
       "tool_call",
       makeEvent("bash", { command: "rm -rf /" }),
     );
     expect(result?.block).toBe(true);
     expect(result?.reason).toContain("Plan mode");
+    expect(requests).toHaveLength(0);
+  });
+
+  test("plan mode (approve policy, default) prompts for a non-read-only op instead of blocking", async () => {
+    const { controller, api, requests } = setup("plan");
+    const promise = api.fire<ToolCallEventResult>(
+      "tool_call",
+      makeEvent("mcp", { tool: "exa_web_search_exa" }),
+    );
+    // An approval request fires synchronously rather than a hard block.
+    expect(requests).toHaveLength(1);
+    controller.resolveApproval(firstRequest(requests).approvalId, "allow");
+    const result = await promise;
+    expect(result?.block).toBeFalsy();
+  });
+
+  test("plan mode auto-allows read-only bash without prompting", async () => {
+    const { api, requests } = setup("plan");
+    const result = await api.fire<ToolCallEventResult>(
+      "tool_call",
+      makeEvent("bash", { command: "ls -la" }),
+    );
+    expect(result).toBeUndefined();
     expect(requests).toHaveLength(0);
   });
 

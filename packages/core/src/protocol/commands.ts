@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ProjectSchema, ProjectSummarySchema } from "../domain/project.js";
 import {
   AgentModeSchema,
+  PlanGatePolicySchema,
   SessionModelRefSchema,
   SessionSummarySchema,
   ThinkingLevelSchema,
@@ -94,6 +95,8 @@ export const SessionCreateRequest = z.object({
   modelRef: SessionModelRefSchema.optional(),
   thinkingLevel: ThinkingLevelSchema.optional(),
   agentMode: AgentModeSchema.optional(),
+  /** Plan-mode policy for non-read-only operations: `block` or `approve`. Captured per-session. */
+  planGatePolicy: PlanGatePolicySchema.optional(),
   /** Tool ids to disable for this session. See SessionSummarySchema.excludedTools. */
   excludedTools: z.array(z.string().min(1)).optional(),
 });

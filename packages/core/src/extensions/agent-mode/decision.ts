@@ -1,11 +1,28 @@
 import { isAbsolute, normalize, resolve, sep } from "node:path";
-import type { AgentMode } from "../../domain/session.js";
+import type { AgentMode, PlanGatePolicy } from "../../domain/session.js";
 import { isReadOnlyBashCommand } from "./bash-safety.js";
 
 /** Built-in tools considered mutating by default. */
 export const DEFAULT_MUTATING_TOOLS: ReadonlySet<string> = new Set(["bash", "edit", "write"]);
 /** Built-in tools that always require explicit approval outside of plan mode. */
 export const DEFAULT_SHELL_TOOLS: ReadonlySet<string> = new Set(["bash"]);
+/**
+ * Tools that only inspect — they flow through untouched in every mode, and are auto-allowed in
+ * plan mode. Anything NOT here (and not a read-only shell command) is treated as side-effecting
+ * in plan mode and gated per `planGatePolicy`. `bash` is deliberately absent: it's classified
+ * per-command via `isReadOnlyBashCommand`.
+ */
+export const DEFAULT_READ_ONLY_TOOLS: ReadonlySet<string> = new Set([
+  "read",
+  "grep",
+  "find",
+  "ls",
+  "glob",
+  "tree",
+]);
+
+/** Plan mode defaults to prompting (rather than blocking) for non-read-only operations. */
+export const DEFAULT_PLAN_GATE_POLICY: PlanGatePolicy = "approve";
 
 export type AgentModeDecision =
   | { kind: "allow" }
@@ -22,8 +39,11 @@ export interface DecideOptions {
   projectPath: string;
   /** Absolute path of the per-session plan file. */
   planFilePath?: string;
+  /** What plan mode does with non-read-only operations. Defaults to `approve`. */
+  planGatePolicy?: PlanGatePolicy;
   mutatingTools?: ReadonlySet<string>;
   shellTools?: ReadonlySet<string>;
+  readOnlyTools?: ReadonlySet<string>;
 }
 
 /**
@@ -34,31 +54,8 @@ export function decideToolCall(opts: DecideOptions): AgentModeDecision {
   const mutating = opts.mutatingTools ?? DEFAULT_MUTATING_TOOLS;
   const shell = opts.shellTools ?? DEFAULT_SHELL_TOOLS;
 
-  if (opts.mode === "plan" && mutating.has(opts.toolName)) {
-    if (isPlanFileWrite(opts.toolName, opts.input, opts.planFilePath, opts.projectPath)) {
-      return { kind: "allow" };
-    }
-    if (shell.has(opts.toolName)) {
-      // Read-only shell commands (ls, cat, grep, find, sed, awk, git log, …) are safe while
-      // planning, so let them through instead of blocking every bash call.
-      if (isReadOnlyBashCommand(opts.input)) {
-        return { kind: "allow" };
-      }
-      return {
-        kind: "block",
-        reason:
-          "Plan mode is active. Read-only shell commands (ls, cat, grep, find, etc.) are allowed, " +
-          "but this command looks like it could modify the workspace, so it's blocked. Use a " +
-          "read-only command to inspect things, or describe the change you would make and stop; " +
-          "do not retry.",
-      };
-    }
-    return {
-      kind: "block",
-      reason:
-        "Plan mode is active. The user wants a plan only — no edits, writes, or shell commands " +
-        "that modify the workspace. Describe the changes you would make and stop; do not retry.",
-    };
+  if (opts.mode === "plan") {
+    return decidePlanMode(opts, shell);
   }
 
   if (opts.mode === "accept-edits" && opts.toolName === "edit") {
@@ -77,6 +74,49 @@ export function decideToolCall(opts: DecideOptions): AgentModeDecision {
   }
 
   return { kind: "allow" };
+}
+
+/**
+ * Plan-mode policy. Read-only operations (read/grep/ls/... and read-only shell commands) plus the
+ * one writable plan file always flow through. Everything else — edits, writes, mutating shell,
+ * MCP / network / other side-effecting tools — is gated: `approve` prompts the user, `block`
+ * refuses outright.
+ */
+function decidePlanMode(opts: DecideOptions, shell: ReadonlySet<string>): AgentModeDecision {
+  if (isPlanFileWrite(opts.toolName, opts.input, opts.planFilePath, opts.projectPath)) {
+    return { kind: "allow" };
+  }
+  if (isPlanReadOnly(opts, shell)) {
+    return { kind: "allow" };
+  }
+
+  const policy = opts.planGatePolicy ?? DEFAULT_PLAN_GATE_POLICY;
+  const isShell = shell.has(opts.toolName);
+  if (policy === "approve") {
+    return {
+      kind: "approve",
+      reason: isShell
+        ? "Plan mode: this shell command isn't read-only — allow it to run, or deny to keep planning."
+        : "Plan mode: this operation can change files or reach outside the workspace — allow it, or deny to keep planning.",
+    };
+  }
+  return {
+    kind: "block",
+    reason: isShell
+      ? "Plan mode is active. Read-only shell commands (ls, cat, grep, find, etc.) are allowed, " +
+        "but this command looks like it could modify the workspace, so it's blocked. Use a " +
+        "read-only command to inspect things, or describe the change you would make and stop; " +
+        "do not retry."
+      : "Plan mode is active. The user wants a plan only — no edits, writes, or other " +
+        "workspace-changing operations. Describe the changes you would make and stop; do not retry.",
+  };
+}
+
+/** Whether a tool call is a pure read-only inspection (auto-allowed in plan mode). */
+function isPlanReadOnly(opts: DecideOptions, shell: ReadonlySet<string>): boolean {
+  if (shell.has(opts.toolName)) return isReadOnlyBashCommand(opts.input);
+  const readOnly = opts.readOnlyTools ?? DEFAULT_READ_ONLY_TOOLS;
+  return readOnly.has(opts.toolName);
 }
 
 /**

@@ -56,6 +56,7 @@ export function PidComposerScreen() {
   const agentMode = useSessionDefaultsStore((s) => s.defaultAgentMode);
   const pendingExcludedTools = useIntroComposerStore((s) => s.pendingExcludedTools);
   const defaultExcludedTools = useToolsStore((s) => s.defaultExcludedTools);
+  const planGatePolicy = useToolsStore((s) => s.planGatePolicy);
   const attachments = useIntroComposerStore((s) => s.attachments);
   const addAttachments = useIntroComposerStore((s) => s.addAttachments);
   const removeAttachment = useIntroComposerStore((s) => s.removeAttachment);
@@ -261,6 +262,7 @@ export function PidComposerScreen() {
         modelRef: pendingModelRef,
         thinkingLevel: defaultThinkingLevel,
         agentMode,
+        planGatePolicy,
         excludedTools: excludedTools.length > 0 ? excludedTools : undefined,
       });
       await useSessionsStore.getState().sendPrompt(trimmed, {

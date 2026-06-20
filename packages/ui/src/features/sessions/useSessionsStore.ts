@@ -1,5 +1,6 @@
 import type {
   AgentMode,
+  PlanGatePolicy,
   SessionModelRef,
   SessionSummary,
   ThinkingLevel,
@@ -49,6 +50,7 @@ export interface SessionsStoreState {
       modelRef?: SessionModelRef;
       thinkingLevel?: ThinkingLevel;
       agentMode?: AgentMode;
+      planGatePolicy?: PlanGatePolicy;
       excludedTools?: string[];
     },
   ) => Promise<void>;
@@ -265,6 +267,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         modelRef: opts?.modelRef,
         thinkingLevel: opts?.thinkingLevel,
         agentMode: opts?.agentMode,
+        planGatePolicy: opts?.planGatePolicy,
         excludedTools: opts?.excludedTools,
       });
       set((state) => {

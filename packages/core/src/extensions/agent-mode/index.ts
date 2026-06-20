@@ -9,6 +9,8 @@ export {
 export {
   type AgentModeDecision,
   DEFAULT_MUTATING_TOOLS,
+  DEFAULT_PLAN_GATE_POLICY,
+  DEFAULT_READ_ONLY_TOOLS,
   DEFAULT_SHELL_TOOLS,
   type DecideOptions,
   decideToolCall,

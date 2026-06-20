@@ -4,7 +4,12 @@ import {
   type SessionInfo as PiSessionInfo,
   SessionManager as PiSessionManager,
 } from "@earendil-works/pi-coding-agent";
-import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/session.js";
+import type {
+  AgentMode,
+  PlanGatePolicy,
+  SessionModelRef,
+  ThinkingLevel,
+} from "../domain/session.js";
 import type { ApprovalDecision } from "../extensions/agent-mode/index.js";
 import { currentBranch } from "../git/branches.js";
 import type { PromptAttachment, PromptImage, SessionCommandInfo } from "../protocol/commands.js";
@@ -41,6 +46,8 @@ export interface SessionRecord {
   thinkingLevel?: ThinkingLevel;
   /** Agent permission mode set on the composer. */
   agentMode?: AgentMode;
+  /** Plan-mode policy for non-read-only operations, captured at creation. */
+  planGatePolicy?: PlanGatePolicy;
   /** Tool ids disabled for this session. */
   excludedTools?: string[];
   /** Git branch snapshot taken when the session was created. */
@@ -277,6 +284,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     modelRef?: SessionModelRef;
     thinkingLevel?: ThinkingLevel;
     agentMode?: AgentMode;
+    planGatePolicy?: PlanGatePolicy;
     excludedTools?: string[];
   }): Promise<SessionRecord> {
     const localId = `local-${this.nextLocalId++}`;
@@ -294,6 +302,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       modelRef,
       thinkingLevel: input.thinkingLevel,
       agentMode: input.agentMode,
+      planGatePolicy: input.planGatePolicy,
       excludedTools: input.excludedTools,
       archived: false,
     };
@@ -339,6 +348,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       modelRef: record.modelRef,
       thinkingLevel: record.thinkingLevel,
       agentMode: record.agentMode,
+      planGatePolicy: record.planGatePolicy,
       excludedTools: record.excludedTools,
     })) as { sessionId: string; sessionFile: string };
 

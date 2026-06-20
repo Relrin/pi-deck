@@ -178,6 +178,7 @@ const handlers: { [C in CommandName]: CommandHandler } = {
       modelRef: parsed.modelRef,
       thinkingLevel: parsed.thinkingLevel,
       agentMode: parsed.agentMode,
+      planGatePolicy: parsed.planGatePolicy,
       excludedTools: parsed.excludedTools,
     });
     await ctx.metadataStore.appendSessionId(project.id, record.id);

@@ -16,6 +16,18 @@ export const AgentModeSchema = z.enum(["ask", "accept-edits", "plan"]);
 export type AgentMode = z.infer<typeof AgentModeSchema>;
 
 /**
+ * What plan mode does with an operation that isn't a pure read-only inspection (edits, writes,
+ * mutating shell, MCP / network / other side-effecting tools):
+ *  - `block`   — refuse it outright (strict "plan only, no changes" posture).
+ *  - `approve` — prompt the user to allow or deny it (default; lets the user green-light a
+ *                fetch / MCP call / one-off change without leaving plan mode).
+ * Read-only operations always flow through regardless. Set globally in Settings - Tools and
+ * captured per-session at creation (existing sessions keep their own).
+ */
+export const PlanGatePolicySchema = z.enum(["block", "approve"]);
+export type PlanGatePolicy = z.infer<typeof PlanGatePolicySchema>;
+
+/**
  * The (providerId, modelId) pair that uniquely identifies a model inside pi-ai's registry.
  * `providerId` matches pi's provider slug (e.g. `anthropic`, `openai`, `openrouter`, or any
  * custom provider key written to ~/.pi/agent/models.json by us).

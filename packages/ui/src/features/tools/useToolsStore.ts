@@ -1,3 +1,4 @@
+import type { PlanGatePolicy } from "@pi-deck/core/domain/session.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { humanizeError } from "../../lib/format/humanize-error.js";
@@ -18,6 +19,12 @@ import { useSessionsStore } from "../sessions/useSessionsStore.js";
 interface ToolsStoreState {
   /** Tool ids disabled by default for new sessions. Empty = all built-ins enabled. */
   defaultExcludedTools: string[];
+  /**
+   * What plan mode does with non-read-only operations (edits, MCP/network, mutating shell):
+   * `approve` prompts the user per operation; `block` refuses outright. Read-only operations
+   * always flow through. Captured per-session at creation — applies to new conversations.
+   */
+  planGatePolicy: PlanGatePolicy;
   /** Per-session mirror of the server-side excluded list. */
   bySession: Record<string, string[]>;
 
@@ -27,6 +34,8 @@ interface ToolsStoreState {
   /** Replace the default exclusion list. Persisted locally; takes effect on the next
    *  `session.create`. Does NOT mutate existing sessions. */
   setDefaultExcludedTools: (tools: string[]) => void;
+  /** Set the plan-mode policy. Persisted locally; applies to sessions created afterward. */
+  setPlanGatePolicy: (policy: PlanGatePolicy) => void;
   /** Seed the local mirror for a session from its server record. Called when the session
    *  list refreshes so the picker reflects persisted state without a user interaction. */
   seed: (sessionId: string, tools: string[] | undefined) => void;
@@ -56,6 +65,7 @@ export const useToolsStore = create<ToolsStoreState>()(
   persist(
     (set, get) => ({
       defaultExcludedTools: [],
+      planGatePolicy: "approve",
       bySession: {},
 
       getExcluded: (sessionId) => {
@@ -71,6 +81,11 @@ export const useToolsStore = create<ToolsStoreState>()(
         const current = get().defaultExcludedTools;
         if (sameList(current, next)) return;
         set({ defaultExcludedTools: next });
+      },
+
+      setPlanGatePolicy: (policy) => {
+        if (get().planGatePolicy === policy) return;
+        set({ planGatePolicy: policy });
       },
 
       seed: (sessionId, tools) => {
@@ -103,6 +118,7 @@ export const useToolsStore = create<ToolsStoreState>()(
       // bySession is local mirror only — survives reload but server is authoritative.
       partialize: (state) => ({
         defaultExcludedTools: state.defaultExcludedTools,
+        planGatePolicy: state.planGatePolicy,
         bySession: state.bySession,
       }),
     },

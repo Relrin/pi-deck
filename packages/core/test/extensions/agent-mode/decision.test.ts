@@ -10,55 +10,81 @@ const PROJECT = isAbsolute("/repo") ? "/repo" : resolve("C:\\repo");
 const PLAN_FILE = join(PROJECT, ".pi-deck", "plans", "abc-123.md");
 
 describe("decideToolCall", () => {
-  test("plan mode blocks bash/edit/write with a stable reason", () => {
-    for (const toolName of ["bash", "edit", "write"]) {
+  test("plan mode default policy (approve) prompts for non-read-only operations", () => {
+    // edit/write/mutating-bash plus side-effecting tools (e.g. the `mcp` proxy) all prompt.
+    const cases: Array<{ toolName: string; input: unknown }> = [
+      { toolName: "edit", input: { path: "x" } },
+      { toolName: "write", input: { path: "x" } },
+      { toolName: "bash", input: { command: "rm -rf node_modules" } },
+      { toolName: "mcp", input: { tool: "exa_web_search_exa" } },
+    ];
+    for (const { toolName, input } of cases) {
       const d = decideToolCall({
         mode: "plan",
         toolName,
-        input: {},
-        editAllowlist: [PROJECT],
+        input,
+        editAllowlist: [],
         projectPath: PROJECT,
       });
+      expect(d.kind).toBe("approve");
+    }
+  });
+
+  test("plan mode with block policy refuses non-read-only operations", () => {
+    for (const toolName of ["bash", "edit", "write", "mcp"]) {
+      const d = decideToolCall({
+        mode: "plan",
+        toolName,
+        input: toolName === "bash" ? { command: "rm -rf x" } : {},
+        editAllowlist: [PROJECT],
+        projectPath: PROJECT,
+        planGatePolicy: "block",
+      });
       expect(d.kind).toBe("block");
-      if (d.kind === "block") {
-        expect(d.reason).toContain("Plan mode");
+      if (d.kind === "block") expect(d.reason).toContain("Plan mode");
+    }
+  });
+
+  test("plan mode allows read-only tools regardless of policy", () => {
+    for (const policy of ["approve", "block"] as const) {
+      for (const toolName of ["read", "grep", "find", "ls", "glob"]) {
+        const d = decideToolCall({
+          mode: "plan",
+          toolName,
+          input: {},
+          editAllowlist: [],
+          projectPath: PROJECT,
+          planGatePolicy: policy,
+        });
+        expect(d.kind).toBe("allow");
       }
     }
   });
 
-  test("plan mode allows read-only tools", () => {
-    for (const toolName of ["read", "grep", "find", "ls"]) {
-      const d = decideToolCall({
-        mode: "plan",
-        toolName,
-        input: {},
-        editAllowlist: [],
-        projectPath: PROJECT,
-      });
-      expect(d.kind).toBe("allow");
+  test("plan mode allows read-only bash commands regardless of policy", () => {
+    for (const policy of ["approve", "block"] as const) {
+      for (const command of ["ls -la", "grep -rn TODO src", "find . -name '*.ts'", "git log"]) {
+        const d = decideToolCall({
+          mode: "plan",
+          toolName: "bash",
+          input: { command },
+          editAllowlist: [],
+          projectPath: PROJECT,
+          planGatePolicy: policy,
+        });
+        expect(d.kind).toBe("allow");
+      }
     }
   });
 
-  test("plan mode allows read-only bash commands", () => {
-    for (const command of ["ls -la", "grep -rn TODO src", "find . -name '*.ts'", "git log"]) {
-      const d = decideToolCall({
-        mode: "plan",
-        toolName: "bash",
-        input: { command },
-        editAllowlist: [],
-        projectPath: PROJECT,
-      });
-      expect(d.kind).toBe("allow");
-    }
-  });
-
-  test("plan mode blocks mutating bash with a shell-specific reason", () => {
+  test("plan mode (block) gives mutating bash a shell-specific reason", () => {
     const d = decideToolCall({
       mode: "plan",
       toolName: "bash",
       input: { command: "rm -rf node_modules" },
       editAllowlist: [],
       projectPath: PROJECT,
+      planGatePolicy: "block",
     });
     expect(d.kind).toBe("block");
     if (d.kind === "block") {
@@ -151,7 +177,7 @@ describe("decideToolCall", () => {
     }
   });
 
-  test("plan mode still blocks writes to sibling paths near the plan file", () => {
+  test("plan-file exception does not extend to sibling paths (still gated)", () => {
     for (const sibling of [
       `${PLAN_FILE}.bak`,
       join(PROJECT, ".pi-deck", "plans", "other.md"),
@@ -165,12 +191,13 @@ describe("decideToolCall", () => {
         editAllowlist: [PROJECT],
         projectPath: PROJECT,
         planFilePath: PLAN_FILE,
+        planGatePolicy: "block",
       });
       expect(d.kind).toBe("block");
     }
   });
 
-  test("plan mode still blocks bash even when planFilePath is set", () => {
+  test("plan-file exception does not cover bash, even when planFilePath is set", () => {
     const d = decideToolCall({
       mode: "plan",
       toolName: "bash",
@@ -178,31 +205,33 @@ describe("decideToolCall", () => {
       editAllowlist: [PROJECT],
       projectPath: PROJECT,
       planFilePath: PLAN_FILE,
+      planGatePolicy: "block",
     });
     expect(d.kind).toBe("block");
   });
 
-  test("custom mutating-tool set overrides the default", () => {
-    const custom = new Set(["dangerous"]);
+  test("readOnlyTools override controls what plan mode auto-allows", () => {
+    // A tool added to the read-only set is auto-allowed even under the block policy.
     const d = decideToolCall({
       mode: "plan",
-      toolName: "dangerous",
+      toolName: "customread",
       input: {},
       editAllowlist: [],
       projectPath: PROJECT,
-      mutatingTools: custom,
+      planGatePolicy: "block",
+      readOnlyTools: new Set(["customread"]),
     });
-    expect(d.kind).toBe("block");
-    // bash is no longer in the set, so plan would allow it.
+    expect(d.kind).toBe("allow");
+    // A default read-only tool removed from the set is gated (prompts under approve).
     const d2 = decideToolCall({
       mode: "plan",
-      toolName: "bash",
+      toolName: "read",
       input: {},
       editAllowlist: [],
       projectPath: PROJECT,
-      mutatingTools: custom,
+      readOnlyTools: new Set([]),
     });
-    expect(d2.kind).toBe("allow");
+    expect(d2.kind).toBe("approve");
   });
 });
 

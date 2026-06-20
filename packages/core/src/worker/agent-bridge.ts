@@ -15,7 +15,12 @@ import {
   SessionManager as PiSessionManager,
   SettingsManager,
 } from "@earendil-works/pi-coding-agent";
-import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/session.js";
+import type {
+  AgentMode,
+  PlanGatePolicy,
+  SessionModelRef,
+  ThinkingLevel,
+} from "../domain/session.js";
 import { type ApprovalDecision, createAgentModeExtension } from "../extensions/agent-mode/index.js";
 import { createAttachmentsExtension } from "../extensions/attachments/index.js";
 import { listProjectFiles } from "../git/files.js";
@@ -118,6 +123,8 @@ export interface InitParams {
   modelRef?: SessionModelRef;
   thinkingLevel?: ThinkingLevel;
   agentMode?: AgentMode;
+  /** Plan-mode policy for non-read-only operations: `block` or `approve` (default). */
+  planGatePolicy?: PlanGatePolicy;
   /**
    * Tool ids to drop from this session before the SDK registers them. Forwarded straight
    * to `createAgentSession({ excludeTools })`. The SDK has no setter for this after
@@ -203,6 +210,7 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
   const agentModeController = createAgentModeExtension({
     projectPath: params.projectPath,
     initialMode: params.agentMode ?? "plan",
+    initialPlanGatePolicy: params.planGatePolicy,
     onApprovalRequest: (request) => {
       emit(EVENT_SESSION_TOOL_APPROVAL_REQUESTED, request);
     },

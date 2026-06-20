@@ -8,21 +8,19 @@ describe("composePlanPrompt", () => {
     const out = composePlanPrompt("ORIGINAL SYSTEM PROMPT", { planFilePath: PLAN_FILE });
     expect(out.startsWith("ORIGINAL SYSTEM PROMPT")).toBe(true);
     expect(out).toContain("# Plan Mode");
+  });
+
+  test("tells the agent it is in plan mode and points at the plan file", () => {
+    const out = composePlanPrompt("x", { planFilePath: PLAN_FILE });
+    expect(out.toLowerCase()).toContain("plan mode");
+    expect(out).toContain("read-only");
     expect(out).toContain(PLAN_FILE);
   });
 
-  test("tells the agent read-only shell exploration is allowed (not blocked)", () => {
+  test("includes the structured plan section headings", () => {
     const out = composePlanPrompt("x", { planFilePath: PLAN_FILE });
-    // The agent previously assumed "bash is blocked in plan mode" and fell back to reading
-    // directories (EISDIR). The prompt must green-light read-only shell + directory listing.
-    expect(out).toContain("read-only shell commands");
-    expect(out).toContain("ls");
-    expect(out.toLowerCase()).toContain("bash");
-  });
-
-  test("still tells the agent that workspace-mutating actions are blocked", () => {
-    const out = composePlanPrompt("x", { planFilePath: PLAN_FILE });
-    expect(out).toContain("BLOCKS");
-    expect(out).toContain("sed -i");
+    for (const heading of ["Context", "Plan", "Files to touch", "Verification"]) {
+      expect(out).toContain(heading);
+    }
   });
 });

@@ -8,8 +8,8 @@ import type {
   ToolCallEvent,
   ToolCallEventResult,
 } from "@earendil-works/pi-coding-agent";
-import type { AgentMode } from "../../domain/session.js";
-import { decideToolCall } from "./decision.js";
+import type { AgentMode, PlanGatePolicy } from "../../domain/session.js";
+import { DEFAULT_PLAN_GATE_POLICY, decideToolCall } from "./decision.js";
 import { composePlanPrompt } from "./plan-prompt.js";
 
 export const APPROVAL_TIMEOUT_MS = 5 * 60_000;
@@ -29,6 +29,11 @@ export type ApprovalDecision = "allow" | "deny";
 export interface AgentModeExtensionOptions {
   projectPath: string;
   initialMode?: AgentMode;
+  /**
+   * What plan mode does with non-read-only operations: `block` (refuse) or `approve` (prompt the
+   * user). Defaults to `approve`. Read-only operations always flow through.
+   */
+  initialPlanGatePolicy?: PlanGatePolicy;
   /**
    * Initial absolute paths that auto-approve in `accept-edits` mode. Defaults to `[projectPath]`
    * — every edit inside the project is fine; anything outside still prompts. Pass `[]` to start
@@ -86,9 +91,11 @@ interface PendingEntry {
 /**
  * Built-in pi-deck plugin that enforces the composer's agent mode:
  *
- * - `plan`   — edit/write and workspace-mutating bash calls are blocked with a stable reason;
- *              read-only bash (ls/cat/grep/find/git log/...) is allowed so the agent can
- *              explore the repo while planning (see `bash-safety.ts`).
+ * - `plan`   — read-only operations (read/grep/ls/… and read-only bash, see `bash-safety.ts`)
+ *              plus the per-session plan file flow through. Everything else (edit/write,
+ *              mutating bash, MCP / network / other side-effecting tools) is gated by
+ *              `initialPlanGatePolicy`: `approve` routes it through `onApprovalRequest`,
+ *              `block` refuses it with a stable reason.
  * - `ask`    — every mutating tool call routes through `onApprovalRequest`. Read-only tools
  *              (read/grep/find/ls and any other non-mutating tool) flow through untouched.
  * - `accept-edits` — `edit` calls inside `editAllowlist` auto-approve; everything else
@@ -105,6 +112,7 @@ export function createAgentModeExtension(options: AgentModeExtensionOptions): Ag
   const timeoutMs = options.approvalTimeoutMs ?? APPROVAL_TIMEOUT_MS;
 
   let mode: AgentMode = options.initialMode ?? "plan";
+  const planGatePolicy: PlanGatePolicy = options.initialPlanGatePolicy ?? DEFAULT_PLAN_GATE_POLICY;
   let allowlist: string[] =
     options.initialAllowlist !== undefined ? [...options.initialAllowlist] : [options.projectPath];
   let planFilePath: string | undefined;
@@ -167,6 +175,7 @@ export function createAgentModeExtension(options: AgentModeExtensionOptions): Ag
         editAllowlist: allowlist,
         projectPath: options.projectPath,
         planFilePath,
+        planGatePolicy,
         mutatingTools: options.mutatingTools,
         shellTools: options.shellTools,
       });
