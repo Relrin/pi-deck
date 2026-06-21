@@ -23,4 +23,18 @@ describe("composePlanPrompt", () => {
       expect(out).toContain(heading);
     }
   });
+
+  test("documents the LABEL operation tag and the [~]/[x] execution markers", () => {
+    const out = composePlanPrompt("x", { planFilePath: PLAN_FILE });
+    expect(out).toContain("**LABEL**");
+    expect(out).toContain("[~]");
+    expect(out).toContain("[x]");
+  });
+
+  test("asks for an H1 title and an embedded execution note", () => {
+    const out = composePlanPrompt("x", { planFilePath: PLAN_FILE });
+    expect(out).toContain("# <short imperative title>");
+    // The marking protocol travels inside the plan file, not the approval message.
+    expect(out).toContain("_Execution: mark each step");
+  });
 });

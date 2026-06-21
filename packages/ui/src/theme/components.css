@@ -5134,6 +5134,170 @@
   opacity: 0.75;
 }
 
+/* ─── Inline plan snapshot ────────────────────────────────────────────────────
+ * The "PLAN" card rendered inline during execution: a status dot + operation label +
+ * description + elapsed per step, windowed for long plans. Mirrors the plan-progress mockup;
+ * driven entirely by the agent editing its plan file (`[ ]`→`[~]`→`[x]`). */
+.pid-plan-snapshot {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg-1);
+  padding: 12px 14px;
+  margin: 8px 0 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.pid-plan-snapshot-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+/* "PLAN" chip — matches the inline plan-card eyebrow. */
+.pid-plan-snapshot-chip {
+  flex: none;
+  padding: 2px 7px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.pid-plan-snapshot-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-0);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.pid-plan-snapshot-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* align-items center keeps the dot vertically inline with the single-line label + desc. */
+.pid-plan-snapshot-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.pid-plan-snapshot-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.pid-plan-snapshot-dot-done {
+  background: var(--add);
+}
+
+.pid-plan-snapshot-dot-active {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  animation: pid-plan-snapshot-pulse 1.4s ease-in-out infinite;
+}
+
+.pid-plan-snapshot-dot-pending {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ink-3);
+}
+
+@keyframes pid-plan-snapshot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.pid-plan-snapshot-label {
+  flex: none;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.pid-plan-snapshot-desc {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-1);
+}
+
+.pid-plan-snapshot-time {
+  flex: none;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Completed + pending rows recede; the active row reads brighter and is accent-tagged. */
+.pid-plan-snapshot-row-done .pid-plan-snapshot-desc,
+.pid-plan-snapshot-row-pending .pid-plan-snapshot-desc {
+  color: var(--ink-2);
+}
+
+.pid-plan-snapshot-row-active .pid-plan-snapshot-label {
+  color: var(--accent);
+}
+
+.pid-plan-snapshot-row-active .pid-plan-snapshot-desc {
+  color: var(--ink-0);
+}
+
+/* Hidden-count rows for windowed long plans (e.g. "+4 earlier steps"). */
+.pid-plan-snapshot-more {
+  padding-left: 16px;
+  color: var(--ink-3);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.pid-plan-snapshot-summary {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+
+/* One-line progress header in the right-rail plan panel. */
+.pid-plan-panel-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-2);
+  letter-spacing: 0.02em;
+}
+
+.pid-plan-panel-progress-current {
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
 /* Inline plan card — wraps a plan-shaped assistant message. */
 .pid-plan-card {
   position: relative;

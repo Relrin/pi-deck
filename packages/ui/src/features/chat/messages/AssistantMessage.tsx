@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useProvidersStore } from "../../models/useProvidersStore.js";
+import { selectPlanSession, usePlanStore } from "../../plan-panel/usePlanStore.js";
 import { useComposerStore } from "../composer/useComposerStore.js";
 import { ToolCallCard } from "../tools/ToolCallCard.js";
 import type { AssistantMessageEntry } from "../types.js";
@@ -7,7 +8,8 @@ import { selectLatestAssistantId, useMessagesStore } from "../useMessagesStore.j
 import { Markdown } from "./Markdown.js";
 import { MessageContextMenu } from "./MessageContextMenu.js";
 import { MessageSurface } from "./MessageSurface.js";
-import { isPlanShapedMessage, PlanCard } from "./PlanCard.js";
+import { isPlanShapedMessage, PlanCard, planMarkdownHasChecklist } from "./PlanCard.js";
+import { PlanSnapshot, type PlanSnapshotRow } from "./PlanSnapshot.js";
 import { StreamingStatus } from "./StreamingStatus.js";
 import { formatMessageTime, formatMessageTimestampFull } from "./time.js";
 
@@ -40,6 +42,7 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
   //    pi's sessionFile doesn't carry per-turn mode metadata.
   const sessionAgentMode = useComposerStore((s) => s.getMode(sessionId));
   const isPlan = isPlanShapedMessage(message, sessionAgentMode);
+  const stampedPlanMode = (message.agentModeAtTurn ?? sessionAgentMode) === "plan";
   // The Approve / Revise footer only renders on the most recent assistant turn. Stale plans
   // (i.e. ones with a later assistant turn after them) keep the card chrome but drop the
   // footer so users can't re-approve work that has already moved on.
@@ -47,6 +50,61 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
     useMemo(() => selectLatestAssistantId(sessionId), [sessionId]),
   );
   const isLatestAssistant = latestAssistantId === message.id;
+
+  // Inline plan snapshot. The agent drives progress by editing its plan file
+  // (`[ ]`→`[~]`→`[x]`); `usePlanStore` parses it and freezes periodic captures. We render a
+  // live card under the latest executing turn (current step ticking) and the frozen capture
+  // anchored to any earlier turn, so a long run keeps a recent plan-state reference in view.
+  const plan = usePlanStore(selectPlanSession(sessionId));
+  // Defensive defaults: a session rehydrated from an older persisted shape may lack these
+  // arrays. `usePlanStore`'s merge backfills them, but guarding here keeps a render crash from
+  // ever blanking the app on a stale entry.
+  const planSteps = plan.steps ?? [];
+  const planStepTimings = plan.stepTimings ?? {};
+  const planSnapshots = plan.snapshots ?? [];
+  const liveRows = useMemo<PlanSnapshotRow[]>(
+    () =>
+      planSteps.map((s) => {
+        const t = planStepTimings[s.id];
+        const base = {
+          id: s.id,
+          ...(s.label ? { label: s.label } : {}),
+          description: s.description,
+        };
+        if (s.status === "done") {
+          const durationMs =
+            t?.startedAt !== undefined && t.endedAt !== undefined
+              ? t.endedAt - t.startedAt
+              : undefined;
+          return { ...base, status: "done", ...(durationMs !== undefined ? { durationMs } : {}) };
+        }
+        if (s.status === "in-progress") {
+          return { ...base, status: "in-progress", startedAt: t?.startedAt };
+        }
+        return { ...base, status: "pending" };
+      }),
+    [planSteps, planStepTimings],
+  );
+  const total = planSteps.length;
+  const doneCount = planSteps.filter((s) => s.status === "done").length;
+  const hasInProgress = planSteps.some((s) => s.status === "in-progress");
+  // Show the live card while a plan is mid-execution: at least one step active or partly done,
+  // but not the freshly-proposed plan (that already renders as the PlanCard) and not a finished
+  // or stale plan on an unrelated later turn.
+  const showLive =
+    isLatestAssistant &&
+    !isPlan &&
+    total > 0 &&
+    (hasInProgress || (doneCount > 0 && doneCount < total));
+  const frozenSnapshot = useMemo(
+    () => planSnapshots.find((s) => s.anchorMessageId === message.id),
+    [planSnapshots, message.id],
+  );
+  // Fallback for models that write the plan to the file but don't echo the checklist in their
+  // message (e.g. Kimi): on the active plan proposal, source the inline card from the plan
+  // file so the user still sees it in the conversation instead of opening the file.
+  const planFromFile =
+    !isPlan && stampedPlanMode && isLatestAssistant && planMarkdownHasChecklist(plan.fileContent);
 
   return (
     <MessageSurface
@@ -58,28 +116,41 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
     >
       <MessageContextMenu rawText={message.text}>
         <div className="select-text" data-selectable-message data-message-raw={message.text}>
-          {message.text &&
-            (isPlan ? (
-              <div
-                role="status"
-                aria-live={message.isComplete ? undefined : "polite"}
-                aria-atomic="false"
-              >
-                <PlanCard
-                  message={message}
-                  sessionId={sessionId}
-                  isLatest={isLatestAssistant && message.isComplete}
-                />
-              </div>
-            ) : (
-              <div
-                role="status"
-                aria-live={message.isComplete ? undefined : "polite"}
-                aria-atomic="false"
-              >
-                <Markdown text={message.text} isComplete={message.isComplete} />
-              </div>
-            ))}
+          {isPlan ? (
+            <div
+              role="status"
+              aria-live={message.isComplete ? undefined : "polite"}
+              aria-atomic="false"
+            >
+              <PlanCard
+                message={message}
+                sessionId={sessionId}
+                isLatest={isLatestAssistant && message.isComplete}
+              />
+            </div>
+          ) : (
+            <>
+              {message.text && (
+                <div
+                  role="status"
+                  aria-live={message.isComplete ? undefined : "polite"}
+                  aria-atomic="false"
+                >
+                  <Markdown text={message.text} isComplete={message.isComplete} />
+                </div>
+              )}
+              {planFromFile && (
+                <div role="status" aria-live="polite" aria-atomic="false">
+                  <PlanCard
+                    message={message}
+                    sessionId={sessionId}
+                    isLatest={isLatestAssistant && message.isComplete}
+                    planMarkdown={plan.fileContent ?? undefined}
+                  />
+                </div>
+              )}
+            </>
+          )}
           {message.toolCallIds.map((callId) => {
             const call = toolCalls?.[callId];
             if (!call) return null;
@@ -87,6 +158,11 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
             if (!call.name?.trim()) return null;
             return <ToolCallCard key={callId} call={call} sessionId={sessionId} />;
           })}
+          {showLive ? (
+            <PlanSnapshot title={plan.title} rows={liveRows} />
+          ) : frozenSnapshot ? (
+            <PlanSnapshot title={frozenSnapshot.title} rows={frozenSnapshot.steps} />
+          ) : null}
           {!message.isComplete && (
             <StreamingStatus
               toolCalls={toolCalls}

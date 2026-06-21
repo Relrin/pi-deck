@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PidIconButton } from "../../components/buttons/PidIconButton.js";
 import { Check, Copy, Map as MapIcon } from "../../components/icons/index.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
@@ -30,6 +30,16 @@ export function PlanPanel() {
   const plan = usePlanStore(selectPlanSession(activeSessionId));
   const applyPlanFileChanged = usePlanStore((s) => s.applyPlanFileChanged);
   const [copied, setCopied] = useState(false);
+
+  // Glanceable progress derived from the same parsed steps the inline checkpoints use.
+  const progress = useMemo(() => {
+    const steps = plan.steps ?? [];
+    return {
+      total: steps.length,
+      done: steps.filter((s) => s.status === "done").length,
+      current: steps.find((s) => s.status === "in-progress"),
+    };
+  }, [plan.steps]);
 
   const handleCopy = () => {
     if (!plan.fileContent) return;
@@ -96,6 +106,18 @@ export function PlanPanel() {
           )}
         </div>
       </div>
+      {progress.total > 0 && (
+        <div className="pid-plan-panel-progress">
+          <span>
+            {progress.done} of {progress.total} done
+          </span>
+          {progress.current && (
+            <span className="pid-plan-panel-progress-current">
+              {progress.current.label ?? "in progress"}
+            </span>
+          )}
+        </div>
+      )}
       <div className="pid-plan-panel-body">
         {plan.fileContent && plan.fileContent.length > 0 ? (
           <Markdown text={plan.fileContent} isComplete={true} />

@@ -536,6 +536,24 @@ export function selectTurnInFlight(sessionId: string | undefined) {
 }
 
 /**
+ * Count assistant messages in a session. Used by the plan store to pace inline plan
+ * snapshots (drop a frozen one roughly every N assistant turns) so a long execution keeps a
+ * recent plan-state reference in view without spamming a card on every turn.
+ */
+export function selectAssistantMessageCount(sessionId: string | undefined) {
+  return (state: MessagesStoreState): number => {
+    if (!sessionId) return 0;
+    const msgs = state.bySession[sessionId]?.messages;
+    if (!msgs) return 0;
+    let count = 0;
+    for (const m of msgs) {
+      if (m.kind === "assistant") count++;
+    }
+    return count;
+  };
+}
+
+/**
  * Identify the most recent assistant message in a session. Used by `PlanCard` to hide its
  * Approve/Revise footer on stale plans — once a newer assistant turn lands, the prior plan
  * shouldn't be re-approvable.

@@ -41,6 +41,7 @@ export interface PlanCardProps {
   message: AssistantMessageEntry;
   sessionId: string;
   isLatest: boolean;
+  planMarkdown?: string;
 }
 
 /**
@@ -49,7 +50,7 @@ export interface PlanCardProps {
  * normally, including the custom GFM checkbox swap), framed in a subtle card and given an
  * Approve footer when it's the latest assistant turn.
  */
-export function PlanCard({ message, sessionId, isLatest }: PlanCardProps) {
+export function PlanCard({ message, sessionId, isLatest, planMarkdown }: PlanCardProps) {
   const client = useSessionsStore((s) => s.client);
   const planSession = usePlanStore(selectPlanSession(sessionId));
   const setLastApproval = usePlanStore((s) => s.setLastApproval);
@@ -80,7 +81,7 @@ export function PlanCard({ message, sessionId, isLatest }: PlanCardProps) {
         <MapIcon size={12} aria-hidden />
         <span>Plan</span>
       </div>
-      <Markdown text={message.text} isComplete={message.isComplete} />
+      <Markdown text={planMarkdown ?? message.text} isComplete={message.isComplete} />
       {isLatest && (
         <div className="pid-plan-card-footer">
           <span className="pid-plan-card-footer-hint">
@@ -193,5 +194,10 @@ export function isPlanShapedMessage(
 ): boolean {
   const stampedMode = message.agentModeAtTurn ?? currentSessionMode;
   if (stampedMode !== "plan") return false;
-  return PLAN_CHECKBOX_RE.test(message.text);
+  return planMarkdownHasChecklist(message.text);
+}
+
+/** Whether some markdown contains a GFM task-list item — the plan's checklist shape. */
+export function planMarkdownHasChecklist(md: string | null | undefined): boolean {
+  return !!md && PLAN_CHECKBOX_RE.test(md);
 }

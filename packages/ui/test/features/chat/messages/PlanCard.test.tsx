@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { isPlanShapedMessage } from "../../../../src/features/chat/messages/PlanCard";
+import {
+  isPlanShapedMessage,
+  planMarkdownHasChecklist,
+} from "../../../../src/features/chat/messages/PlanCard";
 import type { AssistantMessageEntry } from "../../../../src/features/chat/types";
 
 function msg(text: string, mode?: AssistantMessageEntry["agentModeAtTurn"]): AssistantMessageEntry {
@@ -43,5 +46,19 @@ describe("isPlanShapedMessage", () => {
 
   test("supports `*` bullet variant for GFM task items", () => {
     expect(isPlanShapedMessage(msg("* [ ] step", "plan"), undefined)).toBe(true);
+  });
+});
+
+describe("planMarkdownHasChecklist", () => {
+  test("true when the markdown has a GFM task item", () => {
+    expect(planMarkdownHasChecklist("# Title\n- [ ] step")).toBe(true);
+    expect(planMarkdownHasChecklist("* [x] done")).toBe(true);
+  });
+
+  test("false for empty / nullish / checklist-free markdown", () => {
+    expect(planMarkdownHasChecklist("just prose")).toBe(false);
+    expect(planMarkdownHasChecklist("")).toBe(false);
+    expect(planMarkdownHasChecklist(null)).toBe(false);
+    expect(planMarkdownHasChecklist(undefined)).toBe(false);
   });
 });

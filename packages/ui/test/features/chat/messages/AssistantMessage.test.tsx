@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { AssistantMessage } from "../../../../src/features/chat/messages/AssistantMessage";
 import type { AssistantMessageEntry } from "../../../../src/features/chat/types";
 import { useMessagesStore } from "../../../../src/features/chat/useMessagesStore";
+import { usePlanStore } from "../../../../src/features/plan-panel/usePlanStore";
 import { act, fireEvent, render, screen } from "../../../utils";
 
 const SID = "session-1";
@@ -124,5 +125,55 @@ describe("AssistantMessage — nameless tool-call guard", () => {
     expect(rows.length).toBe(1);
     // Sanity: the surviving row carries the bash tag.
     expect(rows[0]?.querySelector(".pid-tool-row-tag")?.textContent).toBe("bash");
+  });
+});
+
+describe("AssistantMessage — plan from file (model didn't echo the checklist)", () => {
+  beforeEach(() => {
+    useMessagesStore.setState({ bySession: {} });
+    usePlanStore.setState({ bySession: {} });
+  });
+
+  test("renders the plan from the plan file on a plan-mode turn that omits the checklist", () => {
+    const message: AssistantMessageEntry = {
+      kind: "assistant",
+      id: "a-1",
+      text: "Plan written to the file.",
+      isComplete: true,
+      toolCallIds: [],
+      createdAt: 1,
+      agentModeAtTurn: "plan",
+    };
+    // The message must be the latest assistant turn for the proposal fallback to apply.
+    useMessagesStore.setState({
+      bySession: { [SID]: { messages: [message], toolCalls: {}, isTurnInFlight: false } },
+    });
+    // The file holds the plan even though the message text doesn't.
+    usePlanStore
+      .getState()
+      .applyPlanFileChanged(SID, "/p.md", "# Title\n- [ ] step one\n- [ ] step two");
+
+    const { container } = render(<AssistantMessage message={message} sessionId={SID} />);
+    expect(container.querySelector(".pid-plan-card")).not.toBeNull();
+    expect(screen.getByText("step one")).toBeInTheDocument();
+  });
+
+  test("does not synthesize a plan card when the plan file has no checklist", () => {
+    const message: AssistantMessageEntry = {
+      kind: "assistant",
+      id: "a-1",
+      text: "Still thinking…",
+      isComplete: true,
+      toolCallIds: [],
+      createdAt: 1,
+      agentModeAtTurn: "plan",
+    };
+    useMessagesStore.setState({
+      bySession: { [SID]: { messages: [message], toolCalls: {}, isTurnInFlight: false } },
+    });
+    usePlanStore.getState().applyPlanFileChanged(SID, "/p.md", "# Title\n\njust prose, no steps");
+
+    const { container } = render(<AssistantMessage message={message} sessionId={SID} />);
+    expect(container.querySelector(".pid-plan-card")).toBeNull();
   });
 });
