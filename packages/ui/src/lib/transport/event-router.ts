@@ -128,6 +128,7 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
     if (sessionId) {
       useUsageStore.getState().setContextCost(sessionId, {
         systemPrompt: num(payload.systemPrompt),
+        projectContext: num(payload.projectContext),
         builtinTools: num(payload.builtinTools),
         mcp: num(payload.mcp),
         mcpToolCount: num(payload.mcpToolCount),

@@ -44,6 +44,7 @@ describe("ContextUsageIndicator", () => {
   test("the overhead estimate does not inflate the headline percent (it only re-slices `used`)", () => {
     useUsageStore.getState().setContextCost(SID, {
       systemPrompt: 1_500,
+      projectContext: 1_000,
       builtinTools: 4_500,
       mcp: 8_000,
       mcpToolCount: 4,
@@ -62,7 +63,13 @@ describe("ContextUsageIndicator", () => {
 
 describe("useUsageStore — context cost", () => {
   test("setContextCost and setTurnUsage preserve one another", () => {
-    const cost = { systemPrompt: 1_500, builtinTools: 4_500, mcp: 1_200, mcpToolCount: 3 };
+    const cost = {
+      systemPrompt: 1_500,
+      projectContext: 900,
+      builtinTools: 4_500,
+      mcp: 1_200,
+      mcpToolCount: 3,
+    };
     useUsageStore.getState().setContextCost(SID, cost);
     useUsageStore
       .getState()
@@ -78,7 +85,13 @@ describe("useUsageStore — context cost", () => {
     expect(entry?.context?.tokens).toBe(10_000);
 
     // A later overhead push keeps the most recent turn/context.
-    const next = { systemPrompt: 1_500, builtinTools: 4_500, mcp: 1_500, mcpToolCount: 4 };
+    const next = {
+      systemPrompt: 1_500,
+      projectContext: 900,
+      builtinTools: 4_500,
+      mcp: 1_500,
+      mcpToolCount: 4,
+    };
     useUsageStore.getState().setContextCost(SID, next);
     const after = useUsageStore.getState().bySession[SID];
     expect(after?.cost).toEqual(next);

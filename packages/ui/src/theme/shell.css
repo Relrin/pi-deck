@@ -816,6 +816,10 @@
 .pid-context-bar-system {
   background: var(--ink-2);
 }
+/* Project context */
+.pid-context-bar-project {
+  background: var(--ink-3);
+}
 .pid-context-bar-messages {
   background: var(--accent);
 }

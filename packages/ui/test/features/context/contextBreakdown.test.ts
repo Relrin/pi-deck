@@ -11,7 +11,8 @@ const ctx = (tokens: number, contextWindow = 200_000): ContextUsage => ({
   percent: tokens / contextWindow,
 });
 
-/** The four token buckets always tile `used` exactly. */
+/** The four token buckets always tile `used` exactly. `projectContext` is a sub-slice of
+ *  `systemPrompt`, not a tiling bucket, so it's deliberately excluded from this sum. */
 function bucketSum(b: ContextBreakdown): number {
   return b.messages + b.systemPrompt + b.tools + b.mcp;
 }
@@ -22,6 +23,7 @@ describe("computeContextBreakdown", () => {
   test("falls back to the floor constants when the worker hasn't reported overhead", () => {
     const b = computeContextBreakdown(ctx(50_000), messages);
     expect(b.systemPrompt).toBe(1_500);
+    expect(b.projectContext).toBe(0); // no overhead reported → no project-context drill-down
     expect(b.tools).toBe(4_500);
     expect(b.mcp).toBe(0);
     // Messages is the residual of the real aggregate — everything not accounted for as overhead.
@@ -32,14 +34,32 @@ describe("computeContextBreakdown", () => {
   test("uses the worker's computed overhead instead of the floors; messages is the residual", () => {
     const b = computeContextBreakdown(ctx(50_000), messages, {
       systemPrompt: 2_000,
+      projectContext: 1_400,
       builtinTools: 6_000,
       mcp: 5_000,
     });
     expect(b.systemPrompt).toBe(2_000);
+    // projectContext is reported back as a sub-slice; it does NOT add to the tiling buckets.
+    expect(b.projectContext).toBe(1_400);
     expect(b.tools).toBe(6_000);
     expect(b.mcp).toBe(5_000);
     expect(b.messages).toBe(37_000);
     expect(bucketSum(b)).toBe(50_000);
+  });
+
+  test("clamps projectContext to the (possibly clamped) system-prompt bucket", () => {
+    // `used` is tiny, so the system prompt itself clamps to 2_000; project context can't exceed it
+    // (keeps base = systemPrompt - projectContext >= 0 for the renderer).
+    const b = computeContextBreakdown(ctx(3_000), messages, {
+      systemPrompt: 2_000,
+      projectContext: 5_000, // absurdly large — must clamp down to systemPrompt
+      builtinTools: 6_000,
+      mcp: 5_000,
+    });
+    expect(b.systemPrompt).toBe(2_000);
+    expect(b.projectContext).toBe(2_000);
+    expect(b.projectContext).toBeLessThanOrEqual(b.systemPrompt);
+    expect(bucketSum(b)).toBe(3_000);
   });
 
   test("clamps overhead to the aggregate so the buckets never exceed `used`", () => {
@@ -58,11 +78,14 @@ describe("computeContextBreakdown", () => {
   test("pre-turn: used = overhead + a chars/4 estimate of the visible messages", () => {
     const b = computeContextBreakdown(undefined, messages, {
       systemPrompt: 2_000,
+      projectContext: 1_500,
       builtinTools: 6_000,
       mcp: 3_000,
     });
+    // projectContext is nested in systemPrompt, so it does not add to the pre-turn `used` estimate.
     expect(b.used).toBe(12_000); // 2_000 + 6_000 + 3_000 + 1_000
     expect(b.systemPrompt).toBe(2_000);
+    expect(b.projectContext).toBe(1_500);
     expect(b.tools).toBe(6_000);
     expect(b.mcp).toBe(3_000);
     expect(b.messages).toBe(1_000);

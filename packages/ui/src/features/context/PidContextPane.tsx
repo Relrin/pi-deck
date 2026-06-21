@@ -118,7 +118,9 @@ function ContextWindowSection({
   active: boolean;
   mcpToolCount: number;
 }) {
-  const { messages, systemPrompt, tools, mcp, free, contextWindow, used } = breakdown;
+  const { messages, systemPrompt, projectContext, tools, mcp, free, contextWindow, used } =
+    breakdown;
+  const basePrompt = systemPrompt - projectContext;
   const seg = (n: number): number => (contextWindow > 0 ? (n / contextWindow) * 100 : 0);
   const mcpPercent = contextWindow > 0 ? Math.round((mcp / contextWindow) * 100) : 0;
   return (
@@ -133,8 +135,13 @@ function ContextWindowSection({
       <div className="pid-context-bar" role="img" aria-label={`Context usage ${percent}%`}>
         <span
           className="pid-context-bar-segment pid-context-bar-system"
-          style={{ width: `${seg(systemPrompt)}%` }}
-          title={`System prompt — ${formatTokens(systemPrompt)} tok`}
+          style={{ width: `${seg(basePrompt)}%` }}
+          title={`System prompt — ${formatTokens(basePrompt)} tok`}
+        />
+        <span
+          className="pid-context-bar-segment pid-context-bar-project"
+          style={{ width: `${seg(projectContext)}%` }}
+          title={`Project context (AGENTS.md, CLAUDE.md, etc.) — ${formatTokens(projectContext)} tok`}
         />
         <span
           className="pid-context-bar-segment pid-context-bar-messages"
@@ -161,6 +168,10 @@ function ContextWindowSection({
         <li>
           <span className="pid-context-swatch pid-context-bar-system" />
           system
+        </li>
+        <li>
+          <span className="pid-context-swatch pid-context-bar-project" />
+          project
         </li>
         <li>
           <span className="pid-context-swatch pid-context-bar-messages" />

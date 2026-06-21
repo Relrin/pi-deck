@@ -31,6 +31,7 @@ import {
   EVENT_SESSION_TOOL_APPROVAL_REQUESTED,
 } from "../protocol/events.js";
 import { validateAndChdir } from "./cwd.js";
+import { projectContextChars } from "./system-prompt-cost.js";
 
 export type EventEmitter = (topic: string, payload: unknown) => void;
 
@@ -171,6 +172,7 @@ function emitContextCost(
     }
     emit(EVENT_SESSION_CONTEXT_COST, {
       systemPrompt: Math.ceil(session.systemPrompt.length / 4),
+      projectContext: Math.ceil(projectContextChars(session.systemPrompt) / 4),
       builtinTools,
       mcp,
       mcpToolCount,

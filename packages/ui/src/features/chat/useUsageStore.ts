@@ -8,6 +8,7 @@ import { create } from "zustand";
  */
 export interface ContextCost {
   systemPrompt: number;
+  projectContext: number;
   builtinTools: number;
   mcp: number;
   mcpToolCount: number;

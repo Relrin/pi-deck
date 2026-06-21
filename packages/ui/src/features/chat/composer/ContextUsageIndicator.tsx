@@ -120,9 +120,17 @@ function BreakdownCard({ breakdown, percent }: { breakdown: ContextBreakdown; pe
         <Row label="Messages" tokens={breakdown.messages} total={breakdown.contextWindow} />
         <Row
           label="System prompt"
-          tokens={breakdown.systemPrompt}
+          tokens={breakdown.systemPrompt - breakdown.projectContext}
           total={breakdown.contextWindow}
         />
+        {breakdown.projectContext > 0 && (
+          <Row
+            label="Project context"
+            tokens={breakdown.projectContext}
+            total={breakdown.contextWindow}
+            title="Project context files (AGENTS.md, CLAUDE.md, etc.) pi injects into the system prompt"
+          />
+        )}
         <Row
           label="Skills / tool definitions"
           tokens={breakdown.tools}
@@ -147,15 +155,17 @@ function Row({
   tokens,
   total,
   muted,
+  title,
 }: {
   label: string;
   tokens: number;
   total: number;
   muted?: boolean;
+  title?: string;
 }) {
   const pct = total > 0 ? Math.round((tokens / total) * 100) : 0;
   return (
-    <div className="flex items-baseline justify-between gap-2">
+    <div className="flex items-baseline justify-between gap-2" title={title}>
       <span className={muted ? "text-[var(--color-text-muted)]" : ""}>{label}</span>
       <span className="font-mono tabular-nums text-[var(--color-text-muted)]">
         {formatTokens(tokens)} · {pct}%

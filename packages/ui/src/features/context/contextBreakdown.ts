@@ -15,6 +15,11 @@ export interface ContextBreakdown {
   contextWindow: number;
   messages: number;
   systemPrompt: number;
+  /**
+   * Sub-slice of `systemPrompt` (always `<= systemPrompt`): the project context files
+   * (e.g. AGENTS.md or CLAUDE.md) pi injects into the prompt.
+   */
+  projectContext: number;
   /** Built-in (non-MCP) tool / skill definitions. */
   tools: number;
   /** MCP tool definitions (the `mcp` proxy + any direct-exposed tools), estimated worker-side. */
@@ -29,6 +34,7 @@ export interface ContextBreakdown {
  */
 export interface ContextOverhead {
   systemPrompt?: number;
+  projectContext?: number;
   builtinTools?: number;
   mcp?: number;
 }
@@ -61,6 +67,7 @@ export function computeContextBreakdown(
 ): ContextBreakdown {
   const contextWindow = ctx?.contextWindow ?? DEFAULT_CONTEXT_WINDOW;
   const systemFixed = Math.max(0, overhead.systemPrompt ?? SYSTEM_PROMPT_FLOOR);
+  const projectFixed = Math.max(0, overhead.projectContext ?? 0);
   const toolsFixed = Math.max(0, overhead.builtinTools ?? BUILTIN_TOOLS_FLOOR);
   const mcpFixed = Math.max(0, overhead.mcp ?? 0);
 
@@ -73,10 +80,14 @@ export function computeContextBreakdown(
   // Lay down the fixed overhead in priority order, each clamped to what's left of `used` (so a
   // small real aggregate can't push the buckets past it), then hand the remainder to messages.
   const systemPrompt = Math.min(systemFixed, used);
+  const projectContext = Math.min(projectFixed, systemPrompt);
+
   let remaining = used - systemPrompt;
   const tools = Math.min(toolsFixed, remaining);
+
   remaining -= tools;
   const mcp = Math.min(mcpFixed, remaining);
+
   remaining -= mcp;
   const messagesBucket = remaining; // residual — the conversation fills whatever overhead doesn't.
   const free = Math.max(0, contextWindow - used);
@@ -86,6 +97,7 @@ export function computeContextBreakdown(
     contextWindow,
     messages: messagesBucket,
     systemPrompt,
+    projectContext,
     tools,
     mcp,
     free,

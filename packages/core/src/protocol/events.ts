@@ -122,6 +122,12 @@ export const SessionContextCostPayload = z.object({
   sessionId: z.string(),
   /** Estimated tokens for the assembled system prompt text (`session.systemPrompt`). */
   systemPrompt: z.number(),
+  /**
+   * Sub-portion of `systemPrompt` (always `<= systemPrompt`): the project instruction files
+   * (`AGENTS.md`, `CLAUDE.md`, etc.) pi injects via its `<project_context>` envelope. Lets the Context
+   * tab show a big context file as its own slice instead of an opaque system-prompt total.
+   */
+  projectContext: z.number(),
   /** Estimated tokens for built-in (non-MCP) tool definitions. */
   builtinTools: z.number(),
   /** Estimated tokens for MCP tool definitions (the `mcp` proxy + any direct-exposed tools). */
