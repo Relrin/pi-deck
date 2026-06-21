@@ -14,7 +14,7 @@
 
 ## Why pi-deck
 Because the [pi](https://github.com/earendil-works/pi) coding agent was made with the intention to be adaptable to the devs workflows, I have decided to make something that would fit my needs. Specifically:
-- Have something that close Cursor and/or Claude
+- Have something that close to Cursor and/or Claude, but adapted for Pi coding agent
 - Provides a plan mode & tools approvals, because it helps to me to be in control
 - Better experience with reviewing changes
 - Be in touch with code & terminals (per session)
