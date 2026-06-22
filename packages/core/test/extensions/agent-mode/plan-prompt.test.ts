@@ -35,13 +35,15 @@ describe("composePlanPrompt", () => {
     const out = composePlanPrompt("x", { planFilePath: PLAN_FILE });
     expect(out).toContain("# <short imperative title>");
     // The marking protocol travels inside the plan file, not the approval message.
-    expect(out).toContain("_Progress:");
+    expect(out).toContain("_Execution");
   });
 
   test("makes writing the plan file a hard requirement and warns against chat-only plans", () => {
     const out = composePlanPrompt("x", { planFilePath: PLAN_FILE });
     expect(out).toContain("MUST");
-    expect(out.toLowerCase()).toContain("only this file");
+    expect(out.toLowerCase()).toContain(
+      "further updates also should be applied and reflected in the plan file",
+    );
     // The exact path is referenced for both the initial write and execution updates.
     expect(out.split(PLAN_FILE).length - 1).toBeGreaterThanOrEqual(2);
   });
