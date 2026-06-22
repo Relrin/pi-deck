@@ -71,26 +71,10 @@ describe("usePlanStore — plan-file lifecycle", () => {
   });
 });
 
-describe("usePlanStore — progress timings + snapshots", () => {
+describe("usePlanStore — progress timings", () => {
   const PATH = "/repo/.pi-deck/plans/session-1.md";
 
   beforeEach(reset);
-
-  function setAssistantCount(n: number) {
-    const messages = Array.from({ length: n }, (_, i) => ({
-      kind: "assistant" as const,
-      id: `a-${i}`,
-      text: "",
-      isComplete: true,
-      toolCallIds: [] as string[],
-      createdAt: i,
-    }));
-    useMessagesStore.setState({
-      bySession: { [SID]: { messages, toolCalls: {}, isTurnInFlight: false } },
-    });
-  }
-
-  const snaps = () => usePlanStore.getState().bySession[SID]?.snapshots ?? [];
 
   test("tracks step timings: startedAt on [ ]→[~], endedAt on [~]→[x]", () => {
     const store = usePlanStore.getState();
@@ -105,46 +89,17 @@ describe("usePlanStore — progress timings + snapshots", () => {
     expect(t?.endedAt).toBeGreaterThanOrEqual(t?.startedAt as number);
   });
 
-  test("does not snapshot on first observation (reopen / restart mid-run)", () => {
-    setAssistantCount(20);
-    usePlanStore
-      .getState()
-      .applyPlanFileChanged(SID, PATH, "- [x] done\n- [~] working\n- [ ] next");
-    expect(snaps()).toEqual([]);
-  });
-
-  test("captures a frozen snapshot once progress starts, anchored to the latest turn", () => {
-    setAssistantCount(1); // latest assistant id === "a-0"
-    const store = usePlanStore.getState();
-    store.applyPlanFileChanged(SID, PATH, "# Build it\n- [ ] **WRITE** — build it"); // all pending → none
-    expect(snaps()).toHaveLength(0);
-    store.applyPlanFileChanged(SID, PATH, "# Build it\n- [~] **WRITE** — build it"); // progress → #1
-    const all = snaps();
-    expect(all).toHaveLength(1);
-    expect(all[0]?.anchorMessageId).toBe("a-0");
-    expect(all[0]?.title).toBe("Build it");
-    expect(all[0]?.steps[0]?.status).toBe("in-progress");
-  });
-
-  test("respects the message cadence between snapshots", () => {
-    setAssistantCount(1);
-    const store = usePlanStore.getState();
-    store.applyPlanFileChanged(SID, PATH, "- [ ] a\n- [ ] b"); // first obs, no progress
-    store.applyPlanFileChanged(SID, PATH, "- [~] a\n- [ ] b"); // progress → #1 (count 1)
-    expect(snaps()).toHaveLength(1);
-    store.applyPlanFileChanged(SID, PATH, "- [x] a\n- [~] b"); // count still 1 → no new
-    expect(snaps()).toHaveLength(1);
-    setAssistantCount(13); // +12 messages
-    store.applyPlanFileChanged(SID, PATH, "- [x] a\n- [x] b"); // count 13 → #2
-    expect(snaps()).toHaveLength(2);
-    const last = snaps()[1];
-    expect(last?.steps.map((s) => s.status)).toEqual(["done", "done"]);
-    expect(last?.steps[0]?.durationMs).toBeGreaterThanOrEqual(0);
+  test("parses the plan title and steps", () => {
+    usePlanStore.getState().applyPlanFileChanged(SID, PATH, "# Build it\n- [ ] **WRITE** — go");
+    const s = usePlanStore.getState().bySession[SID];
+    expect(s?.title).toBe("Build it");
+    expect(s?.steps).toHaveLength(1);
+    expect(s?.steps[0]?.label).toBe("WRITE");
   });
 
   test("tolerates a session entry rehydrated from an older shape (no derived fields)", () => {
-    // Simulate a plan-store entry persisted before snapshots/steps/stepTimings existed — the
-    // shape that black-screened the app when a consumer called `undefined.map`/`.find`.
+    // Simulate a plan-store entry persisted before steps/stepTimings existed — the shape that
+    // black-screened the app when a consumer called `undefined.map`/`.find`.
     usePlanStore.setState({
       bySession: {
         [SID]: {
@@ -161,6 +116,6 @@ describe("usePlanStore — progress timings + snapshots", () => {
     ).not.toThrow();
     const s = usePlanStore.getState().bySession[SID];
     expect(Array.isArray(s?.steps)).toBe(true);
-    expect(Array.isArray(s?.snapshots)).toBe(true);
+    expect(typeof s?.stepTimings).toBe("object");
   });
 });

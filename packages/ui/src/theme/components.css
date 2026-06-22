@@ -5134,10 +5134,10 @@
   opacity: 0.75;
 }
 
-/* ─── Inline plan snapshot ────────────────────────────────────────────────────
- * The "PLAN" card rendered inline during execution: a status dot + operation label +
- * description + elapsed per step, windowed for long plans. Mirrors the plan-progress mockup;
- * driven entirely by the agent editing its plan file (`[ ]`→`[~]`→`[x]`). */
+/* ─── Inline plan card ────────────────────────────────────────────────────────
+ * One live "PLAN" card under the latest executing turn: a status dot + operation label +
+ * description + elapsed per step, windowed for long plans. Updates in place as the agent
+ * starts/finishes steps (`[ ]`→`[~]`→`[x]`); not re-emitted on a cadence. */
 .pid-plan-snapshot {
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);

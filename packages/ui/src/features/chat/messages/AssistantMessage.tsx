@@ -51,17 +51,16 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
   );
   const isLatestAssistant = latestAssistantId === message.id;
 
-  // Inline plan snapshot. The agent drives progress by editing its plan file
-  // (`[ ]`→`[~]`→`[x]`); `usePlanStore` parses it and freezes periodic captures. We render a
-  // live card under the latest executing turn (current step ticking) and the frozen capture
-  // anchored to any earlier turn, so a long run keeps a recent plan-state reference in view.
+  // Inline plan card. The agent drives progress by editing its plan file (`[ ]`→`[~]`→`[x]`);
+  // `usePlanStore` parses steps + per-step timings. We render one live card under the latest
+  // executing turn so it updates in place as the agent starts/finishes steps — not re-emitted
+  // on a cadence.
   const plan = usePlanStore(selectPlanSession(sessionId));
   // Defensive defaults: a session rehydrated from an older persisted shape may lack these
   // arrays. `usePlanStore`'s merge backfills them, but guarding here keeps a render crash from
   // ever blanking the app on a stale entry.
   const planSteps = plan.steps ?? [];
   const planStepTimings = plan.stepTimings ?? {};
-  const planSnapshots = plan.snapshots ?? [];
   const liveRows = useMemo<PlanSnapshotRow[]>(
     () =>
       planSteps.map((s) => {
@@ -89,17 +88,13 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
   const doneCount = planSteps.filter((s) => s.status === "done").length;
   const hasInProgress = planSteps.some((s) => s.status === "in-progress");
   // Show the live card while a plan is mid-execution: at least one step active or partly done,
-  // but not the freshly-proposed plan (that already renders as the PlanCard) and not a finished
-  // or stale plan on an unrelated later turn.
+  // but not the freshly-proposed plan (that renders as the PlanCard) and not a finished or
+  // stale plan on an unrelated later turn.
   const showLive =
     isLatestAssistant &&
     !isPlan &&
     total > 0 &&
     (hasInProgress || (doneCount > 0 && doneCount < total));
-  const frozenSnapshot = useMemo(
-    () => planSnapshots.find((s) => s.anchorMessageId === message.id),
-    [planSnapshots, message.id],
-  );
   // Fallback for models that write the plan to the file but don't echo the checklist in their
   // message (e.g. Kimi): on the active plan proposal, source the inline card from the plan
   // file so the user still sees it in the conversation instead of opening the file.
@@ -158,11 +153,7 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
             if (!call.name?.trim()) return null;
             return <ToolCallCard key={callId} call={call} sessionId={sessionId} />;
           })}
-          {showLive ? (
-            <PlanSnapshot title={plan.title} rows={liveRows} />
-          ) : frozenSnapshot ? (
-            <PlanSnapshot title={frozenSnapshot.title} rows={frozenSnapshot.steps} />
-          ) : null}
+          {showLive && <PlanSnapshot title={plan.title} rows={liveRows} />}
           {!message.isComplete && (
             <StreamingStatus
               toolCalls={toolCalls}
