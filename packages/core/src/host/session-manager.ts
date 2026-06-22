@@ -482,7 +482,8 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     await this.setAgentMode(sessionId, targetMode);
     const text =
       continuationText?.trim() ||
-      "The plan above is approved - proceed with execution, keeping the plan's checkboxes current as you go.";
+      "The plan above is approved - proceed with execution. As you work, edit the plan file to " +
+        "update each step's checkbox (`[ ]`→`[~]`→`[x]`) to show the progress.";
     return this.prompt(sessionId, text, { agentMode: targetMode });
   }
 

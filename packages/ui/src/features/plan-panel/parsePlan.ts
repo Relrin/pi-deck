@@ -31,11 +31,25 @@ export interface PlanStep {
   index: number;
 }
 
-// GFM task-list line: optional indent, `-`/`*` bullet, `[ |x|X|~]`, then the item text.
-const CHECKBOX_RE = /^\s*[-*]\s+\[([ xX~])\]\s+(.+?)\s*$/;
+// A checkbox step line. Tolerant of how different models format it:
+//   - GFM list item:   `- [x] task` / `* [ ] task`
+//   - bare:            `[x] task`            (no leading bullet — e.g. GLM)
+//   - heading:         `## [~] task`         (some models use headings per step)
+// optional indent → optional `#…` heading → optional `-`/`*`/`+` bullet → `[ |x|X|~]` → text.
+const CHECKBOX_RE = /^\s*(?:#{1,6}\s+)?(?:[-*+]\s+)?\[([ xX~])\]\s+(.+?)\s*$/;
 
-// Leading `**LABEL** —` (or `:`/`-`) prefix that carries the operation tag for a step.
-const LABEL_RE = /^\*\*\s*([^*\n]+?)\s*\*\*\s*[—–:-]\s*(.+)$/;
+/** Multiline variant for a quick "does this markdown contain a plan checklist?" test. */
+export const PLAN_CHECKLIST_LINE_RE = /^[ \t]*(?:#{1,6}[ \t]+)?(?:[-*+][ \t]+)?\[[ xX~]\][ \t]/m;
+
+/** Whether some markdown contains a plan checklist line. */
+export function hasPlanChecklist(md: string | null | undefined): boolean {
+  return !!md && PLAN_CHECKLIST_LINE_RE.test(md);
+}
+
+// Operation tag that prefixes a step, either bold (`**LABEL** —`, our prompt's format) or a
+// plain ALL-CAPS run before an em/en-dash or colon (`ANALYZE — …`, e.g. GLM's narration style).
+const BOLD_LABEL_RE = /^\*\*\s*([^*\n]+?)\s*\*\*\s*[—–:-]\s*(.+)$/;
+const CAPS_LABEL_RE = /^([A-Z][A-Z0-9]*(?: [A-Z0-9]+){0,3})\s*[—–:]\s*(.+)$/;
 
 function markerToStatus(marker: string): PlanStepStatus {
   if (marker === "x" || marker === "X") return "done";
@@ -78,6 +92,8 @@ const TITLE_RE = /^#{1,2}\s+(.+?)\s*$/;
 export function parsePlanTitle(md: string | null | undefined): string | undefined {
   if (!md) return undefined;
   for (const line of md.split("\n")) {
+    // A heading that is itself a step (e.g. `## [x] ANALYZE`) is not the plan title.
+    if (CHECKBOX_RE.test(line)) continue;
     const m = TITLE_RE.exec(line);
     if (m) return stripEmphasis(m[1] ?? "") || undefined;
   }
@@ -102,10 +118,14 @@ export function parsePlanSteps(md: string | null | undefined): PlanStep[] {
 
     let label: string | undefined;
     let body = raw;
-    const labelMatch = LABEL_RE.exec(raw);
-    if (labelMatch) {
-      label = stripEmphasis(labelMatch[1] ?? "");
-      body = labelMatch[2] ?? "";
+    const boldLabel = BOLD_LABEL_RE.exec(raw);
+    const capsLabel = boldLabel ? null : CAPS_LABEL_RE.exec(raw);
+    if (boldLabel) {
+      label = stripEmphasis(boldLabel[1] ?? "");
+      body = boldLabel[2] ?? "";
+    } else if (capsLabel) {
+      label = (capsLabel[1] ?? "").trim();
+      body = capsLabel[2] ?? "";
     }
     const description = stripEmphasis(body);
     if (!description) continue;

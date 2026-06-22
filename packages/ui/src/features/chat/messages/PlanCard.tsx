@@ -10,6 +10,7 @@ import {
 import { humanizeError } from "../../../lib/format/humanize-error.js";
 import type { ApprovePlanTargetMode } from "../../../lib/transport/protocol-client.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
+import { hasPlanChecklist } from "../../plan-panel/parsePlan.js";
 import { selectPlanSession, usePlanStore } from "../../plan-panel/usePlanStore.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore.js";
 import { useComposerStore } from "../composer/useComposerStore.js";
@@ -176,15 +177,9 @@ function ModeTargetPicker({ selected, disabled, onPick }: ModeTargetPickerProps)
 }
 
 /**
- * GFM task list marker. Used both at the per-message level (PlanCard detection) and at the
- * panel level (PlanPanel only renders a non-empty body when at least one checkbox exists,
- * matching the system prompt's contract).
- */
-const PLAN_CHECKBOX_RE = /^\s*[-*]\s+\[[ xX~]\]/m;
-
-/**
  * Plan-shape detector. The plan-mode system prompt produces markdown with a `Plan` section
- * containing GFM checkboxes; we look for any `- [ ]` / `- [x]` line in the message body.
+ * containing checkbox items; we look for any checklist line in the message body (tolerant of
+ * bullet-less / heading-style markers — see `parsePlan`).
  *
  * Two callers feed the mode:
  *   - Fresh turns: `message.agentModeAtTurn` (stamped by `useMessagesStore.newAssistant`).
@@ -200,7 +195,7 @@ export function isPlanShapedMessage(
   return planMarkdownHasChecklist(message.text);
 }
 
-/** Whether some markdown contains a GFM task-list item — the plan's checklist shape. */
+/** Whether some markdown contains a plan checklist line. Shares the detector with `parsePlan`. */
 export function planMarkdownHasChecklist(md: string | null | undefined): boolean {
-  return !!md && PLAN_CHECKBOX_RE.test(md);
+  return hasPlanChecklist(md);
 }
