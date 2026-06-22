@@ -37,6 +37,7 @@ export function PlanSnapshot({ title, rows }: PlanSnapshotProps) {
   if (rows.length === 0) return null;
   const total = rows.length;
   const done = rows.filter((r) => r.status === "done").length;
+  const hasLabels = rows.some((r) => r.label);
   const { visible, hiddenBefore, hiddenAfter } = windowRows(rows);
   return (
     <div className="pid-plan-snapshot">
@@ -44,14 +45,14 @@ export function PlanSnapshot({ title, rows }: PlanSnapshotProps) {
         <span className="pid-plan-snapshot-chip">Plan</span>
         {title && <span className="pid-plan-snapshot-title">{title}</span>}
       </div>
-      <div className="pid-plan-snapshot-steps">
+      <div className="pid-plan-snapshot-steps" data-labeled={hasLabels || undefined}>
         {hiddenBefore > 0 && (
           <div className="pid-plan-snapshot-more">
             +{hiddenBefore} earlier {hiddenBefore === 1 ? "step" : "steps"}
           </div>
         )}
         {visible.map((row) => (
-          <SnapshotRow key={row.id} row={row} />
+          <SnapshotRow key={row.id} row={row} hasLabels={hasLabels} />
         ))}
         {hiddenAfter > 0 && (
           <div className="pid-plan-snapshot-more">
@@ -87,7 +88,7 @@ function windowRows(rows: PlanSnapshotRow[]): {
  * Own component so `useElapsed` is called unconditionally (Rules of Hooks) — only the live
  * in-progress row (`startedAt` set) actually ticks.
  */
-function SnapshotRow({ row }: { row: PlanSnapshotRow }) {
+function SnapshotRow({ row, hasLabels }: { row: PlanSnapshotRow; hasLabels: boolean }) {
   const live = row.status === "in-progress" && row.startedAt !== undefined;
   const elapsed = useElapsed(row.startedAt, live);
   const timeMs = live ? elapsed : row.durationMs;
@@ -109,13 +110,13 @@ function SnapshotRow({ row }: { row: PlanSnapshotRow }) {
         )}
         aria-hidden
       />
-      {row.label && <span className="pid-plan-snapshot-label">{row.label}</span>}
+      {hasLabels && <span className="pid-plan-snapshot-label">{row.label ?? ""}</span>}
       <span className="pid-plan-snapshot-desc" title={row.description}>
         {row.description}
       </span>
-      {timeMs !== undefined && (
-        <span className="pid-plan-snapshot-time">{formatDuration(timeMs)}</span>
-      )}
+      <span className="pid-plan-snapshot-time">
+        {timeMs !== undefined ? formatDuration(timeMs) : ""}
+      </span>
     </div>
   );
 }

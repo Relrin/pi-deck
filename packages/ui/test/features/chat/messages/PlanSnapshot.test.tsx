@@ -52,4 +52,30 @@ describe("PlanSnapshot", () => {
     expect(container.querySelectorAll(".pid-plan-snapshot-more").length).toBe(2);
     expect(container.querySelector(".pid-plan-snapshot-summary")?.textContent).toBe("6 of 12 done");
   });
+
+  test("labeled plans reserve a category column and keep 4 cells per row", () => {
+    const rows: PlanSnapshotRow[] = [
+      { id: "a", label: "EXPLORE", description: "x", status: "done", durationMs: 1000 },
+      // No label and no time — still emits all four cells so columns stay aligned.
+      { id: "b", description: "y", status: "pending" },
+    ];
+    const { container } = render(<PlanSnapshot rows={rows} />);
+    expect(container.querySelector(".pid-plan-snapshot-steps")?.getAttribute("data-labeled")).toBe(
+      "true",
+    );
+    const planRows = container.querySelectorAll(".pid-plan-snapshot-row");
+    expect(planRows[0]?.children.length).toBe(4);
+    expect(planRows[1]?.children.length).toBe(4);
+  });
+
+  test("unlabeled plans drop the category column (3 cells per row)", () => {
+    const rows: PlanSnapshotRow[] = [
+      { id: "a", description: "x", status: "done", durationMs: 1000 },
+    ];
+    const { container } = render(<PlanSnapshot rows={rows} />);
+    expect(container.querySelector(".pid-plan-snapshot-steps")?.hasAttribute("data-labeled")).toBe(
+      false,
+    );
+    expect(container.querySelectorAll(".pid-plan-snapshot-row")[0]?.children.length).toBe(3);
+  });
 });

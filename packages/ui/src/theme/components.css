@@ -5179,22 +5179,23 @@
   font-weight: 600;
   letter-spacing: 0.01em;
 }
-
 .pid-plan-snapshot-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 9px;
+  row-gap: 6px;
 }
 
-/* align-items center keeps the dot vertically inline with the single-line label + desc. */
+.pid-plan-snapshot-steps[data-labeled] {
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+}
+
 .pid-plan-snapshot-row {
-  display: flex;
-  align-items: center;
-  gap: 9px;
+  display: contents;
 }
 
 .pid-plan-snapshot-dot {
-  flex: none;
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -5263,8 +5264,9 @@
   color: var(--ink-0);
 }
 
-/* Hidden-count rows for windowed long plans (e.g. "+4 earlier steps"). */
+/* Hidden-count rows for windowed long plans (e.g. "+4 earlier steps"). Span all columns. */
 .pid-plan-snapshot-more {
+  grid-column: 1 / -1;
   padding-left: 16px;
   color: var(--ink-3);
   font-size: 10px;
