@@ -1,7 +1,31 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ApprovePlanTargetMode } from "../../lib/transport/protocol-client.js";
-import { type PlanStep, parsePlanSteps, parsePlanTitle } from "./parsePlan.js";
+import { selectLatestAssistantId, useMessagesStore } from "../chat/useMessagesStore.js";
+import { type PlanStep, type PlanStepStatus, parsePlanSteps, parsePlanTitle } from "./parsePlan.js";
+
+/** A frozen step view captured in a snapshot — durations are resolved at capture time. */
+export interface PlanSnapshotStep {
+  id: string;
+  label?: string;
+  description: string;
+  status: PlanStepStatus;
+  /** A done step's `[~]`→`[x]` span, or an in-progress step's elapsed-at-capture. */
+  durationMs?: number;
+}
+
+/**
+ * A point-in-time capture of the plan, taken whenever a step transitions (starts or finishes)
+ * and anchored to the assistant turn in-flight at the time. Rendered once at that point in the
+ * transcript — we don't keep a live card pinned in front of the user. In-memory only.
+ */
+export interface PlanProgressSnapshot {
+  id: string;
+  anchorMessageId?: string;
+  at: number;
+  title?: string;
+  steps: PlanSnapshotStep[];
+}
 
 /**
  * Per-session plan-mode UI state.
@@ -11,9 +35,8 @@ import { type PlanStep, parsePlanSteps, parsePlanTitle } from "./parsePlan.js";
  *   yet (e.g. before the agent's first plan-mode turn).
  * - `panelOpen` mirrors whether the user has the Plan tab selected in the right rail.
  * - `lastApproval` remembers which target mode the user picked in the previous Approve popover.
- * - `title` / `steps` / `stepTimings` are derived from the plan content on every
- *   `applyPlanFileChanged`. `stepTimings` records when each step started/finished (observed
- *   from `[~]`/`[x]` marker transitions) so the inline progress card can show per-step time.
+ * - `title` / `steps` / `stepTimings` are derived from the plan content. `snapshots` is the log
+ *   of per-transition captures rendered inline. All recomputed on every `applyPlanFileChanged`.
  */
 interface PlanSessionState {
   filePath: string | null;
@@ -33,6 +56,8 @@ interface PlanSessionState {
   steps: PlanStep[];
   /** Per-step start/end timestamps observed from marker transitions. In-memory only. */
   stepTimings: Record<string, { startedAt?: number; endedAt?: number }>;
+  /** Per-transition frozen captures, anchored to the turn they happened in. In-memory only. */
+  snapshots: PlanProgressSnapshot[];
 }
 
 interface PlanStoreState {
@@ -41,7 +66,8 @@ interface PlanStoreState {
    * Patch in a fresh plan file payload. Called from the event router on every
    * `plan.file.changed`, and after the initial `plan.file.read` round-trip from `PlanPanel`.
    * Auto-opens the panel the first time a non-null content arrives unless the user previously
-   * closed it. Also diffs the parsed plan to advance per-step start/finish timestamps.
+   * closed it. Diffs the parsed plan to advance step timings and, when a step transitions,
+   * appends one frozen snapshot anchored to the in-flight turn.
    */
   applyPlanFileChanged: (sessionId: string, path: string, content: string | null) => void;
   /** Toggle the panel open/closed; sticky in the persisted slice. */
@@ -60,15 +86,20 @@ const emptySessionState = (): PlanSessionState => ({
   lastApproval: null,
   steps: [],
   stepTimings: {},
+  snapshots: [],
 });
 
-type ProgressSlice = Pick<PlanSessionState, "steps" | "stepTimings">;
+interface ProgressSlice {
+  steps: PlanStep[];
+  stepTimings: PlanSessionState["stepTimings"];
+  /** True when at least one step changed to in-progress or done in this update. */
+  transitioned: boolean;
+}
 
 /**
- * Diff the freshly-parsed plan against the previous parse and advance timing state: record
- * `startedAt` when a step turns in-progress (`[~]`), `endedAt` when it turns done (`[x]`). This
- * is what lets the inline card show "started Ns ago" and a finished step's duration without the
- * agent emitting any structured protocol — the plan file stays the single source of truth.
+ * Diff the freshly-parsed plan against the previous parse: record `startedAt` when a step turns
+ * in-progress (`[~]`), `endedAt` when it turns done (`[x]`), and report whether any such
+ * transition occurred so the caller can capture a snapshot.
  */
 function computeProgress(
   prev: PlanSessionState,
@@ -77,18 +108,42 @@ function computeProgress(
 ): ProgressSlice {
   const prevById = new Map((prev.steps ?? []).map((s) => [s.id, s.status] as const));
   const timings: PlanSessionState["stepTimings"] = { ...(prev.stepTimings ?? {}) };
+  let transitioned = false;
 
   for (const step of nextSteps) {
     const before = prevById.get(step.id);
     if (step.status === before) continue;
     if (step.status === "in-progress") {
       timings[step.id] = { ...timings[step.id], startedAt: timings[step.id]?.startedAt ?? now };
+      transitioned = true;
     } else if (step.status === "done") {
       timings[step.id] = { startedAt: timings[step.id]?.startedAt, endedAt: now };
+      transitioned = true;
     }
   }
 
-  return { steps: nextSteps, stepTimings: timings };
+  return { steps: nextSteps, stepTimings: timings, transitioned };
+}
+
+/** Resolve a live step (+ timing) into a frozen snapshot view at time `at`. */
+function freezeStep(
+  step: PlanStep,
+  timing: { startedAt?: number; endedAt?: number } | undefined,
+  at: number,
+): PlanSnapshotStep {
+  const base: PlanSnapshotStep = {
+    id: step.id,
+    ...(step.label ? { label: step.label } : {}),
+    description: step.description,
+    status: step.status,
+  };
+  if (step.status === "done" && timing?.startedAt !== undefined && timing.endedAt !== undefined) {
+    return { ...base, durationMs: timing.endedAt - timing.startedAt };
+  }
+  if (step.status === "in-progress" && timing?.startedAt !== undefined) {
+    return { ...base, durationMs: Math.max(0, at - timing.startedAt) };
+  }
+  return base;
 }
 
 export const usePlanStore = create<PlanStoreState>()(
@@ -102,14 +157,38 @@ export const usePlanStore = create<PlanStoreState>()(
           // Idempotent — drop the update if nothing changed (defensive against replay).
           if (prev.filePath === path && prev.fileContent === content) return state;
 
+          const now = Date.now();
+          const isFirstObservation = prev.fileContent === null;
           const nextSteps = parsePlanSteps(content);
           const title = parsePlanTitle(content);
-          const progress = computeProgress(prev, nextSteps, Date.now());
+          const progress = computeProgress(prev, nextSteps, now);
 
           // Auto-open the panel the first time a real plan arrives. Stays closed if the user
           // explicitly closed it; opens regardless on the first plan if they never touched it.
           const shouldAutoOpen =
             !prev.panelClosedByUser && content !== null && content.length > 0 && !prev.panelOpen;
+
+          // Capture one frozen snapshot per transition (a step started or finished), anchored to
+          // the in-flight turn, so the card shows once at that point rather than persistently.
+          // Skipped on first observation so a reopen / restart mid-run doesn't replay snapshots.
+          let snapshots = prev.snapshots ?? [];
+          if (!isFirstObservation && progress.transitioned) {
+            const anchorMessageId = selectLatestAssistantId(sessionId)(useMessagesStore.getState());
+            const snapshot: PlanProgressSnapshot = {
+              id: `snap-${anchorMessageId ?? "x"}-${now}`,
+              ...(anchorMessageId ? { anchorMessageId } : {}),
+              at: now,
+              ...(title ? { title } : {}),
+              steps: nextSteps.map((s) => freezeStep(s, progress.stepTimings[s.id], now)),
+            };
+            // Coalesce consecutive transitions within the same turn (e.g. finishing one step and
+            // starting the next in separate writes) into a single, latest card for that turn.
+            const last = snapshots[snapshots.length - 1];
+            snapshots =
+              last && last.anchorMessageId === anchorMessageId
+                ? [...snapshots.slice(0, -1), snapshot]
+                : [...snapshots, snapshot];
+          }
 
           return {
             bySession: {
@@ -120,7 +199,9 @@ export const usePlanStore = create<PlanStoreState>()(
                 fileContent: content,
                 panelOpen: shouldAutoOpen ? true : prev.panelOpen,
                 title,
-                ...progress,
+                steps: progress.steps,
+                stepTimings: progress.stepTimings,
+                snapshots,
               },
             },
           };
@@ -165,8 +246,8 @@ export const usePlanStore = create<PlanStoreState>()(
     {
       name: "pi-deck:plan-panel",
       // Don't persist file content or derived progress — the host re-emits content on the next
-      // session activate, and timings are wall-clock observations that would be stale on
-      // restart. Keep the user preferences (open/closed, last approval).
+      // session activate, and timings/snapshots are wall-clock observations that would be stale
+      // on restart. Keep the user preferences (open/closed, last approval).
       partialize: (state) => ({
         bySession: Object.fromEntries(
           Object.entries(state.bySession).map(([id, s]) => [
@@ -179,12 +260,13 @@ export const usePlanStore = create<PlanStoreState>()(
               lastApproval: s.lastApproval,
               steps: [],
               stepTimings: {},
+              snapshots: [],
             } satisfies PlanSessionState,
           ]),
         ),
       }),
       // Backfill defaults on rehydration. Entries persisted by an earlier build predate fields
-      // like `steps`/`stepTimings`; without this, opening such a session would hit
+      // like `snapshots`/`steps`/`stepTimings`; without this, opening such a session would hit
       // `undefined.map`/`.find` in the renderer and blank the app. Spreading `emptySessionState`
       // first guarantees every rehydrated session has the full shape.
       merge: (persisted, current) => {

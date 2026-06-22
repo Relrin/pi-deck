@@ -9,7 +9,7 @@ import { Markdown } from "./Markdown.js";
 import { MessageContextMenu } from "./MessageContextMenu.js";
 import { MessageSurface } from "./MessageSurface.js";
 import { isPlanShapedMessage, PlanCard, planMarkdownHasChecklist } from "./PlanCard.js";
-import { PlanSnapshot, type PlanSnapshotRow } from "./PlanSnapshot.js";
+import { PlanSnapshot } from "./PlanSnapshot.js";
 import { StreamingStatus } from "./StreamingStatus.js";
 import { formatMessageTime, formatMessageTimestampFull } from "./time.js";
 
@@ -52,49 +52,14 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
   const isLatestAssistant = latestAssistantId === message.id;
 
   // Inline plan card. The agent drives progress by editing its plan file (`[ ]`→`[~]`→`[x]`);
-  // `usePlanStore` parses steps + per-step timings. We render one live card under the latest
-  // executing turn so it updates in place as the agent starts/finishes steps — not re-emitted
-  // on a cadence.
+  // `usePlanStore` freezes a snapshot at each step transition (start / finish) anchored to the
+  // turn it happened in. We render those snapshots once, in place — no card is pinned in front
+  // of the user. (`?? []` guards a stale persisted shape — see the store's `merge`.)
   const plan = usePlanStore(selectPlanSession(sessionId));
-  // Defensive defaults: a session rehydrated from an older persisted shape may lack these
-  // arrays. `usePlanStore`'s merge backfills them, but guarding here keeps a render crash from
-  // ever blanking the app on a stale entry.
-  const planSteps = plan.steps ?? [];
-  const planStepTimings = plan.stepTimings ?? {};
-  const liveRows = useMemo<PlanSnapshotRow[]>(
-    () =>
-      planSteps.map((s) => {
-        const t = planStepTimings[s.id];
-        const base = {
-          id: s.id,
-          ...(s.label ? { label: s.label } : {}),
-          description: s.description,
-        };
-        if (s.status === "done") {
-          const durationMs =
-            t?.startedAt !== undefined && t.endedAt !== undefined
-              ? t.endedAt - t.startedAt
-              : undefined;
-          return { ...base, status: "done", ...(durationMs !== undefined ? { durationMs } : {}) };
-        }
-        if (s.status === "in-progress") {
-          return { ...base, status: "in-progress", startedAt: t?.startedAt };
-        }
-        return { ...base, status: "pending" };
-      }),
-    [planSteps, planStepTimings],
+  const turnSnapshots = useMemo(
+    () => (plan.snapshots ?? []).filter((s) => s.anchorMessageId === message.id),
+    [plan.snapshots, message.id],
   );
-  const total = planSteps.length;
-  const doneCount = planSteps.filter((s) => s.status === "done").length;
-  const hasInProgress = planSteps.some((s) => s.status === "in-progress");
-  // Show the live card while a plan is mid-execution: at least one step active or partly done,
-  // but not the freshly-proposed plan (that renders as the PlanCard) and not a finished or
-  // stale plan on an unrelated later turn.
-  const showLive =
-    isLatestAssistant &&
-    !isPlan &&
-    total > 0 &&
-    (hasInProgress || (doneCount > 0 && doneCount < total));
   // Fallback for models that write the plan to the file but don't echo the checklist in their
   // message (e.g. Kimi): on the active plan proposal, source the inline card from the plan
   // file so the user still sees it in the conversation instead of opening the file.
@@ -153,7 +118,9 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
             if (!call.name?.trim()) return null;
             return <ToolCallCard key={callId} call={call} sessionId={sessionId} />;
           })}
-          {showLive && <PlanSnapshot title={plan.title} rows={liveRows} />}
+          {turnSnapshots.map((snap) => (
+            <PlanSnapshot key={snap.id} title={snap.title} rows={snap.steps} />
+          ))}
           {!message.isComplete && (
             <StreamingStatus
               toolCalls={toolCalls}
