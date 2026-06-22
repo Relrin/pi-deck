@@ -12,6 +12,7 @@ import type { ApprovePlanTargetMode } from "../../../lib/transport/protocol-clie
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
 import { selectPlanSession, usePlanStore } from "../../plan-panel/usePlanStore.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore.js";
+import { useComposerStore } from "../composer/useComposerStore.js";
 import type { AssistantMessageEntry } from "../types.js";
 import { Markdown } from "./Markdown.js";
 
@@ -63,6 +64,8 @@ export function PlanCard({ message, sessionId, isLatest, planMarkdown }: PlanCar
     setBusy(true);
     try {
       await client.approvePlan(sessionId, selectedTarget);
+
+      useComposerStore.getState().seed(sessionId, selectedTarget);
       // Re-persist the pick so the next plan in this session pre-selects the same mode. The
       // store is already at this value when the user clicked an option in the picker, but
       // the default fallback wouldn't have written anything yet — write here so the choice

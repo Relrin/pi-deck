@@ -1,9 +1,14 @@
-import { describe, expect, test } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { useComposerStore } from "../../../../src/features/chat/composer/useComposerStore";
 import {
   isPlanShapedMessage,
+  PlanCard,
   planMarkdownHasChecklist,
 } from "../../../../src/features/chat/messages/PlanCard";
 import type { AssistantMessageEntry } from "../../../../src/features/chat/types";
+import { usePlanStore } from "../../../../src/features/plan-panel/usePlanStore";
+import { useSessionsStore } from "../../../../src/features/sessions/useSessionsStore";
+import { fireEvent, render, screen, waitFor } from "../../../utils";
 
 function msg(text: string, mode?: AssistantMessageEntry["agentModeAtTurn"]): AssistantMessageEntry {
   return {
@@ -60,5 +65,29 @@ describe("planMarkdownHasChecklist", () => {
     expect(planMarkdownHasChecklist("")).toBe(false);
     expect(planMarkdownHasChecklist(null)).toBe(false);
     expect(planMarkdownHasChecklist(undefined)).toBe(false);
+  });
+});
+
+describe("PlanCard — approval mode switch", () => {
+  const SID = "session-1";
+
+  beforeEach(() => {
+    usePlanStore.setState({ bySession: {} });
+    // The user is in plan mode locally (the picker shows "Plan").
+    useComposerStore.setState({ bySession: { [SID]: "plan" } });
+  });
+
+  test("approving seeds the composer out of plan into the selected target mode", async () => {
+    const approvePlan = mock(() => Promise.resolve({ promptId: "p1" }));
+    useSessionsStore.setState({
+      client: { approvePlan } as unknown as ReturnType<typeof useSessionsStore.getState>["client"],
+    });
+    expect(useComposerStore.getState().getMode(SID)).toBe("plan");
+
+    render(<PlanCard message={msg("## Plan\n- [ ] step", "plan")} sessionId={SID} isLatest />);
+    fireEvent.click(screen.getByRole("button", { name: /approve and execute plan/i }));
+
+    await waitFor(() => expect(approvePlan).toHaveBeenCalledWith(SID, "accept-edits"));
+    await waitFor(() => expect(useComposerStore.getState().getMode(SID)).toBe("accept-edits"));
   });
 });
