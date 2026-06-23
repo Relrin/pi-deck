@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Map as MapIcon,
   ShieldCheck,
+  Sparkles,
 } from "../../../components/icons/index.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore.js";
 import { type ExecutionMode, useComposerStore } from "./useComposerStore.js";
@@ -30,7 +31,18 @@ const MODES: ModeEntry[] = [
     blurb: "Auto-accept edits to listed files & paths.",
     Icon: CheckCheck,
   },
-  { value: "plan", label: "Plan", blurb: "Plan-only — no writes, no commands.", Icon: MapIcon },
+  {
+    value: "auto",
+    label: "Auto",
+    blurb: "Auto-run; risky actions pause for approval.",
+    Icon: Sparkles,
+  },
+  {
+    value: "plan",
+    label: "Plan",
+    blurb: "Plan-only - no writes, no commands.",
+    Icon: MapIcon,
+  },
 ];
 
 const FALLBACK: ModeEntry = MODES[0] as ModeEntry;

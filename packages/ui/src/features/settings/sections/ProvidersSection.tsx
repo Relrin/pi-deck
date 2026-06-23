@@ -4,7 +4,13 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
 import { PidChip } from "../../../components/chip/PidChip";
-import { CheckCheck, Map as MapIcon, Plus, ShieldCheck } from "../../../components/icons/index.js";
+import {
+  CheckCheck,
+  Map as MapIcon,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+} from "../../../components/icons/index.js";
 import {
   PidSegmentedPill,
   type PidSegmentedPillOption,
@@ -35,6 +41,12 @@ const AGENT_MODE_OPTIONS: PidSegmentedPillOption<AgentMode>[] = [
     label: "Accept edits",
     icon: <CheckCheck size={13} />,
     description: "Auto-accept edits to listed files & paths.",
+  },
+  {
+    value: "auto",
+    label: "Auto",
+    icon: <Sparkles size={13} />,
+    description: "Auto-run; risky actions pause for approval.",
   },
   {
     value: "plan",

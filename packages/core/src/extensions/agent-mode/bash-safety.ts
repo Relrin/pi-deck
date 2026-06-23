@@ -235,7 +235,9 @@ function gitIsReadOnly(args: readonly string[]): boolean {
  * negation, and `(`/`{` grouping. Returns the command basename (so `/bin/ls` → `ls`) plus the
  * remaining tokens, or `undefined` when there's no command (e.g. assignment-only).
  */
-function commandTokens(tokens: readonly string[]): { cmd: string; args: string[] } | undefined {
+export function commandTokens(
+  tokens: readonly string[],
+): { cmd: string; args: string[] } | undefined {
   let i = 0;
   while (i < tokens.length) {
     const t = tokens[i];
@@ -269,7 +271,7 @@ function commandTokens(tokens: readonly string[]): { cmd: string; args: string[]
  * A lone `&` adjacent to `>` (e.g. `2>&1`, `&>`) is treated as part of a redirection, not a
  * separator, so fd-duplication survives intact.
  */
-function splitSegments(command: string): string[] {
+export function splitSegments(command: string): string[] {
   const segments: string[] = [];
   let cur = "";
   let inSingle = false;
@@ -387,7 +389,7 @@ function hasUnsafeRedirect(command: string): boolean {
 }
 
 /** Quote-aware whitespace tokenizer; strips surrounding quotes and processes simple escapes. */
-function tokenize(segment: string): string[] {
+export function tokenize(segment: string): string[] {
   const tokens: string[] = [];
   let cur = "";
   let started = false;

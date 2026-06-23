@@ -23,4 +23,13 @@ describe("deriveAllowKey", () => {
     expect(deriveAllowKey("edit", {})).toBe("edit");
     expect(deriveAllowKey("grep", { pattern: "x" })).toBe("grep");
   });
+
+  test("the mcp proxy keys on the invoked tool so 'always allow' scopes to one MCP tool", () => {
+    expect(deriveAllowKey("mcp", { tool: "linear_create_issue", args: "{}" })).toBe(
+      "mcp:linear_create_issue",
+    );
+    // Discovery / malformed mcp input falls back to the bare proxy name.
+    expect(deriveAllowKey("mcp", { search: "issue" })).toBe("mcp");
+    expect(deriveAllowKey("mcp", {})).toBe("mcp");
+  });
 });

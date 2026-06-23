@@ -67,6 +67,12 @@ export interface AgentModeController {
   setEditAllowlist(paths: readonly string[]): void;
   getEditAllowlist(): readonly string[];
   /**
+   * Set the names of direct-exposed MCP tools (the `mcp` proxy is matched by name regardless).
+   * Used by `auto` mode to gate MCP invocations. Computed by agent-bridge once the session's tools
+   * are bound. Safe to call again if the tool set changes.
+   */
+  setMcpToolNames(names: readonly string[]): void;
+  /**
    * Set the per-session plan file path. The agent is allowed to write/edit this exact path
    * in plan mode (and the system-prompt section tells it to). Computed by agent-bridge once
    * pi-ai has assigned the session a real id.
@@ -115,6 +121,7 @@ export function createAgentModeExtension(options: AgentModeExtensionOptions): Ag
   const planGatePolicy: PlanGatePolicy = options.initialPlanGatePolicy ?? DEFAULT_PLAN_GATE_POLICY;
   let allowlist: string[] =
     options.initialAllowlist !== undefined ? [...options.initialAllowlist] : [options.projectPath];
+  let mcpToolNames: ReadonlySet<string> = new Set();
   let planFilePath: string | undefined;
   // Tracks whether the user has flipped TO plan mode while an agent loop is in flight. Reset
   // on `agent_start` (= once per user prompt). Used to enrich the block reason so the model
@@ -178,6 +185,7 @@ export function createAgentModeExtension(options: AgentModeExtensionOptions): Ag
         planGatePolicy,
         mutatingTools: options.mutatingTools,
         shellTools: options.shellTools,
+        mcpToolNames,
       });
       if (decision.kind === "allow") return undefined;
       if (decision.kind === "block") {
@@ -218,6 +226,9 @@ export function createAgentModeExtension(options: AgentModeExtensionOptions): Ag
     },
     getEditAllowlist() {
       return allowlist;
+    },
+    setMcpToolNames(names) {
+      mcpToolNames = new Set(names);
     },
     setPlanFilePath(path) {
       planFilePath = path;

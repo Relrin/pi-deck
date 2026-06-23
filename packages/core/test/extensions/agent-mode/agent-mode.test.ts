@@ -10,7 +10,7 @@ import { createMockExtensionApi } from "../helpers/mock-api.js";
 const PROJECT = isAbsolute("/repo") ? "/repo" : resolve("C:\\repo");
 
 function setup(
-  initialMode: "ask" | "accept-edits" | "plan" = "plan",
+  initialMode: "ask" | "accept-edits" | "plan" | "auto" = "plan",
   initialPlanGatePolicy?: "block" | "approve",
 ) {
   const api = createMockExtensionApi();
@@ -148,6 +148,49 @@ describe("createAgentModeExtension — tool_call enforcement", () => {
     expect(requests).toHaveLength(1);
     controller.resolveApproval(firstRequest(requests).approvalId, "allow");
     await promise;
+  });
+
+  test("auto mode runs ordinary work without prompting", async () => {
+    const { api, requests } = setup("auto");
+    for (const event of [
+      makeEvent("edit", { path: `${PROJECT}/src/foo.ts` }, "a"),
+      makeEvent("bash", { command: "npm test" }, "b"),
+    ]) {
+      const result = await api.fire<ToolCallEventResult>("tool_call", event);
+      expect(result).toBeUndefined();
+    }
+    expect(requests).toHaveLength(0);
+  });
+
+  test("auto mode prompts on a risky shell command", async () => {
+    const { controller, api, requests } = setup("auto");
+    const promise = api.fire<ToolCallEventResult>(
+      "tool_call",
+      makeEvent("bash", { command: "rm -rf /" }),
+    );
+    expect(requests).toHaveLength(1);
+    expect(firstRequest(requests).reason).toContain("Auto mode");
+    controller.resolveApproval(firstRequest(requests).approvalId, "allow");
+    await promise;
+  });
+
+  test("auto mode gates a direct-exposed MCP tool once it's registered", async () => {
+    const { controller, api, requests } = setup("auto");
+    // Unknown tool isn't gated until we learn it's MCP-origin.
+    const before = await api.fire<ToolCallEventResult>(
+      "tool_call",
+      makeEvent("figma_get_file", { id: "x" }, "a"),
+    );
+    expect(before).toBeUndefined();
+    controller.setMcpToolNames(["figma_get_file"]);
+    const promise = api.fire<ToolCallEventResult>(
+      "tool_call",
+      makeEvent("figma_get_file", { id: "x" }, "b"),
+    );
+    expect(requests).toHaveLength(1);
+    controller.resolveApproval(firstRequest(requests).approvalId, "deny", "no");
+    const result = await promise;
+    expect(result?.block).toBe(true);
   });
 
   test("setMode flips behaviour mid-session", async () => {

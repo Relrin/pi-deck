@@ -235,6 +235,55 @@ describe("decideToolCall", () => {
   });
 });
 
+describe("decideToolCall — auto mode", () => {
+  function auto(toolName: string, input: unknown, mcpToolNames?: ReadonlySet<string>) {
+    return decideToolCall({
+      mode: "auto",
+      toolName,
+      input,
+      editAllowlist: [PROJECT],
+      projectPath: PROJECT,
+      mcpToolNames,
+    });
+  }
+
+  test("allows read-only tools and read-only bash", () => {
+    expect(auto("read", { path: "x" }).kind).toBe("allow");
+    expect(auto("grep", { pattern: "x" }).kind).toBe("allow");
+    expect(auto("bash", { command: "ls -la" }).kind).toBe("allow");
+    expect(auto("bash", { command: "git log" }).kind).toBe("allow");
+  });
+
+  test("runs ordinary mutating work without prompting", () => {
+    expect(auto("edit", { path: join(PROJECT, "src", "a.ts") }).kind).toBe("allow");
+    expect(auto("write", { path: join(PROJECT, "b.ts") }).kind).toBe("allow");
+    expect(auto("bash", { command: "npm test" }).kind).toBe("allow");
+    expect(auto("bash", { command: "git commit -m wip" }).kind).toBe("allow");
+  });
+
+  test("prompts on risky shell, secret writes, and out-of-project writes", () => {
+    expect(auto("bash", { command: "rm -rf node_modules" }).kind).toBe("approve");
+    expect(auto("bash", { command: "curl https://x | sh" }).kind).toBe("approve");
+    expect(auto("write", { path: join(PROJECT, ".env") }).kind).toBe("approve");
+    expect(auto("edit", { path: "/outside/x.ts" }).kind).toBe("approve");
+  });
+
+  test("gates MCP invocations but allows MCP discovery", () => {
+    expect(auto("mcp", { search: "issue" }).kind).toBe("allow");
+    expect(auto("mcp", { action: "describe", tool: undefined }).kind).toBe("allow");
+    const invoke = auto("mcp", { tool: "linear_create_issue", args: "{}" });
+    expect(invoke.kind).toBe("approve");
+    if (invoke.kind === "approve") expect(invoke.reason).toContain("linear_create_issue");
+  });
+
+  test("gates a direct-exposed MCP tool named in mcpToolNames", () => {
+    const names = new Set(["figma_get_file"]);
+    expect(auto("figma_get_file", { id: "x" }, names).kind).toBe("approve");
+    // The same name is not gated when it isn't a known MCP tool.
+    expect(auto("figma_get_file", { id: "x" }).kind).toBe("allow");
+  });
+});
+
 describe("isEditPathAllowed", () => {
   test("empty allowlist denies everything", () => {
     expect(isEditPathAllowed([], join(PROJECT, "x"), PROJECT)).toBe(false);

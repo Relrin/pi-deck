@@ -9,10 +9,17 @@ export const ThinkingLevelSchema = z.enum(["off", "minimal", "low", "medium", "h
 export type ThinkingLevel = z.infer<typeof ThinkingLevelSchema>;
 
 /**
- * Agent permission mode. Picked on the intro composer and persisted onto the session record.
- * The agent loop will eventually enforce these — for now the field is stored but not gating.
+ * Agent permission mode. Picked on the intro composer and persisted onto the session record,
+ * enforced in the worker by the agent-mode extension (see `extensions/agent-mode`):
+ *  - `ask`          - confirm before every mutating tool call (edit / write / shell).
+ *  - `accept-edits` - auto-apply in-project edits; still confirm every shell command.
+ *  - `plan`         - read-only; non-read-only operations gated per `PlanGatePolicy`.
+ *  - `auto`         - run edits and shell freely; only genuinely risky actions (mass delete,
+ *                     secret/out-of-workspace writes, remote-pipe-to-shell, exfiltration) and
+ *                     MCP invocations pause for approval, via a deterministic rule engine
+ *                     (`auto-safety.ts`). "Fewer interruptions, less risk than no permissions."
  */
-export const AgentModeSchema = z.enum(["ask", "accept-edits", "plan"]);
+export const AgentModeSchema = z.enum(["ask", "accept-edits", "plan", "auto"]);
 export type AgentMode = z.infer<typeof AgentModeSchema>;
 
 /**

@@ -7,6 +7,7 @@ import {
   ChevronDown,
   Map as MapIcon,
   ShieldCheck,
+  Sparkles,
 } from "../../components/icons/index.js";
 import { useSessionDefaultsStore } from "../settings/useSessionDefaultsStore.js";
 
@@ -31,9 +32,15 @@ const MODES: ModeEntry[] = [
     Icon: CheckCheck,
   },
   {
+    value: "auto",
+    label: "Auto",
+    blurb: "Auto-run; risky actions pause for approval.",
+    Icon: Sparkles,
+  },
+  {
     value: "plan",
     label: "Plan",
-    blurb: "Plan-only — no writes, no commands.",
+    blurb: "Plan-only - no writes, no commands.",
     Icon: MapIcon,
   },
 ];

@@ -299,6 +299,19 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
   // on every (re)spawn, so toggling a server refreshes the figure.
   emitContextCost(session, mcpAdapterPath, emit);
 
+  // Tell the agent-mode plugin which tool names are MCP-origin so `auto` mode can gate MCP
+  // invocations (direct-exposed MCP tools have arbitrary names; the `mcp` proxy is matched by
+  // name regardless). Best-effort: a failure here must never break session startup.
+  try {
+    const mcpToolNames = session
+      .getAllTools()
+      .filter((tool) => isMcpTool(tool, mcpAdapterPath))
+      .map((tool) => tool.name);
+    agentModeController.setMcpToolNames(mcpToolNames);
+  } catch {
+    // Non-fatal: auto mode still gates the `mcp` proxy by name and inspects bash/edit/write.
+  }
+
   return {
     session,
     sessionId: session.sessionId,

@@ -1,5 +1,11 @@
 import { isAbsolute, normalize, resolve, sep } from "node:path";
 import type { AgentMode, PlanGatePolicy } from "../../domain/session.js";
+import {
+  assessAutoModeRisk,
+  isMcpDiscovery,
+  isMcpToolCall,
+  mcpApprovalReason,
+} from "./auto-safety.js";
 import { isReadOnlyBashCommand } from "./bash-safety.js";
 
 /** Built-in tools considered mutating by default. */
@@ -44,6 +50,11 @@ export interface DecideOptions {
   mutatingTools?: ReadonlySet<string>;
   shellTools?: ReadonlySet<string>;
   readOnlyTools?: ReadonlySet<string>;
+  /**
+   * Names of direct-exposed MCP tools (the `mcp` proxy is matched by name regardless). Used by
+   * `auto` mode to gate MCP invocations. Computed by agent-bridge from `session.getAllTools()`.
+   */
+  mcpToolNames?: ReadonlySet<string>;
 }
 
 /**
@@ -56,6 +67,10 @@ export function decideToolCall(opts: DecideOptions): AgentModeDecision {
 
   if (opts.mode === "plan") {
     return decidePlanMode(opts, shell);
+  }
+
+  if (opts.mode === "auto") {
+    return decideAutoMode(opts, shell);
   }
 
   if (opts.mode === "accept-edits" && opts.toolName === "edit") {
@@ -74,6 +89,25 @@ export function decideToolCall(opts: DecideOptions): AgentModeDecision {
   }
 
   return { kind: "allow" };
+}
+
+/**
+ * Auto-mode policy. The agent runs edits and shell commands freely so long tasks aren't
+ * constantly interrupted; only genuinely risky shapes pause for approval. MCP invocations are
+ * gated (we can't safety-inspect an external tool) while read-only MCP discovery flows through;
+ * read-only operations always flow through; everything else is checked by the deterministic
+ * `auto-safety` rule engine and approved only when a rule positively matches.
+ */
+function decideAutoMode(opts: DecideOptions, shell: ReadonlySet<string>): AgentModeDecision {
+  if (isMcpToolCall(opts.toolName, opts.mcpToolNames)) {
+    // Discovery (search/list/describe) is a `mcp` proxy concept only; direct-exposed MCP tools
+    // are always real invocations and stay gated.
+    if (opts.toolName === "mcp" && isMcpDiscovery(opts.input)) return { kind: "allow" };
+    return { kind: "approve", reason: mcpApprovalReason(opts.toolName, opts.input) };
+  }
+  if (isPlanReadOnly(opts, shell)) return { kind: "allow" };
+  const risk = assessAutoModeRisk(opts.toolName, opts.input, opts.projectPath);
+  return risk.risky ? { kind: "approve", reason: risk.reason } : { kind: "allow" };
 }
 
 /**

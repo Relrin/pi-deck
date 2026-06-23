@@ -9,7 +9,7 @@ import { useSessionsStore } from "../../sessions/useSessionsStore.js";
  * agent-mode extension enforces in the worker (plan blocks mutating tools, ask prompts per
  * call, accept-edits allowlists edits).
  */
-export type ExecutionMode = "ask" | "accept-edits" | "plan";
+export type ExecutionMode = "ask" | "accept-edits" | "plan" | "auto";
 
 const DEFAULT_MODE: ExecutionMode = "ask";
 
