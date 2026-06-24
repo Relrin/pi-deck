@@ -56,9 +56,9 @@
     "ghostty-web": "0.4.0",
     "ldrs": "1.1.9",
     "lucide-react": "1.13.0",
-    "react": "19.2.6",
-    "react-dom": "19.2.6",
-    "react-markdown": "10.0.1",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "react-markdown": "10.1.0",
     "remark-gfm": "4.0.1",
     "shiki": "4.0.2",
     "zustand": "5.0.13"
