@@ -1,4 +1,22 @@
-import { Anthropic, Cerebras, Gemini, Groq, OpenAI, OpenRouter } from "@lobehub/icons";
+import {
+  Anthropic,
+  Cerebras,
+  DeepSeek,
+  Fireworks,
+  Gemini,
+  Grok,
+  Groq,
+  HuggingFace,
+  Kimi,
+  Minimax,
+  Mistral,
+  Moonshot,
+  Nvidia,
+  OpenAI,
+  OpenRouter,
+  Together,
+  Zhipu,
+} from "@lobehub/icons";
 import type { ReactNode } from "react";
 import { Settings } from "../../../components/icons/index.js";
 
@@ -36,8 +54,21 @@ export const PROVIDER_ICONS: Record<string, (props: IconProps) => ReactNode> = {
   // Pi calls the provider `google` (matches `~/.pi/agent/auth.json`'s `google` key) but the
   // brand glyph is the Gemini logo.
   google: ({ size = 16, className }) => <Gemini size={size} className={className} />,
+  deepseek: ({ size = 16, className }) => <DeepSeek size={size} className={className} />,
+  moonshotai: ({ size = 16, className }) => <Moonshot size={size} className={className} />,
+  "kimi-coding": ({ size = 16, className }) => <Kimi size={size} className={className} />,
+  // Z.ai is Zhipu AI; its models are the GLM family.
+  zai: ({ size = 16, className }) => <Zhipu size={size} className={className} />,
+  minimax: ({ size = 16, className }) => <Minimax size={size} className={className} />,
+  mistral: ({ size = 16, className }) => <Mistral size={size} className={className} />,
+  // xAI's recognisable mark is the Grok glyph.
+  xai: ({ size = 16, className }) => <Grok size={size} className={className} />,
   groq: ({ size = 16, className }) => <Groq size={size} className={className} />,
   cerebras: ({ size = 16, className }) => <Cerebras size={size} className={className} />,
+  nvidia: ({ size = 16, className }) => <Nvidia size={size} className={className} />,
+  fireworks: ({ size = 16, className }) => <Fireworks size={size} className={className} />,
+  together: ({ size = 16, className }) => <Together size={size} className={className} />,
+  huggingface: ({ size = 16, className }) => <HuggingFace size={size} className={className} />,
   openrouter: ({ size = 16, className }) => <OpenRouter size={size} className={className} />,
   custom: Custom,
 };
@@ -50,8 +81,21 @@ export const PROVIDER_AVATARS: Record<string, (props: IconProps) => ReactNode> =
   anthropic: ({ size = 18, className }) => <Anthropic.Avatar size={size} className={className} />,
   openai: ({ size = 18, className }) => <OpenAI.Avatar size={size} className={className} />,
   google: ({ size = 18, className }) => <Gemini.Avatar size={size} className={className} />,
+  deepseek: ({ size = 18, className }) => <DeepSeek.Avatar size={size} className={className} />,
+  moonshotai: ({ size = 18, className }) => <Moonshot.Avatar size={size} className={className} />,
+  "kimi-coding": ({ size = 18, className }) => <Kimi.Avatar size={size} className={className} />,
+  zai: ({ size = 18, className }) => <Zhipu.Avatar size={size} className={className} />,
+  minimax: ({ size = 18, className }) => <Minimax.Avatar size={size} className={className} />,
+  mistral: ({ size = 18, className }) => <Mistral.Avatar size={size} className={className} />,
+  xai: ({ size = 18, className }) => <Grok.Avatar size={size} className={className} />,
   groq: ({ size = 18, className }) => <Groq.Avatar size={size} className={className} />,
   cerebras: ({ size = 18, className }) => <Cerebras.Avatar size={size} className={className} />,
+  nvidia: ({ size = 18, className }) => <Nvidia.Avatar size={size} className={className} />,
+  fireworks: ({ size = 18, className }) => <Fireworks.Avatar size={size} className={className} />,
+  together: ({ size = 18, className }) => <Together.Avatar size={size} className={className} />,
+  huggingface: ({ size = 18, className }) => (
+    <HuggingFace.Avatar size={size} className={className} />
+  ),
   openrouter: ({ size = 18, className }) => <OpenRouter.Avatar size={size} className={className} />,
   custom: Custom,
 };

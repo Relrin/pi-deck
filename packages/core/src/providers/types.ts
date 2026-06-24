@@ -2,15 +2,26 @@ import { z } from "zod";
 import { SessionModelRefSchema, ThinkingLevelSchema } from "../domain/session.js";
 
 /**
- * pi-ai provider slugs we surface natively in the picker for v1. Other ~18 providers pi
- * supports still work via env vars, they just aren't listed here.
+ * pi-ai provider slugs we surface natively in the "Add provider" picker. These are the
+ * single-token API-key providers pi supports; Slugs match pi's `auth.json` keys verbatim.
  */
 export const BUILT_IN_PROVIDER_IDS = [
   "anthropic",
   "openai",
   "google",
+  "deepseek",
+  "moonshotai",
+  "kimi-coding",
+  "zai",
+  "minimax",
+  "mistral",
+  "xai",
   "groq",
   "cerebras",
+  "nvidia",
+  "fireworks",
+  "together",
+  "huggingface",
   "openrouter",
 ] as const;
 

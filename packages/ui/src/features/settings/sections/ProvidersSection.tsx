@@ -16,6 +16,7 @@ import {
   type PidSegmentedPillOption,
 } from "../../../components/segmented/PidSegmentedPill.js";
 import { AddCustomProviderDialog } from "../../models/AddCustomProviderDialog.js";
+import { AddProviderDialog } from "../../models/AddProviderDialog.js";
 import { AuthenticateProviderDialog } from "../../models/AuthenticateProviderDialog.js";
 import { ProviderAvatar } from "../../models/icons";
 import { useProvidersStore } from "../../models/useProvidersStore.js";
@@ -28,6 +29,18 @@ const EFFORT_OPTIONS: PidSegmentedPillOption<ThinkingLevel>[] = [
   { value: "medium", label: "Medium" },
   { value: "high", label: "High" },
 ];
+
+// Compact header-action button — matches the "Install server" button in McpServersSection.
+// flexShrink/nowrap keep the label on one line even when the section description shares the row.
+const HEADER_BTN = {
+  height: 28,
+  paddingTop: 0,
+  paddingBottom: 0,
+  boxSizing: "border-box",
+  lineHeight: 1,
+  flexShrink: 0,
+  whiteSpace: "nowrap",
+} as const;
 
 const AGENT_MODE_OPTIONS: PidSegmentedPillOption<AgentMode>[] = [
   {
@@ -68,6 +81,7 @@ export function ProvidersSection() {
   const removeCustom = useProvidersStore((s) => s.removeCustomProvider);
   const [auth, setAuth] = useState<ProviderSummary | undefined>(undefined);
   const [addOpen, setAddOpen] = useState(false);
+  const [addProviderOpen, setAddProviderOpen] = useState(false);
 
   const defaultThinkingLevel = useSessionDefaultsStore((s) => s.defaultThinkingLevel);
   const setDefaultThinkingLevel = useSessionDefaultsStore((s) => s.setDefaultThinkingLevel);
@@ -79,6 +93,10 @@ export function ProvidersSection() {
   }, [refresh]);
 
   const builtIns = providers.filter((p) => p.kind === "built-in");
+  // A built-in is "configured" once it has a key (set in-app or via env var). Only those get a
+  // row; the rest live behind the "Add provider" selector so the page stays scannable.
+  const configuredBuiltIns = builtIns.filter((p) => p.authState === "authenticated");
+  const availableBuiltIns = builtIns.filter((p) => p.authState !== "authenticated");
   const customs = providers.filter((p) => p.kind === "custom-openai-compatible");
 
   return (
@@ -113,20 +131,46 @@ export function ProvidersSection() {
       </DefaultBlock>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Built-in providers</div>
-        <p className="pid-settings-block-desc">
-          Set an API key to enable models from this provider. Keys are stored in pi's{" "}
-          <code>~/.pi/agent/auth.json</code> (0600 perms) and never sent to the renderer.
-        </p>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="pid-settings-block-label">Built-in providers</div>
+            <p className="pid-settings-block-desc">
+              Add an API key to enable a provider's models. Keys are stored in pi's{" "}
+              <code>~/.pi/agent/auth.json</code> (0600 perms) and never sent to the renderer.
+            </p>
+          </div>
+          <PidButton
+            icon={<Plus size={12} />}
+            longLabel
+            style={HEADER_BTN}
+            disabled={availableBuiltIns.length === 0}
+            onClick={() => setAddProviderOpen(true)}
+          >
+            Add provider
+          </PidButton>
+        </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {builtIns.map((p) => (
-            <ProviderRow
-              key={p.id}
-              provider={p}
-              onAuthenticate={() => setAuth(p)}
-              onClear={() => clearApiKey(p.authJsonKey)}
-            />
-          ))}
+          {configuredBuiltIns.length === 0 ? (
+            <div className="pid-list-empty">
+              No providers configured yet. Use “Add provider” to enable one with an API key.
+            </div>
+          ) : (
+            configuredBuiltIns.map((p) => (
+              <ProviderRow
+                key={p.id}
+                provider={p}
+                onAuthenticate={() => setAuth(p)}
+                onClear={() => clearApiKey(p.authJsonKey)}
+              />
+            ))
+          )}
         </div>
       </section>
 
@@ -139,14 +183,19 @@ export function ProvidersSection() {
             gap: 12,
           }}
         >
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div className="pid-settings-block-label">Custom providers</div>
             <p className="pid-settings-block-desc">
               OpenAI-compatible endpoints (LM Studio, Ollama, vLLM, self-hosted gateways). pi-deck
               writes these to <code>~/.pi/agent/models.json</code>.
             </p>
           </div>
-          <PidButton icon={<Plus size={14} />} longLabel onClick={() => setAddOpen(true)}>
+          <PidButton
+            icon={<Plus size={12} />}
+            longLabel
+            style={HEADER_BTN}
+            onClick={() => setAddOpen(true)}
+          >
             Add custom
           </PidButton>
         </div>
@@ -166,6 +215,15 @@ export function ProvidersSection() {
         </div>
       </section>
 
+      <AddProviderDialog
+        open={addProviderOpen}
+        onOpenChange={setAddProviderOpen}
+        providers={availableBuiltIns}
+        onSelect={(p) => {
+          setAddProviderOpen(false);
+          setAuth(p);
+        }}
+      />
       <AuthenticateProviderDialog
         provider={auth}
         open={Boolean(auth)}
