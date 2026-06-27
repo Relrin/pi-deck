@@ -122,7 +122,6 @@ function ContextWindowSection({
     breakdown;
   const basePrompt = systemPrompt - projectContext;
   const seg = (n: number): number => (contextWindow > 0 ? (n / contextWindow) * 100 : 0);
-  const mcpPercent = contextWindow > 0 ? Math.round((mcp / contextWindow) * 100) : 0;
   return (
     <section className="pid-context-section">
       <div className="pid-mono-label pid-context-section-label">context window</div>
@@ -183,7 +182,7 @@ function ContextWindowSection({
         </li>
         <li>
           <span className="pid-context-swatch pid-context-bar-mcp" />
-          mcp
+          mcp{mcpToolCount > 0 ? ` · ${mcpToolCount}` : ""}
         </li>
         <li>
           <span className="pid-context-swatch pid-context-bar-free" />
