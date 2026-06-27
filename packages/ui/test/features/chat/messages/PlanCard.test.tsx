@@ -6,6 +6,7 @@ import {
   planMarkdownHasChecklist,
 } from "../../../../src/features/chat/messages/PlanCard";
 import type { AssistantMessageEntry } from "../../../../src/features/chat/types";
+import { usePlanCommentsStore } from "../../../../src/features/plan-panel/usePlanCommentsStore";
 import { usePlanStore } from "../../../../src/features/plan-panel/usePlanStore";
 import { useSessionsStore } from "../../../../src/features/sessions/useSessionsStore";
 import { fireEvent, render, screen, waitFor } from "../../../utils";
@@ -89,5 +90,58 @@ describe("PlanCard — approval mode switch", () => {
 
     await waitFor(() => expect(approvePlan).toHaveBeenCalledWith(SID, "accept-edits"));
     await waitFor(() => expect(useComposerStore.getState().getMode(SID)).toBe("accept-edits"));
+  });
+});
+
+describe("PlanCard — request changes", () => {
+  const SID = "session-1";
+
+  beforeEach(() => {
+    usePlanStore.setState({ bySession: {} });
+    usePlanCommentsStore.setState({ bySession: {} });
+    useComposerStore.setState({ bySession: { [SID]: "plan" } });
+  });
+
+  test("shows the pending count, submits the comments in plan mode, then clears them", async () => {
+    const sendPrompt = mock(() => Promise.resolve());
+    useSessionsStore.setState({
+      client: {} as unknown as ReturnType<typeof useSessionsStore.getState>["client"],
+      sendPrompt: sendPrompt as unknown as ReturnType<
+        typeof useSessionsStore.getState
+      >["sendPrompt"],
+    });
+
+    // Seed one pending comment anchored to the message id used by `msg()` ("a-1").
+    usePlanCommentsStore
+      .getState()
+      .startDraft(SID, { messageId: "a-1", quote: "explore the repo", start: 0, end: 16 });
+    usePlanCommentsStore.getState().addComment(SID, "please add tests");
+
+    render(<PlanCard message={msg("## Plan\n- [ ] step", "plan")} sessionId={SID} isLatest />);
+
+    const btn = screen.getByRole("button", {
+      name: /send pending comments to revise the plan/i,
+    });
+    expect(btn.textContent).toContain("Revise");
+
+    fireEvent.click(btn);
+
+    await waitFor(() => expect(sendPrompt).toHaveBeenCalledTimes(1));
+    const call = sendPrompt.mock.calls[0] as unknown as [string, { agentMode?: string }];
+    expect(call[0]).toContain("> explore the repo");
+    expect(call[0]).toContain("please add tests");
+    expect(call[1]).toEqual({ agentMode: "plan" });
+
+    await waitFor(() => expect(usePlanCommentsStore.getState().bySession[SID]).toBeUndefined());
+  });
+
+  test("no Request changes button when there are no pending comments", () => {
+    useSessionsStore.setState({
+      client: {} as unknown as ReturnType<typeof useSessionsStore.getState>["client"],
+    });
+    render(<PlanCard message={msg("## Plan\n- [ ] step", "plan")} sessionId={SID} isLatest />);
+    expect(
+      screen.queryByRole("button", { name: /send pending comments to revise the plan/i }),
+    ).toBeNull();
   });
 });

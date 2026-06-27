@@ -5493,6 +5493,211 @@
   margin-top: 1px;
 }
 
+/* === Plan-card review comments ============================================ */
+/* Pending-comment + active-draft selection highlights (CSS Custom Highlight API). The draft
+ * (the selection currently being commented) reads a touch stronger than settled comments. */
+::highlight(pid-plan-comment) {
+  background-color: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+::highlight(pid-plan-comment-draft) {
+  background-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+/* Floating inline composer anchored just below a fresh selection (absolute within the
+ * position:relative plan card, so it scrolls with the card). */
+.pid-plan-comment-composer {
+  position: absolute;
+  z-index: 5;
+  width: min(340px, 92%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+}
+
+/* Pending-comments stack, between the plan body and the footer. */
+.pid-plan-comments {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--accent-line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pid-plan-comments-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.pid-plan-comment {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+/* Quoted plan text — a slim accent rule on the left, like a blockquote. Long quotes clamp. */
+.pid-plan-comment-quote {
+  margin: 0;
+  padding: 2px 0 2px 10px;
+  border-left: 2px solid var(--accent);
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+
+.pid-plan-comment-input {
+  width: 100%;
+  resize: vertical;
+  min-height: 44px;
+  padding: 6px 8px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-0);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.pid-plan-comment-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.pid-plan-comment-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.pid-plan-comment-btn {
+  padding: 5px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-1);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.pid-plan-comment-btn:hover:not(:disabled) {
+  background: var(--bg-2);
+  color: var(--ink-0);
+}
+
+.pid-plan-comment-btn-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.pid-plan-comment-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.05);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.pid-plan-comment-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pid-plan-comment-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.pid-plan-comment-reply {
+  flex: 1;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-0);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.pid-plan-comment-tools {
+  display: inline-flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.pid-plan-comment-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.pid-plan-comment-icon:hover {
+  background: var(--bg-1);
+  color: var(--ink-0);
+}
+
+/* Footer "Request changes" — secondary action sitting left of the approve controls. Accent
+ * outline (not fill) so the filled "Approve & execute" stays the primary affordance. */
+.pid-plan-request-changes {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.pid-plan-request-changes:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.pid-plan-request-changes:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Right-rail plan panel surface. Stays edge-to-edge inside the right pane body. */
 .pid-plan-panel {
   display: flex;

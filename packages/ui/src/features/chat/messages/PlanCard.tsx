@@ -1,21 +1,30 @@
 import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Check,
   CheckCheck,
   ChevronDown,
   Map as MapIcon,
+  MessageSquare,
   ShieldCheck,
+  Sparkles,
 } from "../../../components/icons/index.js";
 import { humanizeError } from "../../../lib/format/humanize-error.js";
 import type { ApprovePlanTargetMode } from "../../../lib/transport/protocol-client.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
 import { hasPlanChecklist } from "../../plan-panel/parsePlan.js";
+import {
+  composeCommentsMessage,
+  selectPlanComments,
+  usePlanCommentsStore,
+} from "../../plan-panel/usePlanCommentsStore.js";
 import { selectPlanSession, usePlanStore } from "../../plan-panel/usePlanStore.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore.js";
 import { useComposerStore } from "../composer/useComposerStore.js";
 import type { AssistantMessageEntry } from "../types.js";
+import { selectTurnInFlight, useMessagesStore } from "../useMessagesStore.js";
 import { Markdown } from "./Markdown.js";
+import { PlanCommentLayer } from "./PlanCommentLayer.js";
 
 const TARGET_MODES: {
   value: ApprovePlanTargetMode;
@@ -34,6 +43,12 @@ const TARGET_MODES: {
     label: "Accept edits",
     blurb: "Auto-approve edits in this project.",
     Icon: CheckCheck,
+  },
+  {
+    value: "auto",
+    label: "Auto",
+    blurb: "Auto-run; risky actions pause for approval.",
+    Icon: Sparkles,
   },
 ];
 
@@ -54,11 +69,37 @@ export interface PlanCardProps {
  */
 export function PlanCard({ message, sessionId, isLatest, planMarkdown }: PlanCardProps) {
   const client = useSessionsStore((s) => s.client);
+  const sendPrompt = useSessionsStore((s) => s.sendPrompt);
   const planSession = usePlanStore(selectPlanSession(sessionId));
   const setLastApproval = usePlanStore((s) => s.setLastApproval);
   const notify = useNotificationStore((s) => s.error);
+  const isInFlight = useMessagesStore(useMemo(() => selectTurnInFlight(sessionId), [sessionId]));
   const [busy, setBusy] = useState(false);
   const selectedTarget = planSession.lastApproval?.targetMode ?? DEFAULT_TARGET;
+
+  // Pending review comments anchored to THIS plan card. The offset/highlight root is the
+  // `[data-plan-card-body]` div below; `PlanCommentLayer` paints highlights + the inline
+  // composer, and "Request changes" submits them as one plan-mode reply.
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  const commentsSession = usePlanCommentsStore(selectPlanComments(sessionId));
+  const clearComments = usePlanCommentsStore((s) => s.clearSession);
+  const pendingComments = commentsSession.comments.filter((c) => c.messageId === message.id);
+  const pendingCount = pendingComments.length;
+
+  const requestChanges = async () => {
+    if (!client || busy || isInFlight || pendingCount === 0) return;
+    setBusy(true);
+    try {
+      await sendPrompt(composeCommentsMessage(pendingComments), { agentMode: "plan" });
+      // The agent revises the plan file on this feedback; the anchors no longer apply, so drop
+      // the pending comments. `sendPrompt` already toasts on failure — keep them for retry then.
+      clearComments(sessionId);
+    } catch {
+      // handled (toasted) inside sendPrompt
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const approve = async () => {
     if (!client || busy) return;
@@ -85,11 +126,32 @@ export function PlanCard({ message, sessionId, isLatest, planMarkdown }: PlanCar
         <MapIcon size={12} aria-hidden />
         <span>Plan</span>
       </div>
-      <Markdown text={planMarkdown ?? message.text} isComplete={message.isComplete} />
+      <div className="pid-plan-card-body" data-plan-card-body ref={bodyRef}>
+        <Markdown text={planMarkdown ?? message.text} isComplete={message.isComplete} />
+      </div>
+      {isLatest && (
+        <PlanCommentLayer sessionId={sessionId} messageId={message.id} bodyRef={bodyRef} />
+      )}
       {isLatest && (
         <div className="pid-plan-card-footer">
+          {pendingCount > 0 && (
+            <button
+              type="button"
+              className="pid-plan-request-changes"
+              aria-label="Send pending comments to revise the plan"
+              onClick={() => {
+                void requestChanges();
+              }}
+              disabled={busy || isInFlight || !client}
+            >
+              <MessageSquare size={12} aria-hidden />
+              <span>Revise</span>
+            </button>
+          )}
           <span className="pid-plan-card-footer-hint">
-            Approving switches the session out of plan mode and sends a continuation prompt.
+            {pendingCount > 0
+              ? `${pendingCount === 1 ? "1 comment" : `${pendingCount} comments`} pending - request changes to send them, or approve to execute as-is.`
+              : "Approving switches the session out of plan mode and sends a continuation prompt."}
           </span>
           <ModeTargetPicker
             selected={selectedTarget}

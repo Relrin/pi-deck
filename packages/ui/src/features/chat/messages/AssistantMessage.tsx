@@ -66,6 +66,10 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
   const planFromFile =
     !isPlan && stampedPlanMode && isLatestAssistant && planMarkdownHasChecklist(plan.fileContent);
 
+  // Enable "Comment the selection" only on a commentable plan card — the latest, complete
+  // plan proposal (the one that also shows the Approve / Request-changes footer).
+  const commentable = (isPlan || planFromFile) && isLatestAssistant && message.isComplete;
+
   return (
     <MessageSurface
       kind="agent"
@@ -74,7 +78,10 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
       agentLabel={modelLabel}
       agentTitle={message.model}
     >
-      <MessageContextMenu rawText={message.text}>
+      <MessageContextMenu
+        rawText={message.text}
+        commentTarget={commentable ? { sessionId, messageId: message.id } : undefined}
+      >
         <div className="select-text" data-selectable-message data-message-raw={message.text}>
           {isPlan ? (
             <div

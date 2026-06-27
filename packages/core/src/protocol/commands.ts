@@ -437,7 +437,7 @@ export const SessionApprovePlanRequest = z.object({
   sessionId: z.string().min(1),
   /** Mode the session transitions to after approval — typically what the user had selected
    * before they entered plan mode, or their preferred posture for execution. */
-  targetMode: z.enum(["ask", "accept-edits"]),
+  targetMode: z.enum(["ask", "accept-edits", "auto"]),
   /** Optional override for the continuation prompt text. */
   continuationText: z.string().min(1).optional(),
 });

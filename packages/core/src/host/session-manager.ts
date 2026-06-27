@@ -474,7 +474,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
    */
   async approvePlan(
     sessionId: string,
-    targetMode: Extract<AgentMode, "ask" | "accept-edits">,
+    targetMode: Extract<AgentMode, "ask" | "accept-edits" | "auto">,
     continuationText?: string,
   ): Promise<{ promptId: string }> {
     const record = this.sessions.get(sessionId);

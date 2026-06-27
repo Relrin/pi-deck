@@ -10,7 +10,7 @@ import type { WsClient } from "./ws-client.js";
 export type ToolApprovalDecision = "allow" | "deny";
 
 /** Modes a session can transition to when a plan is approved. */
-export type ApprovePlanTargetMode = "ask" | "accept-edits";
+export type ApprovePlanTargetMode = "ask" | "accept-edits" | "auto";
 
 export class ProtocolClient {
   constructor(private readonly ws: WsClient) {}
