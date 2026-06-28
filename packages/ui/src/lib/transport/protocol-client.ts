@@ -1,4 +1,5 @@
 import type {
+  AskUserAnswer,
   CommandName,
   CommandRequest,
   CommandResponse,
@@ -34,6 +35,18 @@ export class ProtocolClient {
     reason?: string,
   ): Promise<CommandResponse<"session.toolApproval">> {
     return this.call("session.toolApproval", { sessionId, approvalId, decision, reason });
+  }
+
+  /**
+   * Resolve a `session.ask.user.requested` event with the user's answer. Wraps
+   * `session.answerQuestion` so the `<AskCard>` doesn't have to know the RPC name.
+   */
+  answerQuestion(
+    sessionId: string,
+    askId: string,
+    answer: AskUserAnswer,
+  ): Promise<CommandResponse<"session.answerQuestion">> {
+    return this.call("session.answerQuestion", { sessionId, askId, answer });
   }
 
   /**

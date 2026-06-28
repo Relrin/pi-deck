@@ -17,6 +17,7 @@ export const EVENT_SESSION_WORKER_EXIT = "session.worker.exit" as const;
 export const EVENT_SESSION_AGENT_EVENT = "session.agent.event" as const;
 export const EVENT_SESSION_MODEL_CHANGED = "session.model.changed" as const;
 export const EVENT_SESSION_TOOL_APPROVAL_REQUESTED = "session.tool.approval.requested" as const;
+export const EVENT_SESSION_ASK_USER_REQUESTED = "session.ask.user.requested" as const;
 export const EVENT_HOST_ERROR = "host.error" as const;
 export const EVENT_HOST_READY = "host.ready" as const;
 export const EVENT_THEME_CHANGED = "theme.changed" as const;
@@ -327,6 +328,47 @@ export const SessionToolApprovalRequestedPayload = z.object({
   reason: z.string().optional(),
 });
 
+/** One selectable option in an `ask_user_question` question. Presentation-agnostic: a GUI or a
+ * TUI can each choose how to render it. `preview` is markdown (e.g. a fenced code/diff block). */
+export const AskUserOptionSchema = z.object({
+  /** Optional stable id (the renderer falls back to the array index). */
+  id: z.string().optional(),
+  label: z.string(),
+  description: z.string().optional(),
+  preview: z.string().optional(),
+});
+export type AskUserOption = z.infer<typeof AskUserOptionSchema>;
+
+/** One structured question the agent puts to the user via the `ask_user_question` tool. */
+export const AskUserQuestionSchema = z.object({
+  id: z.string().optional(),
+  /** Very short tab/section label, e.g. "Theme strategy". */
+  header: z.string(),
+  question: z.string(),
+  options: z.array(AskUserOptionSchema),
+  /** Allow selecting several options (renders as a checkbox list). */
+  multiSelect: z.boolean().optional(),
+  /** Offer a free-text "Something else" answer. */
+  allowCustom: z.boolean().optional(),
+  /** Bounds for `multiSelect` questions (advisory; the renderer enforces). */
+  minSelect: z.number().int().optional(),
+  maxSelect: z.number().int().optional(),
+});
+export type AskUserQuestion = z.infer<typeof AskUserQuestionSchema>;
+
+/**
+ * Emitted by the ask-user plugin when the model calls `ask_user_question`. The renderer
+ * matches `toolCallId` against the live `session.tool.call.start` row to render the inline
+ * Ask card, then calls `session.answerQuestion` with the `askId` and the user's answer. The
+ * tool call suspends in the worker until that answer (or a timeout / turn abort) arrives.
+ */
+export const SessionAskUserRequestedPayload = z.object({
+  sessionId: z.string(),
+  askId: z.string().min(1),
+  toolCallId: z.string().min(1),
+  questions: z.array(AskUserQuestionSchema),
+});
+
 /**
  * A chunk of PTY output for one terminal.
  */
@@ -359,6 +401,7 @@ export const EventSchemas = {
   [EVENT_THEME_CHANGED]: ThemeChangedPayload,
   [EVENT_PROVIDER_CHANGED]: ProviderChangedPayload,
   [EVENT_SESSION_TOOL_APPROVAL_REQUESTED]: SessionToolApprovalRequestedPayload,
+  [EVENT_SESSION_ASK_USER_REQUESTED]: SessionAskUserRequestedPayload,
   [EVENT_GIT_STATUS_CHANGED]: GitStatusChangedPayload,
   [EVENT_GIT_TURN_TOUCHES_CHANGED]: GitTurnTouchesChangedPayload,
   [EVENT_REVIEW_AVAILABLE]: ReviewAvailablePayload,

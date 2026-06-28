@@ -12,10 +12,16 @@ import type {
 } from "../domain/session.js";
 import type { ApprovalDecision } from "../extensions/agent-mode/index.js";
 import { currentBranch } from "../git/branches.js";
-import type { PromptAttachment, PromptImage, SessionCommandInfo } from "../protocol/commands.js";
+import type {
+  AskUserAnswer,
+  PromptAttachment,
+  PromptImage,
+  SessionCommandInfo,
+} from "../protocol/commands.js";
 import {
   EVENT_HOST_ERROR,
   EVENT_SESSION_AGENT_EVENT,
+  EVENT_SESSION_ASK_USER_REQUESTED,
   EVENT_SESSION_CONTEXT_COST,
   EVENT_SESSION_HISTORY_LOADED,
   EVENT_SESSION_MESSAGE_DELTA,
@@ -90,6 +96,8 @@ const WORKER_TOPIC_MAP: Record<string, EventTopic> = {
   // The agent-mode plugin emits this topic verbatim from the worker; we expose it under the
   // canonical EventTopic name so renderer code subscribes via the same constant.
   [EVENT_SESSION_TOOL_APPROVAL_REQUESTED]: EVENT_SESSION_TOOL_APPROVAL_REQUESTED,
+  // Likewise the ask-user plugin emits this verbatim when the model calls `ask_user_question`.
+  [EVENT_SESSION_ASK_USER_REQUESTED]: EVENT_SESSION_ASK_USER_REQUESTED,
 };
 
 /**
@@ -501,6 +509,16 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       return;
     }
     await record.worker.request("resolveApproval", { approvalId, decision, reason });
+  }
+
+  /** Resume a suspended `ask_user_question` tool call with the user's answer. */
+  async answerQuestion(sessionId: string, askId: string, answer: AskUserAnswer): Promise<void> {
+    const record = this.sessions.get(sessionId);
+    if (!record) throw new Error(`Unknown session ${sessionId}`);
+    if (!record.worker?.isAlive) {
+      return;
+    }
+    await record.worker.request("answerQuestion", { askId, answer });
   }
 
   async cancel(sessionId: string): Promise<void> {

@@ -1,4 +1,5 @@
 import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
+import type { AskUserQuestion } from "@pi-deck/core/protocol/events.js";
 import { create } from "zustand";
 import { USER_MESSAGE_DEDUP_WINDOW_MS } from "../../lib/ui-constants.js";
 import { useComposerStore } from "./composer/useComposerStore.js";
@@ -50,6 +51,15 @@ interface MessagesStoreState {
   applyToolApprovalRequested: (
     sessionId: string,
     p: { callId: string; approvalId: string; reason?: string },
+  ) => void;
+  /**
+   * Attach a pending question to an `ask_user_question` tool call. Triggered by
+   * `session.ask.user.requested`. Cleared automatically when `applyToolCallEnd` fires for the
+   * same call - the tool always ends once the user answers (or the turn is aborted / times out).
+   */
+  applyAskUserRequested: (
+    sessionId: string,
+    p: { callId: string; askId: string; questions: AskUserQuestion[] },
   ) => void;
   endTurn: (sessionId: string, cancelled: boolean | undefined) => void;
   markTurnInFlight: (sessionId: string, value: boolean) => void;
@@ -387,6 +397,9 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
                 // event is the authoritative resolution. The pill should collapse back to a
                 // standard "done"/"error" status row.
                 pendingApproval: undefined,
+                // Likewise clear a pending question: the end event carries the answered result,
+                // so the Ask card switches to its resolved summary.
+                pendingAsk: undefined,
               },
             },
           },
@@ -415,6 +428,34 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
                 ...existing,
                 status: "pending",
                 pendingApproval: { approvalId, ...(reason ? { reason } : {}) },
+              },
+            },
+          },
+        },
+      };
+    }),
+
+  applyAskUserRequested: (sessionId, { callId, askId, questions }) =>
+    set((state) => {
+      const session = state.bySession[sessionId];
+      if (!session) return state;
+      const existing = session.toolCalls[callId];
+      // A late ask event for a call we no longer track — the turn may have been cancelled.
+      // Drop silently; the worker-side timeout cleans up the suspended tool call.
+      if (!existing) return state;
+      // Idempotent: re-emitting the same ask (replay) shouldn't shuffle state.
+      if (existing.pendingAsk?.askId === askId) return state;
+      return {
+        bySession: {
+          ...state.bySession,
+          [sessionId]: {
+            ...session,
+            toolCalls: {
+              ...session.toolCalls,
+              [callId]: {
+                ...existing,
+                status: "pending",
+                pendingAsk: { askId, questions },
               },
             },
           },

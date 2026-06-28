@@ -1,5 +1,6 @@
 import type { AgentMode } from "@pi-deck/core/domain/session.js";
 import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
+import type { AskUserQuestion } from "@pi-deck/core/protocol/events.js";
 
 export type ToolCallStatus = "pending" | "running" | "done" | "error" | "cancelled";
 
@@ -13,6 +14,16 @@ export interface PendingToolApproval {
   approvalId: string;
   /** Optional hint from the plugin (e.g. "Edit target outside the auto-approve allowlist."). */
   reason?: string;
+}
+
+/**
+ * Set on an `ask_user_question` tool-call entry when `session.ask.user.requested` arrives, so
+ * `<AskCard>` can render the inline question UI. Cleared when the matching
+ * `session.tool.call.end` fires (the user answered, or the turn was aborted / timed out).
+ */
+export interface PendingAskUser {
+  askId: string;
+  questions: AskUserQuestion[];
 }
 
 /**
@@ -39,6 +50,7 @@ export interface ToolCallEntry {
   startedAt: number;
   endedAt?: number;
   pendingApproval?: PendingToolApproval;
+  pendingAsk?: PendingAskUser;
 }
 
 export interface UserMessageEntry {

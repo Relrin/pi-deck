@@ -12,8 +12,6 @@ export interface ApprovalPillProps {
   sessionId: string;
   callId: string;
   approvalId: string;
-  /** Plugin-provided context, e.g. "Edit target outside the auto-approve allowlist." */
-  reason?: string;
   allowKey: string;
 }
 
@@ -39,7 +37,6 @@ export function ApprovalPill({
   sessionId,
   callId: _callId,
   approvalId,
-  reason,
   allowKey,
 }: ApprovalPillProps) {
   const client = useSessionsStore((s) => s.client);
@@ -108,7 +105,6 @@ export function ApprovalPill({
 
   return (
     <div className="pid-approval-pill" data-busy={busy ?? undefined}>
-      {reason && <span className="pid-approval-pill-reason">{reason}</span>}
       <Tooltip content="Allow this command for the rest of the session" side="bottom">
         <label
           className="pid-approval-pill-always"

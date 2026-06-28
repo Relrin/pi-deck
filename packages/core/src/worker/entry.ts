@@ -1,7 +1,7 @@
 import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/session.js";
 import type { ApprovalDecision } from "../extensions/agent-mode/index.js";
 import { createJsonlReader, encodeJsonl } from "../host/jsonl.js";
-import type { PromptAttachment, PromptImage } from "../protocol/commands.js";
+import type { AskUserAnswer, PromptAttachment, PromptImage } from "../protocol/commands.js";
 import { type AgentBridge, initBridge } from "./agent-bridge.js";
 import { installLifecycleHandlers } from "./lifecycle.js";
 
@@ -100,6 +100,13 @@ async function handleRequest(frame: { id: string; cmd: string; payload: unknown 
           reason?: string;
         };
         bridge.resolveApproval(params.approvalId, params.decision, params.reason);
+        sendOk(frame.id, { ok: true });
+        return;
+      }
+      case "answerQuestion": {
+        if (!bridge) throw new Error("Worker not initialized");
+        const params = frame.payload as { askId: string; answer: AskUserAnswer };
+        bridge.answerQuestion(params.askId, params.answer);
         sendOk(frame.id, { ok: true });
         return;
       }

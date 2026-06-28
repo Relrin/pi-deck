@@ -456,6 +456,31 @@ export const SessionToolApprovalRequest = z.object({
 });
 export const SessionToolApprovalResponse = z.object({ ok: z.literal(true) });
 
+/** The user's answer to one question in an `ask_user_question` dialog (index-aligned to
+ * `questions`). `optionIndices` are the picked options; `custom` is the free-text answer when
+ * the user chose "Something else"; `skipped` marks an optional question left unanswered. */
+export const AskUserAnswerItemSchema = z.object({
+  optionIndices: z.array(z.number().int()),
+  custom: z.string().optional(),
+  skipped: z.boolean().optional(),
+});
+export const AskUserAnswerSchema = z.object({
+  answers: z.array(AskUserAnswerItemSchema),
+  /** True when the user dismissed the whole dialog without answering. */
+  cancelled: z.boolean().optional(),
+});
+export type AskUserAnswer = z.infer<typeof AskUserAnswerSchema>;
+export type AskUserAnswerItem = z.infer<typeof AskUserAnswerItemSchema>;
+
+/** Renderer -> host call resolving a `session.ask.user.requested` event. Resumes the suspended
+ * `ask_user_question` tool call with the user's answer. */
+export const SessionAnswerQuestionRequest = z.object({
+  sessionId: z.string().min(1),
+  askId: z.string().min(1),
+  answer: AskUserAnswerSchema,
+});
+export const SessionAnswerQuestionResponse = z.object({ ok: z.literal(true) });
+
 /**
  * Renderer → host: read the current content of a session's plan file. Used by `PlanPanel`
  * on first mount (or when the user reopens it after a restart) before the `plan.file.changed`
@@ -1036,6 +1061,10 @@ export const CommandSchemas = {
   "session.toolApproval": {
     request: SessionToolApprovalRequest,
     response: SessionToolApprovalResponse,
+  },
+  "session.answerQuestion": {
+    request: SessionAnswerQuestionRequest,
+    response: SessionAnswerQuestionResponse,
   },
   "plan.file.read": { request: PlanFileReadRequest, response: PlanFileReadResponse },
   "git.listBranches": {

@@ -198,13 +198,15 @@ export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; session
             sessionId={sessionId}
             callId={call.id}
             approvalId={call.pendingApproval.approvalId}
-            reason={call.pendingApproval.reason}
             allowKey={deriveAllowKey(call.name, call.input)}
           />
         )}
       </div>
       {expanded && (
         <div id={`tool-call-body-${call.id}`} className="pid-tool-row-detail">
+          {call.pendingApproval?.reason ? (
+            <div className="pid-tool-approval-reason">{call.pendingApproval.reason}</div>
+          ) : null}
           {call.status === "error" && call.errorText ? (
             <ToolErrorDetail text={call.errorText} />
           ) : null}

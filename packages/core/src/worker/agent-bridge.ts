@@ -22,11 +22,18 @@ import type {
   ThinkingLevel,
 } from "../domain/session.js";
 import { type ApprovalDecision, createAgentModeExtension } from "../extensions/agent-mode/index.js";
+import { createAskUserExtension, createDeferredFrontend } from "../extensions/ask-user/index.js";
 import { createAttachmentsExtension } from "../extensions/attachments/index.js";
 import { listProjectFiles } from "../git/files.js";
 import { estimateToolTokens, isMcpTool } from "../host/mcp-tokens.js";
-import type { PromptAttachment, PromptImage, SessionCommandInfo } from "../protocol/commands.js";
+import type {
+  AskUserAnswer,
+  PromptAttachment,
+  PromptImage,
+  SessionCommandInfo,
+} from "../protocol/commands.js";
 import {
+  EVENT_SESSION_ASK_USER_REQUESTED,
   EVENT_SESSION_CONTEXT_COST,
   EVENT_SESSION_TOOL_APPROVAL_REQUESTED,
 } from "../protocol/events.js";
@@ -111,6 +118,8 @@ export interface AgentBridge {
   setEditAllowlist: (paths: string[]) => void;
   /** Resolve a pending tool-call approval (allow / deny). */
   resolveApproval: (approvalId: string, decision: ApprovalDecision, reason?: string) => void;
+  /** Resume a suspended `ask_user_question` tool call with the user's answer. */
+  answerQuestion: (askId: string, answer: AskUserAnswer) => void;
   /** Snapshot of all past messages + tool calls so the renderer can re-paint a resumed chat. */
   getHistory: () => HistorySnapshot;
   /** Slash commands pi will recognize in `prompt()`: extension commands, templates, skills. */
@@ -221,6 +230,14 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     projectPath: params.projectPath,
     listProjectFiles: (cwd, limit) => listProjectFiles(cwd, limit),
   });
+  // ask-user (its own plugin): registers the `ask_user_question` tool. The GUI frontend bridges
+  // a pending question to the renderer as an event; the host later resolves it via answerQuestion.
+  const askFrontend = createDeferredFrontend({
+    onAskRequest: (request) => {
+      emit(EVENT_SESSION_ASK_USER_REQUESTED, request);
+    },
+  });
+  const askUserController = createAskUserExtension({ frontend: askFrontend });
 
   // `getCommands()` (extension commands + prompt templates + skills, pi's canonical list)
   // only exists on the ExtensionAPI handed to factories — capture it with a probe factory so
@@ -240,7 +257,12 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     cwd: params.projectPath,
     agentDir,
     settingsManager: SettingsManager.create(params.projectPath, agentDir),
-    extensionFactories: [agentModeController.factory, attachmentsController.factory, commandsProbe],
+    extensionFactories: [
+      agentModeController.factory,
+      attachmentsController.factory,
+      askUserController.factory,
+      commandsProbe,
+    ],
     ...(loadMcpAdapter && mcpAdapterPath ? { additionalExtensionPaths: [mcpAdapterPath] } : {}),
   });
 
@@ -362,6 +384,9 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     resolveApproval: (approvalId, decision, reason) => {
       agentModeController.resolveApproval(approvalId, decision, reason);
     },
+    answerQuestion: (askId, answer) => {
+      askFrontend.resolveAsk(askId, answer);
+    },
     getHistory: () => buildHistorySnapshot(session),
     getCommands: () => {
       if (extensionApi) {
@@ -393,6 +418,7 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     dispose: () => {
       unsubscribe();
       agentModeController.dispose();
+      askUserController.dispose();
       session.dispose();
     },
   };

@@ -31,8 +31,10 @@ function planSection(planFilePath: string): string {
     "except for the plan file itself (see below). Other writes will be blocked by the host.",
     "",
     "Use read-only tools (read, grep, glob, web fetch) to research about the problem and prepare",
-    "code before you commit to anything. If the request is ambiguous, ask focused clarifying",
-    "questions as your final message and stop — the user answers in their next turn.",
+    "code before you commit to anything. When a decision is genuinely open or ambiguous and",
+    "when its possible to offer concrete options (e.g. with code / diff previews) — ask a user",
+    "instead of writing the options into the plan or listing them as prose. It renders an interactive ",
+    "picker and pauses for the answer, which then steers the plan.",
     "",
     "When the request is clear enough, you MUST save the plan to the file with the write",
     "tool. Any further updates also should be applied and reflected in the plan file. Write " +

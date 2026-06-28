@@ -25,6 +25,11 @@ export const DEFAULT_READ_ONLY_TOOLS: ReadonlySet<string> = new Set([
   "ls",
   "glob",
   "tree",
+
+  // A shortcut to enable interactions between an agent and a developer. This flow would
+  // allow to ask questions and then get a response from the user. The response is used
+  // by the agent to make a decision
+  "ask_user_question",
 ]);
 
 /** Plan mode defaults to prompting (rather than blocking) for non-read-only operations. */

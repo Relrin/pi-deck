@@ -142,6 +142,24 @@ describe("ToolCallCard", () => {
     expect(screen.getByRole("button", { expanded: false })).toBeInTheDocument();
   });
 
+  test("a long approval reason renders in the (auto-expanded) body, not the header", () => {
+    const reason =
+      "Plan mode: this shell command isn't read-only — allow it to run, or deny to keep planning.";
+    render(
+      <ToolCallCard
+        sessionId="s-test"
+        call={call({
+          status: "running",
+          startedAt: Date.now(),
+          pendingApproval: { approvalId: "ap-1", reason },
+        })}
+      />,
+    );
+    // Auto-expanded on pending approval, so the wrapped reason shows in the detail body.
+    expect(screen.getByRole("button", { expanded: true })).toBeInTheDocument();
+    expect(screen.getByText(reason)).toBeInTheDocument();
+  });
+
   test("a manual collapse during pending approval is preserved when the approval resolves", () => {
     const callBase = call({
       status: "running",

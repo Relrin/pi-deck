@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useProvidersStore } from "../../models/useProvidersStore.js";
 import { selectPlanSession, usePlanStore } from "../../plan-panel/usePlanStore.js";
 import { useComposerStore } from "../composer/useComposerStore.js";
+import { AskCard } from "../tools/ask/AskCard.js";
 import { ToolCallCard } from "../tools/ToolCallCard.js";
 import type { AssistantMessageEntry } from "../types.js";
 import { selectLatestAssistantId, useMessagesStore } from "../useMessagesStore.js";
@@ -123,6 +124,12 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
             if (!call) return null;
             // Suppress nameless ghost calls.
             if (!call.name?.trim()) return null;
+            // `ask_user_question` renders as a prominent full-width Ask card (the inline question
+            // UI), not the collapsed tool row - while pending it's interactive, then it resolves
+            // to a compact answer summary.
+            if (call.name === "ask_user_question") {
+              return <AskCard key={callId} call={call} sessionId={sessionId} />;
+            }
             return <ToolCallCard key={callId} call={call} sessionId={sessionId} />;
           })}
           {turnSnapshots.map((snap) => (

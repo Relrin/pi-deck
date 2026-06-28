@@ -437,6 +437,11 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     );
     return { ok: true as const };
   },
+  "session.answerQuestion": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.answerQuestion"].request.parse(payload);
+    await ctx.sessionManager.answerQuestion(parsed.sessionId, parsed.askId, parsed.answer);
+    return { ok: true as const };
+  },
   "plan.file.read": async (ctx, payload) => {
     const parsed = CommandSchemas["plan.file.read"].request.parse(payload);
     const record = ctx.sessionManager.get(parsed.sessionId);

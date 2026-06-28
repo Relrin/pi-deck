@@ -31,18 +31,9 @@ beforeEach(() => {
 });
 
 describe("ApprovalPill", () => {
-  test("renders allow/deny buttons, the optional reason, and the always-allow checkbox", () => {
+  test("renders allow/deny buttons and the always-allow checkbox", () => {
     setupClient();
-    render(
-      <ApprovalPill
-        sessionId="s-1"
-        callId="t-1"
-        approvalId="a-1"
-        reason="Outside auto-approve allowlist"
-        allowKey="mkdir"
-      />,
-    );
-    expect(screen.getByText("Outside auto-approve allowlist")).toBeInTheDocument();
+    render(<ApprovalPill sessionId="s-1" callId="t-1" approvalId="a-1" allowKey="mkdir" />);
     expect(screen.getByRole("button", { name: /Allow once/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Deny/i })).toBeInTheDocument();
     // The checkbox label embeds the allowKey verbatim so users see what scope they're opting in to.

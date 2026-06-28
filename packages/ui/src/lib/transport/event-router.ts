@@ -3,6 +3,7 @@ import type { SessionModelRef, ThinkingLevel } from "@pi-deck/core/domain/sessio
 import type { FsNode } from "@pi-deck/core/fs/types.js";
 import type { GitStatus } from "@pi-deck/core/git/types.js";
 import type { ReviewTurn } from "@pi-deck/core/protocol/commands.js";
+import type { AskUserQuestion } from "@pi-deck/core/protocol/events.js";
 import {
   ContextUsage,
   EVENT_FS_TREE_CHANGED,
@@ -18,6 +19,7 @@ import {
   EVENT_REVIEW_CLEARED,
   EVENT_SESSION_AGENT_EVENT,
   EVENT_SESSION_ARTEFACTS_CHANGED,
+  EVENT_SESSION_ASK_USER_REQUESTED,
   EVENT_SESSION_CONTEXT_COST,
   EVENT_SESSION_HISTORY_LOADED,
   EVENT_SESSION_MESSAGE_DELTA,
@@ -328,6 +330,19 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
         useMessagesStore
           .getState()
           .applyToolApprovalRequested(sessionId, { callId, approvalId, reason });
+      }
+      return;
+    }
+    case EVENT_SESSION_ASK_USER_REQUESTED: {
+      // The ask-user plugin emits this when the model calls `ask_user_question`. We attach the
+      // pending question to the tool-call entry so `<AskCard>` renders inline on the card.
+      const askId = typeof payload.askId === "string" ? payload.askId : "";
+      const callId = typeof payload.toolCallId === "string" ? payload.toolCallId : "";
+      const questions = Array.isArray(payload.questions)
+        ? (payload.questions as AskUserQuestion[])
+        : [];
+      if (askId && callId && questions.length > 0) {
+        useMessagesStore.getState().applyAskUserRequested(sessionId, { callId, askId, questions });
       }
       return;
     }
