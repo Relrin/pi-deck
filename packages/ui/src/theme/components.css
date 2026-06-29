@@ -1555,55 +1555,80 @@
   color: var(--ink-0);
   border-left-color: var(--accent);
 }
-/* Lifecycle marker — mirrors the ◯ / ◉ pair from the design mockup as CSS shapes so the
-   two states are guaranteed to share an outer size (the actual unicode fisheye renders
-   smaller than the open circle in most mono fonts). All dimensions are integer pixels and
-   centring uses flex, so the inner dot can't drift sub-pixel off-axis. */
-.pid-rail-row-marker {
-  width: 12px;
-  height: 12px;
+/* Status dot — a single left-aligned indicator encoding the session's live state by hue + motion */
+.pid-rail-row-dot {
+  position: relative;
   flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--ink-3);
-  border-radius: 50%;
+  width: 8px;
+  height: 8px;
   box-sizing: border-box;
+  border-radius: 50%;
+  /* idle default — neutral, slightly recessive. */
+  color: var(--ink-3);
+  background: currentColor;
+}
+/* Idle reads as an empty ring — a hollow neutral circle, visually distinct from the filled
+   live states. box-sizing: border-box keeps the 8px outer size so it never reflows the title. */
+.pid-rail-row-dot[data-status="idle"] {
   background: transparent;
+  border: 1.5px solid currentColor;
+  opacity: 0.8;
 }
-.pid-rail-row-marker[data-state="active"] {
-  border-color: var(--accent);
+.pid-rail-row-dot[data-status="working"] {
+  color: var(--mod);
 }
-.pid-rail-row-marker[data-state="active"]::after {
+.pid-rail-row-dot[data-status="waiting"] {
+  color: var(--info);
+  animation: pid-status-pulse 1.4s ease-in-out infinite;
+}
+.pid-rail-row-dot[data-status="done"] {
+  color: var(--add);
+}
+.pid-rail-row-dot[data-status="failed"] {
+  color: var(--del);
+}
+/* Ring / halo. Working animates an expanding ring; waiting/done/failed hold a steady halo so
+   they read as "settled but notable". Idle has none. */
+.pid-rail-row-dot[data-status="working"]::after,
+.pid-rail-row-dot[data-status="waiting"]::after,
+.pid-rail-row-dot[data-status="done"]::after,
+.pid-rail-row-dot[data-status="failed"]::after {
   content: "";
-  width: 6px;
-  height: 6px;
+  position: absolute;
+  inset: -3px;
   border-radius: 50%;
-  background: var(--accent);
+  border: 1.5px solid currentColor;
 }
-.pid-rail-row-live {
-  flex: 0 0 auto;
-  width: 7px;
-  height: 7px;
-  /* Pulls the dot inboard so it sits roughly where the centre of a 2-char timestamp
-     ("5h") would land, instead of flush against the row's right padding. */
-  margin-right: 6px;
-  border-radius: 50%;
-  background: var(--add);
-  box-shadow: 0 0 0 0 var(--add);
-  animation: pid-rail-row-pulse 1.6s ease-out infinite;
+.pid-rail-row-dot[data-status="working"]::after {
+  animation: pid-rail-row-ring 1.5s ease-out infinite;
 }
-@keyframes pid-rail-row-pulse {
+.pid-rail-row-dot[data-status="waiting"]::after {
+  opacity: 0.4;
+}
+.pid-rail-row-dot[data-status="done"]::after {
+  opacity: 0.3;
+}
+.pid-rail-row-dot[data-status="failed"]::after {
+  opacity: 0.35;
+}
+@keyframes pid-rail-row-ring {
   0% {
-    box-shadow: 0 0 0 0 oklch(0.78 0.16 145 / 0.55);
+    transform: scale(0.55);
+    opacity: 0.7;
   }
   100% {
-    box-shadow: 0 0 0 6px oklch(0.78 0.16 145 / 0);
+    transform: scale(1.9);
+    opacity: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pid-rail-row-live {
+  .pid-rail-row-dot[data-status="waiting"] {
     animation: none;
+  }
+  /* Drop the expanding ring but keep a static one so working stays distinguishable. */
+  .pid-rail-row-dot[data-status="working"]::after {
+    animation: none;
+    opacity: 0.4;
   }
 }
 .pid-rail-row-main {

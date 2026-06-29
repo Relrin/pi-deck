@@ -287,7 +287,8 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
       return;
     }
     case EVENT_SESSION_WORKER_EXIT: {
-      useMessagesStore.getState().markTurnInFlight(sessionId, false);
+      // A worker that dies mid-turn is a failed turn (red rail dot); an idle shutdown is a no-op.
+      useMessagesStore.getState().markTurnFailed(sessionId);
       // The worker is gone — drop its warm marker so a later hover/open re-spawns it.
       forgetWarmedSession(sessionId);
       return;
@@ -314,7 +315,8 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
       const event = payload.event as { type?: string; message?: string } | undefined;
       if (event?.type === "prompt_error") {
         useNotificationStore.getState().error(event.message ?? "pi reported a prompt error");
-        useMessagesStore.getState().markTurnInFlight(sessionId, false);
+        // Turn-level error: clear the in-flight flag and record a failed outcome for the rail dot.
+        useMessagesStore.getState().markTurnFailed(sessionId);
       }
       return;
     }

@@ -6,6 +6,7 @@ import { useComposerStore } from "./composer/useComposerStore.js";
 import type {
   AssistantMessageEntry,
   MessageEntry,
+  RailStatus,
   ToolCallEntry,
   ToolCallStatus,
   UserMessageImage,
@@ -15,6 +16,8 @@ interface SessionMessageState {
   messages: MessageEntry[];
   toolCalls: Record<string, ToolCallEntry>;
   isTurnInFlight: boolean;
+  lastOutcome?: "ok" | "failed";
+  outcomeViewed?: boolean;
 }
 
 interface MessagesStoreState {
@@ -63,6 +66,8 @@ interface MessagesStoreState {
   ) => void;
   endTurn: (sessionId: string, cancelled: boolean | undefined) => void;
   markTurnInFlight: (sessionId: string, value: boolean) => void;
+  markTurnFailed: (sessionId: string) => void;
+  markViewed: (sessionId: string) => void;
   clearSession: (sessionId: string) => void;
   /**
    * Replace the chat transcript + tool-call cache for a session with the snapshot the
@@ -484,7 +489,14 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
       return {
         bySession: {
           ...state.bySession,
-          [sessionId]: { ...session, messages, toolCalls, isTurnInFlight: false },
+          [sessionId]: {
+            ...session,
+            messages,
+            toolCalls,
+            isTurnInFlight: false,
+            lastOutcome: cancelled ? "failed" : "ok",
+            outcomeViewed: false,
+          },
         },
       };
     }),
@@ -495,7 +507,38 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
       return {
         bySession: {
           ...state.bySession,
-          [sessionId]: { ...session, isTurnInFlight: value },
+          [sessionId]: value
+            ? { ...session, isTurnInFlight: true, lastOutcome: undefined, outcomeViewed: false }
+            : { ...session, isTurnInFlight: false },
+        },
+      };
+    }),
+
+  markTurnFailed: (sessionId) =>
+    set((state) => {
+      const session = state.bySession[sessionId];
+      if (!session?.isTurnInFlight) return state;
+      return {
+        bySession: {
+          ...state.bySession,
+          [sessionId]: {
+            ...session,
+            isTurnInFlight: false,
+            lastOutcome: "failed",
+            outcomeViewed: false,
+          },
+        },
+      };
+    }),
+
+  markViewed: (sessionId) =>
+    set((state) => {
+      const session = state.bySession[sessionId];
+      if (!session || session.outcomeViewed) return state;
+      return {
+        bySession: {
+          ...state.bySession,
+          [sessionId]: { ...session, outcomeViewed: true },
         },
       };
     }),
@@ -574,6 +617,26 @@ export function selectToolCall(sessionId: string | undefined, callId: string) {
 export function selectTurnInFlight(sessionId: string | undefined) {
   return (state: MessagesStoreState): boolean =>
     sessionId ? (state.bySession[sessionId]?.isTurnInFlight ?? false) : false;
+}
+
+/**
+ * Coarse rail status for a session's status dot.
+ */
+export function selectSessionRailStatus(sessionId: string | undefined) {
+  return (state: MessagesStoreState): RailStatus => {
+    if (!sessionId) return "idle";
+    const session = state.bySession[sessionId];
+    if (!session) return "idle";
+    for (const call of Object.values(session.toolCalls)) {
+      if (call.pendingApproval || call.pendingAsk) return "waiting";
+    }
+    if (session.isTurnInFlight) return "working";
+    if (!session.outcomeViewed) {
+      if (session.lastOutcome === "failed") return "failed";
+      if (session.lastOutcome === "ok") return "done";
+    }
+    return "idle";
+  };
 }
 
 /**

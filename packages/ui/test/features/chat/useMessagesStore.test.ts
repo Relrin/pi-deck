@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { useComposerStore } from "../../../src/features/chat/composer/useComposerStore";
-import { selectSessionLoaded, useMessagesStore } from "../../../src/features/chat/useMessagesStore";
+import type { ToolCallEntry } from "../../../src/features/chat/types";
+import {
+  selectSessionLoaded,
+  selectSessionRailStatus,
+  useMessagesStore,
+} from "../../../src/features/chat/useMessagesStore";
 
 const SID = "session-1";
 
@@ -482,5 +487,114 @@ describe("useMessagesStore — selectSessionLoaded", () => {
 
   test("false for an undefined session id", () => {
     expect(selectSessionLoaded(undefined)(useMessagesStore.getState())).toBe(false);
+  });
+});
+
+describe("useMessagesStore — turn outcome lifecycle", () => {
+  beforeEach(reset);
+
+  test("endTurn(false) records an 'ok' outcome, unviewed", () => {
+    useMessagesStore.getState().markTurnInFlight(SID, true);
+    useMessagesStore.getState().endTurn(SID, false);
+    const s = useMessagesStore.getState().bySession[SID];
+    expect(s?.lastOutcome).toBe("ok");
+    expect(s?.outcomeViewed).toBe(false);
+    expect(s?.isTurnInFlight).toBe(false);
+  });
+
+  test("endTurn(true) records a 'failed' outcome", () => {
+    useMessagesStore.getState().markTurnInFlight(SID, true);
+    useMessagesStore.getState().endTurn(SID, true);
+    expect(useMessagesStore.getState().bySession[SID]?.lastOutcome).toBe("failed");
+  });
+
+  test("markTurnFailed records 'failed' only while a turn is in flight", () => {
+    useMessagesStore.getState().markTurnInFlight(SID, true);
+    useMessagesStore.getState().markTurnFailed(SID);
+    let s = useMessagesStore.getState().bySession[SID];
+    expect(s?.lastOutcome).toBe("failed");
+    expect(s?.isTurnInFlight).toBe(false);
+
+    // A second call with nothing in flight is a no-op — it must not stomp a later 'ok' outcome.
+    useMessagesStore.getState().markTurnInFlight(SID, true);
+    useMessagesStore.getState().endTurn(SID, false);
+    useMessagesStore.getState().markTurnFailed(SID);
+    s = useMessagesStore.getState().bySession[SID];
+    expect(s?.lastOutcome).toBe("ok");
+  });
+
+  test("starting a new turn clears the prior outcome", () => {
+    useMessagesStore.getState().markTurnInFlight(SID, true);
+    useMessagesStore.getState().endTurn(SID, false);
+    useMessagesStore.getState().markTurnInFlight(SID, true);
+    const s = useMessagesStore.getState().bySession[SID];
+    expect(s?.lastOutcome).toBeUndefined();
+    expect(s?.outcomeViewed).toBe(false);
+  });
+
+  test("markViewed flips outcomeViewed and is idempotent / safe on a missing session", () => {
+    useMessagesStore.getState().markViewed("ghost"); // no entry — no throw, no entry created
+    expect(useMessagesStore.getState().bySession.ghost).toBeUndefined();
+
+    useMessagesStore.getState().markTurnInFlight(SID, true);
+    useMessagesStore.getState().endTurn(SID, false);
+    useMessagesStore.getState().markViewed(SID);
+    expect(useMessagesStore.getState().bySession[SID]?.outcomeViewed).toBe(true);
+  });
+});
+
+describe("useMessagesStore — selectSessionRailStatus", () => {
+  beforeEach(reset);
+
+  const read = (sid: string) => selectSessionRailStatus(sid)(useMessagesStore.getState());
+
+  type SeedPatch = {
+    isTurnInFlight?: boolean;
+    toolCalls?: Record<string, ToolCallEntry>;
+    lastOutcome?: "ok" | "failed";
+    outcomeViewed?: boolean;
+  };
+
+  function seed(sid: string, partial: SeedPatch) {
+    useMessagesStore.setState((state) => ({
+      bySession: {
+        ...state.bySession,
+        [sid]: { messages: [], toolCalls: {}, isTurnInFlight: false, ...partial },
+      },
+    }));
+  }
+
+  const approvalCall: ToolCallEntry = {
+    id: "t1",
+    name: "shell",
+    input: {},
+    status: "pending",
+    startedAt: 0,
+    pendingApproval: { approvalId: "a1" },
+  };
+
+  test("idle for unknown / empty sessions", () => {
+    expect(read("nope")).toBe("idle");
+    seed(SID, {});
+    expect(read(SID)).toBe("idle");
+  });
+
+  test("working while a turn is in flight", () => {
+    seed(SID, { isTurnInFlight: true });
+    expect(read(SID)).toBe("working");
+  });
+
+  test("waiting outranks working when an approval/ask is pending", () => {
+    seed(SID, { isTurnInFlight: true, toolCalls: { t1: approvalCall } });
+    expect(read(SID)).toBe("waiting");
+  });
+
+  test("failed and done only show while unviewed", () => {
+    seed(SID, { lastOutcome: "failed", outcomeViewed: false });
+    expect(read(SID)).toBe("failed");
+    seed(SID, { lastOutcome: "ok", outcomeViewed: false });
+    expect(read(SID)).toBe("done");
+    seed(SID, { lastOutcome: "ok", outcomeViewed: true });
+    expect(read(SID)).toBe("idle");
   });
 });

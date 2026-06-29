@@ -404,6 +404,9 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     const targetProjectId = summary?.projectId ?? previousProjectId;
 
     set({ activeSessionId: id });
+    // Opening a session counts as viewing it: clear any unviewed done/failed outcome so its rail
+    // dot settles to neutral idle instead of lingering green/red.
+    useMessagesStore.getState().markViewed(id);
 
     if (targetProjectId && targetProjectId !== previousProjectId) {
       projectsStore.setActive(targetProjectId);

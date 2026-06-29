@@ -86,13 +86,15 @@ describe("routeEvent — routing", () => {
     expect(session?.messages.at(-1)?.kind === "assistant" && session.messages.at(-1)).toBeTruthy();
   });
 
-  test("worker exit clears the in-flight flag", () => {
+  test("worker exit mid-turn clears the in-flight flag and records a failed outcome", () => {
     useMessagesStore.getState().markTurnInFlight(SID, true);
     routeEvent(EVENT_SESSION_WORKER_EXIT, { sessionId: SID, code: 1, signal: null });
-    expect(useMessagesStore.getState().bySession[SID]?.isTurnInFlight).toBe(false);
+    const session = useMessagesStore.getState().bySession[SID];
+    expect(session?.isTurnInFlight).toBe(false);
+    expect(session?.lastOutcome).toBe("failed");
   });
 
-  test("agent prompt_error surfaces a notification and clears in-flight", () => {
+  test("agent prompt_error surfaces a notification and marks the turn failed", () => {
     useMessagesStore.getState().markTurnInFlight(SID, true);
     routeEvent(EVENT_SESSION_AGENT_EVENT, {
       sessionId: SID,
@@ -100,7 +102,9 @@ describe("routeEvent — routing", () => {
     });
     expect(useNotificationStore.getState().notifications.length).toBe(1);
     expect(useNotificationStore.getState().notifications[0]?.kind).toBe("error");
-    expect(useMessagesStore.getState().bySession[SID]?.isTurnInFlight).toBe(false);
+    const session = useMessagesStore.getState().bySession[SID];
+    expect(session?.isTurnInFlight).toBe(false);
+    expect(session?.lastOutcome).toBe("failed");
   });
 
   test("turn.end with usage + contextUsage populates useUsageStore", () => {

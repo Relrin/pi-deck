@@ -77,45 +77,147 @@ describe("PidSessionRow", () => {
     );
   });
 
-  test("renders the lifecycle marker filled when active, hollow otherwise", () => {
-    const { rerender } = render(<PidSessionRow session={baseSession} active={true} />);
-    let marker = screen
+  test("renders a neutral idle status dot for a session that isn't running", () => {
+    render(<PidSessionRow session={baseSession} active={false} />);
+    const dot = screen
       .getByRole("button", { name: /My session/ })
-      .querySelector(".pid-rail-row-marker");
-    expect(marker?.getAttribute("data-state")).toBe("active");
-
-    rerender(<PidSessionRow session={baseSession} active={false} />);
-    marker = screen
-      .getByRole("button", { name: /My session/ })
-      .querySelector(".pid-rail-row-marker");
-    expect(marker?.getAttribute("data-state")).toBe("idle");
+      .querySelector(".pid-rail-row-dot");
+    expect(dot?.getAttribute("data-status")).toBe("idle");
   });
 
-  test("replaces the timestamp with a live dot when the session's turn is in flight", () => {
+  test("shows a working status dot and keeps the timestamp while a turn is in flight", () => {
     useMessagesStore.setState({
       bySession: {
         "sess-1": { messages: [], toolCalls: {}, isTurnInFlight: true },
       },
     });
-    render(<PidSessionRow session={baseSession} active={true} />);
-    const live = screen.getByRole("status", { name: /running/i });
-    expect(live).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /My session/ }).querySelector(".pid-rail-row-meta"),
-    ).toBeNull();
+    render(<PidSessionRow session={baseSession} active={false} />);
+    const button = screen.getByRole("button", { name: /My session/ });
+    expect(button.querySelector(".pid-rail-row-dot")?.getAttribute("data-status")).toBe("working");
+    expect(button.querySelector(".pid-rail-row-meta")).not.toBeNull();
   });
 
-  test("shows the relative timestamp when not in flight", () => {
+  test("shows an idle dot and the relative timestamp when not in flight", () => {
     useMessagesStore.setState({
       bySession: {
         "sess-1": { messages: [], toolCalls: {}, isTurnInFlight: false },
       },
     });
-    render(<PidSessionRow session={baseSession} active={true} />);
-    expect(screen.queryByRole("status")).toBeNull();
+    render(<PidSessionRow session={baseSession} active={false} />);
+    const button = screen.getByRole("button", { name: /My session/ });
+    expect(button.querySelector(".pid-rail-row-dot")?.getAttribute("data-status")).toBe("idle");
+    expect(button.querySelector(".pid-rail-row-meta")).not.toBeNull();
+  });
+
+  test("surfaces the waiting dot when a tool call has a pending approval", () => {
+    useMessagesStore.setState({
+      bySession: {
+        "sess-1": {
+          messages: [],
+          toolCalls: {
+            t1: {
+              id: "t1",
+              name: "shell",
+              input: {},
+              status: "pending",
+              startedAt: 0,
+              pendingApproval: { approvalId: "a1" },
+            },
+          },
+          isTurnInFlight: true,
+        },
+      },
+    });
+    render(<PidSessionRow session={baseSession} active={false} />);
     expect(
-      screen.getByRole("button", { name: /My session/ }).querySelector(".pid-rail-row-meta"),
-    ).not.toBeNull();
+      screen
+        .getByRole("button", { name: /My session/ })
+        .querySelector(".pid-rail-row-dot")
+        ?.getAttribute("data-status"),
+    ).toBe("waiting");
+  });
+
+  test("a finished, unviewed background session shows done; focusing it clears to idle", () => {
+    useMessagesStore.setState({
+      bySession: {
+        "sess-1": {
+          messages: [],
+          toolCalls: {},
+          isTurnInFlight: false,
+          lastOutcome: "ok",
+          outcomeViewed: false,
+        },
+      },
+    });
+    const { rerender } = render(<PidSessionRow session={baseSession} active={false} />);
+    expect(
+      screen
+        .getByRole("button", { name: /My session/ })
+        .querySelector(".pid-rail-row-dot")
+        ?.getAttribute("data-status"),
+    ).toBe("done");
+
+    // Focusing the row marks the outcome viewed → the dot settles to neutral idle.
+    rerender(<PidSessionRow session={baseSession} active={true} />);
+    expect(useMessagesStore.getState().bySession["sess-1"]?.outcomeViewed).toBe(true);
+    expect(
+      screen
+        .getByRole("button", { name: /My session/ })
+        .querySelector(".pid-rail-row-dot")
+        ?.getAttribute("data-status"),
+    ).toBe("idle");
+  });
+
+  test("a failed, unviewed session shows the failed dot", () => {
+    useMessagesStore.setState({
+      bySession: {
+        "sess-1": {
+          messages: [],
+          toolCalls: {},
+          isTurnInFlight: false,
+          lastOutcome: "failed",
+          outcomeViewed: false,
+        },
+      },
+    });
+    render(<PidSessionRow session={baseSession} active={false} />);
+    expect(
+      screen
+        .getByRole("button", { name: /My session/ })
+        .querySelector(".pid-rail-row-dot")
+        ?.getAttribute("data-status"),
+    ).toBe("failed");
+  });
+
+  test("'Mark as completed' (markViewed) greys a done dot to idle", () => {
+    useMessagesStore.setState({
+      bySession: {
+        "sess-1": {
+          messages: [],
+          toolCalls: {},
+          isTurnInFlight: false,
+          lastOutcome: "ok",
+          outcomeViewed: false,
+        },
+      },
+    });
+    const { rerender } = render(<PidSessionRow session={baseSession} active={false} />);
+    expect(
+      screen
+        .getByRole("button", { name: /My session/ })
+        .querySelector(".pid-rail-row-dot")
+        ?.getAttribute("data-status"),
+    ).toBe("done");
+
+    // The context-menu item just calls markViewed — acknowledging the turn greys the dot.
+    useMessagesStore.getState().markViewed("sess-1");
+    rerender(<PidSessionRow session={baseSession} active={false} />);
+    expect(
+      screen
+        .getByRole("button", { name: /My session/ })
+        .querySelector(".pid-rail-row-dot")
+        ?.getAttribute("data-status"),
+    ).toBe("idle");
   });
 
   test("a deliberate hover warms the session's worker via session.activate", async () => {

@@ -5,6 +5,13 @@ import type { AskUserQuestion } from "@pi-deck/core/protocol/events.js";
 export type ToolCallStatus = "pending" | "running" | "done" | "error" | "cancelled";
 
 /**
+ * Coarse, per-session lifecycle state surfaced as the colour-coded status dot in the left rail
+ * (`PidSessionRow`). Derived from the live message/tool state plus the last turn's outcome — see
+ * `selectSessionRailStatus`. Priority when several could apply: waiting > working > failed > done.
+ */
+export type RailStatus = "working" | "waiting" | "done" | "failed" | "idle";
+
+/**
  * Inline approval surfaced on a tool-call card when the agent-mode plugin needs the user's
  * decision before letting the tool run. Set when `session.tool.approval.requested` arrives
  * for this call; cleared when the matching `session.tool.call.end` fires (or when the user
