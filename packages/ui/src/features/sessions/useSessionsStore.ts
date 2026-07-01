@@ -14,6 +14,7 @@ import { type ConnectionStatus, WsClient } from "../../lib/transport/ws-client.j
 import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { useComposerStore } from "../chat/composer/useComposerStore.js";
 import type { UserMessageImage } from "../chat/types.js";
+import { useDraftStore } from "../chat/useDraftStore.js";
 import { useMessagesStore } from "../chat/useMessagesStore.js";
 import { useLspCustomServersStore } from "../editor/lsp/useLspCustomServersStore.js";
 import { useProvidersStore } from "../models/useProvidersStore.js";
@@ -74,6 +75,17 @@ export interface SessionsStoreState {
   cancelPrompt: () => Promise<void>;
   /** Hard-stop escalation: kill the worker process when a graceful cancel doesn't bite. */
   forceStopPrompt: () => Promise<void>;
+  /**
+   * Rewind the conversation AND working tree to before the `userMessageIndex`-th user message
+   * (0-based). Resolves the pi entry id from the current branch, moves the tree, hard-reverts
+   * code, and pre-fills the composer with the rewound message text.
+   */
+  rewindToMessage: (sessionId: string, userMessageIndex: number) => Promise<void>;
+  /**
+   * Fork a new parallel session branched before the `userMessageIndex`-th user message and
+   * switch to it, pre-filling the composer with that message's text. The original is untouched.
+   */
+  forkFromMessage: (sessionId: string, userMessageIndex: number) => Promise<void>;
   setActiveSessionId: (id: string | undefined) => void;
   /** Merge backend-pushed updates (e.g. title rename) into the local sessions list. */
   updateSessionMetadata: (sessionId: string, partial: Partial<SessionSummary>) => void;
@@ -126,6 +138,23 @@ function archivedFlagPatch(
       archivedSessions: state.archivedSessions,
     },
   };
+}
+
+/**
+ * Resolve the pi entry id for the `userMessageIndex`-th visible user bubble. `points` is the
+ * current-branch user messages in order; it can be longer than the rendered transcript when the
+ * session was compacted (compaction folds leading user messages into a summary that the visible
+ * view drops), so we align from the end.
+ */
+function resolveForkEntryId(
+  points: { entryId: string; text: string }[],
+  sessionId: string,
+  userMessageIndex: number,
+): string | undefined {
+  const messages = useMessagesStore.getState().bySession[sessionId]?.messages ?? [];
+  const renderedUserCount = messages.filter((m) => m.kind === "user").length;
+  const offset = Math.max(0, points.length - renderedUserCount);
+  return points[offset + userMessageIndex]?.entryId;
 }
 
 let initStarted = false;
@@ -502,6 +531,57 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       // so the button state always mirrors what the host actually did.
     } catch (err) {
       useNotificationStore.getState().error(humanizeError(err, "Failed to force-stop"));
+    }
+  },
+
+  rewindToMessage: async (sessionId, userMessageIndex) => {
+    const client = get().client;
+    if (!client) return;
+    try {
+      const { points } = await client.call("session.getForkPoints", { sessionId });
+      const entryId = resolveForkEntryId(points, sessionId, userMessageIndex);
+      if (!entryId) throw new Error("Could not locate the selected message");
+      const { editorText } = await client.call("session.rewindTo", {
+        sessionId,
+        entryId,
+        userMessageIndex,
+      });
+      // The host re-emits `session.history.loaded`, which truncates the transcript in-place.
+      if (editorText) useDraftStore.getState().insertIntoDraft(editorText);
+      get().bumpLastActivity(sessionId);
+    } catch (err) {
+      useNotificationStore.getState().error(humanizeError(err, "Failed to rewind"));
+    }
+  },
+
+  forkFromMessage: async (sessionId, userMessageIndex) => {
+    const client = get().client;
+    if (!client) return;
+    try {
+      const { points } = await client.call("session.getForkPoints", { sessionId });
+      const entryId = resolveForkEntryId(points, sessionId, userMessageIndex);
+      if (!entryId) throw new Error("Could not locate the selected message");
+      const { session, editorText } = await client.call("session.forkFrom", {
+        sessionId,
+        entryId,
+      });
+      // Insert the new session and switch to it (mirrors createSession). The host already
+      // activated it, emitting its history, so the chat view repaints on switch.
+      set((state) => {
+        const cached = state.sessionsByProject[session.projectId] ?? [];
+        return {
+          sessions: [...state.sessions, session],
+          activeSessionId: session.id,
+          sessionsByProject: {
+            ...state.sessionsByProject,
+            [session.projectId]: [...cached, session],
+          },
+        };
+      });
+      useProjectsStore.getState().setLastActiveSession(session.projectId, session.id);
+      if (editorText) useDraftStore.getState().insertIntoDraft(editorText);
+    } catch (err) {
+      useNotificationStore.getState().error(humanizeError(err, "Failed to fork session"));
     }
   },
 

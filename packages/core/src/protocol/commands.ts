@@ -399,6 +399,34 @@ export const SessionSetModelRequest = z.object({
 });
 export const SessionSetModelResponse = z.object({ ok: z.literal(true) });
 
+/** User-message anchor points the session can rewind/fork to, in branch order. */
+export const SessionGetForkPointsRequest = z.object({ sessionId: z.string().min(1) });
+export const SessionGetForkPointsResponse = z.object({
+  points: z.array(z.object({ entryId: z.string(), text: z.string() })),
+});
+
+/**
+ * Rewind the conversation (and, for the current worker session, the working tree) to before the
+ * selected user message. `entryId` drives the pi tree move; `userMessageIndex` (0-based, among
+ * user bubbles) scopes the code hard-revert. `editorText` is returned to pre-fill the composer.
+ */
+export const SessionRewindToRequest = z.object({
+  sessionId: z.string().min(1),
+  entryId: z.string().min(1),
+  userMessageIndex: z.number().int().nonnegative(),
+});
+export const SessionRewindToResponse = z.object({ editorText: z.string().optional() });
+
+/** Fork the session into a new parallel session branched before the selected user message. */
+export const SessionForkFromRequest = z.object({
+  sessionId: z.string().min(1),
+  entryId: z.string().min(1),
+});
+export const SessionForkFromResponse = z.object({
+  session: SessionSummarySchema,
+  editorText: z.string().optional(),
+});
+
 export const SessionSetThinkingLevelRequest = z.object({
   sessionId: z.string().min(1),
   level: ThinkingLevelSchema,
@@ -1042,6 +1070,12 @@ export const CommandSchemas = {
     response: SessionListArchivedResponse,
   },
   "session.setModel": { request: SessionSetModelRequest, response: SessionSetModelResponse },
+  "session.getForkPoints": {
+    request: SessionGetForkPointsRequest,
+    response: SessionGetForkPointsResponse,
+  },
+  "session.rewindTo": { request: SessionRewindToRequest, response: SessionRewindToResponse },
+  "session.forkFrom": { request: SessionForkFromRequest, response: SessionForkFromResponse },
   "session.setThinkingLevel": {
     request: SessionSetThinkingLevelRequest,
     response: SessionSetThinkingLevelResponse,

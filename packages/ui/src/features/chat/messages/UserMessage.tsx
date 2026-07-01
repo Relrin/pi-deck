@@ -3,11 +3,20 @@ import { useState } from "react";
 import { Folder } from "../../../components/icons/index.js";
 import { ImagePreviewDialog } from "../composer/ImagePreviewDialog.js";
 import type { UserMessageEntry, UserMessageImage } from "../types.js";
+import { MessageActions } from "./MessageActions.js";
 import { MessageContextMenu } from "./MessageContextMenu.js";
 import { MessageSurface } from "./MessageSurface.js";
 import { formatMessageTime, formatMessageTimestampFull } from "./time.js";
 
-export function UserMessage({ message }: { message: UserMessageEntry }) {
+export function UserMessage({
+  message,
+  sessionId,
+  userMessageIndex,
+}: {
+  message: UserMessageEntry;
+  sessionId: string;
+  userMessageIndex?: number;
+}) {
   const attachments = message.attachments ?? [];
   const images = message.images ?? [];
   return (
@@ -15,6 +24,13 @@ export function UserMessage({ message }: { message: UserMessageEntry }) {
       kind="user"
       timestamp={formatMessageTime(message.createdAt)}
       timestampTitle={formatMessageTimestampFull(message.createdAt)}
+      actions={
+        <MessageActions
+          sessionId={sessionId}
+          text={message.text}
+          userMessageIndex={userMessageIndex}
+        />
+      }
     >
       {/* Chips live outside the context-menu trigger because Radix's asChild requires a
           single React child; keeping them as siblings also matches the design intent

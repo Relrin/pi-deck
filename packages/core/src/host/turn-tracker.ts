@@ -13,6 +13,9 @@ import type { SessionManager } from "./session-manager.js";
 
 interface CurrentTurn {
   turnId: string;
+  /** Monotonic per-session prompt ordinal (== `SessionTouchState.turnSeq` at begin), so a
+   *  rewind can select "every turn at or after user message k". */
+  turnSeq: number;
   /** `null` when the turn started with a clean working tree — baseline collapses to HEAD. */
   stashSha: string | null;
   projectId: string;
@@ -103,12 +106,26 @@ export class TurnTracker extends EventEmitter<TurnTrackerEvents> {
     }
     entry.currentTurn = {
       turnId: randomUUID(),
+      turnSeq: entry.turnSeq,
       stashSha,
       projectId,
       repoRoot,
       paths: new Set<string>(),
     };
     return entry.currentTurn.turnId;
+  }
+
+  /**
+   * Hard-revert the working tree for a rewind: discard every recorded turn at or after
+   * `fromTurnSeq`, then realign the session's turn counter so the ordinal↔turnSeq mapping the
+   * host uses (`fromTurnSeq = userMessageIndex − historyUserCount + 1`) stays valid for the
+   * next prompt — even across repeated rewinds within the same worker session. Best-effort:
+   * only turns snapshotted in the current worker session are revertable.
+   */
+  async rewindRevert(sessionId: string, fromTurnSeq: number): Promise<void> {
+    await this.reviewStore.rewindRevert(sessionId, fromTurnSeq);
+    const entry = this.state.get(sessionId);
+    if (entry) entry.turnSeq = Math.max(0, fromTurnSeq - 1);
   }
 
   getFor(sessionId: string): { paths: string[]; turnSeq: number } {
@@ -170,6 +187,7 @@ export class TurnTracker extends EventEmitter<TurnTrackerEvents> {
 
     this.reviewStore.recordTurn({
       turnId: turn.turnId,
+      turnSeq: turn.turnSeq,
       sessionId: p.sessionId,
       projectId: turn.projectId,
       stashSha: turn.stashSha,

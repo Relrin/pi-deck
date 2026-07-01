@@ -398,6 +398,27 @@ const handlers: { [C in CommandName]: CommandHandler } = {
     await ctx.sessionManager.rehydrateAll();
     return { sessions: ctx.sessionManager.listArchived().map(toSummary) };
   },
+  "session.getForkPoints": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.getForkPoints"].request.parse(payload);
+    return await ctx.sessionManager.getForkPoints(parsed.sessionId);
+  },
+  "session.rewindTo": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.rewindTo"].request.parse(payload);
+    return await ctx.sessionManager.rewindTo(
+      parsed.sessionId,
+      parsed.entryId,
+      parsed.userMessageIndex,
+    );
+  },
+  "session.forkFrom": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.forkFrom"].request.parse(payload);
+    const { record, editorText } = await ctx.sessionManager.forkFrom(
+      parsed.sessionId,
+      parsed.entryId,
+    );
+    await ctx.metadataStore.appendSessionId(record.projectId, record.id);
+    return { session: toSummary(record), editorText };
+  },
   "session.setModel": async (ctx, payload) => {
     const parsed = CommandSchemas["session.setModel"].request.parse(payload);
     await ctx.sessionManager.setModel(parsed.sessionId, parsed.modelRef, parsed.thinkingLevel);

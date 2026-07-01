@@ -124,6 +124,27 @@ export interface AgentBridge {
   getHistory: () => HistorySnapshot;
   /** Slash commands pi will recognize in `prompt()`: extension commands, templates, skills. */
   getCommands: () => SessionCommandInfo[];
+  /**
+   * User-message anchor points pi allows rewinding/forking to, in branch order. The renderer
+   * maps the k-th user bubble to the k-th entry here (see agent-bridge history threading note).
+   */
+  getForkPoints: () => Array<{ entryId: string; text: string }>;
+  /**
+   * Rewind the conversation to before `entryId` (pi `navigateTree`). Returns the rewound-to
+   * user message text (to pre-fill the composer) and the new leaf id, which the host re-applies
+   * across worker respawns until a fresh turn persists the branch. In-memory only until then —
+   * see the "Rewind durability" note in the plan.
+   */
+  rewindTo: (entryId: string) => Promise<{ editorText?: string; leafId: string | null }>;
+  /** Re-apply a rewind leaf after a worker respawn, before any new turn is appended. */
+  applyLeaf: (leafId: string) => void;
+  /**
+   * Branch the tree at `entryId` into a standalone session file (pi `createBranchedSession`),
+   * mirroring pi's own fork: for a user message we branch *before* it and hand its text back to
+   * pre-fill the fork's composer. Returns the new file path (undefined when forking before the
+   * first entry — the host then creates a fresh empty session).
+   */
+  forkAt: (entryId: string) => { sessionFile: string | undefined; editorText?: string };
   dispose: () => void;
 }
 
@@ -388,6 +409,55 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
       askFrontend.resolveAsk(askId, answer);
     },
     getHistory: () => buildHistorySnapshot(session),
+    getForkPoints: () => {
+      // Current-branch user messages in conversation order (root→leaf). Deliberately NOT
+      // session.getUserMessagesForForking(), which scans the whole tree (getEntries) and would
+      // include abandoned branches after a rewind — misaligning the renderer's ordinal mapping.
+      const points: { entryId: string; text: string }[] = [];
+      for (const entry of session.sessionManager.getBranch()) {
+        if (entry.type !== "message") continue;
+        const msg = entry.message as { role?: string; content?: unknown };
+        if (msg.role !== "user") continue;
+        points.push({ entryId: entry.id, text: extractUserText(msg.content) });
+      }
+      return points;
+    },
+    rewindTo: async (entryId: string) => {
+      // pi moves the leaf to the target user message's parent and rebuilds agent.state.messages,
+      // so a follow-up getHistory reflects the truncated branch. No summary of the abandoned path.
+      const result = await session.navigateTree(entryId);
+      return { editorText: result.editorText, leafId: session.sessionManager.getLeafId() };
+    },
+    applyLeaf: (leafId: string) => {
+      // Durability: on open pi sets the leaf to the last physical line, so a rewind not yet
+      // followed by a turn would snap back. Re-point the leaf and rebuild the working transcript.
+      session.sessionManager.branch(leafId);
+      session.agent.state.messages = session.sessionManager.buildSessionContext().messages;
+    },
+    forkAt: (entryId: string) => {
+      const sm = session.sessionManager;
+      const target = sm.getEntry(entryId);
+      if (!target) throw new Error(`Entry ${entryId} not found`);
+      // Mirror pi's runtime.fork: for a user message, branch BEFORE it (leaf = parent) and
+      // return its text so the fork's composer is pre-filled to re-ask (possibly edited).
+      let leafId: string | null = entryId;
+      let editorText: string | undefined;
+      if (target.type === "message") {
+        const msg = target.message as { role?: string; content?: unknown };
+        if (msg.role === "user") {
+          leafId = target.parentId;
+          editorText = extractUserText(msg.content);
+        }
+      }
+      // Forking before the very first entry → no prior content; host creates a fresh session.
+      if (!leafId) return { sessionFile: undefined, editorText };
+      const file = session.sessionFile;
+      if (!file) throw new Error("Session is not persisted; cannot fork");
+      // Extract the branch through a detached SessionManager so the live session is untouched.
+      const detached = PiSessionManager.open(file, sm.getSessionDir());
+      const newFile = detached.createBranchedSession(leafId);
+      return { sessionFile: newFile ?? undefined, editorText };
+    },
     getCommands: () => {
       if (extensionApi) {
         return extensionApi.getCommands().map((c) => ({

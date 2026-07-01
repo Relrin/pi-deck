@@ -60,6 +60,17 @@ export interface SessionRecord {
   branch?: string;
   /** True after the user archives. The session keeps its files; UI buckets it differently. */
   archived: boolean;
+  /**
+   * Count of user messages present when the current worker last loaded history. Anchors the
+   * ordinal - turnSeq mapping a rewind uses to scope its code revert. Set on every `activate`.
+   */
+  historyUserCount?: number;
+  /**
+   * Leaf id pi's tree was rewound to but not yet persisted by a fresh turn. Re-applied after a
+   * worker respawn so a bounce can't silently undo the rewind; cleared once the next prompt
+   * appends onto the branch. See the "Rewind durability" note in the plan.
+   */
+  rewindLeafId?: string;
   worker?: WorkerHandle;
 }
 
@@ -82,6 +93,12 @@ export type SessionManagerEvents = {
  */
 export interface TurnLifecycle {
   beginTurn: (sessionId: string, projectId: string, repoRoot: string) => Promise<string>;
+  /**
+   * Hard-revert the working tree for a rewind: discard every recorded turn at or after
+   * `fromTurnSeq` and realign the turn counter. Optional so lightweight test doubles that only
+   * provide `beginTurn` keep working — `rewindTo` skips the code revert when it's absent.
+   */
+  rewindRevert?: (sessionId: string, fromTurnSeq: number) => Promise<void>;
 }
 
 const WORKER_TOPIC_MAP: Record<string, EventTopic> = {
@@ -294,6 +311,12 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     agentMode?: AgentMode;
     planGatePolicy?: PlanGatePolicy;
     excludedTools?: string[];
+    /**
+     * Resume from an existing pi session file instead of creating a fresh one. Used by
+     * `forkFrom` to point the new session at the branched JSONL — `activate` opens it exactly
+     * like the resume path.
+     */
+    sessionFile?: string;
   }): Promise<SessionRecord> {
     const localId = `local-${this.nextLocalId++}`;
     const now = new Date().toISOString();
@@ -307,6 +330,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       title: input.title ?? "New session",
       createdAt: now,
       lastActivityAt: now,
+      sessionFile: input.sessionFile,
       modelRef,
       thinkingLevel: input.thinkingLevel,
       agentMode: input.agentMode,
@@ -379,13 +403,40 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     // its row to the top of the rail — only sending a new prompt counts as activity. The
     // bump lives in `prompt()` below.
 
+    // Re-apply a pending rewind before reading history: on open pi points the leaf at the last
+    // physical entry, so without this a worker respawn would silently undo an un-committed rewind.
+    if (record.rewindLeafId) {
+      try {
+        await worker.request("applyLeaf", { leafId: record.rewindLeafId });
+      } catch {
+        // Non-fatal — worst case the conversation reverts to full history until the next prompt.
+      }
+    }
+
     // Tell the renderer what was already in this session (empty for a brand-new one,
     // populated for a resumed one) so the chat view can repaint the prior conversation.
+    await this.pushHistory(record, worker, true);
+  }
+
+  /**
+   * Fetch the worker's history snapshot and emit it to the renderer. When `anchorUserCount` is
+   * set (on activate) it also records how many user messages the worker started with — the
+   * fixed `H` a rewind uses to map a user-message ordinal onto a turn counter. Rewinds re-emit
+   * with `anchorUserCount = false` so `H` stays pinned to the worker-start value. Best-effort.
+   */
+  private async pushHistory(
+    record: SessionRecord,
+    worker: WorkerHandle,
+    anchorUserCount: boolean,
+  ): Promise<void> {
     try {
       const history = (await worker.request("getHistory", {})) as {
-        messages: unknown[];
+        messages: { kind?: string }[];
         toolCalls: unknown[];
       };
+      if (anchorUserCount) {
+        record.historyUserCount = history.messages.filter((m) => m?.kind === "user").length;
+      }
       this.emit("event", EVENT_SESSION_HISTORY_LOADED, {
         sessionId: record.id,
         messages: history.messages,
@@ -450,9 +501,102 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
     const result = (await worker.request("prompt", { text, images: opts?.images })) as {
       promptId: string;
     };
+    // This turn appends onto the (possibly rewound) branch, persisting it — the leaf no longer
+    // needs re-applying after a respawn.
+    record.rewindLeafId = undefined;
     record.lastActivityAt = new Date().toISOString();
     void this.patchMetadata(record, { lastActivityAt: record.lastActivityAt });
     return result;
+  }
+
+  /** List the user-message anchor points the renderer maps bubbles to for rewind/fork. */
+  async getForkPoints(sessionId: string): Promise<{ points: { entryId: string; text: string }[] }> {
+    const worker = await this.ensureWorker(sessionId);
+    return (await worker.request("getForkPoints", {})) as {
+      points: { entryId: string; text: string }[];
+    };
+  }
+
+  /**
+   * Rewind the conversation to before the selected user message and hard-revert the working tree
+   * for the discarded turns. `entryId` drives pi's tree move; `userMessageIndex` (0-based, among
+   * user bubbles) scopes the code revert against the worker-start user count. Returns the rewound
+   * message text so the renderer can pre-fill the composer.
+   */
+  async rewindTo(
+    sessionId: string,
+    entryId: string,
+    userMessageIndex: number,
+  ): Promise<{ editorText?: string }> {
+    const record = this.sessions.get(sessionId);
+    if (!record) throw new Error(`Unknown session ${sessionId}`);
+    const worker = await this.ensureWorker(sessionId);
+
+    // 1. Conversation: pi moves the leaf before the target and rebuilds the working transcript.
+    const res = (await worker.request("rewindTo", { entryId })) as {
+      editorText?: string;
+      leafId: string | null;
+    };
+
+    // 2. Code (hard revert, best-effort): discard every turn at or after the target. Only turns
+    // snapshotted in the current worker session are revertable.
+    if (this.turnLifecycle?.rewindRevert) {
+      const historyUserCount = record.historyUserCount ?? 0;
+      const fromTurnSeq = Math.max(1, userMessageIndex - historyUserCount + 1);
+      try {
+        await this.turnLifecycle.rewindRevert(sessionId, fromTurnSeq);
+      } catch {
+        // The conversation rewind already succeeded; a revert failure must not abort it.
+      }
+    }
+
+    // 3. Remember the leaf so a respawn re-applies the rewind until the next prompt persists it.
+    record.rewindLeafId = res.leafId ?? undefined;
+
+    // 4. Repaint the truncated transcript (without moving the ordinal anchor H).
+    await this.pushHistory(record, worker, false);
+    return { editorText: res.editorText };
+  }
+
+  /**
+   * Fork the session into a new parallel session branched before the selected user message. The
+   * original thread is untouched (fork writes a brand-new file). Returns the new record and the
+   * selected message text so the renderer can switch to it and pre-fill the composer.
+   */
+  async forkFrom(
+    sessionId: string,
+    entryId: string,
+  ): Promise<{ record: SessionRecord; editorText?: string }> {
+    const source = this.sessions.get(sessionId);
+    if (!source) throw new Error(`Unknown session ${sessionId}`);
+    const worker = await this.ensureWorker(sessionId);
+
+    const forked = (await worker.request("forkAt", { entryId })) as {
+      sessionFile?: string;
+      editorText?: string;
+    };
+    const record = await this.create({
+      projectId: source.projectId,
+      projectPath: source.projectPath,
+      title: `Fork of ${source.title}`,
+      modelRef: source.modelRef,
+      thinkingLevel: source.thinkingLevel,
+      agentMode: source.agentMode,
+      planGatePolicy: source.planGatePolicy,
+      excludedTools: source.excludedTools,
+      sessionFile: forked.sessionFile,
+    });
+    return { record, editorText: forked.editorText };
+  }
+
+  /** Ensure the session's worker is running and return it, activating on demand. */
+  private async ensureWorker(sessionId: string): Promise<WorkerHandle> {
+    const record = this.sessions.get(sessionId);
+    if (!record) throw new Error(`Unknown session ${sessionId}`);
+    if (!record.worker?.isAlive) await this.activate(sessionId);
+    const worker = record.worker;
+    if (!worker) throw new Error("Worker not running");
+    return worker;
   }
 
   /**

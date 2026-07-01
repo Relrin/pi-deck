@@ -115,6 +115,30 @@ async function handleRequest(frame: { id: string; cmd: string; payload: unknown 
         sendOk(frame.id, bridge.getHistory());
         return;
       }
+      case "getForkPoints": {
+        if (!bridge) throw new Error("Worker not initialized");
+        sendOk(frame.id, { points: bridge.getForkPoints() });
+        return;
+      }
+      case "rewindTo": {
+        if (!bridge) throw new Error("Worker not initialized");
+        const params = frame.payload as { entryId: string };
+        sendOk(frame.id, await bridge.rewindTo(params.entryId));
+        return;
+      }
+      case "applyLeaf": {
+        if (!bridge) throw new Error("Worker not initialized");
+        const params = frame.payload as { leafId: string };
+        bridge.applyLeaf(params.leafId);
+        sendOk(frame.id, { ok: true });
+        return;
+      }
+      case "forkAt": {
+        if (!bridge) throw new Error("Worker not initialized");
+        const params = frame.payload as { entryId: string };
+        sendOk(frame.id, bridge.forkAt(params.entryId));
+        return;
+      }
       case "commands": {
         if (!bridge) throw new Error("Worker not initialized");
         sendOk(frame.id, { commands: bridge.getCommands() });

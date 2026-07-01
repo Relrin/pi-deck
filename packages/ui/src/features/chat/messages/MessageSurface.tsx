@@ -14,6 +14,8 @@ export interface MessageSurfaceProps {
   agentLabel?: string;
   /** Full model id for the tooltip, when `agentLabel` is the shortened label. */
   agentTitle?: string;
+  /** Hover-revealed action row (Copy / Rewind / Fork) rendered under the bubble. */
+  actions?: ReactNode;
   children: ReactNode;
 }
 
@@ -28,6 +30,7 @@ export function MessageSurface({
   timestampTitle,
   agentLabel,
   agentTitle,
+  actions,
   children,
 }: MessageSurfaceProps) {
   return (
@@ -48,6 +51,7 @@ export function MessageSurface({
         </div>
         <div className="pid-msg-body">{children}</div>
       </div>
+      {actions}
     </div>
   );
 }

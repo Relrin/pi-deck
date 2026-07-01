@@ -28,6 +28,16 @@ export function isRenderableMessage(m: MessageEntry): boolean {
 export function MessageList({ sessionId }: { sessionId: string }) {
   const allMessages = useMessagesStore(useMemo(() => selectMessages(sessionId), [sessionId]));
   const messages = useMemo(() => allMessages.filter(isRenderableMessage), [allMessages]);
+  const userIndexById = useMemo(() => {
+    const map = new Map<string, number>();
+    let u = -1;
+    for (const m of allMessages) {
+      if (m.kind === "user") u += 1;
+      map.set(m.id, u);
+    }
+    return map;
+  }, [allMessages]);
+
   const parentRef = useRef<HTMLDivElement | null>(null);
   // Initialise from the saved snapshot so the stick-to-bottom layout effect below sees
   // the right value on first commit. Without this, the effect would run with a stale
@@ -193,11 +203,23 @@ export function MessageList({ sessionId }: { sessionId: string }) {
                   padding: "8px 0",
                 }}
               >
-                {message.kind === "user" ? (
-                  <UserMessage message={message} />
-                ) : (
-                  <AssistantMessage message={message} sessionId={sessionId} />
-                )}
+                {(() => {
+                  const ui = userIndexById.get(message.id);
+                  const userMessageIndex = ui !== undefined && ui >= 0 ? ui : undefined;
+                  return message.kind === "user" ? (
+                    <UserMessage
+                      message={message}
+                      sessionId={sessionId}
+                      userMessageIndex={userMessageIndex}
+                    />
+                  ) : (
+                    <AssistantMessage
+                      message={message}
+                      sessionId={sessionId}
+                      userMessageIndex={userMessageIndex}
+                    />
+                  );
+                })()}
               </div>
             );
           })}

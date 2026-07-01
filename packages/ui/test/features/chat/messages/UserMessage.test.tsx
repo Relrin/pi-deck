@@ -1,8 +1,14 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
-import { UserMessage } from "../../../../src/features/chat/messages/UserMessage";
+import { UserMessage as UserMessageImpl } from "../../../../src/features/chat/messages/UserMessage";
 import type { UserMessageEntry } from "../../../../src/features/chat/types";
 import { useDraftStore } from "../../../../src/features/chat/useDraftStore";
 import { act, fireEvent, render, screen } from "../../../utils";
+
+// These tests render UserMessage in isolation; supply the session context the component now
+// requires (the hover action row anchors Rewind/Fork to the active session).
+function UserMessage({ message }: { message: UserMessageEntry }) {
+  return <UserMessageImpl message={message} sessionId="s-test" userMessageIndex={0} />;
+}
 
 function userMsg(text: string): UserMessageEntry {
   return { kind: "user", id: "u-1", text, createdAt: 1 };

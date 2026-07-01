@@ -7,6 +7,7 @@ import { ToolCallCard } from "../tools/ToolCallCard.js";
 import type { AssistantMessageEntry } from "../types.js";
 import { selectLatestAssistantId, useMessagesStore } from "../useMessagesStore.js";
 import { Markdown } from "./Markdown.js";
+import { MessageActions } from "./MessageActions.js";
 import { MessageContextMenu } from "./MessageContextMenu.js";
 import { MessageSurface } from "./MessageSurface.js";
 import { isPlanShapedMessage, PlanCard, planMarkdownHasChecklist } from "./PlanCard.js";
@@ -17,9 +18,10 @@ import { formatMessageTime, formatMessageTimestampFull } from "./time.js";
 interface AssistantMessageProps {
   message: AssistantMessageEntry;
   sessionId: string;
+  userMessageIndex?: number;
 }
 
-export function AssistantMessage({ message, sessionId }: AssistantMessageProps) {
+export function AssistantMessage({ message, sessionId, userMessageIndex }: AssistantMessageProps) {
   const toolCalls = useMessagesStore((s) => s.bySession[sessionId]?.toolCalls);
   // Resolve pi's raw model id (e.g. "claude-opus-4-5") into the friendly label from the
   // provider registry (e.g. "Claude Opus 4.5") so the header tag stays readable. Falls
@@ -78,6 +80,13 @@ export function AssistantMessage({ message, sessionId }: AssistantMessageProps) 
       timestampTitle={formatMessageTimestampFull(message.createdAt)}
       agentLabel={modelLabel}
       agentTitle={message.model}
+      actions={
+        <MessageActions
+          sessionId={sessionId}
+          text={message.text}
+          userMessageIndex={userMessageIndex}
+        />
+      }
     >
       <MessageContextMenu
         rawText={message.text}

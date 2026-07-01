@@ -3614,6 +3614,25 @@
   margin: 0;
 }
 
+/* Hover-revealed per-message actions (Copy / Rewind / Fork). */
+.pid-msg-actions {
+  display: flex;
+  gap: 2px;
+  margin-top: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+}
+.pid-msg:hover .pid-msg-actions,
+.pid-msg-actions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+.pid-msg-actions .pid-icon-btn {
+  width: 18px;
+  height: 18px;
+}
+
 /* Compact tool-call row (one-liner with TAG · BODY · STAT, expandable) */
 .pid-tool-row {
   margin: 4px 24px 4px;

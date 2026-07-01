@@ -22,6 +22,8 @@ export type ReviewStoreEvents = {
  */
 export interface ReviewTurnRecord extends ReviewTurn {
   repoRoot: string;
+  /** Per-session prompt ordinal, used to select the turns a rewind discards. */
+  turnSeq: number;
 }
 
 /**
@@ -76,6 +78,38 @@ export class ReviewStore extends EventEmitter<ReviewStoreEvents> {
     }
     this.dropTurn(sessionId, turnId);
     this.emit("event", EVENT_REVIEW_CLEARED, { sessionId, turnId });
+  }
+
+  /**
+   * Hard-revert the working tree for a rewind: discard every recorded turn with
+   * `turnSeq >= fromTurnSeq`, reverting each touched file to the baseline of the *earliest*
+   * discarded turn that touched it (so a file edited across several discarded turns is fully
+   * restored, not just to the last turn's start). Drops the reverted turns and emits cleared
+   * events so the review sidebar drops them too. Only turns recorded in the current worker
+   * session are present, so this is inherently scoped to the live session.
+   */
+  async rewindRevert(sessionId: string, fromTurnSeq: number): Promise<void> {
+    const list = this.bySession.get(sessionId);
+    if (!list) return;
+    const discarded = list
+      .filter((t) => t.turnSeq >= fromTurnSeq)
+      .sort((a, b) => a.turnSeq - b.turnSeq);
+    if (discarded.length === 0) return;
+    const reverted = new Set<string>();
+    for (const turn of discarded) {
+      const baseline = turn.stashSha ?? "HEAD";
+      for (const file of turn.files) {
+        if (reverted.has(file.path)) continue;
+        await revertPath(turn.repoRoot, file.path, baseline);
+        reverted.add(file.path);
+      }
+    }
+    const kept = list.filter((t) => t.turnSeq < fromTurnSeq);
+    if (kept.length === 0) this.bySession.delete(sessionId);
+    else this.bySession.set(sessionId, kept);
+    for (const turn of discarded) {
+      this.emit("event", EVENT_REVIEW_CLEARED, { sessionId, turnId: turn.turnId });
+    }
   }
 
   async acceptFile(sessionId: string, turnId: string, path: string): Promise<void> {

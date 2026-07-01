@@ -108,6 +108,9 @@ export async function startHost(opts: StartHostOptions): Promise<HostHandle> {
   sessionManager.setTurnLifecycle({
     beginTurn: (sessionId, projectId, repoRoot) =>
       turnTracker.beginTurn(sessionId, projectId, repoRoot),
+    // Lets `rewindTo` hard-revert the working tree for the discarded turns, reusing the same
+    // per-turn stash snapshots the review flow captures.
+    rewindRevert: (sessionId, fromTurnSeq) => turnTracker.rewindRevert(sessionId, fromTurnSeq),
   });
 
   const artefactsTracker = new ArtefactsTracker(sessionManager);
