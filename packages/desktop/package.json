@@ -26,12 +26,12 @@
     "@pi-deck/core": "workspace:*",
     "@pi-deck/ui": "workspace:*",
     "pi-mcp-adapter": "2.10.0",
-    "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@types/react": "19.2.14",
-    "@types/react-dom": "19.2.3",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
     "electron": "42.0.1",
     "electron-builder": "26.8.1",
     "electron-vite": "5.0.0",
