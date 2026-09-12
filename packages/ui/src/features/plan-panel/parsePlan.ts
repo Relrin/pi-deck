@@ -49,7 +49,15 @@ export function hasPlanChecklist(md: string | null | undefined): boolean {
 // Operation tag that prefixes a step, either bold (`**LABEL** —`, our prompt's format) or a
 // plain ALL-CAPS run before an em/en-dash or colon (`ANALYZE — …`, e.g. GLM's narration style).
 const BOLD_LABEL_RE = /^\*\*\s*([^*\n]+?)\s*\*\*\s*[—–:-]\s*(.+)$/;
-const CAPS_LABEL_RE = /^([A-Z][A-Z0-9]*(?: [A-Z0-9]+){0,3})\s*[—–:]\s*(.+)$/;
+// Unicode-aware rather than `[A-Z]`, so a localized plan file still yields label chips —
+// `ИЗУЧИТЬ — …` matches exactly as `EXPLORE — …` does. Sentence case is still rejected, which is
+// what stops ordinary prose lines from being mistaken for labels.
+//
+// Caveat: `\p{Lu}` is meaningless in caseless scripts (CJK, Arabic, Hebrew, Thai), so a label in
+// those never matches. That degrades gracefully — no label chip, the description still parses —
+// and it is one of the reasons those locales are deferred. The bold form above is script-agnostic
+// and is what our own prompt asks for, so it covers them.
+const CAPS_LABEL_RE = /^(\p{Lu}[\p{Lu}\p{Nd}]*(?: [\p{Lu}\p{Nd}]+){0,3})\s*[—–:]\s*(.+)$/u;
 
 function markerToStatus(marker: string): PlanStepStatus {
   if (marker === "x" || marker === "X") return "done";

@@ -6,8 +6,9 @@
     <title>pi-deck</title>
     <script>
       // Pre-mount hydration. Sets data-* attributes so the first paint matches the user's stored
-      // theme/density/fonts without flashing the default palette. The full per-token JSON is
-      // applied later by ThemeProvider once the WS client is connected.
+      // theme/density/fonts/locale without flashing the default palette. The full per-token JSON is
+      // applied later by ThemeProvider once the WS client is connected, and `useLocaleStore`
+      // re-applies the same lang/dir/script stamping on rehydrate.
       (() => {
         var root = document.documentElement;
         var raw = null;
@@ -15,6 +16,9 @@
         var themeName = null;
         var themeKind = null;
         var mql = null;
+        var LANG_SCRIPTS = { en: "latin", ru: "cyrillic" };
+        var localeRaw = null;
+        var locale = "en";
         try {
           raw = localStorage.getItem("pi-deck:prefs");
           if (raw) {
@@ -43,6 +47,19 @@
           }
           if (prefs.density === "cozy") root.setAttribute("data-density", "cozy");
           if (prefs.fonts && prefs.fonts !== "default") root.setAttribute("data-fonts", prefs.fonts);
+
+          localeRaw = localStorage.getItem("pi-deck:locale");
+          if (localeRaw) {
+            try {
+              locale = JSON.parse(localeRaw).state?.uiLocale || "en";
+            } catch {
+              locale = "en";
+            }
+          }
+          if (!LANG_SCRIPTS[locale]) locale = "en";
+          root.setAttribute("lang", locale);
+          root.setAttribute("dir", "ltr");
+          root.setAttribute("data-lang-script", LANG_SCRIPTS[locale]);
         } catch {
           // ignore — fall back to CSS defaults
         }

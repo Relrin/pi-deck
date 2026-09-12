@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ProjectSchema, ProjectSummarySchema } from "../domain/project.js";
 import {
+  AgentLanguageSchema,
   AgentModeSchema,
   PlanGatePolicySchema,
   SessionModelRefSchema,
@@ -14,6 +15,7 @@ import {
   GitHunkSchema,
   GitStatusSchema,
 } from "../git/types.js";
+import { LOCALES } from "../i18n/locale.js";
 import {
   CustomProviderInputSchema,
   ModelInfoSchema,
@@ -443,6 +445,21 @@ export const SessionSetAgentModeRequest = z.object({
   mode: AgentModeSchema,
 });
 export const SessionSetAgentModeResponse = z.object({ ok: z.literal(true) });
+
+/**
+ * Renderer → host: set the language the agent writes in for this session.
+ *
+ * Mirrors `session.setAgentMode` end to end. `language` is the *preference* (so `match-ui` is a
+ * valid value and is what gets persisted); the host resolves it against the renderer's UI locale
+ * before handing a concrete locale to the worker, so resolution happens in exactly one place.
+ */
+export const SessionSetAgentLanguageRequest = z.object({
+  sessionId: z.string().min(1),
+  language: AgentLanguageSchema,
+  /** The renderer's current interface locale, used to resolve `match-ui`. */
+  uiLocale: z.enum(LOCALES),
+});
+export const SessionSetAgentLanguageResponse = z.object({ ok: z.literal(true) });
 
 /**
  * Renderer → host: replace the session's disabled-tools list. pi 0.77's SDK only honours
@@ -1083,6 +1100,10 @@ export const CommandSchemas = {
   "session.setAgentMode": {
     request: SessionSetAgentModeRequest,
     response: SessionSetAgentModeResponse,
+  },
+  "session.setAgentLanguage": {
+    request: SessionSetAgentLanguageRequest,
+    response: SessionSetAgentLanguageResponse,
   },
   "session.setExcludedTools": {
     request: SessionSetExcludedToolsRequest,

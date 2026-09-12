@@ -11,6 +11,10 @@
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    // typesafe-i18n generates its util files with explicit ".ts" import specifiers
+    // (outputFormat is TypeScript). Every tsconfig here is noEmit and both bundlers (Vite,
+    // electron-vite) resolve .ts directly, so allowing them costs nothing.
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,

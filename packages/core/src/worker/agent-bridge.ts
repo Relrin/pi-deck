@@ -24,8 +24,10 @@ import type {
 import { type ApprovalDecision, createAgentModeExtension } from "../extensions/agent-mode/index.js";
 import { createAskUserExtension, createDeferredFrontend } from "../extensions/ask-user/index.js";
 import { createAttachmentsExtension } from "../extensions/attachments/index.js";
+import { createLanguageExtension } from "../extensions/language/index.js";
 import { listProjectFiles } from "../git/files.js";
 import { estimateToolTokens, isMcpTool } from "../host/mcp-tokens.js";
+import type { Locale } from "../i18n/locale.js";
 import type {
   AskUserAnswer,
   PromptAttachment,
@@ -112,6 +114,11 @@ export interface AgentBridge {
   setThinkingLevel: (level: ThinkingLevel) => void;
   /** Switch agent mode for the next turn (and onwards, until called again). */
   setAgentMode: (mode: AgentMode) => void;
+  /**
+   * Switch the agent's output language for the next turn. No respawn: the directive is appended
+   * per turn by the language extension's `before_agent_start` hook.
+   */
+  setAgentLanguage: (locale: Locale) => void;
   /** Stage attachments to be materialized at the start of the next turn. */
   setPendingAttachments: (attachments: PromptAttachment[]) => void;
   /** Replace the auto-approve edit allowlist used by `accept-edits` mode. */
@@ -154,6 +161,8 @@ export interface InitParams {
   modelRef?: SessionModelRef;
   thinkingLevel?: ThinkingLevel;
   agentMode?: AgentMode;
+  /** Language the agent answers in. Already resolved by the host — `match-ui` never reaches here. */
+  agentLanguage?: Locale;
   /** Plan-mode policy for non-read-only operations: `block` or `approve` (default). */
   planGatePolicy?: PlanGatePolicy;
   /**
@@ -243,10 +252,16 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     projectPath: params.projectPath,
     initialMode: params.agentMode ?? "plan",
     initialPlanGatePolicy: params.planGatePolicy,
-    onApprovalRequest: (request) => {
-      emit(EVENT_SESSION_TOOL_APPROVAL_REQUESTED, request);
+    onApprovalRequest: ({ reason, ...request }) => {
+      emit(EVENT_SESSION_TOOL_APPROVAL_REQUESTED, {
+        ...request,
+        ...(reason
+          ? { reason: reason.fallback, reasonCode: reason.code, reasonParams: reason.params }
+          : {}),
+      });
     },
   });
+  const languageController = createLanguageExtension({ initialLocale: params.agentLanguage });
   const attachmentsController = createAttachmentsExtension({
     projectPath: params.projectPath,
     listProjectFiles: (cwd, limit) => listProjectFiles(cwd, limit),
@@ -258,7 +273,11 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
       emit(EVENT_SESSION_ASK_USER_REQUESTED, request);
     },
   });
-  const askUserController = createAskUserExtension({ frontend: askFrontend });
+
+  const askUserController = createAskUserExtension({
+    frontend: askFrontend,
+    locale: () => languageController.getLanguage(),
+  });
 
   // `getCommands()` (extension commands + prompt templates + skills, pi's canonical list)
   // only exists on the ExtensionAPI handed to factories — capture it with a probe factory so
@@ -280,6 +299,7 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     settingsManager: SettingsManager.create(params.projectPath, agentDir),
     extensionFactories: [
       agentModeController.factory,
+      languageController.factory,
       attachmentsController.factory,
       askUserController.factory,
       commandsProbe,
@@ -395,6 +415,9 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
     },
     setAgentMode: (mode) => {
       agentModeController.setMode(mode);
+    },
+    setAgentLanguage: (locale) => {
+      languageController.setLanguage(locale);
     },
     setPendingAttachments: (attachments) => {
       attachmentsController.setPending(attachments);

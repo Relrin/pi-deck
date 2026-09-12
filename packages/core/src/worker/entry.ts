@@ -1,6 +1,7 @@
 import type { AgentMode, SessionModelRef, ThinkingLevel } from "../domain/session.js";
 import type { ApprovalDecision } from "../extensions/agent-mode/index.js";
 import { createJsonlReader, encodeJsonl } from "../host/jsonl.js";
+import type { Locale } from "../i18n/locale.js";
 import type { AskUserAnswer, PromptAttachment, PromptImage } from "../protocol/commands.js";
 import { type AgentBridge, initBridge } from "./agent-bridge.js";
 import { installLifecycleHandlers } from "./lifecycle.js";
@@ -75,6 +76,13 @@ async function handleRequest(frame: { id: string; cmd: string; payload: unknown 
         if (!bridge) throw new Error("Worker not initialized");
         const params = frame.payload as { mode: AgentMode };
         bridge.setAgentMode(params.mode);
+        sendOk(frame.id, { ok: true });
+        return;
+      }
+      case "setAgentLanguage": {
+        if (!bridge) throw new Error("Worker not initialized");
+        const params = frame.payload as { locale: Locale };
+        bridge.setAgentLanguage(params.locale);
         sendOk(frame.id, { ok: true });
         return;
       }

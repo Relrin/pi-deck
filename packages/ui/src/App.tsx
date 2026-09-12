@@ -15,6 +15,7 @@ import { useSessionsStore } from "./features/sessions/useSessionsStore";
 import { PidSettingsView } from "./features/settings/PidSettingsView";
 import { useSettingsHotkey } from "./features/settings/useSettingsHotkey";
 import { useTerminalHotkey } from "./features/terminal/useTerminalHotkey";
+import { LocaleProvider } from "./i18n/LocaleProvider";
 import { PidAppShell } from "./layout/PidAppShell";
 import { PidBody } from "./layout/PidBody";
 import { PidCenterRouter } from "./layout/PidCenterRouter";
@@ -64,37 +65,41 @@ export function App() {
   }, []);
 
   return (
-    <ThemeProvider>
-      <TooltipProvider>
-        <WorkerPoolContextProvider
-          poolOptions={{ workerFactory: () => new PierreDiffsWorker() }}
-          highlighterOptions={{}}
-        >
-          <PidAppShell
-            top={<PidTopBar />}
-            body={
-              <PidBody
-                left={<PidLeftRail sessions={<PidSessionsList />} files={<PidFileTree />} />}
-                center={<PidCenterRouter />}
-                right={
-                  <PidRightPane
-                    chat={<PidSessionPane />}
-                    git={<GitSidebar />}
-                    context={
-                      <PidContextPane sessionId={inSessionContext ? activeSessionId : undefined} />
-                    }
-                    gitCount={gitCount}
-                    contextCount={contextCount}
-                  />
-                }
-              />
-            }
-            bottom={<PidFooter />}
-          />
-          <PidSettingsView />
-        </WorkerPoolContextProvider>
-        <NotificationCenter />
-      </TooltipProvider>
-    </ThemeProvider>
+    <LocaleProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <WorkerPoolContextProvider
+            poolOptions={{ workerFactory: () => new PierreDiffsWorker() }}
+            highlighterOptions={{}}
+          >
+            <PidAppShell
+              top={<PidTopBar />}
+              body={
+                <PidBody
+                  left={<PidLeftRail sessions={<PidSessionsList />} files={<PidFileTree />} />}
+                  center={<PidCenterRouter />}
+                  right={
+                    <PidRightPane
+                      chat={<PidSessionPane />}
+                      git={<GitSidebar />}
+                      context={
+                        <PidContextPane
+                          sessionId={inSessionContext ? activeSessionId : undefined}
+                        />
+                      }
+                      gitCount={gitCount}
+                      contextCount={contextCount}
+                    />
+                  }
+                />
+              }
+              bottom={<PidFooter />}
+            />
+            <PidSettingsView />
+          </WorkerPoolContextProvider>
+          <NotificationCenter />
+        </TooltipProvider>
+      </ThemeProvider>
+    </LocaleProvider>
   );
 }

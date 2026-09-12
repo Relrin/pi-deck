@@ -16,7 +16,12 @@
       "!**/coverage",
       "!**/bun.lock",
       "!**/bun.lockb",
-      "!plans"
+      "!plans",
+      "!packages/ui/src/i18n/i18n-types.ts",
+      "!packages/ui/src/i18n/i18n-util.ts",
+      "!packages/ui/src/i18n/i18n-util.sync.ts",
+      "!packages/ui/src/i18n/i18n-util.async.ts",
+      "!packages/ui/src/i18n/i18n-react.tsx"
     ]
   },
   "formatter": {
@@ -26,7 +31,13 @@
     "lineWidth": 100,
     "lineEnding": "lf"
   },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
   "linter": {
     "enabled": true,
     "rules": {

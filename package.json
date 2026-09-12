@@ -19,6 +19,7 @@
     "format:check": "biome format .",
     "type-check": "tsc -p tsconfig.json --noEmit && tsc -p packages/desktop/tsconfig.main.json --noEmit",
     "test": "bun test",
+    "i18n:generate": "bun run --filter @pi-deck/ui i18n:generate",
     "desktop:dev": "bun run --filter @pi-deck/desktop dev",
     "desktop:build": "bun run --filter @pi-deck/desktop build",
     "dist": "bun run --filter @pi-deck/desktop dist",

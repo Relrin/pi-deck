@@ -111,6 +111,7 @@ function toSummary(record: SessionRecord) {
     modelRef: record.modelRef,
     thinkingLevel: record.thinkingLevel,
     agentMode: record.agentMode,
+    agentLanguage: record.agentLanguage,
     excludedTools: record.excludedTools,
     createdAt: record.createdAt,
     lastActivityAt: record.lastActivityAt,
@@ -432,6 +433,11 @@ const handlers: { [C in CommandName]: CommandHandler } = {
   "session.setAgentMode": async (ctx, payload) => {
     const parsed = CommandSchemas["session.setAgentMode"].request.parse(payload);
     await ctx.sessionManager.setAgentMode(parsed.sessionId, parsed.mode);
+    return { ok: true as const };
+  },
+  "session.setAgentLanguage": async (ctx, payload) => {
+    const parsed = CommandSchemas["session.setAgentLanguage"].request.parse(payload);
+    await ctx.sessionManager.setAgentLanguage(parsed.sessionId, parsed.language, parsed.uiLocale);
     return { ok: true as const };
   },
   "session.setExcludedTools": async (ctx, payload) => {

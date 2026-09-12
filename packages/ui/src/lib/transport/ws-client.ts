@@ -1,3 +1,13 @@
+export class HostError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "HostError";
+  }
+}
+
 export type ConnectionStatus = "idle" | "connecting" | "connected" | "disconnected" | "auth-failed";
 
 export interface WsClientOptions {
@@ -178,7 +188,13 @@ export class WsClient {
       if (!pending) return;
       this.pending.delete(r.id);
       if (r.ok) pending.resolve(r.result);
-      else pending.reject(new Error(r.error?.message ?? "Host returned an error"));
+      else
+        pending.reject(
+          new HostError(
+            r.error?.code ?? "handler_error",
+            r.error?.message ?? "Host returned an error",
+          ),
+        );
       return;
     }
     if (frame.kind === "event") {

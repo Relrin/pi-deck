@@ -169,7 +169,9 @@ describe("createAgentModeExtension — tool_call enforcement", () => {
       makeEvent("bash", { command: "rm -rf /" }),
     );
     expect(requests).toHaveLength(1);
-    expect(firstRequest(requests).reason).toContain("Auto mode");
+    // Approve reasons are structured now — the user-facing text is translated in the renderer,
+    // and the English fallback is what rides along on the wire.
+    expect(firstRequest(requests).reason?.fallback).toContain("Auto mode");
     controller.resolveApproval(firstRequest(requests).approvalId, "allow");
     await promise;
   });

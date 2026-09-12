@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PidIconButton } from "../../components/buttons/PidIconButton.js";
 import { Check, Copy, Map as MapIcon } from "../../components/icons/index.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { writeClipboard } from "../../lib/clipboard.js";
 import { Markdown } from "../chat/messages/Markdown.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
@@ -25,6 +26,7 @@ import { selectPlanSession, usePlanStore } from "./usePlanStore.js";
  * Subsequent live updates flow through `plan.file.changed` → `applyPlanFileChanged`.
  */
 export function PlanPanel() {
+  const { LL } = useI18nContext();
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
   const client = useSessionsStore((s) => s.client);
   const plan = usePlanStore(selectPlanSession(activeSessionId));
@@ -113,7 +115,7 @@ export function PlanPanel() {
           </span>
           {progress.current && (
             <span className="pid-plan-panel-progress-current">
-              {progress.current.label ?? "in progress"}
+              {progress.current.label ?? LL.plan.panel.inProgressFallback()}
             </span>
           )}
         </div>

@@ -19,8 +19,19 @@ export type RailStatus = "working" | "waiting" | "done" | "failed" | "idle";
  */
 export interface PendingToolApproval {
   approvalId: string;
-  /** Optional hint from the plugin (e.g. "Edit target outside the auto-approve allowlist."). */
+  /**
+   * English hint from the plugin (e.g. "Edit target outside the auto-approve allowlist."), used
+   * when `reasonCode` is missing or unrecognised.
+   */
   reason?: string;
+  /**
+   * Stable code for the reason, translated at render time. This text is UI-only — it never
+   * reaches the model — which is exactly why it can be localized; the block/deny reasons the
+   * model reads stay English and never come through here.
+   */
+  reasonCode?: string;
+  /** Interpolation values for `reasonCode`. */
+  reasonParams?: Record<string, string>;
 }
 
 /**

@@ -20,9 +20,15 @@
  */
 
 import { isAbsolute, normalize, resolve, sep } from "node:path";
+import { type ApprovalReason, approvalReason } from "../../i18n/approval-reasons.js";
 import { commandTokens, splitSegments, tokenize } from "./bash-safety.js";
 
-export type AutoRisk = { risky: true; reason: string } | { risky: false };
+/**
+ * A risky shape carries a structured {@link ApprovalReason} rather than a sentence, because the
+ * reason is shown to the *user* on the approval pill and never reaches the model — so it is
+ * translated in the renderer. The English text rides along as `fallback`.
+ */
+export type AutoRisk = { risky: true; reason: ApprovalReason } | { risky: false };
 
 const SAFE: AutoRisk = { risky: false };
 
@@ -66,8 +72,13 @@ export function isMcpDiscovery(input: unknown): boolean {
 }
 
 /** Approval reason shown on the pill when an MCP invocation is gated in auto mode. */
-export function mcpApprovalReason(toolName: string, input: unknown): string {
-  return `Auto mode: run MCP tool ${mcpToolLabel(toolName, input)}? It runs outside the workspace and can't be safety-checked — allow it, or deny to skip.`;
+export function mcpApprovalReason(toolName: string, input: unknown): ApprovalReason {
+  const tool = mcpToolLabel(toolName, input);
+  return approvalReason(
+    "auto.mcpTool",
+    `Auto mode: run MCP tool ${tool}? It runs outside the workspace and can't be safety-checked — allow it, or deny to skip.`,
+    { tool },
+  );
 }
 
 function mcpToolLabel(toolName: string, input: unknown): string {
@@ -134,14 +145,19 @@ function assessBashRisk(input: unknown): AutoRisk {
   if (isForkBomb(command)) {
     return {
       risky: true,
-      reason: "Auto mode: this looks like a fork bomb - denied unless you allow it.",
+      reason: approvalReason(
+        "auto.forkBomb",
+        "Auto mode: this looks like a fork bomb - denied unless you allow it.",
+      ),
     };
   }
   if (/>\s*\/dev\/(sd|nvme|hd|vd|disk|mapper)/i.test(command)) {
     return {
       risky: true,
-      reason:
+      reason: approvalReason(
+        "auto.blockDeviceRedirect",
         "Auto mode: this redirects output onto a block device, which can destroy a disk - allow it, or deny.",
+      ),
     };
   }
 
@@ -160,11 +176,14 @@ function assessBashRisk(input: unknown): AutoRisk {
   return SAFE;
 }
 
-function dangerousSegment(cmd: string, args: readonly string[]): string | undefined {
+function dangerousSegment(cmd: string, args: readonly string[]): ApprovalReason | undefined {
   // Mass / forced deletion.
   if (cmd === "rm") {
     if (isRecursive(args) || args.some(isBroadTarget)) {
-      return "Auto mode: this deletes files recursively or targets a broad path - allow it, or deny to stop.";
+      return approvalReason(
+        "auto.recursiveDelete",
+        "Auto mode: this deletes files recursively or targets a broad path - allow it, or deny to stop.",
+      );
     }
   }
   if (cmd === "rmdir" || cmd === "rd") {
@@ -177,11 +196,17 @@ function dangerousSegment(cmd: string, args: readonly string[]): string | undefi
 
   // Filesystem destruction.
   if (/^mkfs(\.|$)/.test(cmd) || cmd === "shred" || cmd === "wipefs" || cmd === "blkdiscard") {
-    return "Auto mode: this can destroy a filesystem - allow it, or deny to stop.";
+    return approvalReason(
+      "auto.filesystemDestroy",
+      "Auto mode: this can destroy a filesystem - allow it, or deny to stop.",
+    );
   }
   if (cmd === "format" || cmd === "diskpart") return windowsDeleteReason();
   if (cmd === "dd" && args.some((a) => a.startsWith("of="))) {
-    return "Auto mode: `dd` is writing to a device/file, which can be destructive - allow it, or deny.";
+    return approvalReason(
+      "auto.deviceWrite",
+      "Auto mode: `dd` is writing to a device/file, which can be destructive - allow it, or deny.",
+    );
   }
 
   // Permission / ownership sweeps over broad paths.
@@ -190,40 +215,64 @@ function dangerousSegment(cmd: string, args: readonly string[]): string | undefi
     isRecursive(args) &&
     args.some(isBroadTarget)
   ) {
-    return "Auto mode: this recursively changes permissions/ownership over a broad path - allow it, or deny.";
+    return approvalReason(
+      "auto.permissionSweep",
+      "Auto mode: this recursively changes permissions/ownership over a broad path - allow it, or deny.",
+    );
   }
 
   // Privilege escalation.
   if (cmd === "sudo" || cmd === "doas" || cmd === "su") {
-    return "Auto mode: this runs with elevated privileges - allow it, or deny to stop.";
+    return approvalReason(
+      "auto.privilegeEscalation",
+      "Auto mode: this runs with elevated privileges - allow it, or deny to stop.",
+    );
   }
 
   // Power control.
   if (cmd === "shutdown" || cmd === "reboot" || cmd === "halt" || cmd === "poweroff") {
-    return "Auto mode: this powers off or reboots the machine - allow it, or deny.";
+    return approvalReason(
+      "auto.powerControl",
+      "Auto mode: this powers off or reboots the machine - allow it, or deny.",
+    );
   }
   if (cmd === "init" && (args.includes("0") || args.includes("6"))) {
-    return "Auto mode: this powers off or reboots the machine - allow it, or deny.";
+    return approvalReason(
+      "auto.powerControl",
+      "Auto mode: this powers off or reboots the machine - allow it, or deny.",
+    );
   }
 
   // Kill everything.
   if (cmd === "kill" && args.includes("-1")) {
-    return "Auto mode: this signals every process - allow it, or deny to stop.";
+    return approvalReason(
+      "auto.killAll",
+      "Auto mode: this signals every process - allow it, or deny to stop.",
+    );
   }
 
   // Raw network tools — classic exfiltration channels.
   if (RAW_NETWORK_TOOLS.has(cmd)) {
-    return "Auto mode: this opens a raw network connection that could exfiltrate data - allow it, or deny.";
+    return approvalReason(
+      "auto.rawNetwork",
+      "Auto mode: this opens a raw network connection that could exfiltrate data - allow it, or deny.",
+    );
   }
 
   // Outbound uploads via curl/wget.
   if (DOWNLOADERS.has(cmd) && isUpload(args)) {
-    return "Auto mode: this uploads data to a remote server - allow it, or deny to stop.";
+    return approvalReason(
+      "auto.upload",
+      "Auto mode: this uploads data to a remote server - allow it, or deny to stop.",
+    );
   }
 
   // Remote file copy out of the machine.
   if (REMOTE_COPY_TOOLS.has(cmd) && args.some(looksRemote)) {
-    return "Auto mode: this copies files to a remote host - allow it, or deny to stop.";
+    return approvalReason(
+      "auto.remoteCopy",
+      "Auto mode: this copies files to a remote host - allow it, or deny to stop.",
+    );
   }
 
   // Any network/file-transfer tool touching a secret path.
@@ -231,7 +280,10 @@ function dangerousSegment(cmd: string, args: readonly string[]): string | undefi
     (DOWNLOADERS.has(cmd) || REMOTE_COPY_TOOLS.has(cmd) || RAW_NETWORK_TOOLS.has(cmd)) &&
     args.some(referencesSecret)
   ) {
-    return "Auto mode: this sends a secret/credential file over the network — allow it, or deny.";
+    return approvalReason(
+      "auto.secretOverNetwork",
+      "Auto mode: this sends a secret/credential file over the network — allow it, or deny.",
+    );
   }
 
   return undefined;
@@ -240,11 +292,14 @@ function dangerousSegment(cmd: string, args: readonly string[]): string | undefi
 /** `curl https://… | sh` — a downloader anywhere upstream of an interpreter in the pipeline. */
 function remotePipeToShell(
   segments: readonly { cmd: string; args: string[] }[],
-): string | undefined {
+): ApprovalReason | undefined {
   const sawDownloader = segments.some((s) => DOWNLOADERS.has(s.cmd));
   const sawInterpreter = segments.some((s) => SHELL_INTERPRETERS.has(s.cmd));
   if (sawDownloader && sawInterpreter) {
-    return "Auto mode: this pipes downloaded content into a shell/interpreter (remote code execution) — allow it, or deny.";
+    return approvalReason(
+      "auto.pipeToShell",
+      "Auto mode: this pipes downloaded content into a shell/interpreter (remote code execution) — allow it, or deny.",
+    );
   }
   return undefined;
 }
@@ -299,8 +354,11 @@ function isBroadTarget(arg: string): boolean {
   return false;
 }
 
-function windowsDeleteReason(): string {
-  return "Auto mode: this recursively deletes or formats files - allow it, or deny to stop.";
+function windowsDeleteReason(): ApprovalReason {
+  return approvalReason(
+    "auto.windowsDelete",
+    "Auto mode: this recursively deletes or formats files - allow it, or deny to stop.",
+  );
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -313,19 +371,28 @@ function assessWriteRisk(input: unknown, projectPath: string): AutoRisk {
   if (referencesSecret(path)) {
     return {
       risky: true,
-      reason: "Auto mode: this writes to a secret/credential file - allow it, or deny to stop.",
+      reason: approvalReason(
+        "auto.writeSecret",
+        "Auto mode: this writes to a secret/credential file - allow it, or deny to stop.",
+      ),
     };
   }
   if (/(^|[\\/])\.git[\\/]/.test(path)) {
     return {
       risky: true,
-      reason: "Auto mode: this writes inside the `.git` directory - allow it, or deny to stop.",
+      reason: approvalReason(
+        "auto.writeGitDir",
+        "Auto mode: this writes inside the `.git` directory - allow it, or deny to stop.",
+      ),
     };
   }
   if (isOutsideProject(path, projectPath)) {
     return {
       risky: true,
-      reason: "Auto mode: this writes to a path outside the project - allow it, or deny to stop.",
+      reason: approvalReason(
+        "auto.writeOutsideProject",
+        "Auto mode: this writes to a path outside the project - allow it, or deny to stop.",
+      ),
     };
   }
   return SAFE;

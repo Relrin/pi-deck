@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "../../../components/icons/index.js";
+import { localizeApprovalReason } from "../../../i18n/approval-reasons.js";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 import { cn } from "../../../lib/cn.js";
 import { formatDuration } from "../../../lib/format/format-duration.js";
 import { TOOL_CARD_HIGHLIGHT_MS } from "../../../lib/ui-constants.js";
@@ -59,6 +61,13 @@ export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; session
     [sessionId, call.id],
   );
   const hasPendingApproval = !!call.pendingApproval;
+  const { LL } = useI18nContext();
+  const approvalReasonText =
+    localizeApprovalReason(
+      LL,
+      call.pendingApproval?.reasonCode,
+      call.pendingApproval?.reasonParams,
+    ) ?? call.pendingApproval?.reason;
   const autoExpandedByApprovalRef = useRef(false);
   const prevHasPendingApprovalRef = useRef(false);
 
@@ -204,8 +213,8 @@ export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; session
       </div>
       {expanded && (
         <div id={`tool-call-body-${call.id}`} className="pid-tool-row-detail">
-          {call.pendingApproval?.reason ? (
-            <div className="pid-tool-approval-reason">{call.pendingApproval.reason}</div>
+          {approvalReasonText ? (
+            <div className="pid-tool-approval-reason">{approvalReasonText}</div>
           ) : null}
           {call.status === "error" && call.errorText ? (
             <ToolErrorDetail text={call.errorText} />

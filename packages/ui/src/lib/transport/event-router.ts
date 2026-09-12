@@ -328,10 +328,21 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
       const approvalId = typeof payload.approvalId === "string" ? payload.approvalId : "";
       const callId = typeof payload.toolCallId === "string" ? payload.toolCallId : "";
       const reason = typeof payload.reason === "string" ? payload.reason : undefined;
+      // `reasonCode` / `reasonParams` are additive (protocol 16). An older host sends neither and
+      // the renderer falls back to the English `reason`, exactly as before.
+      const reasonCode = typeof payload.reasonCode === "string" ? payload.reasonCode : undefined;
+      const reasonParams =
+        typeof payload.reasonParams === "object" && payload.reasonParams !== null
+          ? (payload.reasonParams as Record<string, string>)
+          : undefined;
       if (approvalId && callId) {
-        useMessagesStore
-          .getState()
-          .applyToolApprovalRequested(sessionId, { callId, approvalId, reason });
+        useMessagesStore.getState().applyToolApprovalRequested(sessionId, {
+          callId,
+          approvalId,
+          reason,
+          reasonCode,
+          reasonParams,
+        });
       }
       return;
     }

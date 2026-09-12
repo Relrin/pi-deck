@@ -25,6 +25,7 @@ import { ContextUsageIndicator } from "./composer/ContextUsageIndicator.js";
 import { ImagePreviewDialog } from "./composer/ImagePreviewDialog.js";
 import { SessionAgentModePicker } from "./composer/SessionAgentModePicker.js";
 import { SessionEffortPicker } from "./composer/SessionEffortPicker.js";
+import { SessionLanguagePicker } from "./composer/SessionLanguagePicker.js";
 import { SessionModelPicker } from "./composer/SessionModelPicker.js";
 import { SlashCommandMenu } from "./composer/SlashCommandMenu.js";
 import { useComposerStore } from "./composer/useComposerStore.js";
@@ -399,6 +400,7 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
           <ContextUsageIndicator sessionId={sessionId} />
           <SessionModelPicker sessionId={sessionId} />
           <SessionEffortPicker sessionId={sessionId} />
+          <SessionLanguagePicker sessionId={sessionId} />
           {isInFlight ? (
             cancelRequested ? (
               <Tooltip content="Agent is still running — kill it and end the turn" side="top">

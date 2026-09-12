@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { ll } from "../../i18n/t";
 
 /**
  * A review comment on a plan card. Anchored by character offsets into the card body's
@@ -135,8 +136,13 @@ export function selectPlanComments(sessionId: string | undefined) {
  * lead-in, then each comment as a `> quote` blockquote followed by its reply, separated by a
  * horizontal rule, and a closing instruction to keep revising in plan mode. The agent's
  * plan-mode prompt already overwrites the plan file on feedback, so this drives a revision.
+ *
+ * Localized to the *interface* language rather than the agent's: this renders as a visible user
+ * turn in the transcript, so the user is the one speaking — it is not an instruction we are
+ * writing on the model's behalf.
  */
 export function composeCommentsMessage(comments: PlanComment[]): string {
+  const t = ll();
   const blocks = comments.map((c) => {
     const quoted = c.quote
       .split("\n")
@@ -145,10 +151,11 @@ export function composeCommentsMessage(comments: PlanComment[]): string {
     return `${quoted}\n\n${c.reply.trim()}`;
   });
   return [
-    "I have some feedback on the plan before approving:",
+    t.plan.comments.leadIn(),
     "",
+    // The quoted plan text passes through byte-identical — only the lead-in and closing are ours.
     blocks.join("\n\n---\n\n"),
     "",
-    "Please revise the plan accordingly and keep it in plan mode.",
+    t.plan.comments.closing(),
   ].join("\n");
 }

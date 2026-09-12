@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LOCALES } from "../i18n/locale.js";
 
 /**
  * Thinking level vocabulary, mirrored from pi-ai's `ThinkingLevel`. The renderer treats `off`
@@ -21,6 +22,13 @@ export type ThinkingLevel = z.infer<typeof ThinkingLevelSchema>;
  */
 export const AgentModeSchema = z.enum(["ask", "accept-edits", "plan", "auto"]);
 export type AgentMode = z.infer<typeof AgentModeSchema>;
+
+/**
+ * Language the agent writes in. Independent of the interface language — a user can read a Russian
+ * UI while keeping the agent in English, which is a real preference for anyone whose technical
+ * vocabulary is English. `match-ui` is the default and follows whatever the interface is set to.
+ */
+export const AgentLanguageSchema = z.enum(["match-ui", ...LOCALES]);
 
 /**
  * What plan mode does with an operation that isn't a pure read-only inspection (edits, writes,
@@ -55,6 +63,8 @@ export const SessionSummarySchema = z.object({
   thinkingLevel: ThinkingLevelSchema.optional(),
   /** Agent permission mode picked on the composer; defaults to "plan" when absent. */
   agentMode: AgentModeSchema.optional(),
+  /** Per-session agent-language override; absent means "follow the global preference". */
+  agentLanguage: AgentLanguageSchema.optional(),
   /** When the session was first created. Drives the "sort by created" option in the rail
    * filter popover. Older persisted sessions may lack this — consumers should fall back to
    * `lastActivityAt` when it's absent. */
