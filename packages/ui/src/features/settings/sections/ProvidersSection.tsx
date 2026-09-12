@@ -1,3 +1,5 @@
+import type { AgentLanguage } from "@pi-deck/core";
+import { LOCALES } from "@pi-deck/core";
 import type { AgentMode, ThinkingLevel } from "@pi-deck/core/domain/session.js";
 import type { ProviderSummary } from "@pi-deck/core/providers/types.js";
 import type { ReactNode } from "react";
@@ -15,6 +17,9 @@ import {
   PidSegmentedPill,
   type PidSegmentedPillOption,
 } from "../../../components/segmented/PidSegmentedPill.js";
+import { useI18nContext } from "../../../i18n/i18n-react";
+import { LOCALE_META } from "../../../i18n/locale-meta";
+import { useLocaleStore } from "../../../i18n/useLocaleStore";
 import { AddCustomProviderDialog } from "../../models/AddCustomProviderDialog.js";
 import { AddProviderDialog } from "../../models/AddProviderDialog.js";
 import { AuthenticateProviderDialog } from "../../models/AuthenticateProviderDialog.js";
@@ -41,6 +46,17 @@ const HEADER_BTN = {
   flexShrink: 0,
   whiteSpace: "nowrap",
 } as const;
+
+/**
+ * "Match interface" first, then every shipped locale under its own name. Only the first option's
+ * label is translated — the rest are endonyms, which never are.
+ */
+function agentLanguageOptions(matchUiLabel: string): PidSegmentedPillOption<AgentLanguage>[] {
+  return [
+    { value: "match-ui", label: matchUiLabel },
+    ...LOCALES.map((value) => ({ value, label: LOCALE_META[value].nativeName })),
+  ];
+}
 
 const AGENT_MODE_OPTIONS: PidSegmentedPillOption<AgentMode>[] = [
   {
@@ -75,6 +91,10 @@ const AGENT_MODE_OPTIONS: PidSegmentedPillOption<AgentMode>[] = [
  * the same dialog as the picker for consistency.
  */
 export function ProvidersSection() {
+  const { LL } = useI18nContext();
+  const agentLanguage = useLocaleStore((s) => s.agentLanguage);
+  const setAgentLanguage = useLocaleStore((s) => s.setAgentLanguage);
+
   const providers = useProvidersStore((s) => s.providers);
   const refresh = useProvidersStore((s) => s.refreshProviders);
   const clearApiKey = useProvidersStore((s) => s.clearApiKey);
@@ -99,12 +119,26 @@ export function ProvidersSection() {
   const availableBuiltIns = builtIns.filter((p) => p.authState !== "authenticated");
   const customs = providers.filter((p) => p.kind === "custom-openai-compatible");
 
+  const languageOptions = agentLanguageOptions(LL.settings.agents.responseLanguage.matchUi());
+
   return (
     <div className="pid-settings-panel-inner">
       <header>
         <div className="pid-settings-section-kicker">Settings · Agents</div>
         <h1 className="pid-settings-section-title">Agents & Models</h1>
       </header>
+
+      <DefaultBlock
+        label={LL.settings.agents.responseLanguage.label()}
+        desc={LL.settings.agents.responseLanguage.desc()}
+      >
+        <PidSegmentedPill
+          ariaLabel={LL.settings.agents.responseLanguage.label()}
+          value={agentLanguage}
+          options={languageOptions}
+          onChange={setAgentLanguage}
+        />
+      </DefaultBlock>
 
       <DefaultBlock
         label="Default effort"

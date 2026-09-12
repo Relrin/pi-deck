@@ -37,6 +37,7 @@ export {
   History,
   Image,
   Info,
+  Languages,
   Layers,
   List,
   Loader2,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AgentModeSchema } from "./session.js";
+import { AgentLanguageSchema, AgentModeSchema } from "./session.js";
 
 /**
  * Per-session metadata persisted alongside its project. Lets the rail render
@@ -16,6 +16,12 @@ export const SessionMetadataSchema = z.object({
   sessionFile: z.string().optional(),
   /** Last permission mode the user set for this session. Restored on rehydrate. */
   agentMode: AgentModeSchema.optional(),
+  /**
+   * Language the agent answers in for this session. Pinned per session on purpose: a session
+   * resumed months later keeps the language it was written in, rather than silently switching
+   * because the user has since changed the global default.
+   */
+  agentLanguage: AgentLanguageSchema.optional(),
   /** Tools the user disabled for this session. */
   excludedTools: z.array(z.string().min(1)).optional(),
 });

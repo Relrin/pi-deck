@@ -14,6 +14,7 @@ import { Archive, Folder, Pencil, Plus, Send, Undo2, X } from "../../components/
 import { PidChipPicker, type PidChipPickerOption } from "../../components/picker/PidChipPicker.js";
 import { ContextMenu, type ContextMenuItem } from "../../components/ui/ContextMenu.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { useAutoGrowTextarea } from "../../lib/useAutoGrowTextarea.js";
 import { useNavStore } from "../../lib/useNavStore.js";
 import { useNotificationStore } from "../_status/useNotificationStore.js";
@@ -39,7 +40,7 @@ import { PidBranchPicker } from "./PidBranchPicker.js";
 import { PidEffortPicker } from "./PidEffortPicker.js";
 import { PidModelPicker } from "./PidModelPicker.js";
 import { PidRepoFileSearchDialog } from "./PidRepoFileSearchDialog.js";
-import { INTRO_TEMPLATES, type IntroTemplate } from "./templates.js";
+import { type IntroTemplate, introTemplates } from "./templates.js";
 import { useAttachmentsHotkeys } from "./useAttachmentsHotkeys.js";
 import { type PromptImageDraft, useIntroComposerStore } from "./useIntroComposerStore.js";
 import { useRecentAttachmentsStore } from "./useRecentAttachmentsStore.js";
@@ -48,6 +49,7 @@ import { resolveTemplate, useTemplatesStore } from "./useTemplatesStore.js";
 const RECENT_LIMIT = 3;
 
 export function PidComposerScreen() {
+  const { LL } = useI18nContext();
   const text = useIntroComposerStore((s) => s.text);
   const setText = useIntroComposerStore((s) => s.setText);
   const clear = useIntroComposerStore((s) => s.clear);
@@ -284,12 +286,14 @@ export function PidComposerScreen() {
   // (default merged with any override) used for display and prefill.
   const templates = useMemo(
     () =>
-      INTRO_TEMPLATES.map((base) => ({
+      introTemplates(LL).map((base) => ({
         base,
         effective: resolveTemplate(base, templateOverrides[base.id]),
+        // Presence-based, so it stays correct across a locale switch: an override is an override
+        // whichever language the default happens to be in.
         overridden: Boolean(templateOverrides[base.id]),
       })),
-    [templateOverrides],
+    [templateOverrides, LL],
   );
 
   const onRecent = (sessionId: string) => {

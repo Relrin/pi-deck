@@ -9,6 +9,7 @@ import type {
   ToolCallEventResult,
 } from "@earendil-works/pi-coding-agent";
 import type { AgentMode, PlanGatePolicy } from "../../domain/session.js";
+import type { ApprovalReason } from "../../i18n/approval-reasons.js";
 import { DEFAULT_PLAN_GATE_POLICY, decideToolCall } from "./decision.js";
 import { composePlanPrompt } from "./plan-prompt.js";
 
@@ -20,8 +21,7 @@ export interface ToolApprovalRequest {
   toolCallId: string;
   toolName: string;
   input: unknown;
-  /** Optional plugin-provided context, e.g. "Edit target outside the auto-approve allowlist." */
-  reason?: string;
+  reason?: ApprovalReason;
 }
 
 export type ApprovalDecision = "allow" | "deny";
@@ -130,7 +130,10 @@ export function createAgentModeExtension(options: AgentModeExtensionOptions): Ag
   let agentLoopActive = false;
   const pending = new Map<string, PendingEntry>();
 
-  function requestApproval(event: ToolCallEvent, reason?: string): Promise<ToolCallEventResult> {
+  function requestApproval(
+    event: ToolCallEvent,
+    reason?: ApprovalReason,
+  ): Promise<ToolCallEventResult> {
     return new Promise((resolve) => {
       const approvalId = randomUUID();
       const timerHandle = timers.setTimeout(() => {

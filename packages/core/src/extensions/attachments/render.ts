@@ -1,3 +1,14 @@
+/**
+ * i18n-exempt — every string in this file stays English, in every locale.
+ *
+ * The `<attachments>` envelope is a wire format, not prose. `stripAttachmentsBlock()` in
+ * `worker/agent-bridge.ts` is anchored to the literal `<attachments>` / `</attachments>` tags so
+ * the transcript shows only what the user typed; renaming or translating them would leave the raw
+ * envelope visible in every user message. The attribute names (`path`, `note`, `error`) and their
+ * values are equally load-bearing. The warning text is read by the model, not the user, and is not
+ * surfaced anywhere in the UI.
+ */
+
 import { open } from "node:fs/promises";
 import { isAbsolute, join, relative } from "node:path";
 import type { PromptAttachment } from "../../protocol/commands.js";

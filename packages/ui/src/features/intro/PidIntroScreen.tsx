@@ -13,6 +13,7 @@ import { Pencil, Undo2, X } from "../../components/icons/index.js";
 import { PidKbd } from "../../components/kbd/PidKbd";
 import { ContextMenu, type ContextMenuItem } from "../../components/ui/ContextMenu";
 import { Tooltip } from "../../components/ui/Tooltip";
+import { useI18nContext } from "../../i18n/i18n-react";
 import { useAutoGrowTextarea } from "../../lib/useAutoGrowTextarea";
 import { useNavStore } from "../../lib/useNavStore";
 import { useNotificationStore } from "../_status/useNotificationStore";
@@ -22,7 +23,7 @@ import type { UserMessageImage } from "../chat/types";
 import { useProjectsStore } from "../sessions/useProjectsStore";
 import { useSessionsStore } from "../sessions/useSessionsStore";
 import { EditTemplateDialog } from "./EditTemplateDialog";
-import { INTRO_TEMPLATES, type IntroTemplate } from "./templates";
+import { type IntroTemplate, introTemplates } from "./templates";
 import { type PromptImageDraft, useIntroComposerStore } from "./useIntroComposerStore";
 import { resolveTemplate, useTemplatesStore } from "./useTemplatesStore";
 
@@ -33,6 +34,7 @@ export interface PidIntroScreenProps {
 const RECENT_LIMIT = 5;
 
 export function PidIntroScreen({ variant }: PidIntroScreenProps) {
+  const { LL } = useI18nContext();
   const text = useIntroComposerStore((s) => s.text);
   const setText = useIntroComposerStore((s) => s.setText);
   const clear = useIntroComposerStore((s) => s.clear);
@@ -83,12 +85,14 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
   // view (default merged with any override) used for display and prefill.
   const templates = useMemo(
     () =>
-      INTRO_TEMPLATES.map((base) => ({
+      introTemplates(LL).map((base) => ({
         base,
         effective: resolveTemplate(base, templateOverrides[base.id]),
+        // Presence-based, so it stays correct across a locale switch: an override is an override
+        // whichever language the default happens to be in.
         overridden: Boolean(templateOverrides[base.id]),
       })),
-    [templateOverrides],
+    [templateOverrides, LL],
   );
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {

@@ -111,6 +111,7 @@
         "react-markdown": "10.0.1",
         "remark-gfm": "4.0.1",
         "shiki": "4.0.2",
+        "typesafe-i18n": "5.27.1",
         "zustand": "5.0.13",
       },
       "devDependencies": {
@@ -2541,6 +2542,8 @@
     "type-is": ["type-is@2.1.0", "", { "dependencies": { "content-type": "^2.0.0", "media-typer": "^1.1.0", "mime-types": "^3.0.0" } }, "sha512-faYHw0anBbc/kWF3zFTEnxSFOAGUX9GFbOBthvDdLsIlEoWOFOtS0zgCiQYwIskL9iGXZL3kAXD8OoZ4GmMATA=="],
 
     "typebox": ["typebox@1.1.38", "", {}, "sha512-pZ0aQPmMmXoUvSbeuWf/Hzsc+avNw/Zd6VeE8CFgkVGWyuHPJvqeJJDeJqLve+K70LvjYIoleGcoJHPT17cWoA=="],
+
+    "typesafe-i18n": ["typesafe-i18n@5.27.1", "", { "peerDependencies": { "typescript": ">=3.5.1" }, "bin": { "typesafe-i18n": "cli/typesafe-i18n.mjs" } }, "sha512-749uWo2ZXETT//kWjVYPm8QPYR8xLh8G0wLfoAyCAtAmysX67uCaAyLjAjAWojL6fuJpE5B6yIjwvO9orXzUPg=="],
 
     "typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 

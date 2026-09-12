@@ -159,9 +159,15 @@ describe("MCP helpers", () => {
   });
 
   test("mcpApprovalReason names the tool being invoked", () => {
-    expect(mcpApprovalReason("mcp", { tool: "linear_create_issue" })).toContain(
-      "linear_create_issue",
-    );
-    expect(mcpApprovalReason("linear_create_issue", {})).toContain("linear_create_issue");
+    // The reason is now structured so the renderer can translate it, but the tool name still has
+    // to survive — both in the interpolation param and in the English fallback.
+    const viaProxy = mcpApprovalReason("mcp", { tool: "linear_create_issue" });
+    expect(viaProxy.code).toBe("auto.mcpTool");
+    expect(viaProxy.params?.tool).toContain("linear_create_issue");
+    expect(viaProxy.fallback).toContain("linear_create_issue");
+
+    const direct = mcpApprovalReason("linear_create_issue", {});
+    expect(direct.params?.tool).toContain("linear_create_issue");
+    expect(direct.fallback).toContain("linear_create_issue");
   });
 });

@@ -324,8 +324,21 @@ export const SessionToolApprovalRequestedPayload = z.object({
   toolCallId: z.string().min(1),
   toolName: z.string().min(1),
   input: z.unknown(),
-  /** Optional hint from the plugin (e.g. "Edit target outside the auto-approve allowlist."). */
+  /**
+   * English hint from the plugin (e.g. "Edit target outside the auto-approve allowlist.").
+   *
+   * Kept as the fallback rather than replaced: logs stay readable, and a renderer that does not
+   * recognise `reasonCode` degrades to today's behaviour instead of an empty pill.
+   */
   reason: z.string().optional(),
+  /**
+   * Stable identifier for the reason, translated in the renderer. This payload is UI-only — it
+   * never reaches the model — which is why it can be localized at all. Model-facing block and
+   * deny reasons stay English and travel as tool results, not here.
+   */
+  reasonCode: z.string().optional(),
+  /** Interpolation values for `reasonCode`, pre-formatted by the worker. */
+  reasonParams: z.record(z.string(), z.string()).optional(),
 });
 
 /** One selectable option in an `ask_user_question` question. Presentation-agnostic: a GUI or a

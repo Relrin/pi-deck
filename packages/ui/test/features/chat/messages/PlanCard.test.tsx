@@ -88,7 +88,21 @@ describe("PlanCard — approval mode switch", () => {
     render(<PlanCard message={msg("## Plan\n- [ ] step", "plan")} sessionId={SID} isLatest />);
     fireEvent.click(screen.getByRole("button", { name: /approve and execute plan/i }));
 
-    await waitFor(() => expect(approvePlan).toHaveBeenCalledWith(SID, "accept-edits"));
+    // The renderer now passes the continuation explicitly so it lands in the transcript in the
+    // user's language; the host keeps an identical English string as its fallback.
+    await waitFor(() =>
+      expect(approvePlan).toHaveBeenCalledWith(
+        SID,
+        "accept-edits",
+        expect.stringContaining("The plan above is approved"),
+      ),
+    );
+    // The checkbox markers must survive translation — `parsePlan` matches on them literally.
+    expect(approvePlan).toHaveBeenCalledWith(
+      SID,
+      "accept-edits",
+      expect.stringContaining("`[ ]`→`[~]`→`[x]`"),
+    );
     await waitFor(() => expect(useComposerStore.getState().getMode(SID)).toBe("accept-edits"));
   });
 });

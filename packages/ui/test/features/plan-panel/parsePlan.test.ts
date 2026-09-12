@@ -110,6 +110,29 @@ describe("parsePlanSteps — tolerant formats (non-GFM models)", () => {
     expect(step?.label).toBeUndefined();
     expect(step?.description).toBe("Create the main test script");
   });
+
+  test("extracts a Cyrillic ALL-CAPS label the same way", () => {
+    // A Russian plan file has to produce label chips too, which the old ASCII-only
+    // `[A-Z]` class made impossible.
+    const [a, b] = parsePlanSteps(
+      "- [ ] ИЗУЧИТЬ — разобраться в коде\n- [~] ПРАВКА ИМПОРТОВ — обновить пути",
+    );
+    expect(a).toMatchObject({ label: "ИЗУЧИТЬ", description: "разобраться в коде" });
+    expect(b).toMatchObject({ label: "ПРАВКА ИМПОРТОВ", description: "обновить пути" });
+  });
+
+  test("does not treat Cyrillic sentence case as a label either", () => {
+    const [step] = parsePlanSteps("- [ ] Создать основной тестовый скрипт");
+    expect(step?.label).toBeUndefined();
+    expect(step?.description).toBe("Создать основной тестовый скрипт");
+  });
+
+  test("still parses a bold label in a caseless script, where CAPS matching cannot work", () => {
+    // `\p{Lu}` has no meaning in CJK, so the bold form our prompt actually asks for is the
+    // fallback that keeps those locales usable if they are ever added.
+    const [step] = parsePlanSteps("- [ ] **調査** — コードを読む");
+    expect(step).toMatchObject({ label: "調査", description: "コードを読む" });
+  });
 });
 
 describe("hasPlanChecklist", () => {

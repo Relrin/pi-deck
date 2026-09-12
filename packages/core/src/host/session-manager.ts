@@ -12,6 +12,12 @@ import type {
 } from "../domain/session.js";
 import type { ApprovalDecision } from "../extensions/agent-mode/index.js";
 import { currentBranch } from "../git/branches.js";
+import {
+  type AgentLanguage,
+  DEFAULT_LOCALE,
+  type Locale,
+  resolveAgentLocale,
+} from "../i18n/locale.js";
 import type {
   AskUserAnswer,
   PromptAttachment,
@@ -52,6 +58,16 @@ export interface SessionRecord {
   thinkingLevel?: ThinkingLevel;
   /** Agent permission mode set on the composer. */
   agentMode?: AgentMode;
+  /**
+   * Language preference for this session (`match-ui` included). Stored unresolved so a session
+   * resumed later still means "follow the interface", while an explicit pick stays pinned.
+   */
+  agentLanguage?: AgentLanguage;
+  /**
+   * Last interface locale the renderer reported, kept only so a dormant session can resolve
+   * `match-ui` when it wakes. Not persisted — it is the renderer's preference, not the session's.
+   */
+  uiLocale?: Locale;
   /** Plan-mode policy for non-read-only operations, captured at creation. */
   planGatePolicy?: PlanGatePolicy;
   /** Tool ids disabled for this session. */
@@ -198,6 +214,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
         lastActivityAt: meta.lastActivityAt,
         sessionFile: meta.sessionFile,
         agentMode: meta.agentMode,
+        agentLanguage: meta.agentLanguage,
         excludedTools: meta.excludedTools,
         branch,
         archived: meta.archived,
@@ -380,6 +397,11 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       modelRef: record.modelRef,
       thinkingLevel: record.thinkingLevel,
       agentMode: record.agentMode,
+      agentLanguage: resolveAgentLocale(
+        record.agentLanguage,
+        undefined,
+        record.uiLocale ?? DEFAULT_LOCALE,
+      ),
       planGatePolicy: record.planGatePolicy,
       excludedTools: record.excludedTools,
     })) as { sessionId: string; sessionFile: string };
@@ -619,6 +641,33 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
   }
 
   /**
+   * Set the language the agent writes in.
+   *
+   * Copied from `setAgentMode` deliberately, including the "don't auto-activate" behaviour: a
+   * dormant session picks the value up from `record.agentLanguage` on its next `activate`.
+   *
+   * The *preference* is what gets persisted (`match-ui` and all), while the worker is handed a
+   * concrete locale — `resolveAgentLocale` is the single place that collapses one into the other.
+   */
+  async setAgentLanguage(
+    sessionId: string,
+    language: AgentLanguage,
+    uiLocale: Locale,
+  ): Promise<void> {
+    const record = this.sessions.get(sessionId);
+    if (!record) throw new Error(`Unknown session ${sessionId}`);
+    if (record.agentLanguage === language) return;
+    record.agentLanguage = language;
+    record.uiLocale = uiLocale;
+    if (record.worker?.isAlive) {
+      await record.worker.request("setAgentLanguage", {
+        locale: resolveAgentLocale(language, undefined, uiLocale),
+      });
+    }
+    await this.patchMetadata(record, { agentLanguage: language });
+  }
+
+  /**
    * Approve the current plan: flip the session into an executing mode and immediately send
    * a continuation prompt. The continuation becomes a real user turn in the transcript so
    * the transition is visible — no hidden state. Returns the auto-generated promptId so the
@@ -834,6 +883,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
         branch: record.branch,
         sessionFile: record.sessionFile,
         agentMode: record.agentMode,
+        agentLanguage: record.agentLanguage,
         excludedTools: record.excludedTools,
       });
     } catch {
@@ -850,6 +900,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
       branch: string | undefined;
       sessionFile: string | undefined;
       agentMode: AgentMode | undefined;
+      agentLanguage: AgentLanguage | undefined;
       excludedTools: string[] | undefined;
     }>,
   ): Promise<void> {

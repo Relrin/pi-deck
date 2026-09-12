@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "../../../components/icons/index.js";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 import { humanizeError } from "../../../lib/format/humanize-error.js";
 import type { ApprovePlanTargetMode } from "../../../lib/transport/protocol-client.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
@@ -73,6 +74,7 @@ export function PlanCard({ message, sessionId, isLatest, planMarkdown }: PlanCar
   const planSession = usePlanStore(selectPlanSession(sessionId));
   const setLastApproval = usePlanStore((s) => s.setLastApproval);
   const notify = useNotificationStore((s) => s.error);
+  const { LL } = useI18nContext();
   const isInFlight = useMessagesStore(useMemo(() => selectTurnInFlight(sessionId), [sessionId]));
   const [busy, setBusy] = useState(false);
   const selectedTarget = planSession.lastApproval?.targetMode ?? DEFAULT_TARGET;
@@ -105,7 +107,7 @@ export function PlanCard({ message, sessionId, isLatest, planMarkdown }: PlanCar
     if (!client || busy) return;
     setBusy(true);
     try {
-      await client.approvePlan(sessionId, selectedTarget);
+      await client.approvePlan(sessionId, selectedTarget, LL.plan.continuation());
 
       useComposerStore.getState().seed(sessionId, selectedTarget);
       // Re-persist the pick so the next plan in this session pre-selects the same mode. The

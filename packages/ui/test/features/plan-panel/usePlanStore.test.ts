@@ -178,3 +178,54 @@ describe("usePlanStore — progress timings + snapshots", () => {
     expect(Array.isArray(s?.snapshots)).toBe(true);
   });
 });
+
+describe("usePlanStore — step identity survives re-wording", () => {
+  beforeEach(reset);
+
+  const apply = (md: string) => usePlanStore.getState().applyPlanFileChanged(SID, "/p.md", md);
+  const steps = () => usePlanStore.getState().bySession[SID]?.steps ?? [];
+
+  test("a plan rewritten in another language keeps each step's status", () => {
+    // `PlanStep.id` hashes the description, so translating the file changes every id. Without the
+    // index fallback the store would read all three steps as brand new and reset the progress the
+    // user just watched happen.
+    apply(
+      "# Plan\n- [x] EXPLORE — read the code\n- [~] WRITE — add the module\n- [ ] TEST — cover it",
+    );
+    expect(steps().map((s) => s.status)).toEqual(["done", "in-progress", "pending"]);
+
+    apply(
+      "# План\n- [x] ИЗУЧИТЬ — прочитать код\n- [~] НАПИСАТЬ — добавить модуль\n- [ ] ТЕСТЫ — покрыть тестами",
+    );
+    expect(steps().map((s) => s.status)).toEqual(["done", "in-progress", "pending"]);
+    expect(steps().map((s) => s.label)).toEqual(["ИЗУЧИТЬ", "НАПИСАТЬ", "ТЕСТЫ"]);
+  });
+
+  test("carries timings across the rename so a finished step keeps its duration", () => {
+    apply("# Plan\n- [~] WRITE — add the module");
+    apply("# Plan\n- [x] WRITE — add the module");
+    const before = usePlanStore.getState().bySession[SID]?.stepTimings ?? {};
+    const finishedId = steps()[0]?.id ?? "";
+    expect(before[finishedId]?.endedAt).toBeDefined();
+
+    apply("# План\n- [x] НАПИСАТЬ — добавить модуль");
+    const renamedId = steps()[0]?.id ?? "";
+    const after = usePlanStore.getState().bySession[SID]?.stepTimings ?? {};
+    expect(renamedId).not.toBe(finishedId);
+    expect(after[renamedId]?.endedAt).toBe(before[finishedId]?.endedAt);
+  });
+
+  test("a genuinely restructured plan is still treated as new steps", () => {
+    // The fallback is gated on an unchanged step count precisely so adding or removing a step
+    // does not silently inherit another step's status.
+    apply("# Plan\n- [x] EXPLORE — read the code\n- [~] WRITE — add the module");
+    apply("# Plan\n- [ ] DESIGN — sketch it\n- [ ] BUILD — make it\n- [ ] SHIP — release it");
+    expect(steps().map((s) => s.status)).toEqual(["pending", "pending", "pending"]);
+  });
+
+  test("re-wording only one step of many does not trigger index matching", () => {
+    apply("# Plan\n- [x] ONE — a\n- [x] TWO — b\n- [ ] THREE — c");
+    apply("# Plan\n- [x] ONE — a\n- [x] TWO — b\n- [ ] THREE — c revised");
+    expect(steps().map((s) => s.status)).toEqual(["done", "done", "pending"]);
+  });
+});

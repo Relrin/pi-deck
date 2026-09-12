@@ -4,6 +4,8 @@ import {
   type ExtensionAPI,
   type ExtensionFactory,
 } from "@earendil-works/pi-coding-agent";
+import { AGENT_STRINGS } from "../../i18n/agent-strings.js";
+import { DEFAULT_LOCALE, type Locale } from "../../i18n/locale.js";
 import type { AskUserAnswer } from "../../protocol/commands.js";
 import type { AskUserQuestion } from "../../protocol/events.js";
 import type { AskFrontend } from "./frontend.js";
@@ -36,11 +38,21 @@ const TOOL_GUIDELINES = [
   "A free-text answer is always available to the user - don't add your own 'other' / " +
     "'something else' option.",
   "Don't use it for trivial or easily reversible choices - just proceed.",
+  "Write the user-visible fields - header, question, each option's label and description - in the " +
+    "language you have been asked to answer in, even though these guidelines are in English.",
 ];
 
 export interface AskUserExtensionOptions {
   /** Where questions are presented and answers collected. pi-deck injects a GUI frontend. */
   frontend: AskFrontend;
+  /**
+   * Language for the tool *result* — the Q/A transcript the model reads back. Defaults to English.
+   * Read lazily so a mid-session language change applies to the next question.
+   *
+   * Only the result is localized, never the tool description or the JSON schema: the model reasons
+   * over this transcript beside the user's own answers, which are already in their language.
+   */
+  locale?: () => Locale;
 }
 
 export interface AskUserController {
@@ -77,7 +89,12 @@ export function createAskUserExtension(options: AskUserExtensionOptions): AskUse
             signal,
           );
           return {
-            content: [{ type: "text" as const, text: formatAnswers(questions, answer) }],
+            content: [
+              {
+                type: "text" as const,
+                text: formatAnswers(questions, answer, options.locale?.() ?? DEFAULT_LOCALE),
+              },
+            ],
             details: undefined,
           };
         },
@@ -97,7 +114,12 @@ export function createAskUserExtension(options: AskUserExtensionOptions): AskUse
  * Render the user's answer as a compact, model-friendly transcript that becomes the tool
  * result. Index-aligned to `questions`, tolerant of a short/partial answers array.
  */
-export function formatAnswers(questions: AskUserQuestion[], answer: AskUserAnswer): string {
+export function formatAnswers(
+  questions: AskUserQuestion[],
+  answer: AskUserAnswer,
+  locale: Locale = DEFAULT_LOCALE,
+): string {
+  const strings = AGENT_STRINGS[locale];
   if (answer.cancelled) {
     return (
       "The user dismissed the question without answering. Proceed using your best judgment, " +
@@ -109,7 +131,7 @@ export function formatAnswers(questions: AskUserQuestion[], answer: AskUserAnswe
     const a = answer.answers[i];
     let ans: string;
     if (!a || a.skipped) {
-      ans = "(skipped)";
+      ans = strings.skipped;
     } else {
       const picks: string[] = [];
       for (const idx of a.optionIndices) {
@@ -118,9 +140,9 @@ export function formatAnswers(questions: AskUserQuestion[], answer: AskUserAnswe
       }
 
       if (a.custom?.trim()) picks.push(a.custom.trim());
-      ans = picks.length > 0 ? picks.join(", ") : "(no selection)";
+      ans = picks.length > 0 ? picks.join(", ") : strings.noSelection;
     }
-    return `Q${n}: ${q.question}\nA${n}: ${ans}`;
+    return `${strings.question}${n}: ${q.question}\n${strings.answer}${n}: ${ans}`;
   });
   return blocks.join("\n\n");
 }

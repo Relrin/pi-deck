@@ -273,7 +273,10 @@ describe("decideToolCall — auto mode", () => {
     expect(auto("mcp", { action: "describe", tool: undefined }).kind).toBe("allow");
     const invoke = auto("mcp", { tool: "linear_create_issue", args: "{}" });
     expect(invoke.kind).toBe("approve");
-    if (invoke.kind === "approve") expect(invoke.reason).toContain("linear_create_issue");
+    if (invoke.kind === "approve") {
+      expect(invoke.reason?.code).toBe("auto.mcpTool");
+      expect(invoke.reason?.fallback).toContain("linear_create_issue");
+    }
   });
 
   test("gates a direct-exposed MCP tool named in mcpToolNames", () => {

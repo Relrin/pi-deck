@@ -1,5 +1,6 @@
 import { isAbsolute, normalize, resolve, sep } from "node:path";
 import type { AgentMode, PlanGatePolicy } from "../../domain/session.js";
+import { type ApprovalReason, approvalReason } from "../../i18n/approval-reasons.js";
 import {
   assessAutoModeRisk,
   isMcpDiscovery,
@@ -35,10 +36,19 @@ export const DEFAULT_READ_ONLY_TOOLS: ReadonlySet<string> = new Set([
 /** Plan mode defaults to prompting (rather than blocking) for non-read-only operations. */
 export const DEFAULT_PLAN_GATE_POLICY: PlanGatePolicy = "approve";
 
+/**
+ * The two reason shapes are deliberately different, and the difference is the whole design:
+ *
+ * - `block` becomes the tool **result** — the model reads it. It stays a plain English string,
+ *   permanently. These are "do not retry" instructions, identical every session, and English is
+ *   what weak and local models follow most reliably.
+ * - `approve` becomes an approval pill — the **user** reads it, and it never reaches the model.
+ *   So it carries a structured code the renderer translates into the interface language.
+ */
 export type AgentModeDecision =
   | { kind: "allow" }
   | { kind: "block"; reason: string }
-  | { kind: "approve"; reason?: string };
+  | { kind: "approve"; reason?: ApprovalReason };
 
 export interface DecideOptions {
   mode: AgentMode;
@@ -83,7 +93,13 @@ export function decideToolCall(opts: DecideOptions): AgentModeDecision {
     if (path && isEditPathAllowed(opts.editAllowlist, path, opts.projectPath)) {
       return { kind: "allow" };
     }
-    return { kind: "approve", reason: "Edit target outside the auto-approve allowlist." };
+    return {
+      kind: "approve",
+      reason: approvalReason(
+        "acceptEdits.outsideAllowlist",
+        "Edit target outside the auto-approve allowlist.",
+      ),
+    };
   }
 
   if (opts.mode === "ask" || (opts.mode === "accept-edits" && shell.has(opts.toolName))) {
@@ -135,8 +151,14 @@ function decidePlanMode(opts: DecideOptions, shell: ReadonlySet<string>): AgentM
     return {
       kind: "approve",
       reason: isShell
-        ? "Plan mode: this shell command isn't read-only — allow it to run, or deny to keep planning."
-        : "Plan mode: this operation can change files or reach outside the workspace — allow it, or deny to keep planning.",
+        ? approvalReason(
+            "plan.shellNotReadOnly",
+            "Plan mode: this shell command isn't read-only — allow it to run, or deny to keep planning.",
+          )
+        : approvalReason(
+            "plan.mutatingOperation",
+            "Plan mode: this operation can change files or reach outside the workspace — allow it, or deny to keep planning.",
+          ),
     };
   }
   return {

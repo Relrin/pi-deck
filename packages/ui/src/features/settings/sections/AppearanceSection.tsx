@@ -1,4 +1,8 @@
+import { isLocale, LOCALES } from "@pi-deck/core";
 import { PidButton } from "../../../components/buttons/PidButton";
+import { useI18nContext } from "../../../i18n/i18n-react";
+import { LOCALE_META } from "../../../i18n/locale-meta";
+import { useLocaleStore } from "../../../i18n/useLocaleStore";
 import { useRailState } from "../../../layout/use-rail-state";
 import { useRightPaneStore } from "../../../layout/use-right-pane";
 import { useNavStore } from "../../../lib/useNavStore";
@@ -39,7 +43,22 @@ const TERMINAL_WIDTH_OPTIONS: Array<{ value: TerminalWidth; label: string }> = [
   { value: "all", label: "All" },
 ];
 
+/**
+ * Language options come from `LOCALE_META`, not a literal table. Each label is the language's own
+ * name, which never gets translated — a picker that says "Russian" is no help to someone who
+ * cannot read English. Adding a locale is therefore a `LOCALE_META` change only.
+ *
+ * The DEV-only pseudo-locale is appended separately below and never ships.
+ */
+const LANGUAGE_OPTIONS = LOCALES.map((value) => ({ value, label: LOCALE_META[value].nativeName }));
+
 export function AppearanceSection() {
+  const { LL } = useI18nContext();
+  const uiLocale = useLocaleStore((s) => s.uiLocale);
+  const setUiLocale = useLocaleStore((s) => s.setUiLocale);
+  const pseudo = useLocaleStore((s) => s.pseudo);
+  const setPseudo = useLocaleStore((s) => s.setPseudo);
+
   const client = useSessionsStore((s) => s.client);
   const available = useThemeStore((s) => s.available);
   const activeName = useThemeStore((s) => s.activeName);
@@ -126,6 +145,46 @@ export function AppearanceSection() {
             </PidButton>
           ))}
         </div>
+      </section>
+
+      <section className="pid-settings-block">
+        <div className="pid-settings-block-label">{LL.settings.appearance.language.label()}</div>
+        <div className="pid-settings-block-desc">{LL.settings.appearance.language.desc()}</div>
+        <div
+          className="pid-segmented"
+          role="radiogroup"
+          aria-label={LL.settings.appearance.language.label()}
+        >
+          {LANGUAGE_OPTIONS.map((option) => (
+            <PidButton
+              key={option.value}
+              role="radio"
+              aria-checked={!pseudo && uiLocale === option.value}
+              active={!pseudo && uiLocale === option.value}
+              onClick={() => {
+                if (pseudo) setPseudo(false);
+                void setUiLocale(option.value);
+              }}
+            >
+              {option.label}
+            </PidButton>
+          ))}
+          {import.meta.env?.DEV ? (
+            <PidButton
+              role="radio"
+              aria-checked={pseudo}
+              active={pseudo}
+              title="Dev only: accents and pads every catalog string so unlocalized text and tight layouts stand out."
+              onClick={() => {
+                if (!isLocale(uiLocale)) return;
+                setPseudo(!pseudo);
+              }}
+            >
+              Pseudo
+            </PidButton>
+          ) : null}
+        </div>
+        <div className="pid-settings-block-desc">{LL.settings.appearance.language.hint()}</div>
       </section>
 
       <section className="pid-settings-block">

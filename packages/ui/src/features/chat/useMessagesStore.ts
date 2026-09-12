@@ -53,7 +53,13 @@ interface MessagesStoreState {
    */
   applyToolApprovalRequested: (
     sessionId: string,
-    p: { callId: string; approvalId: string; reason?: string },
+    p: {
+      callId: string;
+      approvalId: string;
+      reason?: string;
+      reasonCode?: string;
+      reasonParams?: Record<string, string>;
+    },
   ) => void;
   /**
    * Attach a pending question to an `ask_user_question` tool call. Triggered by
@@ -412,7 +418,10 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
       };
     }),
 
-  applyToolApprovalRequested: (sessionId, { callId, approvalId, reason }) =>
+  applyToolApprovalRequested: (
+    sessionId,
+    { callId, approvalId, reason, reasonCode, reasonParams },
+  ) =>
     set((state) => {
       const session = state.bySession[sessionId];
       if (!session) return state;
@@ -432,7 +441,12 @@ export const useMessagesStore = create<MessagesStoreState>((set) => ({
               [callId]: {
                 ...existing,
                 status: "pending",
-                pendingApproval: { approvalId, ...(reason ? { reason } : {}) },
+                pendingApproval: {
+                  approvalId,
+                  ...(reason ? { reason } : {}),
+                  ...(reasonCode ? { reasonCode } : {}),
+                  ...(reasonParams ? { reasonParams } : {}),
+                },
               },
             },
           },

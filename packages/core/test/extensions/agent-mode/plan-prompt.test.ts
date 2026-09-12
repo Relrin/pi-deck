@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { composePlanPrompt } from "../../../src/extensions/agent-mode/plan-prompt.js";
+import { LOCALES } from "../../../src/i18n/locale.js";
+import { PLAN_VOCABULARY } from "../../../src/i18n/plan-vocabulary.js";
 
 const PLAN_FILE = "/repo/.pi-deck/plans/abc-123.md";
 
@@ -46,5 +48,50 @@ describe("composePlanPrompt", () => {
     );
     // The exact path is referenced for both the initial write and execution updates.
     expect(out.split(PLAN_FILE).length - 1).toBeGreaterThanOrEqual(2);
+  });
+});
+
+/**
+ * The invariants that must hold in every locale. The prose is free to be translated; these are
+ * the things the renderer parses, so if a translation drops one the user gets a plan card with no
+ * Approve button and a progress panel with no steps.
+ */
+describe.each([...LOCALES])("composePlanPrompt — %s invariants", (locale) => {
+  const out = composePlanPrompt("x", { planFilePath: PLAN_FILE, locale });
+  const v = PLAN_VOCABULARY[locale];
+
+  test("opens with the localized Plan Mode header", () => {
+    expect(out).toContain(v.header);
+  });
+
+  test("names the plan file at least twice — for the initial write and for progress updates", () => {
+    expect(out.split(PLAN_FILE).length - 1).toBeGreaterThanOrEqual(2);
+  });
+
+  test("documents the checkbox markers verbatim, untranslated", () => {
+    expect(out).toContain("- [ ]");
+    expect(out).toContain("[~]");
+    expect(out).toContain("[x]");
+  });
+
+  test("asks for an H1 title", () => {
+    expect(out).toContain(`# ${v.titlePlaceholder}`);
+  });
+
+  test("uses exactly the four section headings from the shared vocabulary", () => {
+    for (const heading of Object.values(v.sections)) {
+      expect(out).toContain(`**${heading}**`);
+    }
+  });
+
+  test("offers the localized CAPS step labels", () => {
+    for (const label of v.labels) {
+      expect(out).toContain(label);
+    }
+  });
+
+  test("mandates the execution note and the closing line verbatim", () => {
+    expect(out).toContain(v.executionNote);
+    expect(out).toContain(v.closingLine);
   });
 });

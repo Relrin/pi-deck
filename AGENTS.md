@@ -175,7 +175,7 @@ Append new entry points under the matching sub-heading. Keep entries to one line
 
 ### Worker
 
-- **Session worker** — `packages/core/src/worker/`. One Node subprocess per active session, hosting pi's `AgentSession`. Bundled to `packages/desktop/dist/worker.js`.
+- **Session worker** — `packages/core/src/worker/`. One Node subprocess per active session, hosting pi's `AgentSession`. Bundled to `packages/desktop/dist/main/worker.mjs` and spawned with `ELECTRON_RUN_AS_NODE=1`.
 - **Agent bridge** — `packages/core/src/worker/agent-bridge.ts`. `forwardEvent` extracts `message.usage` and calls `session.getContextUsage()` for usage events.
 
 ### Providers & secrets
@@ -275,6 +275,89 @@ Append new entry points under the matching sub-heading. Keep entries to one line
 - **Host manager** — `packages/core/src/lsp/`. `LanguageServerManager` (`manager.ts`) spawns one server per `(projectId, serverId)` in the host, JSON-RPC over stdio (`vscode-jsonrpc`). Nothing is bundled: servers are detected on PATH (`environment.ts`, async probes, cached per app run); projects rooted at `\\wsl.localhost\<distro>` detect and spawn *inside* the distro via `wsl.exe -d <distro> -- sh -lc`. Idle-GC'd after the last `didClose`; restarted transparently when a reloaded renderer re-initializes; `shutdownAll()` runs from `host.close()` — no orphans.
 - **Protocol passthrough** — `lsp.status` / `lsp.ensure` / `lsp.request` / `lsp.notify` / `lsp.shutdown` commands + `lsp.message` / `lsp.diagnostics` / `lsp.serverStatus` events (`packages/core/src/protocol/lsp.ts`). The renderer's `@codemirror/lsp-client` owns the LSP session (initialize handshake, document sync); the host is a method-**allowlisted** pipe that pins `rootUri`/`workspaceFolders` on the in-flight `initialize` and intercepts `$/cancelRequest` (host request ids differ from the renderer's). URIs stay server-form end to end; the renderer maps deck paths ↔ URIs via `packages/core/src/lsp/uri.ts` using the `mapping` from `lsp.ensure`.
 - **CodeMirror client** — `packages/ui/src/features/editor/lsp/`. `useLspStore` lazily ensures a server per tab language and owns the `LSPClient`s; the per-tab `lspCompartment` (`extension.ts`) swaps built-in completion ↔ the LSP feature set (server completion, hover, signature help, `@codemirror/lint` diagnostics + gutter, rename/definition/references keymaps). `workspace.ts` routes cross-file go-to-definition into `useEditorStore.openFile`. Missing server → footer hint + Settings → Editor install hint; crash → one notification, silent fallback to built-in completion. Per-server enable toggles persist in `useLspSettingsStore` (localStorage).
+
+### Localization (i18n)
+
+- **Library** — `typesafe-i18n` (5.27.1, pinned exact, zero runtime deps). The generator runs via
+  `bun run i18n:generate` and writes `packages/ui/src/i18n/i18n-{types,util,util.sync,util.async}.ts`
+  plus `i18n-react.tsx`; **those files are committed** and are excluded from Biome in `biome.json`
+  (the generator owns their style). `formatters.ts` is scaffolded once and is ours to edit.
+  `tsconfig.base.json` sets `allowImportingTsExtensions` because the generator emits `.ts`
+  specifiers.
+- **Catalogs** — `packages/ui/src/i18n/<locale>/<namespace>.ts`, ten namespaces mirroring
+  `features/*`; the first key segment equals the filename. **Hand-written locale files must import
+  their siblings with a `.js` specifier** (`./common.js`): the generator transpiles the folder to
+  JS in a temp dir and imports it with Node's ESM loader, so `.ts` fails at generate time even
+  though TypeScript accepts it. The generated files use `.ts` — that asymmetry is the generator's.
+- **Per-key fallback** — `ru/index.ts` deep-merges its partial namespaces over `en` via our own
+  `deep-merge.ts`. typesafe-i18n's `extendDictionary` is **shallow** (it calls `just-extend`
+  without the deep flag), so an empty namespace would blank the English one. An untranslated key
+  renders English, which is what makes a half-finished locale shippable.
+- **Stores** — `packages/ui/src/i18n/useLocaleStore.ts` (`pi-deck:locale`) holds `uiLocale` and
+  `agentLanguage`. Deliberately separate from `pi-deck:prefs`: translation lookups must stay a
+  dependency leaf, and locale has an async side effect (the catalog chunk) that density/fonts do
+  not. `t.ts` exposes an imperative `ll()` for non-React code (notification builders, store
+  actions); its memo is keyed on the dictionary *reference* so it self-invalidates and never has to
+  import the store back.
+- **React binding** — `LocaleProvider` wraps `TypesafeI18n` and reads the store one-way. Never call
+  the context's own `setLocale`. `packages/ui/test/utils.tsx` mirrors the provider and also wraps
+  `renderHook`, which the blanket `export *` would otherwise leak unwrapped.
+- **Never `mock.module` the i18n modules** — process-global and unrevertable, and `bun test` file
+  order is OS-dependent, so a leak fails CI-only. `test/setup.ts` sync-loads the `en` catalog
+  before any test file evaluates (which is what lets hundreds of English assertions pass
+  unconverted) and re-pins `uiLocale: "en"` in `afterEach`. Locale-specific tests use
+  `useLocaleStore.setState()`.
+- **Pre-mount** — `packages/desktop/index.html` stamps `lang` / `dir` / `data-lang-script` from
+  localStorage before React mounts; `main.tsx` awaits `loadLocaleAsync()` in an async bootstrap
+  (not top-level await — the renderer pins no `build.target`) so a non-`en` locale never flashes
+  English.
+- **Host errors stay English** — `RouterError` carries a stable `code`, `ws-client.ts` surfaces it
+  as a `HostError`, and `humanize-error.ts` (the single choke point, ~45 call sites) translates by
+  code via `i18n/host-errors.ts`. A translated code wins over the host's more specific English
+  message; an unmapped code falls through to that message. `packages/core` ships no UI catalog.
+- **Agent language** — `session.setAgentLanguage` (protocol 16) mirrors `setAgentMode` end to end:
+  persisted on `SessionMetadata.agentLanguage`, carried into a cold worker via `InitParams`, and
+  pushed to a live worker over the JSONL RPC. The directive is appended **per turn** by
+  `packages/core/src/extensions/language/`'s `before_agent_start` hook — **not** via
+  `DefaultResourceLoader({ appendSystemPrompt })`, which is spawn-time only and would force a
+  respawn on every change. `resolveAgentLocale()` is the only place `match-ui` is collapsed, and
+  the worker only ever sees a concrete locale.
+- **Who reads the string decides its language.** Approve reasons (`decision.ts` `kind: "approve"`,
+  all of `auto-safety.ts`) are **UI-only** — they reach `ToolCallCard` and never the model — so they
+  travel as `{ reasonCode, reasonParams }` and are localized in the renderer, with the English
+  `reason` kept as a fallback. Block, deny and timeout reasons become tool results and stay
+  **English permanently**: they are "do not retry" instructions and English maximizes compliance.
+- **Plan file** — fully localized via `packages/core/src/i18n/plan-vocabulary.ts`, the single source
+  of truth for headings and CAPS labels, asserted directly by the plan-prompt tests. The GFM
+  checkbox markers and the opening heading are **structural invariants stated in every locale** —
+  `parsePlan.ts` and `PlanCard`'s `hasPlanChecklist` gate key off them, so they never localize.
+  `parsePlan.ts`'s `CAPS_LABEL_RE` is Unicode-aware (`\p{Lu}`); caseless scripts (CJK, Arabic) match
+  no label and degrade to description-only, which is why CJK is deferred.
+- **`usePlanStore.computeProgress()` falls back to index matching** when most step ids change but
+  the count does not, carrying timings across, so a language switch or a re-worded step does not
+  reset all progress.
+- **English by design in the agent layer:** `ask-user`'s tool description, prompt snippet and
+  TypeBox schema descriptions (tool-mechanics instructions beside the SDK's own English ones — one
+  appended guideline tells the model to author the user-visible fields in the agent language), and
+  the entire `<attachments>` envelope in `extensions/attachments/render.ts`, which is marked
+  `i18n-exempt` because `agent-bridge.ts`'s `stripAttachmentsBlock()` is anchored to its literal
+  tags.
+- **Plurals are positional** — `{{zero|one|two|few|many|other}}`; typesafe-i18n has no named form.
+  It also routes `0` to the `zero` slot rather than CLDR's category, so Russian must repeat its
+  `many` text in the `zero` slot.
+- **Model compliance is best-effort.** Weak or local models drift back to English mid-plan. Because
+  the checkbox syntax is a stated invariant in the plan prompt itself, drift degrades gracefully.
+  The directive is one sentence (`Respond in …`) and costs ~10 tokens a turn — deliberately not a
+  paragraph about not translating identifiers or checkbox markers, which models handle unprompted.
+  A test in `extensions/language/` fails if it grows back.
+- **Known English islands** (not defects): CodeMirror's search/lint panels and
+  `@codemirror/lsp-client` messages (localizable only via the `EditorState.phrases` facet),
+  `@pierre/trees` and `@pierre/diffs` chrome, the `[output throttled]` hint written into the PTY
+  byte stream by `terminal/buffer.ts`, and the `role:`-based Electron menu (localized by the OS).
+- **`--font-display` (Instrument Serif) ships no Cyrillic** — only latin and latin-ext, so Russian
+  hero text on the intro/composer screens falls back to a system serif. Geist and JetBrains Mono
+  both ship cyrillic. `data-lang-script` is stamped for a future fix; the seam is
+  `tokens.css:180-184`.
 
 ## Protocol stability
 

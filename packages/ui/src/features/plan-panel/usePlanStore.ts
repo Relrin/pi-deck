@@ -106,12 +106,32 @@ function computeProgress(
   nextSteps: PlanStep[],
   now: number,
 ): ProgressSlice {
-  const prevById = new Map((prev.steps ?? []).map((s) => [s.id, s.status] as const));
+  const prevSteps = prev.steps ?? [];
+  const prevById = new Map(prevSteps.map((s) => [s.id, s.status] as const));
   const timings: PlanSessionState["stepTimings"] = { ...(prev.stepTimings ?? {}) };
   let transitioned = false;
 
+  // `PlanStep.id` is a hash of the step's text, so any re-wording gives every step a new id and
+  // all status and timing would read as fresh — every step "starting" at once, and a burst of
+  // bogus progress cards. That happens routinely when the agent rewrites a step, and *always*
+  // when the plan file is rewritten in another language.
+  //
+  // When the step count is unchanged but most ids are new, the plan was re-worded rather than
+  // restructured, so position is the more reliable identity than text.
+  const unseen = nextSteps.filter((s) => !prevById.has(s.id)).length;
+  const rewordedInPlace =
+    prevSteps.length > 0 && prevSteps.length === nextSteps.length && unseen > nextSteps.length / 2;
+
   for (const step of nextSteps) {
-    const before = prevById.get(step.id);
+    const before = rewordedInPlace ? prevSteps[step.index]?.status : prevById.get(step.id);
+    if (rewordedInPlace) {
+      // Carry the old step's timings onto the new id, or the duration shown on a finished step
+      // resets to nothing.
+      const previousId = prevSteps[step.index]?.id;
+      if (previousId && previousId !== step.id && timings[previousId] && !timings[step.id]) {
+        timings[step.id] = timings[previousId];
+      }
+    }
     if (step.status === before) continue;
     if (step.status === "in-progress") {
       timings[step.id] = { ...timings[step.id], startedAt: timings[step.id]?.startedAt ?? now };
