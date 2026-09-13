@@ -2,6 +2,8 @@ import { comparePaths } from "@pi-deck/core/fs/collation.js";
 import type { GitChange, GitHunk } from "@pi-deck/core/git/types.js";
 import { type MouseEvent, useCallback, useMemo, useState } from "react";
 import { Folder } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../i18n/i18n-types.js";
 import { useNavStore } from "../../lib/useNavStore.js";
 import { useEditorStore } from "../editor/useEditorStore.js";
 import { ChangeRow } from "./ChangeRow.js";
@@ -36,6 +38,7 @@ function sortChanges(changes: GitChange[]): GitChange[] {
 }
 
 export function ChangesList({ projectId, changes, totals, touched, hunksByPath }: Props) {
+  const { LL } = useI18nContext();
   // Sort once per change-set so we don't re-key React rows during unrelated re-renders.
   // `changes` is a fresh array from the store on every status refresh, so the memo bottoms
   // out at the worst-case "sort 100 paths" cost — ~0.1ms on a modern engine.
@@ -117,7 +120,7 @@ export function ChangesList({ projectId, changes, totals, touched, hunksByPath }
   return (
     <div className="pid-git-section pid-git-changes">
       <div className="pid-git-section-head">
-        <span className="pid-mono-label">changes</span>
+        <span className="pid-mono-label">{LL.git.changes.sectionLabel()}</span>
         <span className="pid-tag">{changes.length}</span>
         <span className="pid-git-section-spacer" />
         <ChangesToolbar projectId={projectId} />
@@ -135,14 +138,14 @@ export function ChangesList({ projectId, changes, totals, touched, hunksByPath }
           type="button"
           className="pid-git-changes-stage-all"
           onClick={stageAll}
-          title="Select all files for the next commit"
+          title={LL.git.changes.stageAllTitle()}
         >
-          stage all
+          {LL.git.changes.stageAll()}
         </button>
       </div>
 
       {sortedChanges.length === 0 ? (
-        <div className="pid-git-empty">working tree clean</div>
+        <div className="pid-git-empty">{LL.git.changes.clean()}</div>
       ) : (
         <div className="pid-git-rows">
           <GroupedRows
@@ -284,6 +287,7 @@ function HunkRow({
   onSelect,
   onOpenDiff,
 }: HunkRowProps) {
+  const { LL } = useI18nContext();
   const range = formatHunkRange(hunk);
   // Per-hunk staging would need `git add -p` semantics we don't have yet, so the checkbox
   // mirrors the parent file's intent — clicking either toggles the whole file.
@@ -296,7 +300,7 @@ function HunkRow({
         checked={selected}
         onChange={onToggle}
         onClick={stopProp}
-        aria-label={`Toggle hunk ${index + 1} of ${total}`}
+        aria-label={LL.git.changes.toggleHunk({ index: index + 1, total })}
       />
       <button
         type="button"
@@ -309,7 +313,7 @@ function HunkRow({
         </span>
         <span className="pid-git-hunk-tag">@@</span>
         <span className="pid-git-hunk-meta">
-          hunk {index + 1}/{total} · {range}
+          {LL.git.changes.hunkMeta({ index: index + 1, total, range })}
         </span>
         <span className="pid-git-row-counts" aria-hidden>
           {hunk.add > 0 ? <span data-tone="add">+{hunk.add}</span> : null}
@@ -344,7 +348,8 @@ function sumTotals(changes: GitChange[]): SectionTotals {
 }
 
 function ChangeTypeRows({ changes, shared }: { changes: GitChange[]; shared: SharedRowProps }) {
-  const groups = useMemo(() => groupByChangeType(changes), [changes]);
+  const { LL } = useI18nContext();
+  const groups = useMemo(() => groupByChangeType(changes, LL), [changes, LL]);
   return (
     <>
       {groups.map((group) => (
@@ -376,7 +381,7 @@ interface ChangeTypeGroup {
   totals: SectionTotals;
 }
 
-function groupByChangeType(changes: GitChange[]): ChangeTypeGroup[] {
+function groupByChangeType(changes: GitChange[], t: TranslationFunctions): ChangeTypeGroup[] {
   const buckets: Record<ChangeTypeGroup["kind"], GitChange[]> = {
     added: [],
     modified: [],
@@ -395,10 +400,11 @@ function groupByChangeType(changes: GitChange[]): ChangeTypeGroup[] {
     glyph: string;
     tone: ChangeTypeGroup["tone"];
   }[] = [
-    { kind: "added", label: "added", glyph: "+", tone: "add" },
-    { kind: "modified", label: "modified", glyph: "○", tone: "mod" },
-    { kind: "deleted", label: "deleted", glyph: "−", tone: "del" },
-    { kind: "untracked", label: "untracked", glyph: "?", tone: "unt" },
+    // The glyphs are not copy — they are the porcelain status marks the rows echo.
+    { kind: "added", label: t.git.changes.group.added(), glyph: "+", tone: "add" },
+    { kind: "modified", label: t.git.changes.group.modified(), glyph: "○", tone: "mod" },
+    { kind: "deleted", label: t.git.changes.group.deleted(), glyph: "−", tone: "del" },
+    { kind: "untracked", label: t.git.changes.group.untracked(), glyph: "?", tone: "unt" },
   ];
   return defs
     .map((d) => ({ ...d, changes: buckets[d.kind], totals: sumTotals(buckets[d.kind]) }))

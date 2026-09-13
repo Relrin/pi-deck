@@ -2,6 +2,8 @@ import type { CustomProviderApi } from "@pi-deck/core/providers/types.js";
 import * as RadixDialog from "@radix-ui/react-dialog";
 import { type FormEvent, useEffect, useState } from "react";
 import { PidButton } from "../../components/buttons/PidButton";
+import { useI18nContext } from "../../i18n/i18n-react.js";
+import { rich, slot } from "../../i18n/rich.js";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { useProvidersStore } from "./useProvidersStore.js";
 
@@ -11,12 +13,15 @@ interface Props {
   onAdded?: (providerId: string) => void;
 }
 
+// i18n-exempt: these name OpenAI's own APIs; the parenthetical lists the servers that speak them
 const API_OPTIONS: { id: CustomProviderApi; label: string }[] = [
   { id: "openai-completions", label: "OpenAI Chat Completions (LM Studio / Ollama / vLLM)" },
   { id: "openai-responses", label: "OpenAI Responses API" },
 ];
 
 export function AddCustomProviderDialog({ open, onOpenChange, onAdded }: Props) {
+  const { LL } = useI18nContext();
+  const copy = LL.models.addCustom;
   const [name, setName] = useState("");
   const [baseUrl, setBaseUrl] = useState("http://localhost:1234/v1");
   const [api, setApi] = useState<CustomProviderApi>("openai-completions");
@@ -57,7 +62,7 @@ export function AddCustomProviderDialog({ open, onOpenChange, onAdded }: Props) 
       onAdded?.(provider.id);
       onOpenChange(false);
     } catch (err) {
-      setError(humanizeError(err, "Failed to add provider"));
+      setError(humanizeError(err, copy.saveFailed()));
     } finally {
       setSubmitting(false);
     }
@@ -72,28 +77,28 @@ export function AddCustomProviderDialog({ open, onOpenChange, onAdded }: Props) 
           style={{ width: "min(520px, 92vw)", maxHeight: "auto" }}
         >
           <div className="pid-modal-header">
-            <RadixDialog.Title className="pid-modal-title">Add custom provider</RadixDialog.Title>
+            <RadixDialog.Title className="pid-modal-title">{copy.title()}</RadixDialog.Title>
             <RadixDialog.Description className="pid-modal-description">
-              Connect an OpenAI-compatible endpoint such as LM Studio, Ollama, vLLM, or a
-              self-hosted gateway.
+              {copy.description()}
             </RadixDialog.Description>
           </div>
           <form className="pid-form" onSubmit={onSubmit}>
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="cp-name">
-                Name
+                {copy.name()}
               </label>
               <input
                 id="cp-name"
                 className="pid-form-input"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                // i18n-exempt: worked example, a product name
                 placeholder="LM Studio"
               />
             </div>
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="cp-base">
-                Base URL
+                {copy.baseUrl()}
               </label>
               <input
                 id="cp-base"
@@ -105,7 +110,7 @@ export function AddCustomProviderDialog({ open, onOpenChange, onAdded }: Props) 
             </div>
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="cp-api">
-                API kind
+                {copy.apiKind()}
               </label>
               <select
                 id="cp-api"
@@ -122,7 +127,7 @@ export function AddCustomProviderDialog({ open, onOpenChange, onAdded }: Props) 
             </div>
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="cp-key">
-                API key (optional)
+                {copy.apiKey()}
               </label>
               <input
                 id="cp-key"
@@ -130,24 +135,28 @@ export function AddCustomProviderDialog({ open, onOpenChange, onAdded }: Props) 
                 className="pid-form-input"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder="Leave blank for unauthenticated endpoints"
+                placeholder={copy.apiKeyPlaceholder()}
                 autoComplete="off"
                 spellCheck={false}
               />
             </div>
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="cp-model">
-                Default model id (optional)
+                {copy.defaultModel()}
               </label>
               <input
                 id="cp-model"
                 className="pid-form-input"
                 value={defaultModelId}
                 onChange={(e) => setDefaultModelId(e.target.value)}
+                // i18n-exempt: worked example, a model id
                 placeholder="qwen2.5-coder:7b"
               />
               <span className="pid-form-hint">
-                Used when the endpoint doesn't expose <code>/v1/models</code>.
+                {rich(copy.defaultModelHint({ path: slot("path") }), {
+                  // i18n-exempt: the endpoint path the provider must serve
+                  path: <code>/v1/models</code>,
+                })}
               </span>
             </div>
             {error && (
@@ -157,7 +166,7 @@ export function AddCustomProviderDialog({ open, onOpenChange, onAdded }: Props) 
             )}
             <div className="pid-form-row">
               <PidButton variant="ghost" onClick={() => onOpenChange(false)} longLabel>
-                Cancel
+                {LL.common.cancel()}
               </PidButton>
               <PidButton
                 variant="primary"
@@ -165,7 +174,7 @@ export function AddCustomProviderDialog({ open, onOpenChange, onAdded }: Props) 
                 disabled={!name.trim() || !baseUrl.trim() || submitting}
                 longLabel
               >
-                {submitting ? "Saving…" : "Add provider"}
+                {submitting ? copy.submitting() : copy.submit()}
               </PidButton>
             </div>
           </form>

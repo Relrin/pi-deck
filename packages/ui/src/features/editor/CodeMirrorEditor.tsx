@@ -19,6 +19,8 @@ import {
   lineNumbers,
 } from "@codemirror/view";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useI18nContext } from "../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../i18n/i18n-types.js";
 import { useNavStore } from "../../lib/useNavStore.js";
 import { useThemeStore } from "../../theme/useThemeStore.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
@@ -84,6 +86,7 @@ function useThemeIsDark(): boolean {
  * scroll. Content/dirty/cursor flow back into `useEditorStore` for the tab strip + status bar.
  */
 export function CodeMirrorEditor() {
+  const { LL } = useI18nContext();
   const projectId = useProjectsStore((s) => s.activeProjectId);
   const activeTabId = useEditorStore(selectActiveTabId(projectId));
   const status = useEditorStore((s) => (activeTabId ? s.tabs[activeTabId]?.status : undefined));
@@ -410,7 +413,7 @@ export function CodeMirrorEditor() {
     }
   }, [order]);
 
-  const overlay = renderOverlay(activeTabId, status, blocked, errorMessage);
+  const overlay = renderOverlay(activeTabId, status, blocked, errorMessage, LL);
   const view = viewRef.current;
 
   // Prev/next: navigate to the neighbour block and re-anchor the pinned toolbar to it.
@@ -468,19 +471,24 @@ function renderOverlay(
   status: string | undefined,
   blocked: "binary" | "tooLarge" | undefined,
   errorMessage: string | undefined,
+  t: TranslationFunctions,
 ): React.ReactNode {
   if (!activeTabId) return null;
   if (status === "loading") {
-    return <div className="pid-editor-overlay">Loading…</div>;
+    return <div className="pid-editor-overlay">{t.editor.overlay.loading()}</div>;
   }
   if (status === "error") {
-    return <div className="pid-editor-overlay error">{errorMessage ?? "Failed to open file"}</div>;
+    return (
+      <div className="pid-editor-overlay error">
+        {errorMessage ?? t.editor.overlay.openFailed()}
+      </div>
+    );
   }
   if (blocked === "binary") {
-    return <div className="pid-editor-overlay">Binary file — not shown.</div>;
+    return <div className="pid-editor-overlay">{t.editor.overlay.binary()}</div>;
   }
   if (blocked === "tooLarge") {
-    return <div className="pid-editor-overlay">File is too large to open in the editor.</div>;
+    return <div className="pid-editor-overlay">{t.editor.overlay.tooLarge()}</div>;
   }
   return null;
 }

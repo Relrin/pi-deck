@@ -54,6 +54,7 @@ export function PidScreenSwitcher() {
             data-disabled={isSessionGate ? "true" : "false"}
             aria-pressed={isActive}
             aria-disabled={isSessionGate || undefined}
+            title={isSessionGate ? undefined : btn.label}
             onClick={(event) => {
               if (isSessionGate) {
                 event.preventDefault();

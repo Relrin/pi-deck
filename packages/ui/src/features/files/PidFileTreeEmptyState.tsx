@@ -1,4 +1,6 @@
 import { Folder } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../i18n/i18n-types.js";
 
 interface PidFileTreeEmptyStateProps {
   /** "no-project": no project is active. "empty-project": project has no walked files yet.
@@ -8,7 +10,8 @@ interface PidFileTreeEmptyStateProps {
 }
 
 export function PidFileTreeEmptyState({ kind, errorMessage }: PidFileTreeEmptyStateProps) {
-  const message = labelFor(kind);
+  const { LL } = useI18nContext();
+  const message = labelFor(LL, kind);
   return (
     <div className="pid-tree-empty">
       <Folder size={18} aria-hidden />
@@ -20,15 +23,15 @@ export function PidFileTreeEmptyState({ kind, errorMessage }: PidFileTreeEmptySt
   );
 }
 
-function labelFor(kind: PidFileTreeEmptyStateProps["kind"]): string {
+function labelFor(t: TranslationFunctions, kind: PidFileTreeEmptyStateProps["kind"]): string {
   switch (kind) {
     case "no-project":
-      return "Open a project to browse its files.";
+      return t.files.empty.noProject();
     case "empty-project":
-      return "This project has no files yet.";
+      return t.files.empty.emptyProject();
     case "no-matches":
-      return "No matches.";
+      return t.files.empty.noMatches();
     case "error":
-      return "Couldn’t load files.";
+      return t.files.empty.error();
   }
 }

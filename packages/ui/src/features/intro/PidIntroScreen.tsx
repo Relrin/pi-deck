@@ -100,7 +100,7 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
     const trimmed = text.trim();
     if (!trimmed) return;
     if (!activeProjectId) {
-      useNotificationStore.getState().error("Open a project first");
+      useNotificationStore.getState().error(LL.intro.errors.openProjectFirst());
       return;
     }
     const store = useSessionsStore.getState();
@@ -153,8 +153,8 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
   };
 
   const projectKicker = activeProject
-    ? `${activeProject.displayName.toUpperCase()} · IDLE`
-    : "PI-DECK · IDLE";
+    ? LL.intro.composer.statusIdle({ name: activeProject.displayName.toUpperCase() })
+    : LL.intro.composer.statusIdleNoProject();
 
   return (
     <div className="pid-intro" data-variant={variant}>
@@ -165,11 +165,8 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
           </span>
           <span>{projectKicker}</span>
         </div>
-        <h1 className="pid-intro-title">what are we shipping today?</h1>
-        <p className="pid-intro-blurb">
-          Drop a task, paste a stack trace, or @-mention a file. pi reads your repo, proposes a
-          plan, and writes code against a fresh branch.
-        </p>
+        <h1 className="pid-intro-title">{LL.intro.hero.titleIntro()}</h1>
+        <p className="pid-intro-blurb">{LL.intro.hero.blurb()}</p>
       </header>
 
       <form
@@ -182,7 +179,7 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
         onDrop={onShellDrop}
       >
         <label className="sr-only" htmlFor="pid-intro-composer-input">
-          New prompt
+          {LL.intro.composer.newPrompt()}
         </label>
         {images.length > 0 && (
           <div className="pid-composer-attachments">
@@ -195,7 +192,7 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
                 <button
                   type="button"
                   className="pid-composer-attachment-image-trigger"
-                  aria-label={`Preview ${img.name}`}
+                  aria-label={LL.intro.composer.previewImage({ name: img.name })}
                   onClick={() => setPreviewImage(img)}
                 >
                   <img src={img.thumbnailDataUrl} alt={img.name} draggable={false} />
@@ -203,7 +200,7 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
                 <button
                   type="button"
                   className="pid-composer-attachment-image-remove"
-                  aria-label={`Remove ${img.name}`}
+                  aria-label={LL.intro.composer.removeImage({ name: img.name })}
                   onClick={() => removeImage(img.id)}
                 >
                   <X size={10} aria-hidden />
@@ -215,7 +212,7 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
         <textarea
           id="pid-intro-composer-input"
           ref={textareaRef}
-          placeholder="e.g. 'add a /share button to PostHeader that copies a tracked URL'"
+          placeholder={LL.intro.composer.placeholder()}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onComposerKeyDown}
@@ -223,30 +220,32 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
         />
         <div className="pid-intro-composer-footer">
           <span aria-hidden>
-            {activeProject ? `${activeProject.displayName} · main` : "no project · main"}
+            {activeProject
+              ? LL.intro.composer.projectBranch({ name: activeProject.displayName })
+              : LL.intro.composer.noProjectBranch()}
           </span>
-          <Tooltip content="Dispatch · Enter" side="top">
+          <Tooltip content={LL.intro.composer.dispatchTooltip()} side="top">
             <PidButton
               type="submit"
               variant="primary"
               disabled={!text.trim() || !activeProjectId}
               longLabel
-              aria-label="Dispatch prompt"
+              aria-label={LL.intro.composer.dispatchLabel()}
               aria-keyshortcuts="Enter"
             >
-              Dispatch
+              {LL.intro.composer.dispatch()}
             </PidButton>
           </Tooltip>
         </div>
       </form>
 
       <div>
-        <div className="pid-intro-templates-label">start from a template</div>
+        <div className="pid-intro-templates-label">{LL.intro.templateCards.heading()}</div>
         <div className="pid-intro-templates">
           {templates.map(({ base, effective, overridden }) => {
             const items: ContextMenuItem[] = [
               {
-                label: "Edit template…",
+                label: LL.intro.templateCards.editMenuItem(),
                 icon: <Pencil size={14} />,
                 onSelect: () => setEditingTemplate(base),
               },
@@ -254,7 +253,7 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
             if (overridden) {
               items.push({ kind: "separator" });
               items.push({
-                label: "Reset to default",
+                label: LL.intro.templateCards.resetMenuItem(),
                 icon: <Undo2 size={14} />,
                 onSelect: () => resetTemplate(base.id),
               });
@@ -270,7 +269,11 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
                   >
                     <span className="pid-intro-template-head">
                       <span className="pid-intro-template-num">{effective.num}</span>
-                      {overridden && <span className="pid-intro-template-badge">edited</span>}
+                      {overridden && (
+                        <span className="pid-intro-template-badge">
+                          {LL.intro.templateCards.edited()}
+                        </span>
+                      )}
                     </span>
                     <span className="pid-intro-template-title">{effective.title}</span>
                     <span className="pid-intro-template-blurb">{effective.blurb}</span>
@@ -280,8 +283,8 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
                 <button
                   type="button"
                   className="pid-intro-template-edit"
-                  aria-label={`Edit template: ${effective.title}`}
-                  title="Edit template"
+                  aria-label={LL.intro.templateCards.editLabel({ title: effective.title })}
+                  title={LL.intro.templateCards.editTitle()}
                   onClick={() => setEditingTemplate(base)}
                 >
                   <Pencil size={13} aria-hidden />
@@ -293,7 +296,7 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
       </div>
 
       <div className="pid-intro-recent">
-        <span className="pid-intro-recent-label">recent</span>
+        <span className="pid-intro-recent-label">{LL.intro.templateCards.recent()}</span>
         {recents.length === 0 ? (
           <span aria-hidden>—</span>
         ) : (
@@ -313,9 +316,9 @@ export function PidIntroScreen({ variant }: PidIntroScreenProps) {
 
       {variant === "fullscreen" && (
         <div className="pid-intro-shortcut">
-          <span>or</span>
+          <span>{LL.intro.composer.or()}</span>
           <PidKbd keys={["Mod", "N"]} />
-          <span>new session</span>
+          <span>{LL.intro.composer.newSession()}</span>
         </div>
       )}
       {previewImage && (

@@ -2,6 +2,7 @@ import type { TerminalShell } from "@pi-deck/core/protocol/commands.js";
 import { useRef, useState } from "react";
 import { X } from "../../components/icons/index.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { NewTerminalButton } from "./NewTerminalButton.js";
 import { ShellTypeIcon } from "./terminalShellIcon.js";
 import { type TerminalTab, useTerminalStore } from "./useTerminalStore.js";
@@ -65,6 +66,7 @@ export function TerminalTabs({
   canCreate,
   onClosePanel,
 }: TerminalTabsProps) {
+  const { LL } = useI18nContext();
   const renameTab = useTerminalStore((s) => s.renameTab);
   const [editingId, setEditingId] = useState<string | null>(null);
   // Set on Escape so the input's blur handler skips the commit (reverting the edit).
@@ -80,7 +82,7 @@ export function TerminalTabs({
   };
 
   return (
-    <div className="pid-terminal-tabs" role="tablist" aria-label="Terminal tabs">
+    <div className="pid-terminal-tabs" role="tablist" aria-label={LL.terminal.tabs.label()}>
       <div className="pid-terminal-tabs-strip">
         {tabs.map((tab) => {
           const label = displayLabel(tab);
@@ -103,7 +105,7 @@ export function TerminalTabs({
                 <input
                   className="pid-terminal-tab-rename"
                   defaultValue={label}
-                  aria-label="Rename terminal"
+                  aria-label={LL.terminal.tabs.rename()}
                   // biome-ignore lint/a11y/noAutofocus: focus the field the instant rename begins
                   autoFocus
                   onFocus={(e) => e.currentTarget.select()}
@@ -126,7 +128,7 @@ export function TerminalTabs({
               <button
                 type="button"
                 className="pid-terminal-tab-close"
-                aria-label={`Close ${label}`}
+                aria-label={LL.terminal.tabs.close({ name: label })}
                 onMouseDown={(e) => {
                   e.stopPropagation();
                   onClose(tab.tabId);
@@ -144,7 +146,7 @@ export function TerminalTabs({
           <button
             type="button"
             className="pid-terminal-tab-close"
-            aria-label="Close terminal panel"
+            aria-label={LL.terminal.tabs.closePanel()}
             onClick={onClosePanel}
           >
             <X size={13} aria-hidden />

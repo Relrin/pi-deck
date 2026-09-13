@@ -30,6 +30,14 @@ export type ReadImageResult = {
   byteSize: number;
 };
 
+/**
+ * Separate from the `bridge` surface on purpose: those handlers only exist once the backend is up,
+ * and the menu has to be labelled before that.
+ */
+contextBridge.exposeInMainWorld("appLocale", {
+  set: (locale: string): Promise<void> => ipcRenderer.invoke("app:set-locale", locale),
+});
+
 contextBridge.exposeInMainWorld("windowControls", {
   minimize: (): Promise<void> => ipcRenderer.invoke("window:minimize"),
   toggleMaximize: (): Promise<void> => ipcRenderer.invoke("window:toggle-maximize"),

@@ -37,14 +37,14 @@ export function PidConfirmDeleteDialog({
 
   const visible = paths.slice(0, MAX_VISIBLE_PATHS);
   const overflow = paths.length - visible.length;
-  const title = LL.common.files.confirmDeleteTitle({ count: paths.length });
+  const title = LL.files.confirmDeleteTitle({ count: paths.length });
 
   return (
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
       title={title}
-      description="Items can be restored from your operating system trash."
+      description={LL.files.confirmDeleteDescription()}
     >
       <ul className="pid-tree-delete-list">
         {visible.map((p) => (
@@ -53,17 +53,15 @@ export function PidConfirmDeleteDialog({
           </li>
         ))}
         {overflow > 0 && (
-          <li className="pid-tree-delete-overflow">
-            {LL.common.files.moreItems({ count: overflow })}
-          </li>
+          <li className="pid-tree-delete-overflow">{LL.files.moreItems({ count: overflow })}</li>
         )}
       </ul>
       <div className="pid-tree-delete-actions">
         <PidButton variant="ghost" longLabel onClick={() => onOpenChange(false)} disabled={busy}>
-          Cancel
+          {LL.common.cancel()}
         </PidButton>
         <PidButton variant="danger" longLabel onClick={handleConfirm} disabled={busy}>
-          {busy ? "Moving…" : "Move to Trash"}
+          {busy ? LL.files.confirmDeleteBusy() : LL.files.confirmDelete()}
         </PidButton>
       </div>
     </Dialog>

@@ -1,7 +1,7 @@
 import "@pi-deck/ui/styles/fonts";
 import { isLocale, type Locale } from "@pi-deck/core";
 import { App } from "@pi-deck/ui";
-import { LOCALE_STORAGE_KEY, loadLocaleAsync } from "@pi-deck/ui/i18n";
+import { LOCALE_STORAGE_KEY, loadLocaleAsync, useLocaleStore } from "@pi-deck/ui/i18n";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@pi-deck/ui/styles/globals.css";
@@ -33,8 +33,25 @@ function persistedLocale(): Locale {
  * Deliberately an async bootstrap rather than top-level await: the renderer build sets no explicit
  * `build.target`, so relying on TLA here would couple first paint to a Vite default we do not pin.
  */
+/**
+ * Keep the Electron menu bar in the UI's language.
+ *
+ * Lives here rather than in `packages/ui` on purpose: `useLocaleStore` is a platform-agnostic
+ * dependency leaf and `App` must not learn about Electron. A plain zustand `subscribe` with a
+ * manual compare is enough — no `subscribeWithSelector` middleware, and the store stays untouched.
+ * `?.` because the web target has no preload bridge.
+ */
+function syncMenuLocale(initial: Locale): void {
+  void window.appLocale?.set?.(initial);
+  useLocaleStore.subscribe((state, previous) => {
+    if (state.uiLocale !== previous.uiLocale) void window.appLocale?.set?.(state.uiLocale);
+  });
+}
+
 async function bootstrap(): Promise<void> {
-  await loadLocaleAsync(persistedLocale());
+  const locale = persistedLocale();
+  await loadLocaleAsync(locale);
+  syncMenuLocale(locale);
 
   createRoot(container as HTMLElement).render(
     <StrictMode>

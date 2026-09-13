@@ -2,6 +2,8 @@ import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import { useState } from "react";
 import { ConfirmDialog } from "../../components/dialogs/ConfirmDialog.js";
 import { Check } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../i18n/i18n-types.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { type Eol, eolLabel } from "./eol.js";
 import {
@@ -13,20 +15,33 @@ import {
 import { PidGotoLineDialog } from "./PidGotoLineDialog.js";
 import { selectActiveTab, useEditorStore } from "./useEditorStore.js";
 
-/** Curated reopen-with encodings (label → iconv-lite name). */
-const ENCODINGS: { name: string; label: string }[] = [
-  { name: "utf-8", label: "UTF-8" },
-  { name: "utf-16le", label: "UTF-16 LE" },
-  { name: "utf-16be", label: "UTF-16 BE" },
-  { name: "win1252", label: "Western (Windows-1252)" },
-  { name: "latin1", label: "Western (ISO-8859-1)" },
-  { name: "ascii", label: "US-ASCII" },
-];
+/**
+ * Curated reopen-with encodings. `name` is the iconv-lite id and is never translated; the label
+ * *describes* the encoding rather than naming it, so it is.
+ *
+ * Built per render from the catalog rather than held as a module constant: a module-level table
+ * would capture whatever locale was loaded at import time and never update on a language switch.
+ * Exported for `test/i18n/option-tables.test.ts`.
+ */
+export function encodingOptions(t: TranslationFunctions): { name: string; label: string }[] {
+  const copy = t.editor.status.encoding;
+  return [
+    { name: "utf-8", label: copy.utf8() },
+    { name: "utf-16le", label: copy.utf16le() },
+    { name: "utf-16be", label: copy.utf16be() },
+    { name: "win1252", label: copy.win1252() },
+    { name: "latin1", label: copy.latin1() },
+    { name: "ascii", label: copy.ascii() },
+  ];
+}
 
-const EOLS: { value: Eol; label: string; hint: string }[] = [
-  { value: "lf", label: "LF", hint: "Unix (\\n)" },
-  { value: "crlf", label: "CRLF", hint: "Windows (\\r\\n)" },
-];
+/** `LF` / `CRLF` name the separators themselves; only the platform hint beside them is copy. */
+export function eolOptions(t: TranslationFunctions): { value: Eol; label: string; hint: string }[] {
+  return [
+    { value: "lf", label: "LF", hint: t.editor.status.eolHintLf() },
+    { value: "crlf", label: "CRLF", hint: t.editor.status.eolHintCrlf() },
+  ];
+}
 
 function lspDotColor(status: LspServerState["status"]): string {
   switch (status) {
@@ -41,20 +56,22 @@ function lspDotColor(status: LspServerState["status"]): string {
   }
 }
 
-function lspTitle(server: LspServerState): string {
+function lspTitle(t: TranslationFunctions, server: LspServerState): string {
+  const copy = t.editor.lsp.status;
   switch (server.status) {
     case "ready":
-      return "Language server connected";
+      return copy.ready();
     case "starting":
-      return "Language server starting…";
+      return copy.starting();
     case "missing":
+      // The install hint is a shell command and passes through untranslated.
       return server.installHint
-        ? `Language server not installed — ${server.installHint}`
-        : "Language server not installed";
+        ? copy.missingWithHint({ hint: server.installHint })
+        : copy.missing();
     case "crashed":
-      return `Language server crashed — ${server.message ?? "reopen the file to retry"}`;
+      return copy.crashed({ reason: server.message ?? copy.crashedFallback() });
     case "disabled":
-      return "Language server disabled in Settings → Editor";
+      return copy.disabled();
   }
 }
 
@@ -65,6 +82,7 @@ function lspTitle(server: LspServerState): string {
  * the file in another encoding (with optional BOM) or switch the line separator.
  */
 export function PidEditorStatus() {
+  const { LL } = useI18nContext();
   const projectId = useProjectsStore((s) => s.activeProjectId);
   const tab = useEditorStore(selectActiveTab(projectId));
   const setEol = useEditorStore((s) => s.setEol);
@@ -80,11 +98,11 @@ export function PidEditorStatus() {
   if (!tab) return null;
   const { cursor } = tab;
   const indentLabel = tab.indentUseTabs
-    ? `Tab Size: ${tab.indentWidth}`
-    : `Spaces: ${tab.indentWidth}`;
+    ? LL.editor.status.indentTabs({ width: tab.indentWidth })
+    : LL.editor.status.indentSpaces({ width: tab.indentWidth });
   const encodingLabel =
-    (ENCODINGS.find((e) => e.name === tab.encoding)?.label ?? tab.encoding.toUpperCase()) +
-    (tab.bom ? " · BOM" : "");
+    (encodingOptions(LL).find((e) => e.name === tab.encoding)?.label ??
+      tab.encoding.toUpperCase()) + (tab.bom ? LL.editor.status.bomSuffix() : "");
 
   const chooseEncoding = (name: string) => {
     if (name === tab.encoding) return;
@@ -95,7 +113,7 @@ export function PidEditorStatus() {
   return (
     <>
       {lspDiag && (lspDiag.errors > 0 || lspDiag.warnings > 0) ? (
-        <div className="seg" title="Language-server diagnostics in this file">
+        <div className="seg" title={LL.editor.lsp.status.diagnostics()}>
           {lspDiag.errors > 0 ? (
             <span style={{ color: "var(--del)" }}>✕ {lspDiag.errors}</span>
           ) : null}
@@ -106,10 +124,11 @@ export function PidEditorStatus() {
       ) : null}
 
       {lspServer ? (
-        <div className="seg" title={lspTitle(lspServer)}>
+        <div className="seg" title={lspTitle(LL, lspServer)}>
           <span aria-hidden style={{ color: lspDotColor(lspServer.status) }}>
             ●
           </span>
+          {/* i18n-exempt: the protocol acronym, not a word */}
           <span className="lbl">LSP</span>
         </div>
       ) : null}
@@ -118,12 +137,12 @@ export function PidEditorStatus() {
         type="button"
         className="seg seg-btn"
         onClick={() => setGotoOpen(true)}
-        title="Go to line / column"
+        title={LL.editor.status.gotoTitle()}
       >
-        <span>
-          Ln {cursor.line}, Col {cursor.col}
-        </span>
-        {cursor.selLen > 0 ? <span className="lbl">({cursor.selLen} selected)</span> : null}
+        <span>{LL.editor.status.cursor({ line: cursor.line, col: cursor.col })}</span>
+        {cursor.selLen > 0 ? (
+          <span className="lbl">{LL.editor.status.selected({ count: cursor.selLen })}</span>
+        ) : null}
       </button>
 
       <div className="seg">
@@ -132,16 +151,16 @@ export function PidEditorStatus() {
 
       <RadixDropdown.Root>
         <RadixDropdown.Trigger asChild>
-          <button type="button" className="seg seg-btn" title="Select encoding (reopens the file)">
+          <button type="button" className="seg seg-btn" title={LL.editor.status.encodingTitle()}>
             <span>{encodingLabel}</span>
           </button>
         </RadixDropdown.Trigger>
         <RadixDropdown.Portal>
           <RadixDropdown.Content side="top" align="end" sideOffset={6} className="pid-footer-menu">
             <RadixDropdown.Label className="pid-footer-menu-head">
-              Reopen with Encoding
+              {LL.editor.status.encodingMenuHead()}
             </RadixDropdown.Label>
-            {ENCODINGS.map((e) => (
+            {encodingOptions(LL).map((e) => (
               <RadixDropdown.Item
                 key={e.name}
                 className="pid-footer-menu-item"
@@ -163,7 +182,7 @@ export function PidEditorStatus() {
               <span className="pid-footer-menu-check">
                 {tab.bom ? <Check size={12} aria-hidden /> : null}
               </span>
-              <span>Add BOM</span>
+              <span>{LL.editor.status.addBom()}</span>
             </RadixDropdown.CheckboxItem>
           </RadixDropdown.Content>
         </RadixDropdown.Portal>
@@ -171,13 +190,13 @@ export function PidEditorStatus() {
 
       <RadixDropdown.Root>
         <RadixDropdown.Trigger asChild>
-          <button type="button" className="seg seg-btn" title="Select line separator">
+          <button type="button" className="seg seg-btn" title={LL.editor.status.eolTitle()}>
             <span>{eolLabel(tab.eol)}</span>
           </button>
         </RadixDropdown.Trigger>
         <RadixDropdown.Portal>
           <RadixDropdown.Content side="top" align="end" sideOffset={6} className="pid-footer-menu">
-            {EOLS.map((e) => (
+            {eolOptions(LL).map((e) => (
               <RadixDropdown.Item
                 key={e.value}
                 className="pid-footer-menu-item"
@@ -210,9 +229,9 @@ export function PidEditorStatus() {
         onOpenChange={(o) => {
           if (!o) setPendingEncoding(null);
         }}
-        title="Reopen with different encoding?"
-        description="This file has unsaved changes. Reopening it in another encoding will discard them."
-        confirmLabel="Discard & reopen"
+        title={LL.editor.status.reopenConfirmTitle()}
+        description={LL.editor.status.reopenConfirmBody()}
+        confirmLabel={LL.editor.status.reopenConfirmLabel()}
         destructive
         onConfirm={() => {
           if (pendingEncoding) setEncoding(tab.id, pendingEncoding);

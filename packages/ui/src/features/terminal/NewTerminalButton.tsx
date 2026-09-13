@@ -2,6 +2,7 @@ import type { TerminalShell } from "@pi-deck/core/protocol/commands.js";
 import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import { ChevronDown, Plus, Settings } from "../../components/icons/index.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { useSettingsStore } from "../settings/useSettingsStore.js";
 import { ShellTypeIcon } from "./terminalShellIcon.js";
 import { useDetectedShells } from "./useDetectedShells.js";
@@ -20,6 +21,7 @@ export interface NewTerminalButtonProps {
  * Picking a shell opens a new tab running it; the effective default is marked.
  */
 export function NewTerminalButton({ onNew, disabled }: NewTerminalButtonProps) {
+  const { LL } = useI18nContext();
   const { shells, defaultPath } = useDetectedShells();
   const configuredShell = useTerminalSettingsStore((s) => s.shellPath);
   // What the bare `+` resolves to: the configured shell when set, else the host's default.
@@ -33,11 +35,11 @@ export function NewTerminalButton({ onNew, disabled }: NewTerminalButtonProps) {
 
   return (
     <div className="pid-terminal-tab-new-group">
-      <Tooltip content="New terminal">
+      <Tooltip content={LL.terminal.new.label()}>
         <button
           type="button"
           className="pid-terminal-tab-new"
-          aria-label="New terminal"
+          aria-label={LL.terminal.new.label()}
           disabled={disabled}
           onClick={() => onNew()}
         >
@@ -49,7 +51,7 @@ export function NewTerminalButton({ onNew, disabled }: NewTerminalButtonProps) {
           <button
             type="button"
             className="pid-terminal-tab-new-caret"
-            aria-label="Choose terminal type"
+            aria-label={LL.terminal.new.chooseType()}
             disabled={disabled}
           >
             <ChevronDown size={11} aria-hidden />
@@ -59,7 +61,7 @@ export function NewTerminalButton({ onNew, disabled }: NewTerminalButtonProps) {
           <RadixDropdown.Content align="end" sideOffset={6} className="pid-context-menu">
             {shells.length === 0 ? (
               <RadixDropdown.Item disabled className="pid-context-menu-item">
-                <span className="pid-context-menu-label">No shells detected</span>
+                <span className="pid-context-menu-label">{LL.terminal.new.noShells()}</span>
               </RadixDropdown.Item>
             ) : (
               shells.map((shell) => (
@@ -73,7 +75,9 @@ export function NewTerminalButton({ onNew, disabled }: NewTerminalButtonProps) {
                   </span>
                   <span className="pid-context-menu-label">{shell.label}</span>
                   {shell.kind !== "wsl" && shell.path === effectiveDefault ? (
-                    <span className="pid-context-menu-shortcut">default</span>
+                    <span className="pid-context-menu-shortcut">
+                      {LL.terminal.new.defaultBadge()}
+                    </span>
                   ) : null}
                 </RadixDropdown.Item>
               ))
@@ -83,7 +87,7 @@ export function NewTerminalButton({ onNew, disabled }: NewTerminalButtonProps) {
               <span className="pid-context-menu-icon" aria-hidden>
                 <Settings size={14} aria-hidden />
               </span>
-              <span className="pid-context-menu-label">Terminal settings…</span>
+              <span className="pid-context-menu-label">{LL.terminal.new.settings()}</span>
             </RadixDropdown.Item>
           </RadixDropdown.Content>
         </RadixDropdown.Portal>

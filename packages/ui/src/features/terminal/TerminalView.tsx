@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { mountTerminal, type TerminalRendererHandle } from "./TerminalRenderer.js";
 import { decodeBase64Utf8, encodeBase64Utf8, subscribeTerminalOutput } from "./terminalOutput.js";
@@ -22,6 +23,7 @@ function resolveFontFamily(configured: string): string {
  * running on the host) and remounting repaints from the snapshot.
  */
 export function TerminalView({ tab }: { tab: TerminalTab }) {
+  const { LL } = useI18nContext();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const handleRef = useRef<TerminalRendererHandle | null>(null);
   const terminalIdRef = useRef<string | null>(null);
@@ -149,12 +151,13 @@ export function TerminalView({ tab }: { tab: TerminalTab }) {
         className="pid-terminal-surface"
         onMouseDown={() => handleRef.current?.focus()}
       />
+      {/* i18n-exempt: mirrors the hint core writes into the PTY byte stream (terminal/buffer.ts) */}
       {throttled && <div className="pid-terminal-throttle">[output throttled]</div>}
       {tab.exited && (
         <div className="pid-terminal-exited" role="status">
-          <span>Process exited</span>
+          <span>{LL.terminal.view.exited()}</span>
           <button type="button" onClick={() => setRestartKey((k) => k + 1)}>
-            Restart
+            {LL.terminal.view.restart()}
           </button>
         </div>
       )}

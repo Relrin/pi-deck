@@ -141,24 +141,24 @@ export function PidComposerScreen() {
   const chooseFiles = useCallback(async () => {
     const picker = window.bridge?.openFiles;
     if (!picker) {
-      useNotificationStore.getState().error("File picker unavailable in this build");
+      useNotificationStore.getState().error(LL.intro.errors.filePickerUnavailable());
       return;
     }
     const paths = await picker();
     if (paths.length === 0) return;
     attachAndRemember(paths.map((path) => ({ kind: "file" as const, path })));
-  }, [attachAndRemember]);
+  }, [attachAndRemember, LL]);
 
   const chooseFolder = useCallback(async () => {
     const picker = window.bridge?.openDirectory;
     if (!picker) {
-      useNotificationStore.getState().error("Folder picker unavailable in this build");
+      useNotificationStore.getState().error(LL.intro.errors.folderPickerUnavailable());
       return;
     }
     const path = await picker();
     if (!path) return;
     attachAndRemember([{ kind: "folder", path }]);
-  }, [attachAndRemember]);
+  }, [attachAndRemember, LL]);
 
   const openRepoSearch = useCallback(() => setRepoSearchOpen(true), []);
 
@@ -193,11 +193,11 @@ export function PidComposerScreen() {
 
   const openAnotherFolder = useCallback(() => {
     if (!protocolClient) {
-      useNotificationStore.getState().error("Host not connected");
+      useNotificationStore.getState().error(LL.intro.errors.notConnected());
       return;
     }
     void openProjectFromDialog(protocolClient);
-  }, [openProjectFromDialog, protocolClient]);
+  }, [openProjectFromDialog, protocolClient, LL]);
 
   const refreshGit = useGitStore((s) => s.refresh);
 
@@ -233,15 +233,15 @@ export function PidComposerScreen() {
   );
 
   const projectKicker = activeProject
-    ? `${activeProject.displayName.toUpperCase()} · IDLE`
-    : "PI-DECK · IDLE";
+    ? LL.intro.composer.statusIdle({ name: activeProject.displayName.toUpperCase() })
+    : LL.intro.composer.statusIdleNoProject();
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmed = text.trim();
     if (!trimmed) return;
     if (!activeProjectId) {
-      useNotificationStore.getState().error("Open a project first");
+      useNotificationStore.getState().error(LL.intro.errors.openProjectFirst());
       return;
     }
     const store = useSessionsStore.getState();
@@ -342,23 +342,20 @@ export function PidComposerScreen() {
             </span>
             <span className="pid-composer-hero-kicker">{projectKicker}</span>
           </div>
-          <h1 className="pid-composer-hero-title">What are we shipping today?</h1>
-          <p className="pid-composer-hero-blurb">
-            Drop a task, paste a stack trace, or @-mention a file. pi reads your repo, proposes a
-            plan, and writes code against a fresh branch.
-          </p>
+          <h1 className="pid-composer-hero-title">{LL.intro.hero.titleComposer()}</h1>
+          <p className="pid-composer-hero-blurb">{LL.intro.hero.blurb()}</p>
         </header>
 
         <div className="pid-composer-chip-row">
           <PidChipPicker
             triggerLeading={<Archive size={12} aria-hidden />}
-            ariaLabel="Select workspace"
+            ariaLabel={LL.intro.composer.selectWorkspace()}
             value={activeProjectId ?? ""}
             options={workspaceOptions}
             onChange={(id) => setActiveProject(id)}
-            triggerLabel={activeProject?.displayName ?? "no project"}
+            triggerLabel={activeProject?.displayName ?? LL.intro.composer.noProject()}
             footerAction={{
-              label: "Open another folder…",
+              label: LL.intro.composer.openFolder(),
               icon: <Plus size={12} />,
               onSelect: openAnotherFolder,
             }}
@@ -388,7 +385,7 @@ export function PidComposerScreen() {
                     type="button"
                     className="pid-composer-attachment-remove"
                     onClick={() => removeAttachment(a.path)}
-                    aria-label={`Remove ${a.path}`}
+                    aria-label={LL.intro.composer.removeAttachment({ path: a.path })}
                   >
                     <X size={10} />
                   </button>
@@ -403,7 +400,7 @@ export function PidComposerScreen() {
                   <button
                     type="button"
                     className="pid-composer-attachment-image-trigger"
-                    aria-label={`Preview ${img.name}`}
+                    aria-label={LL.intro.composer.previewImage({ name: img.name })}
                     onClick={() => setPreviewImage(img)}
                   >
                     <img src={img.thumbnailDataUrl} alt={img.name} draggable={false} />
@@ -411,7 +408,7 @@ export function PidComposerScreen() {
                   <button
                     type="button"
                     className="pid-composer-attachment-image-remove"
-                    aria-label={`Remove ${img.name}`}
+                    aria-label={LL.intro.composer.removeImage({ name: img.name })}
                     onClick={() => removeImage(img.id)}
                   >
                     <X size={10} aria-hidden />
@@ -429,7 +426,7 @@ export function PidComposerScreen() {
             />
           )}
           <label className="sr-only" htmlFor="pid-composer-input">
-            New prompt
+            {LL.intro.composer.newPrompt()}
           </label>
           <div className="pid-composer-input-wrap">
             {slash.commandToken && (
@@ -443,7 +440,7 @@ export function PidComposerScreen() {
               id="pid-composer-input"
               ref={textareaRef}
               className="pid-composer-input"
-              placeholder="e.g. 'add a /share button to PostHeader that copies a tracked URL'"
+              placeholder={LL.intro.composer.placeholder()}
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={onComposerKeyDown}
@@ -465,28 +462,28 @@ export function PidComposerScreen() {
             <span className="pid-composer-row-spacer" />
             <PidModelPicker />
             <PidEffortPicker />
-            <Tooltip content="Send message · Enter" side="top">
+            <Tooltip content={LL.intro.composer.sendTooltip()} side="top">
               <button
                 type="submit"
                 className="pid-composer-send"
                 disabled={!text.trim() || !activeProjectId}
-                aria-label="Send message"
+                aria-label={LL.intro.composer.sendLabel()}
                 aria-keyshortcuts="Enter"
               >
                 <Send size={12} aria-hidden />
-                <span>Send</span>
+                <span>{LL.intro.composer.send()}</span>
               </button>
             </Tooltip>
           </div>
         </form>
 
         <div className="pid-composer-templates-wrap">
-          <div className="pid-composer-templates-label">start from a template</div>
+          <div className="pid-composer-templates-label">{LL.intro.templateCards.heading()}</div>
           <div className="pid-composer-templates">
             {templates.map(({ base, effective, overridden }) => {
               const items: ContextMenuItem[] = [
                 {
-                  label: "Edit template…",
+                  label: LL.intro.templateCards.editMenuItem(),
                   icon: <Pencil size={14} />,
                   onSelect: () => setEditingTemplate(base),
                 },
@@ -494,7 +491,7 @@ export function PidComposerScreen() {
               if (overridden) {
                 items.push({ kind: "separator" });
                 items.push({
-                  label: "Reset to default",
+                  label: LL.intro.templateCards.resetMenuItem(),
                   icon: <Undo2 size={14} />,
                   onSelect: () => resetTemplate(base.id),
                 });
@@ -510,7 +507,11 @@ export function PidComposerScreen() {
                     >
                       <span className="pid-composer-template-head">
                         <span className="pid-composer-template-num">{effective.num}</span>
-                        {overridden && <span className="pid-composer-template-badge">edited</span>}
+                        {overridden && (
+                          <span className="pid-composer-template-badge">
+                            {LL.intro.templateCards.edited()}
+                          </span>
+                        )}
                       </span>
                       <span className="pid-composer-template-title">{effective.title}</span>
                       <span className="pid-composer-template-blurb">{effective.blurb}</span>
@@ -521,8 +522,8 @@ export function PidComposerScreen() {
                   <button
                     type="button"
                     className="pid-composer-template-edit"
-                    aria-label={`Edit template: ${effective.title}`}
-                    title="Edit template"
+                    aria-label={LL.intro.templateCards.editLabel({ title: effective.title })}
+                    title={LL.intro.templateCards.editTitle()}
                     onClick={() => setEditingTemplate(base)}
                   >
                     <Pencil size={13} aria-hidden />
@@ -535,7 +536,7 @@ export function PidComposerScreen() {
 
         {recents.length > 0 && (
           <div className="pid-composer-recent">
-            <span className="pid-composer-recent-label">recent</span>
+            <span className="pid-composer-recent-label">{LL.intro.templateCards.recent()}</span>
             {recents.map((session, ix) => (
               <Fragment key={session.id}>
                 {ix > 0 && <span className="pid-composer-recent-sep">·</span>}

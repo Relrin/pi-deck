@@ -1,4 +1,6 @@
+import type { Locale } from "@pi-deck/core";
 import { app, Menu, type MenuItemConstructorOptions, shell } from "electron";
+import { menuStrings } from "./menu-strings";
 
 function buildViewSubmenu(): MenuItemConstructorOptions[] {
   const items: MenuItemConstructorOptions[] = [];
@@ -20,7 +22,9 @@ function buildViewSubmenu(): MenuItemConstructorOptions[] {
   return items;
 }
 
-function buildMacTemplate(): MenuItemConstructorOptions[] {
+function buildMacTemplate(locale: Locale): MenuItemConstructorOptions[] {
+  const copy = menuStrings(locale);
+
   const appName = app.name;
   return [
     {
@@ -38,7 +42,7 @@ function buildMacTemplate(): MenuItemConstructorOptions[] {
       ],
     },
     {
-      label: "Edit",
+      label: copy.edit,
       submenu: [
         { role: "undo" },
         { role: "redo" },
@@ -49,16 +53,16 @@ function buildMacTemplate(): MenuItemConstructorOptions[] {
         { role: "selectAll" },
       ],
     },
-    { label: "View", submenu: buildViewSubmenu() },
+    { label: copy.view, submenu: buildViewSubmenu() },
     {
-      label: "Window",
+      label: copy.window,
       submenu: [{ role: "minimize" }, { role: "zoom" }, { type: "separator" }, { role: "front" }],
     },
     {
       role: "help",
       submenu: [
         {
-          label: "pi-deck on GitHub",
+          label: copy.github,
           click: async () => {
             await shell.openExternal("https://github.com/relrin/pi-deck");
           },
@@ -68,11 +72,12 @@ function buildMacTemplate(): MenuItemConstructorOptions[] {
   ];
 }
 
-function buildDefaultTemplate(): MenuItemConstructorOptions[] {
+function buildDefaultTemplate(locale: Locale): MenuItemConstructorOptions[] {
+  const copy = menuStrings(locale);
   return [
-    { label: "File", submenu: [{ role: "quit" }] },
+    { label: copy.file, submenu: [{ role: "quit" }] },
     {
-      label: "Edit",
+      label: copy.edit,
       submenu: [
         { role: "undo" },
         { role: "redo" },
@@ -83,12 +88,12 @@ function buildDefaultTemplate(): MenuItemConstructorOptions[] {
         { role: "selectAll" },
       ],
     },
-    { label: "View", submenu: buildViewSubmenu() },
+    { label: copy.view, submenu: buildViewSubmenu() },
     {
       role: "help",
       submenu: [
         {
-          label: "pi-deck on GitHub",
+          label: copy.github,
           click: async () => {
             await shell.openExternal("https://github.com/relrin/pi-deck");
           },
@@ -98,7 +103,16 @@ function buildDefaultTemplate(): MenuItemConstructorOptions[] {
   ];
 }
 
-export function installAppMenu(): void {
-  const template = process.platform === "darwin" ? buildMacTemplate() : buildDefaultTemplate();
+/**
+ * Guard against rebuilding for a locale already installed. The renderer pushes its locale on every
+ * bootstrap and on every switch, and `Menu.buildFromTemplate` + `setApplicationMenu` is not free.
+ */
+let installedLocale: Locale | undefined;
+
+export function installAppMenu(locale: Locale): void {
+  if (installedLocale === locale) return;
+  installedLocale = locale;
+  const template =
+    process.platform === "darwin" ? buildMacTemplate(locale) : buildDefaultTemplate(locale);
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }

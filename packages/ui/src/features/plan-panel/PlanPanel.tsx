@@ -81,7 +81,7 @@ export function PlanPanel() {
       <div className="pid-plan-panel" data-testid="plan-panel">
         <div className="pid-plan-panel-empty">
           <MapIcon size={18} aria-hidden />
-          <span>Open a session to see its plan.</span>
+          <span>{LL.plan.panel.empty()}</span>
         </div>
       </div>
     );
@@ -90,7 +90,7 @@ export function PlanPanel() {
   return (
     <div className="pid-plan-panel" data-testid="plan-panel">
       <div className="pid-plan-panel-header">
-        <span>Plan</span>
+        <span>{LL.plan.panel.title()}</span>
         <div className="pid-plan-panel-header-actions">
           {plan.filePath && (
             <span className="pid-plan-panel-path" title={plan.filePath}>
@@ -98,10 +98,10 @@ export function PlanPanel() {
             </span>
           )}
           {plan.fileContent && plan.fileContent.length > 0 && (
-            <Tooltip content={copied ? "Copied!" : "Copy as Markdown"}>
+            <Tooltip content={copied ? LL.plan.panel.copied() : LL.plan.panel.copy()}>
               <PidIconButton
                 icon={copied ? <Check size={14} /> : <Copy size={14} />}
-                label="Copy plan as Markdown"
+                label={LL.plan.panel.copyLabel()}
                 onClick={handleCopy}
               />
             </Tooltip>
@@ -110,9 +110,7 @@ export function PlanPanel() {
       </div>
       {progress.total > 0 && (
         <div className="pid-plan-panel-progress">
-          <span>
-            {progress.done} of {progress.total} done
-          </span>
+          <span>{LL.plan.panel.progress({ done: progress.done, total: progress.total })}</span>
           {progress.current && (
             <span className="pid-plan-panel-progress-current">
               {progress.current.label ?? LL.plan.panel.inProgressFallback()}
@@ -126,10 +124,7 @@ export function PlanPanel() {
         ) : (
           <div className="pid-plan-panel-empty">
             <MapIcon size={18} aria-hidden />
-            <span>
-              No plan yet. Switch the composer to plan mode and send a prompt — the agent will write
-              the plan here.
-            </span>
+            <span>{LL.plan.panel.noPlan()}</span>
           </div>
         )}
       </div>

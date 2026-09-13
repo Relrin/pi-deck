@@ -1,1 +1,1 @@
-bunx lint-staged && bun run type-check
+bunx lint-staged && bun run type-check && bun run i18n:check

@@ -256,8 +256,8 @@ export function McpServersSection() {
               config: slot("config"),
             }),
             {
-              adapter: <code>pi-mcp-adapter</code>,
-              proxy: <code>mcp</code>,
+              adapter: <code>pi-mcp-adapter</code>, // i18n-exempt: the npm package name
+              proxy: <code>mcp</code>, // i18n-exempt: pi's own tool name
               config: <code>.pi/mcp.json</code>,
             },
           )}
@@ -297,6 +297,7 @@ export function McpServersSection() {
           {!adapter?.installed && (
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}>
               {rich(LL.settings.mcp.adapter.installWith({ cmd: slot("cmd") }), {
+                // i18n-exempt: the literal command the user would type
                 cmd: <code>pi install npm:pi-mcp-adapter@2.10.0</code>,
               })}
             </span>
@@ -994,7 +995,9 @@ function McpServerRow({
             {server.name}
           </span>
           <Chip>{lifecycle}</Chip>
-          {expose === "direct" && <Chip tone="accent">direct</Chip>}
+          {expose === "direct" && (
+            <Chip tone="accent">{LL.settings.mcp.config.direct().toLowerCase()}</Chip>
+          )}
           {server.auth && <Chip>{server.auth}</Chip>}
           {server.source === "project" && <Chip>{LL.settings.mcp.chip.projectFile()}</Chip>}
         </div>

@@ -96,7 +96,19 @@ type RootTranslation = {
 			fileCount: RequiredParams<'count'>
 			filesChanged: string
 			turnSuffix: RequiredParams<'count'>
+			cta: string
+			title: string
+			rejectAll: string
+			acceptAll: string
+			close: string
+			selectFile: string
+			loadingDiff: string
+			fileList: string
+			rejectFile: RequiredParams<'path'>
+			acceptFile: RequiredParams<'path'>
 		}
+		authorYou: string
+		selectModel: string
 		tools: {
 			moreLines: RequiredParams<'count'>
 			editCount: RequiredParams<'count'>
@@ -306,6 +318,12 @@ type RootTranslation = {
 		}
 		ask: {
 			sendChoices: RequiredParams<'count'>
+			yourAnswer: string
+			backToOptions: string
+			addMissing: string
+			addMissingHint: string
+			previewBadge: string
+			noPreview: string
 			eyebrow: string
 			eyebrowResolved: string
 			awaitingPick: string
@@ -320,7 +338,7 @@ type RootTranslation = {
 			pickHint: RequiredParams<'enter' | 'from' | 'to'>
 			toggleHint: RequiredParams<'from' | 'to'>
 			previewHint: RequiredParams<'down' | 'enter' | 'up'>
-			nextHint: RequiredParams<'enter'>
+			pickNextHint: RequiredParams<'enter' | 'from' | 'to'>
 			sendPick: string
 			sendCustom: string
 			choose: RequiredParams<'label'>
@@ -372,16 +390,265 @@ type RootTranslation = {
 				timedOut: string
 			}
 		}
-		diff: {
-			commitFiles: RequiredParams<'count'>
-			revertAllConfirm: RequiredParams<'count'>
+	}
+	context: {
+		empty: string
+		window: {
+			label: string
+			totals: RequiredParams<'total' | 'used'>
+			usage: RequiredParams<'percent'>
+			legend: {
+				system: string
+				project: string
+				chat: string
+				tools: string
+				mcp: string
+				free: string
+			}
+			tooltip: {
+				system: RequiredParams<'tokens'>
+				project: RequiredParams<'tokens'>
+				messages: RequiredParams<'tokens'>
+				tools: RequiredParams<'tokens'>
+				mcp: RequiredParams<'tokens'>
+				free: RequiredParams<'tokens'>
+			}
 		}
-		files: {
-			confirmDeleteTitle: RequiredParams<'count'>
-			moreItems: RequiredParams<'count'>
+		scope: {
+			label: RequiredParams<'count'>
+			empty: string
+		}
+		artefacts: {
+			label: RequiredParams<'count'>
+			empty: string
+		}
+		tag: {
+			file: string
+			folder: string
+			repoRef: string
+		}
+		row: {
+			openTitle: string
+			open: RequiredParams<'path'>
+			revealTitle: string
+			reveal: RequiredParams<'path'>
+		}
+		errors: {
+			openUnsupported: string
+			openFailed: string
+			revealUnsupported: string
+			revealFailed: string
+		}
+	}
+	diff: {
+		commitFiles: RequiredParams<'count'>
+		revertAllConfirm: RequiredParams<'count'>
+		tab: {
+			pickFile: string
+			loading: string
+			noChanges: string
+		}
+		nav: {
+			label: string
+			prevDiff: string
+			nextDiff: string
+			jumpToSource: string
+			prevFile: string
+			nextFile: string
+		}
+		toolbar: {
+			label: string
+			switchToUnified: string
+			switchToSplit: string
+			layoutSplitTitle: string
+			layoutUnifiedTitle: string
+			backgroundDisable: string
+			backgroundEnable: string
+			backgroundOnTitle: string
+			backgroundOffTitle: string
+			highlight: string
+			lineDiff: {
+				wordAlt: {
+					label: string
+					description: string
+				}
+				word: {
+					label: string
+					description: string
+				}
+				char: {
+					label: string
+					description: string
+				}
+				none: {
+					label: string
+					description: string
+				}
+			}
+		}
+		changeset: {
+			eyebrow: string
+			fileCount: RequiredParams<'count'>
+			revertAll: string
+			revertAllNothing: string
+			revertAllTitle: string
+			stageHunks: string
+			stageNothing: string
+			stageTitle: string
+			commit: string
+			commitNothing: string
+			commitTitle: string
+			confirmTitle: string
+			confirmLabel: string
 		}
 	}
 	editor: {
+		empty: {
+			title: string
+			hint: string
+		}
+		overlay: {
+			loading: string
+			openFailed: string
+			binary: string
+			tooLarge: string
+		}
+		tabs: {
+			label: string
+			unsaved: string
+			close: RequiredParams<'name'>
+			overflow: RequiredParams<'count'>
+		}
+		status: {
+			gotoTitle: string
+			cursor: RequiredParams<'col' | 'line'>
+			selected: RequiredParams<'count'>
+			indentTabs: RequiredParams<'width'>
+			indentSpaces: RequiredParams<'width'>
+			encodingTitle: string
+			encodingMenuHead: string
+			bomSuffix: string
+			addBom: string
+			eolTitle: string
+			eolHintLf: string
+			eolHintCrlf: string
+			reopenConfirmTitle: string
+			reopenConfirmBody: string
+			reopenConfirmLabel: string
+			encoding: {
+				utf8: string
+				utf16le: string
+				utf16be: string
+				win1252: string
+				latin1: string
+				ascii: string
+			}
+		}
+		goto: {
+			title: string
+			description: string
+			placeholder: string
+			label: string
+			submit: string
+		}
+		blockToolbar: {
+			label: string
+			prev: string
+			next: string
+			revert: string
+			showDiff: string
+		}
+		minimap: {
+			jumpTo: {
+				add: string
+				mod: string
+				del: string
+			}
+			kind: {
+				add: string
+				mod: string
+				del: string
+			}
+		}
+		lsp: {
+			status: {
+				ready: string
+				starting: string
+				missing: string
+				missingWithHint: RequiredParams<'hint'>
+				crashed: RequiredParams<'reason'>
+				crashedFallback: string
+				disabled: string
+				diagnostics: string
+			}
+			dialog: {
+				addTitle: string
+				editTitle: RequiredParams<'label'>
+				description: string
+				presetLabel: string
+				presetBlank: string
+				fieldLabel: string
+				fieldId: string
+				fieldIdHint: string
+				fieldCommand: string
+				fieldArgs: string
+				fieldLanguageIds: string
+				fieldLanguageIdsHint: RequiredParams<'code'>
+				fieldExtensions: string
+				fieldExtensionsHint: RequiredParams<'bare' | 'qualified'>
+				fieldInstallHint: string
+				fieldInstallHintHint: string
+				submitting: string
+				saveChanges: string
+				addServer: string
+				saveFailed: string
+			}
+			crashToast: {
+				title: RequiredParams<'server'>
+				body: string
+			}
+		}
+		errors: {
+			save: string
+			open: string
+			notConnected: string
+		}
+	}
+	files: {
+		confirmDeleteTitle: RequiredParams<'count'>
+		moreItems: RequiredParams<'count'>
+		confirmDeleteDescription: string
+		confirmDeleteBusy: string
+		confirmDelete: string
+		tree: {
+			label: string
+		}
+		search: {
+			placeholder: string
+			label: string
+			clear: string
+		}
+		menu: {
+			showDiff: string
+			newFile: string
+			newFolder: string
+			attachToChat: string
+			rename: string
+			moveToTrash: string
+		}
+		empty: {
+			noProject: string
+			emptyProject: string
+			noMatches: string
+			error: string
+		}
+		errors: {
+			create: string
+			rename: string
+			move: string
+			trash: string
+			load: string
+		}
 	}
 	format: {
 		justNow: string
@@ -496,6 +763,113 @@ type RootTranslation = {
 			noFilesSelected: string
 			copiedToClipboard: RequiredParams<'name'>
 		}
+		sidebar: {
+			noSession: string
+			loading: string
+			noData: string
+		}
+		empty: {
+			title: string
+			blurb: string
+			init: string
+		}
+		branch: {
+			sectionLabel: string
+			noRemote: string
+			pull: string
+			push: string
+			openPr: string
+			disabledTooltip: RequiredParams<'label' | 'reason'>
+			disabledLabel: RequiredParams<'label' | 'reason'>
+		}
+		picker: {
+			select: string
+			copyName: string
+			current: string
+			recent: string
+			merged: string
+			searchPlaceholder: string
+			searchLabel: string
+			newBranchPlaceholder: RequiredParams<'branch'>
+			newBranchLabel: RequiredParams<'branch'>
+			loadFailed: RequiredParams<'error'>
+			loading: string
+			none: string
+			noneYet: string
+			noMatches: RequiredParams<'query'>
+		}
+		changes: {
+			sectionLabel: string
+			stageAll: string
+			stageAllTitle: string
+			clean: string
+			toggleHunk: RequiredParams<'index' | 'total'>
+			hunkMeta: RequiredParams<'index' | 'range' | 'total'>
+			group: {
+				added: string
+				modified: string
+				deleted: string
+				untracked: string
+			}
+		}
+		row: {
+			touched: RequiredParams<'path'>
+			stage: RequiredParams<'path'>
+			openInEditor: string
+			rollback: string
+		}
+		toolbar: {
+			label: string
+			refresh: string
+			refreshTitle: string
+			rollback: string
+			rollbackTitle: string
+			rollbackTitleEmpty: string
+			stash: string
+			stashTitleSelected: string
+			stashTitleAll: string
+			apply: string
+			applyTitle: string
+		}
+		composer: {
+			sectionLabel: string
+			placeholder: string
+			amend: string
+			forcePush: string
+			forceWithLeaseFlag: string
+			commit: string
+			commitPush: string
+			submit: string
+			submitDisabled: string
+			submitPush: string
+		}
+		groupMenu: {
+			label: string
+			header: string
+			trigger: RequiredParams<'value'>
+			option: {
+				file: {
+					label: string
+					description: string
+					value: string
+				}
+				hunk: {
+					label: string
+					description: string
+					value: string
+				}
+				change: {
+					label: string
+					description: string
+					value: string
+				}
+				folder: {
+					label: string
+					description: string
+					value: string
+				}
+			}
+		}
 	}
 	intro: {
 		templates: {
@@ -530,6 +904,202 @@ type RootTranslation = {
 				body: string
 			}
 		}
+		hero: {
+			titleComposer: string
+			titleIntro: string
+			blurb: string
+		}
+		composer: {
+			newPrompt: string
+			placeholder: string
+			send: string
+			sendLabel: string
+			sendTooltip: string
+			dispatch: string
+			dispatchLabel: string
+			dispatchTooltip: string
+			or: string
+			newSession: string
+			statusIdle: RequiredParams<'name'>
+			statusIdleNoProject: string
+			noProject: string
+			projectBranch: RequiredParams<'name'>
+			noProjectBranch: string
+			selectWorkspace: string
+			openFolder: string
+			removeAttachment: RequiredParams<'path'>
+			previewImage: RequiredParams<'name'>
+			removeImage: RequiredParams<'name'>
+		}
+		templateCards: {
+			heading: string
+			edited: string
+			editTitle: string
+			editLabel: RequiredParams<'title'>
+			editMenuItem: string
+			resetMenuItem: string
+			recent: string
+		}
+		editDialog: {
+			title: string
+			description: string
+			fieldTitle: string
+			fieldBlurb: string
+			fieldPrompt: string
+			promptHint: string
+			reset: string
+			apply: string
+		}
+		agentMode: {
+			label: string
+			header: string
+			ask: {
+				label: string
+				blurb: string
+			}
+			acceptEdits: {
+				label: string
+				blurb: string
+			}
+			auto: {
+				label: string
+				blurb: string
+			}
+			plan: {
+				label: string
+				blurb: string
+			}
+		}
+		effort: {
+			label: string
+			header: string
+			low: string
+			medium: string
+			high: string
+		}
+		attachments: {
+			label: string
+			header: string
+			addFiles: string
+			addImage: string
+			addImageHint: string
+			addFolder: string
+			fromRepo: string
+			recent: string
+			current: string
+		}
+		branch: {
+			label: string
+			header: string
+			searchPlaceholder: string
+			searchLabel: string
+			create: string
+			none: string
+			noMatches: string
+		}
+		modelPicker: {
+			label: string
+			searchPlaceholder: string
+			noMatches: string
+			defaultBadge: string
+			fallback: string
+		}
+		repoSearch: {
+			title: string
+			description: RequiredParams<'max'>
+			searchLabel: string
+			placeholderLoading: string
+			placeholder: string
+			close: string
+			loading: string
+			noFiles: string
+			noMatches: string
+			navHint: string
+			selected: RequiredParams<'count' | 'max'>
+			add: string
+			addCount: RequiredParams<'count'>
+			loadFailed: string
+		}
+		errors: {
+			filePickerUnavailable: string
+			folderPickerUnavailable: string
+			notConnected: string
+			openProjectFirst: string
+		}
+	}
+	models: {
+		picker: {
+			title: string
+			close: string
+		}
+		providers: {
+			heading: string
+			custom: string
+			addCustom: string
+			addCustomLabel: string
+			state: {
+				authenticated: string
+				needsKey: string
+				unreachable: string
+			}
+		}
+		list: {
+			pickProvider: string
+			needsKey: RequiredParams<'provider'>
+			addKey: string
+			filter: string
+			loading: string
+			noMatches: string
+			noModels: string
+			chipContext: string
+			chipPriceIn: string
+			chipPriceOut: string
+			chipThinking: string
+		}
+		addProvider: {
+			eyebrow: string
+			title: string
+			description: string
+			escHint: string
+			search: string
+			allConfigured: string
+			noMatches: string
+			addKey: string
+			available: RequiredParams<'count'>
+			keysSavedTo: RequiredParams<'path'>
+		}
+		authenticate: {
+			title: RequiredParams<'provider'>
+			titleFallback: string
+			description: string
+			apiKey: string
+			storageHint: RequiredParams<'path'>
+			oauthTitle: string
+			oauth: RequiredParams<'provider'>
+			submitting: string
+			submit: string
+			saveFailed: string
+		}
+		addCustom: {
+			title: string
+			description: string
+			name: string
+			baseUrl: string
+			apiKind: string
+			apiKey: string
+			apiKeyPlaceholder: string
+			defaultModel: string
+			defaultModelHint: RequiredParams<'path'>
+			submitting: string
+			submit: string
+			saveFailed: string
+		}
+		errors: {
+			loadProviders: string
+			loadModels: string
+			switchModel: string
+			setThinkingLevel: string
+		}
 	}
 	plan: {
 		continuation: string
@@ -538,12 +1108,106 @@ type RootTranslation = {
 			closing: string
 		}
 		panel: {
+			empty: string
+			title: string
+			copied: string
+			copy: string
+			copyLabel: string
+			progress: RequiredParams<'done' | 'total'>
+			noPlan: string
 			inProgressFallback: string
 		}
 	}
 	sessions: {
 		filter: {
 			selectedCount: RequiredParams<'count'>
+			label: string
+			controls: string
+			searchPlaceholder: string
+			projectPlaceholder: string
+			all: string
+			noMatches: string
+			defaults: string
+			activeCount: RequiredParams<'count'>
+			reset: string
+			done: string
+			summaryAll: string
+			summaryNone: string
+			section: {
+				project: string
+				since: string
+				sort: string
+				group: string
+			}
+			since: {
+				all: string
+			}
+			sort: {
+				recent: string
+				created: string
+				branch: string
+				status: string
+			}
+			group: {
+				workspace: string
+				branch: string
+				status: string
+				flat: string
+			}
+		}
+		title: {
+			'new': string
+		}
+		newButton: {
+			label: string
+			disabled: string
+			caption: string
+		}
+		list: {
+			archive: string
+			showLess: string
+			showMore: RequiredParams<'count'>
+			noProjects: string
+			noProjectsMatch: string
+		}
+		row: {
+			title: string
+			status: {
+				working: string
+				waiting: string
+				done: string
+				failed: string
+			}
+			menu: {
+				markCompleted: string
+				rename: string
+				unarchive: string
+				archive: string
+				'delete': string
+			}
+			confirmDeleteTitle: string
+			confirmDeleteBody: RequiredParams<'title'>
+			confirmDeleteLabel: string
+		}
+		errors: {
+			loadWorkspace: string
+			loadSessions: string
+			createSession: string
+			loadArchived: string
+			archive: string
+			unarchive: string
+			rename: string
+			'delete': string
+			open: string
+			sendPrompt: string
+			cancel: string
+			forceStop: string
+			fork: string
+			rewind: string
+			openProject: string
+			loadProjects: string
+			noBridge: string
+			noConnectionInfo: string
 		}
 	}
 	settings: {
@@ -907,6 +1571,7 @@ type RootTranslation = {
 				exposure: string
 				proxy: string
 				direct: string
+				directChip: string
 				exposeDirectCount: RequiredParams<'count'>
 				exposeDirectCountTokens: RequiredParams<'count' | 'tokens'>
 				exposeDirect: string
@@ -949,6 +1614,7 @@ type RootTranslation = {
 				searching: string
 				unreachable: string
 				noMatch: RequiredParams<'query'>
+				shownCount: RequiredParams<'count'>
 				loadMore: string
 				loading: string
 				installsTo: RequiredParams<'path'>
@@ -963,6 +1629,7 @@ type RootTranslation = {
 				tag: string
 			}
 		}
+		escBadge: string
 		skills: {
 			kicker: string
 			title: string
@@ -1095,6 +1762,46 @@ type RootTranslation = {
 		}
 	}
 	terminal: {
+		'new': {
+			label: string
+			chooseType: string
+			noShells: string
+			defaultBadge: string
+			settings: string
+		}
+		tabs: {
+			label: string
+			rename: string
+			close: RequiredParams<'name'>
+			closePanel: string
+		}
+		view: {
+			exited: string
+			restart: string
+			starting: string
+			noProject: string
+		}
+	}
+	tools: {
+		session: {
+			title: string
+			titleWithCount: RequiredParams<'count'>
+			blurb: string
+		}
+		allOffWarning: string
+		toggle: {
+			enabled: RequiredParams<'tool'>
+			disabled: RequiredParams<'tool'>
+		}
+		catalog: {
+			read: string
+			bash: string
+			edit: string
+			write: string
+		}
+		errors: {
+			update: string
+		}
 	}
 }
 
@@ -1181,7 +1888,19 @@ export type TranslationFunctions = {
 			fileCount: (arg: { count: number }) => LocalizedString
 			filesChanged: (arg: { count: number | string | boolean }) => LocalizedString
 			turnSuffix: (arg: { count: number }) => LocalizedString
+			cta: () => LocalizedString
+			title: () => LocalizedString
+			rejectAll: () => LocalizedString
+			acceptAll: () => LocalizedString
+			close: () => LocalizedString
+			selectFile: () => LocalizedString
+			loadingDiff: () => LocalizedString
+			fileList: () => LocalizedString
+			rejectFile: (arg: { path: string }) => LocalizedString
+			acceptFile: (arg: { path: string }) => LocalizedString
 		}
+		authorYou: () => LocalizedString
+		selectModel: () => LocalizedString
 		tools: {
 			moreLines: (arg: { count: number }) => LocalizedString
 			editCount: (arg: { count: number }) => LocalizedString
@@ -1391,6 +2110,12 @@ export type TranslationFunctions = {
 		}
 		ask: {
 			sendChoices: (arg: { count: number }) => LocalizedString
+			yourAnswer: () => LocalizedString
+			backToOptions: () => LocalizedString
+			addMissing: () => LocalizedString
+			addMissingHint: () => LocalizedString
+			previewBadge: () => LocalizedString
+			noPreview: () => LocalizedString
 			eyebrow: () => LocalizedString
 			eyebrowResolved: () => LocalizedString
 			awaitingPick: () => LocalizedString
@@ -1405,7 +2130,7 @@ export type TranslationFunctions = {
 			pickHint: (arg: { enter: string, from: string, to: string }) => LocalizedString
 			toggleHint: (arg: { from: string, to: string }) => LocalizedString
 			previewHint: (arg: { down: string, enter: string, up: string }) => LocalizedString
-			nextHint: (arg: { enter: string }) => LocalizedString
+			pickNextHint: (arg: { enter: string, from: string, to: string }) => LocalizedString
 			sendPick: () => LocalizedString
 			sendCustom: () => LocalizedString
 			choose: (arg: { label: string }) => LocalizedString
@@ -1457,16 +2182,265 @@ export type TranslationFunctions = {
 				timedOut: () => LocalizedString
 			}
 		}
-		diff: {
-			commitFiles: (arg: { count: number }) => LocalizedString
-			revertAllConfirm: (arg: { count: number }) => LocalizedString
+	}
+	context: {
+		empty: () => LocalizedString
+		window: {
+			label: () => LocalizedString
+			totals: (arg: { total: string, used: string }) => LocalizedString
+			usage: (arg: { percent: number }) => LocalizedString
+			legend: {
+				system: () => LocalizedString
+				project: () => LocalizedString
+				chat: () => LocalizedString
+				tools: () => LocalizedString
+				mcp: () => LocalizedString
+				free: () => LocalizedString
+			}
+			tooltip: {
+				system: (arg: { tokens: string }) => LocalizedString
+				project: (arg: { tokens: string }) => LocalizedString
+				messages: (arg: { tokens: string }) => LocalizedString
+				tools: (arg: { tokens: string }) => LocalizedString
+				mcp: (arg: { tokens: string }) => LocalizedString
+				free: (arg: { tokens: string }) => LocalizedString
+			}
 		}
-		files: {
-			confirmDeleteTitle: (arg: { count: number }) => LocalizedString
-			moreItems: (arg: { count: number }) => LocalizedString
+		scope: {
+			label: (arg: { count: number }) => LocalizedString
+			empty: () => LocalizedString
+		}
+		artefacts: {
+			label: (arg: { count: number }) => LocalizedString
+			empty: () => LocalizedString
+		}
+		tag: {
+			file: () => LocalizedString
+			folder: () => LocalizedString
+			repoRef: () => LocalizedString
+		}
+		row: {
+			openTitle: () => LocalizedString
+			open: (arg: { path: string }) => LocalizedString
+			revealTitle: () => LocalizedString
+			reveal: (arg: { path: string }) => LocalizedString
+		}
+		errors: {
+			openUnsupported: () => LocalizedString
+			openFailed: () => LocalizedString
+			revealUnsupported: () => LocalizedString
+			revealFailed: () => LocalizedString
+		}
+	}
+	diff: {
+		commitFiles: (arg: { count: number }) => LocalizedString
+		revertAllConfirm: (arg: { count: number }) => LocalizedString
+		tab: {
+			pickFile: () => LocalizedString
+			loading: () => LocalizedString
+			noChanges: () => LocalizedString
+		}
+		nav: {
+			label: () => LocalizedString
+			prevDiff: () => LocalizedString
+			nextDiff: () => LocalizedString
+			jumpToSource: () => LocalizedString
+			prevFile: () => LocalizedString
+			nextFile: () => LocalizedString
+		}
+		toolbar: {
+			label: () => LocalizedString
+			switchToUnified: () => LocalizedString
+			switchToSplit: () => LocalizedString
+			layoutSplitTitle: () => LocalizedString
+			layoutUnifiedTitle: () => LocalizedString
+			backgroundDisable: () => LocalizedString
+			backgroundEnable: () => LocalizedString
+			backgroundOnTitle: () => LocalizedString
+			backgroundOffTitle: () => LocalizedString
+			highlight: () => LocalizedString
+			lineDiff: {
+				wordAlt: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+				word: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+				char: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+				none: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+			}
+		}
+		changeset: {
+			eyebrow: () => LocalizedString
+			fileCount: (arg: { count: number }) => LocalizedString
+			revertAll: () => LocalizedString
+			revertAllNothing: () => LocalizedString
+			revertAllTitle: () => LocalizedString
+			stageHunks: () => LocalizedString
+			stageNothing: () => LocalizedString
+			stageTitle: () => LocalizedString
+			commit: () => LocalizedString
+			commitNothing: () => LocalizedString
+			commitTitle: () => LocalizedString
+			confirmTitle: () => LocalizedString
+			confirmLabel: () => LocalizedString
 		}
 	}
 	editor: {
+		empty: {
+			title: () => LocalizedString
+			hint: () => LocalizedString
+		}
+		overlay: {
+			loading: () => LocalizedString
+			openFailed: () => LocalizedString
+			binary: () => LocalizedString
+			tooLarge: () => LocalizedString
+		}
+		tabs: {
+			label: () => LocalizedString
+			unsaved: () => LocalizedString
+			close: (arg: { name: string }) => LocalizedString
+			overflow: (arg: { count: number }) => LocalizedString
+		}
+		status: {
+			gotoTitle: () => LocalizedString
+			cursor: (arg: { col: number, line: number }) => LocalizedString
+			selected: (arg: { count: number }) => LocalizedString
+			indentTabs: (arg: { width: number }) => LocalizedString
+			indentSpaces: (arg: { width: number }) => LocalizedString
+			encodingTitle: () => LocalizedString
+			encodingMenuHead: () => LocalizedString
+			bomSuffix: () => LocalizedString
+			addBom: () => LocalizedString
+			eolTitle: () => LocalizedString
+			eolHintLf: () => LocalizedString
+			eolHintCrlf: () => LocalizedString
+			reopenConfirmTitle: () => LocalizedString
+			reopenConfirmBody: () => LocalizedString
+			reopenConfirmLabel: () => LocalizedString
+			encoding: {
+				utf8: () => LocalizedString
+				utf16le: () => LocalizedString
+				utf16be: () => LocalizedString
+				win1252: () => LocalizedString
+				latin1: () => LocalizedString
+				ascii: () => LocalizedString
+			}
+		}
+		goto: {
+			title: () => LocalizedString
+			description: () => LocalizedString
+			placeholder: () => LocalizedString
+			label: () => LocalizedString
+			submit: () => LocalizedString
+		}
+		blockToolbar: {
+			label: () => LocalizedString
+			prev: () => LocalizedString
+			next: () => LocalizedString
+			revert: () => LocalizedString
+			showDiff: () => LocalizedString
+		}
+		minimap: {
+			jumpTo: {
+				add: () => LocalizedString
+				mod: () => LocalizedString
+				del: () => LocalizedString
+			}
+			kind: {
+				add: () => LocalizedString
+				mod: () => LocalizedString
+				del: () => LocalizedString
+			}
+		}
+		lsp: {
+			status: {
+				ready: () => LocalizedString
+				starting: () => LocalizedString
+				missing: () => LocalizedString
+				missingWithHint: (arg: { hint: string }) => LocalizedString
+				crashed: (arg: { reason: string }) => LocalizedString
+				crashedFallback: () => LocalizedString
+				disabled: () => LocalizedString
+				diagnostics: () => LocalizedString
+			}
+			dialog: {
+				addTitle: () => LocalizedString
+				editTitle: (arg: { label: string }) => LocalizedString
+				description: () => LocalizedString
+				presetLabel: () => LocalizedString
+				presetBlank: () => LocalizedString
+				fieldLabel: () => LocalizedString
+				fieldId: () => LocalizedString
+				fieldIdHint: () => LocalizedString
+				fieldCommand: () => LocalizedString
+				fieldArgs: () => LocalizedString
+				fieldLanguageIds: () => LocalizedString
+				fieldLanguageIdsHint: (arg: { code: string }) => LocalizedString
+				fieldExtensions: () => LocalizedString
+				fieldExtensionsHint: (arg: { bare: string, qualified: string }) => LocalizedString
+				fieldInstallHint: () => LocalizedString
+				fieldInstallHintHint: () => LocalizedString
+				submitting: () => LocalizedString
+				saveChanges: () => LocalizedString
+				addServer: () => LocalizedString
+				saveFailed: () => LocalizedString
+			}
+			crashToast: {
+				title: (arg: { server: string }) => LocalizedString
+				body: () => LocalizedString
+			}
+		}
+		errors: {
+			save: () => LocalizedString
+			open: () => LocalizedString
+			notConnected: () => LocalizedString
+		}
+	}
+	files: {
+		confirmDeleteTitle: (arg: { count: number }) => LocalizedString
+		moreItems: (arg: { count: number }) => LocalizedString
+		confirmDeleteDescription: () => LocalizedString
+		confirmDeleteBusy: () => LocalizedString
+		confirmDelete: () => LocalizedString
+		tree: {
+			label: () => LocalizedString
+		}
+		search: {
+			placeholder: () => LocalizedString
+			label: () => LocalizedString
+			clear: () => LocalizedString
+		}
+		menu: {
+			showDiff: () => LocalizedString
+			newFile: () => LocalizedString
+			newFolder: () => LocalizedString
+			attachToChat: () => LocalizedString
+			rename: () => LocalizedString
+			moveToTrash: () => LocalizedString
+		}
+		empty: {
+			noProject: () => LocalizedString
+			emptyProject: () => LocalizedString
+			noMatches: () => LocalizedString
+			error: () => LocalizedString
+		}
+		errors: {
+			create: () => LocalizedString
+			rename: () => LocalizedString
+			move: () => LocalizedString
+			trash: () => LocalizedString
+			load: () => LocalizedString
+		}
 	}
 	format: {
 		justNow: () => LocalizedString
@@ -1581,6 +2555,113 @@ export type TranslationFunctions = {
 			noFilesSelected: () => LocalizedString
 			copiedToClipboard: (arg: { name: string }) => LocalizedString
 		}
+		sidebar: {
+			noSession: () => LocalizedString
+			loading: () => LocalizedString
+			noData: () => LocalizedString
+		}
+		empty: {
+			title: () => LocalizedString
+			blurb: () => LocalizedString
+			init: () => LocalizedString
+		}
+		branch: {
+			sectionLabel: () => LocalizedString
+			noRemote: () => LocalizedString
+			pull: () => LocalizedString
+			push: () => LocalizedString
+			openPr: () => LocalizedString
+			disabledTooltip: (arg: { label: string, reason: string }) => LocalizedString
+			disabledLabel: (arg: { label: string, reason: string }) => LocalizedString
+		}
+		picker: {
+			select: () => LocalizedString
+			copyName: () => LocalizedString
+			current: () => LocalizedString
+			recent: () => LocalizedString
+			merged: () => LocalizedString
+			searchPlaceholder: () => LocalizedString
+			searchLabel: () => LocalizedString
+			newBranchPlaceholder: (arg: { branch: string }) => LocalizedString
+			newBranchLabel: (arg: { branch: string }) => LocalizedString
+			loadFailed: (arg: { error: string }) => LocalizedString
+			loading: () => LocalizedString
+			none: () => LocalizedString
+			noneYet: () => LocalizedString
+			noMatches: (arg: { query: string }) => LocalizedString
+		}
+		changes: {
+			sectionLabel: () => LocalizedString
+			stageAll: () => LocalizedString
+			stageAllTitle: () => LocalizedString
+			clean: () => LocalizedString
+			toggleHunk: (arg: { index: number, total: number }) => LocalizedString
+			hunkMeta: (arg: { index: number, range: string, total: number }) => LocalizedString
+			group: {
+				added: () => LocalizedString
+				modified: () => LocalizedString
+				deleted: () => LocalizedString
+				untracked: () => LocalizedString
+			}
+		}
+		row: {
+			touched: (arg: { path: string }) => LocalizedString
+			stage: (arg: { path: string }) => LocalizedString
+			openInEditor: () => LocalizedString
+			rollback: () => LocalizedString
+		}
+		toolbar: {
+			label: () => LocalizedString
+			refresh: () => LocalizedString
+			refreshTitle: () => LocalizedString
+			rollback: () => LocalizedString
+			rollbackTitle: () => LocalizedString
+			rollbackTitleEmpty: () => LocalizedString
+			stash: () => LocalizedString
+			stashTitleSelected: () => LocalizedString
+			stashTitleAll: () => LocalizedString
+			apply: () => LocalizedString
+			applyTitle: () => LocalizedString
+		}
+		composer: {
+			sectionLabel: () => LocalizedString
+			placeholder: () => LocalizedString
+			amend: () => LocalizedString
+			forcePush: () => LocalizedString
+			forceWithLeaseFlag: () => LocalizedString
+			commit: () => LocalizedString
+			commitPush: () => LocalizedString
+			submit: () => LocalizedString
+			submitDisabled: () => LocalizedString
+			submitPush: () => LocalizedString
+		}
+		groupMenu: {
+			label: () => LocalizedString
+			header: () => LocalizedString
+			trigger: (arg: { value: string }) => LocalizedString
+			option: {
+				file: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+					value: () => LocalizedString
+				}
+				hunk: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+					value: () => LocalizedString
+				}
+				change: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+					value: () => LocalizedString
+				}
+				folder: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+					value: () => LocalizedString
+				}
+			}
+		}
 	}
 	intro: {
 		templates: {
@@ -1615,6 +2696,202 @@ export type TranslationFunctions = {
 				body: () => LocalizedString
 			}
 		}
+		hero: {
+			titleComposer: () => LocalizedString
+			titleIntro: () => LocalizedString
+			blurb: () => LocalizedString
+		}
+		composer: {
+			newPrompt: () => LocalizedString
+			placeholder: () => LocalizedString
+			send: () => LocalizedString
+			sendLabel: () => LocalizedString
+			sendTooltip: () => LocalizedString
+			dispatch: () => LocalizedString
+			dispatchLabel: () => LocalizedString
+			dispatchTooltip: () => LocalizedString
+			or: () => LocalizedString
+			newSession: () => LocalizedString
+			statusIdle: (arg: { name: string }) => LocalizedString
+			statusIdleNoProject: () => LocalizedString
+			noProject: () => LocalizedString
+			projectBranch: (arg: { name: string }) => LocalizedString
+			noProjectBranch: () => LocalizedString
+			selectWorkspace: () => LocalizedString
+			openFolder: () => LocalizedString
+			removeAttachment: (arg: { path: string }) => LocalizedString
+			previewImage: (arg: { name: string }) => LocalizedString
+			removeImage: (arg: { name: string }) => LocalizedString
+		}
+		templateCards: {
+			heading: () => LocalizedString
+			edited: () => LocalizedString
+			editTitle: () => LocalizedString
+			editLabel: (arg: { title: string }) => LocalizedString
+			editMenuItem: () => LocalizedString
+			resetMenuItem: () => LocalizedString
+			recent: () => LocalizedString
+		}
+		editDialog: {
+			title: () => LocalizedString
+			description: () => LocalizedString
+			fieldTitle: () => LocalizedString
+			fieldBlurb: () => LocalizedString
+			fieldPrompt: () => LocalizedString
+			promptHint: () => LocalizedString
+			reset: () => LocalizedString
+			apply: () => LocalizedString
+		}
+		agentMode: {
+			label: () => LocalizedString
+			header: () => LocalizedString
+			ask: {
+				label: () => LocalizedString
+				blurb: () => LocalizedString
+			}
+			acceptEdits: {
+				label: () => LocalizedString
+				blurb: () => LocalizedString
+			}
+			auto: {
+				label: () => LocalizedString
+				blurb: () => LocalizedString
+			}
+			plan: {
+				label: () => LocalizedString
+				blurb: () => LocalizedString
+			}
+		}
+		effort: {
+			label: () => LocalizedString
+			header: () => LocalizedString
+			low: () => LocalizedString
+			medium: () => LocalizedString
+			high: () => LocalizedString
+		}
+		attachments: {
+			label: () => LocalizedString
+			header: () => LocalizedString
+			addFiles: () => LocalizedString
+			addImage: () => LocalizedString
+			addImageHint: () => LocalizedString
+			addFolder: () => LocalizedString
+			fromRepo: () => LocalizedString
+			recent: () => LocalizedString
+			current: () => LocalizedString
+		}
+		branch: {
+			label: () => LocalizedString
+			header: () => LocalizedString
+			searchPlaceholder: () => LocalizedString
+			searchLabel: () => LocalizedString
+			create: () => LocalizedString
+			none: () => LocalizedString
+			noMatches: () => LocalizedString
+		}
+		modelPicker: {
+			label: () => LocalizedString
+			searchPlaceholder: () => LocalizedString
+			noMatches: () => LocalizedString
+			defaultBadge: () => LocalizedString
+			fallback: () => LocalizedString
+		}
+		repoSearch: {
+			title: () => LocalizedString
+			description: (arg: { max: number }) => LocalizedString
+			searchLabel: () => LocalizedString
+			placeholderLoading: () => LocalizedString
+			placeholder: () => LocalizedString
+			close: () => LocalizedString
+			loading: () => LocalizedString
+			noFiles: () => LocalizedString
+			noMatches: () => LocalizedString
+			navHint: () => LocalizedString
+			selected: (arg: { count: number, max: number }) => LocalizedString
+			add: () => LocalizedString
+			addCount: (arg: { count: number }) => LocalizedString
+			loadFailed: () => LocalizedString
+		}
+		errors: {
+			filePickerUnavailable: () => LocalizedString
+			folderPickerUnavailable: () => LocalizedString
+			notConnected: () => LocalizedString
+			openProjectFirst: () => LocalizedString
+		}
+	}
+	models: {
+		picker: {
+			title: () => LocalizedString
+			close: () => LocalizedString
+		}
+		providers: {
+			heading: () => LocalizedString
+			custom: () => LocalizedString
+			addCustom: () => LocalizedString
+			addCustomLabel: () => LocalizedString
+			state: {
+				authenticated: () => LocalizedString
+				needsKey: () => LocalizedString
+				unreachable: () => LocalizedString
+			}
+		}
+		list: {
+			pickProvider: () => LocalizedString
+			needsKey: (arg: { provider: string }) => LocalizedString
+			addKey: () => LocalizedString
+			filter: () => LocalizedString
+			loading: () => LocalizedString
+			noMatches: () => LocalizedString
+			noModels: () => LocalizedString
+			chipContext: () => LocalizedString
+			chipPriceIn: () => LocalizedString
+			chipPriceOut: () => LocalizedString
+			chipThinking: () => LocalizedString
+		}
+		addProvider: {
+			eyebrow: () => LocalizedString
+			title: () => LocalizedString
+			description: () => LocalizedString
+			escHint: () => LocalizedString
+			search: () => LocalizedString
+			allConfigured: () => LocalizedString
+			noMatches: () => LocalizedString
+			addKey: () => LocalizedString
+			available: (arg: { count: number }) => LocalizedString
+			keysSavedTo: (arg: { path: string }) => LocalizedString
+		}
+		authenticate: {
+			title: (arg: { provider: string }) => LocalizedString
+			titleFallback: () => LocalizedString
+			description: () => LocalizedString
+			apiKey: () => LocalizedString
+			storageHint: (arg: { path: string }) => LocalizedString
+			oauthTitle: () => LocalizedString
+			oauth: (arg: { provider: string }) => LocalizedString
+			submitting: () => LocalizedString
+			submit: () => LocalizedString
+			saveFailed: () => LocalizedString
+		}
+		addCustom: {
+			title: () => LocalizedString
+			description: () => LocalizedString
+			name: () => LocalizedString
+			baseUrl: () => LocalizedString
+			apiKind: () => LocalizedString
+			apiKey: () => LocalizedString
+			apiKeyPlaceholder: () => LocalizedString
+			defaultModel: () => LocalizedString
+			defaultModelHint: (arg: { path: string }) => LocalizedString
+			submitting: () => LocalizedString
+			submit: () => LocalizedString
+			saveFailed: () => LocalizedString
+		}
+		errors: {
+			loadProviders: () => LocalizedString
+			loadModels: () => LocalizedString
+			switchModel: () => LocalizedString
+			setThinkingLevel: () => LocalizedString
+		}
 	}
 	plan: {
 		continuation: () => LocalizedString
@@ -1623,12 +2900,106 @@ export type TranslationFunctions = {
 			closing: () => LocalizedString
 		}
 		panel: {
+			empty: () => LocalizedString
+			title: () => LocalizedString
+			copied: () => LocalizedString
+			copy: () => LocalizedString
+			copyLabel: () => LocalizedString
+			progress: (arg: { done: number, total: number }) => LocalizedString
+			noPlan: () => LocalizedString
 			inProgressFallback: () => LocalizedString
 		}
 	}
 	sessions: {
 		filter: {
 			selectedCount: (arg: { count: number }) => LocalizedString
+			label: () => LocalizedString
+			controls: () => LocalizedString
+			searchPlaceholder: () => LocalizedString
+			projectPlaceholder: () => LocalizedString
+			all: () => LocalizedString
+			noMatches: () => LocalizedString
+			defaults: () => LocalizedString
+			activeCount: (arg: { count: number }) => LocalizedString
+			reset: () => LocalizedString
+			done: () => LocalizedString
+			summaryAll: () => LocalizedString
+			summaryNone: () => LocalizedString
+			section: {
+				project: () => LocalizedString
+				since: () => LocalizedString
+				sort: () => LocalizedString
+				group: () => LocalizedString
+			}
+			since: {
+				all: () => LocalizedString
+			}
+			sort: {
+				recent: () => LocalizedString
+				created: () => LocalizedString
+				branch: () => LocalizedString
+				status: () => LocalizedString
+			}
+			group: {
+				workspace: () => LocalizedString
+				branch: () => LocalizedString
+				status: () => LocalizedString
+				flat: () => LocalizedString
+			}
+		}
+		title: {
+			'new': () => LocalizedString
+		}
+		newButton: {
+			label: () => LocalizedString
+			disabled: () => LocalizedString
+			caption: () => LocalizedString
+		}
+		list: {
+			archive: () => LocalizedString
+			showLess: () => LocalizedString
+			showMore: (arg: { count: number }) => LocalizedString
+			noProjects: () => LocalizedString
+			noProjectsMatch: () => LocalizedString
+		}
+		row: {
+			title: () => LocalizedString
+			status: {
+				working: () => LocalizedString
+				waiting: () => LocalizedString
+				done: () => LocalizedString
+				failed: () => LocalizedString
+			}
+			menu: {
+				markCompleted: () => LocalizedString
+				rename: () => LocalizedString
+				unarchive: () => LocalizedString
+				archive: () => LocalizedString
+				'delete': () => LocalizedString
+			}
+			confirmDeleteTitle: () => LocalizedString
+			confirmDeleteBody: (arg: { title: string }) => LocalizedString
+			confirmDeleteLabel: () => LocalizedString
+		}
+		errors: {
+			loadWorkspace: () => LocalizedString
+			loadSessions: () => LocalizedString
+			createSession: () => LocalizedString
+			loadArchived: () => LocalizedString
+			archive: () => LocalizedString
+			unarchive: () => LocalizedString
+			rename: () => LocalizedString
+			'delete': () => LocalizedString
+			open: () => LocalizedString
+			sendPrompt: () => LocalizedString
+			cancel: () => LocalizedString
+			forceStop: () => LocalizedString
+			fork: () => LocalizedString
+			rewind: () => LocalizedString
+			openProject: () => LocalizedString
+			loadProjects: () => LocalizedString
+			noBridge: () => LocalizedString
+			noConnectionInfo: () => LocalizedString
 		}
 	}
 	settings: {
@@ -1992,6 +3363,7 @@ export type TranslationFunctions = {
 				exposure: () => LocalizedString
 				proxy: () => LocalizedString
 				direct: () => LocalizedString
+				directChip: () => LocalizedString
 				exposeDirectCount: (arg: { count: number }) => LocalizedString
 				exposeDirectCountTokens: (arg: { count: number, tokens: string }) => LocalizedString
 				exposeDirect: () => LocalizedString
@@ -2034,6 +3406,7 @@ export type TranslationFunctions = {
 				searching: () => LocalizedString
 				unreachable: () => LocalizedString
 				noMatch: (arg: { query: string }) => LocalizedString
+				shownCount: (arg: { count: number }) => LocalizedString
 				loadMore: () => LocalizedString
 				loading: () => LocalizedString
 				installsTo: (arg: { path: string }) => LocalizedString
@@ -2048,6 +3421,7 @@ export type TranslationFunctions = {
 				tag: () => LocalizedString
 			}
 		}
+		escBadge: () => LocalizedString
 		skills: {
 			kicker: () => LocalizedString
 			title: () => LocalizedString
@@ -2180,6 +3554,46 @@ export type TranslationFunctions = {
 		}
 	}
 	terminal: {
+		'new': {
+			label: () => LocalizedString
+			chooseType: () => LocalizedString
+			noShells: () => LocalizedString
+			defaultBadge: () => LocalizedString
+			settings: () => LocalizedString
+		}
+		tabs: {
+			label: () => LocalizedString
+			rename: () => LocalizedString
+			close: (arg: { name: string }) => LocalizedString
+			closePanel: () => LocalizedString
+		}
+		view: {
+			exited: () => LocalizedString
+			restart: () => LocalizedString
+			starting: () => LocalizedString
+			noProject: () => LocalizedString
+		}
+	}
+	tools: {
+		session: {
+			title: () => LocalizedString
+			titleWithCount: (arg: { count: number }) => LocalizedString
+			blurb: () => LocalizedString
+		}
+		allOffWarning: () => LocalizedString
+		toggle: {
+			enabled: (arg: { tool: string }) => LocalizedString
+			disabled: (arg: { tool: string }) => LocalizedString
+		}
+		catalog: {
+			read: () => LocalizedString
+			bash: () => LocalizedString
+			edit: () => LocalizedString
+			write: () => LocalizedString
+		}
+		errors: {
+			update: () => LocalizedString
+		}
 	}
 }
 

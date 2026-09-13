@@ -1,6 +1,7 @@
 import type { CommandResponse } from "@pi-deck/core/protocol/commands.js";
 import { parseDiffFromFile } from "@pierre/diffs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { useNavStore } from "../../lib/useNavStore.js";
 import { useEditorStore } from "../editor/useEditorStore.js";
 import { useGitStore } from "../git/useGitStore.js";
@@ -65,6 +66,7 @@ function changeBlockOffsets(container: HTMLElement): number[] {
  * the floating `DiffNavToolbar`'s compare-previous/next-file actions.
  */
 export function DiffTab() {
+  const { LL } = useI18nContext();
   const client = useSessionsStore((s) => s.client);
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const storedTarget = useNavStore((s) => s.diffTarget);
@@ -160,7 +162,7 @@ export function DiffTab() {
   if (!target) {
     return (
       <div className="pid-route-placeholder">
-        <span>Pick a file in the git sidebar to view its diff.</span>
+        <span>{LL.diff.tab.pickFile()}</span>
       </div>
     );
   }
@@ -192,11 +194,11 @@ export function DiffTab() {
           </div>
         ) : diff === null ? (
           <div className="pid-route-placeholder">
-            <span>Loading diff…</span>
+            <span>{LL.diff.tab.loading()}</span>
           </div>
         ) : diff.unified.length === 0 || !fileDiff ? (
           <div className="pid-route-placeholder">
-            <span>No changes vs HEAD.</span>
+            <span>{LL.diff.tab.noChanges()}</span>
           </div>
         ) : (
           <DiffView fileDiff={fileDiff} />

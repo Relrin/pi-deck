@@ -463,8 +463,12 @@
 }
 
 /* ---------- Screen switcher (in footer) ---------- */
+/* Footer chrome at a fixed height, so wrapping is not an option here — the buttons ellipsize and
+   fall back to their `title` instead. `min-width: 0` on both the container and the buttons is
+   what lets a flex item shrink below its content width at all. */
 .pid-screen-switcher {
   display: flex;
+  min-width: 0;
   gap: 1px;
   background: var(--bg-2);
   border-radius: 3px;
@@ -476,6 +480,10 @@
   font-size: 9px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   background: transparent;
   color: var(--ink-2);
   border: 0;

@@ -1,5 +1,6 @@
 import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import { ToolCase } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { ToolsList } from "./ToolsList.js";
 import { useToolsStore } from "./useToolsStore.js";
@@ -15,6 +16,7 @@ import { useToolsStore } from "./useToolsStore.js";
  * Mirrors the `data-has-attachments` convention on the attachments picker.
  */
 export function SessionToolsButton() {
+  const { LL } = useI18nContext();
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
   const summary = useSessionsStore((s) => s.sessions.find((entry) => entry.id === activeSessionId));
   const mirror = useToolsStore((s) => (activeSessionId ? s.bySession[activeSessionId] : undefined));
@@ -40,9 +42,11 @@ export function SessionToolsButton() {
           type="button"
           className="pid-picker-trigger pid-picker-trigger-icon-only"
           aria-label={
-            hasExclusions ? `Session tools (${excludedTools.length} off)` : "Session tools"
+            hasExclusions
+              ? LL.tools.session.titleWithCount({ count: excludedTools.length })
+              : LL.tools.session.title()
           }
-          title="Session tools"
+          title={LL.tools.session.title()}
           data-has-exclusions={hasExclusions || undefined}
           disabled={disabled}
         >
@@ -56,10 +60,8 @@ export function SessionToolsButton() {
           sideOffset={6}
           className="pid-picker-menu pid-tools-menu"
         >
-          <div className="pid-picker-menu-header">Session tools</div>
-          <p className="pid-tools-menu-blurb">
-            Override for this session only. Settings - Tools sets the default for new sessions.
-          </p>
+          <div className="pid-picker-menu-header">{LL.tools.session.title()}</div>
+          <p className="pid-tools-menu-blurb">{LL.tools.session.blurb()}</p>
           <ToolsList excludedTools={excludedTools} onChange={onChange} />
         </RadixDropdown.Content>
       </RadixDropdown.Portal>

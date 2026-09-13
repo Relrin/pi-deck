@@ -7,6 +7,7 @@ import type {
 } from "@pi-deck/core/domain/session.js";
 import type { PromptAttachment, PromptImage } from "@pi-deck/core/protocol/commands.js";
 import { create } from "zustand";
+import { ll } from "../../i18n/t.js";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { routeEvent } from "../../lib/transport/event-router.js";
 import { ProtocolClient } from "../../lib/transport/protocol-client.js";
@@ -181,13 +182,13 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     const bridge = window.bridge?.connect;
     if (!bridge) {
       initStarted = false;
-      set({ initError: "Preload bridge not available" });
+      set({ initError: ll().sessions.errors.noBridge() });
       return;
     }
     const info = await bridge();
     if (!info) {
       initStarted = false;
-      set({ initError: "Backend did not provide connection info" });
+      set({ initError: ll().sessions.errors.noConnectionInfo() });
       return;
     }
     const ws = new WsClient({
@@ -229,7 +230,9 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         }
       }
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to load workspace"));
+      useNotificationStore
+        .getState()
+        .error(humanizeError(err, ll().sessions.errors.loadWorkspace()));
     }
   },
 
@@ -247,7 +250,9 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       // Warm the project's most-recent session's worker so its first open is instant.
       warmMostRecentSession(sessions);
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to load sessions"));
+      useNotificationStore
+        .getState()
+        .error(humanizeError(err, ll().sessions.errors.loadSessions()));
     } finally {
       set({ isRefreshing: false });
     }
@@ -273,7 +278,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
           ...(isActive ? { sessions } : {}),
         }));
       } catch (err) {
-        const message = humanizeError(err, "Failed to load sessions");
+        const message = humanizeError(err, ll().sessions.errors.loadSessions());
         set((state) => ({
           errorByProject: { ...state.errorByProject, [projectId]: message },
         }));
@@ -294,6 +299,13 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     try {
       const { session } = await client.call("session.create", {
         projectId,
+        // The host would otherwise default the title to its own English `"New session"`. Sending
+        // one from here means a session created in Russian is *named* in Russian — and because
+        // the title is persisted data the user can rename, it deliberately does not re-translate
+        // afterwards. `SessionCreateRequest.title` has always been optional, so this needs no
+        // protocol change. Forked and discovered sessions have no such seam and stay English;
+        // see the note in `i18n/en/sessions.ts`.
+        title: ll().sessions.title.new(),
         modelRef: opts?.modelRef,
         thinkingLevel: opts?.thinkingLevel,
         agentMode: opts?.agentMode,
@@ -319,7 +331,9 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       // locale. Hand it the user's preference before the first prompt goes out.
       void pushAgentLanguage(client, [session.id]);
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to create session"));
+      useNotificationStore
+        .getState()
+        .error(humanizeError(err, ll().sessions.errors.createSession()));
       throw err;
     }
   },
@@ -331,7 +345,9 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       const { sessions } = await client.call("session.listArchived", {});
       set({ archivedSessions: sessions, archivedLoaded: true });
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to load archived sessions"));
+      useNotificationStore
+        .getState()
+        .error(humanizeError(err, ll().sessions.errors.loadArchived()));
     }
   },
 
@@ -344,7 +360,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       await client.call("session.archive", { sessionId: id });
     } catch (err) {
       set(previous);
-      useNotificationStore.getState().error(humanizeError(err, "Failed to archive session"));
+      useNotificationStore.getState().error(humanizeError(err, ll().sessions.errors.archive()));
     }
   },
 
@@ -357,7 +373,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       await client.call("session.unarchive", { sessionId: id });
     } catch (err) {
       set(previous);
-      useNotificationStore.getState().error(humanizeError(err, "Failed to unarchive session"));
+      useNotificationStore.getState().error(humanizeError(err, ll().sessions.errors.unarchive()));
     }
   },
 
@@ -389,7 +405,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         sessionsByProject: prevByProject,
         archivedSessions: prevArchived,
       });
-      useNotificationStore.getState().error(humanizeError(err, "Failed to rename session"));
+      useNotificationStore.getState().error(humanizeError(err, ll().sessions.errors.rename()));
     }
   },
 
@@ -411,7 +427,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
         };
       });
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to delete session"));
+      useNotificationStore.getState().error(humanizeError(err, ll().sessions.errors.delete()));
       throw err;
     }
   },
@@ -472,7 +488,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       if (targetProjectId !== previousProjectId) {
         projectsStore.setActive(previousProjectId);
       }
-      useNotificationStore.getState().error(humanizeError(err, "Failed to open session"));
+      useNotificationStore.getState().error(humanizeError(err, ll().sessions.errors.open()));
     }
   },
 
@@ -512,7 +528,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       get().bumpLastActivity(id);
     } catch (err) {
       useMessagesStore.getState().markTurnInFlight(id, false);
-      useNotificationStore.getState().error(humanizeError(err, "Failed to send prompt"));
+      useNotificationStore.getState().error(humanizeError(err, ll().sessions.errors.sendPrompt()));
       throw err;
     }
   },
@@ -524,7 +540,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     try {
       await client.call("session.cancel", { sessionId: id });
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to cancel"));
+      useNotificationStore.getState().error(humanizeError(err, ll().sessions.errors.cancel()));
     }
   },
 
@@ -537,7 +553,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       // The killed worker's exit event resets the in-flight flag; no optimistic flip here
       // so the button state always mirrors what the host actually did.
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to force-stop"));
+      useNotificationStore.getState().error(humanizeError(err, ll().sessions.errors.forceStop()));
     }
   },
 
@@ -557,7 +573,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       if (editorText) useDraftStore.getState().insertIntoDraft(editorText);
       get().bumpLastActivity(sessionId);
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to rewind"));
+      useNotificationStore.getState().error(humanizeError(err, ll().sessions.errors.rewind()));
     }
   },
 
@@ -588,7 +604,7 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       useProjectsStore.getState().setLastActiveSession(session.projectId, session.id);
       if (editorText) useDraftStore.getState().insertIntoDraft(editorText);
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to fork session"));
+      useNotificationStore.getState().error(humanizeError(err, ll().sessions.errors.fork()));
     }
   },
 

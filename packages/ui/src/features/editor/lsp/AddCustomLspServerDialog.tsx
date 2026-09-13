@@ -2,6 +2,8 @@ import type { CustomLspServer } from "@pi-deck/core/protocol/lsp.js";
 import * as RadixDialog from "@radix-ui/react-dialog";
 import { type FormEvent, useEffect, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
+import { rich, slot } from "../../../i18n/rich.js";
 import { humanizeError } from "../../../lib/format/humanize-error.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore.js";
 import { useLspCustomServersStore } from "./useLspCustomServersStore.js";
@@ -18,6 +20,7 @@ interface Props {
  * Known-good configurations the user can start from. A preset only prefills the form —
  * the saved entry is a plain custom server, identical to a hand-typed one.
  */
+// i18n-exempt: language-server configuration — names, executables, args, install commands
 const PRESETS: { name: string; server: CustomLspServer }[] = [
   {
     name: "Elixir (elixir-ls)",
@@ -181,6 +184,8 @@ function formFromServer(server: CustomLspServer): FormState {
 }
 
 export function AddCustomLspServerDialog({ open, onOpenChange, editing, onSaved }: Props) {
+  const { LL } = useI18nContext();
+  const copy = LL.editor.lsp.dialog;
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [error, setError] = useState<string | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
@@ -227,7 +232,7 @@ export function AddCustomLspServerDialog({ open, onOpenChange, editing, onSaved 
       onSaved?.();
       onOpenChange(false);
     } catch (err) {
-      setError(humanizeError(err, "Failed to save server"));
+      setError(humanizeError(err, copy.saveFailed()));
     } finally {
       setSubmitting(false);
     }
@@ -243,18 +248,17 @@ export function AddCustomLspServerDialog({ open, onOpenChange, editing, onSaved 
         >
           <div className="pid-modal-header">
             <RadixDialog.Title className="pid-modal-title">
-              {editing ? `Edit ${editing.label}` : "Add language server"}
+              {editing ? copy.editTitle({ label: editing.label }) : copy.addTitle()}
             </RadixDialog.Title>
             <RadixDialog.Description className="pid-modal-description">
-              The command is resolved on the project environment's PATH, exactly like the built-in
-              servers — nothing is downloaded.
+              {copy.description()}
             </RadixDialog.Description>
           </div>
           <form className="pid-form" onSubmit={onSubmit}>
             {!editing && (
               <div className="pid-form-field">
                 <label className="pid-form-label" htmlFor="lsp-preset">
-                  Start from a preset (optional)
+                  {copy.presetLabel()}
                 </label>
                 <select
                   id="lsp-preset"
@@ -262,7 +266,7 @@ export function AddCustomLspServerDialog({ open, onOpenChange, editing, onSaved 
                   defaultValue=""
                   onChange={(e) => onPreset(e.target.value)}
                 >
-                  <option value="">Blank</option>
+                  <option value="">{copy.presetBlank()}</option>
                   {PRESETS.map((p) => (
                     <option key={p.name} value={p.name}>
                       {p.name}
@@ -273,104 +277,115 @@ export function AddCustomLspServerDialog({ open, onOpenChange, editing, onSaved 
             )}
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="lsp-label">
-                Label
+                {copy.fieldLabel()}
               </label>
               <input
                 id="lsp-label"
                 className="pid-form-input"
                 value={form.label}
                 onChange={(e) => patch({ label: e.target.value })}
+                // i18n-exempt: worked example, a language name
                 placeholder="Elixir"
               />
             </div>
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="lsp-id">
-                Id
+                {copy.fieldId()}
               </label>
               <input
                 id="lsp-id"
                 className="pid-form-input"
                 value={form.id}
                 onChange={(e) => patch({ id: e.target.value })}
+                // i18n-exempt: worked example, a server id
                 placeholder="elixir"
                 disabled={Boolean(editing)}
                 spellCheck={false}
               />
-              <span className="pid-form-hint">
-                Lowercase letters, digits, hyphens. Can't collide with a built-in server id.
-              </span>
+              <span className="pid-form-hint">{copy.fieldIdHint()}</span>
             </div>
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="lsp-command">
-                Command
+                {copy.fieldCommand()}
               </label>
               <input
                 id="lsp-command"
                 className="pid-form-input"
                 value={form.command}
                 onChange={(e) => patch({ command: e.target.value })}
+                // i18n-exempt: worked example, an executable name
                 placeholder="elixir-ls"
                 spellCheck={false}
               />
             </div>
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="lsp-args">
-                Arguments (optional)
+                {copy.fieldArgs()}
               </label>
               <input
                 id="lsp-args"
                 className="pid-form-input"
                 value={form.args}
                 onChange={(e) => patch({ args: e.target.value })}
+                // i18n-exempt: worked example, a command-line flag
                 placeholder="--stdio"
                 spellCheck={false}
               />
             </div>
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="lsp-langids">
-                Language ids
+                {copy.fieldLanguageIds()}
               </label>
               <input
                 id="lsp-langids"
                 className="pid-form-input"
                 value={form.languageIds}
                 onChange={(e) => patch({ languageIds: e.target.value })}
+                // i18n-exempt: worked example, LSP languageIds
                 placeholder="elixir eex phoenix-heex"
                 spellCheck={false}
               />
               <span className="pid-form-hint">
-                LSP <code>languageId</code>s the server understands, space-separated.
+                {rich(copy.fieldLanguageIdsHint({ code: slot("code") }), {
+                  // i18n-exempt: the LSP field name, spelled as the spec spells it
+                  code: <code>languageId</code>,
+                })}
               </span>
             </div>
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="lsp-exts">
-                File extensions
+                {copy.fieldExtensions()}
               </label>
               <input
                 id="lsp-exts"
                 className="pid-form-input"
                 value={form.extensions}
                 onChange={(e) => patch({ extensions: e.target.value })}
+                // i18n-exempt: worked example, file extensions
                 placeholder="ex exs heex:phoenix-heex"
                 spellCheck={false}
               />
               <span className="pid-form-hint">
-                No dots. A bare <code>ex</code> maps to the first language id;{" "}
-                <code>heex:phoenix-heex</code> picks another.
+                {rich(
+                  copy.fieldExtensionsHint({ bare: slot("bare"), qualified: slot("qualified") }),
+                  // i18n-exempt: file extensions, typed verbatim by the user
+                  { bare: <code>ex</code>, qualified: <code>heex:phoenix-heex</code> },
+                )}
               </span>
             </div>
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="lsp-hint">
-                Install hint (optional)
+                {copy.fieldInstallHint()}
               </label>
               <input
                 id="lsp-hint"
                 className="pid-form-input"
                 value={form.installHint}
                 onChange={(e) => patch({ installHint: e.target.value })}
+                // i18n-exempt: worked example, a shell command
                 placeholder="cs install metals"
               />
-              <span className="pid-form-hint">Shown when the command isn't found on PATH.</span>
+              <span className="pid-form-hint">{copy.fieldInstallHintHint()}</span>
             </div>
             {error && (
               <div className="pid-form-hint" style={{ color: "var(--del)" }}>
@@ -379,7 +394,7 @@ export function AddCustomLspServerDialog({ open, onOpenChange, editing, onSaved 
             )}
             <div className="pid-form-row">
               <PidButton variant="ghost" onClick={() => onOpenChange(false)} longLabel>
-                Cancel
+                {LL.common.cancel()}
               </PidButton>
               <PidButton
                 variant="primary"
@@ -387,7 +402,7 @@ export function AddCustomLspServerDialog({ open, onOpenChange, editing, onSaved 
                 disabled={!canSubmit || submitting}
                 longLabel
               >
-                {submitting ? "Saving…" : editing ? "Save changes" : "Add server"}
+                {submitting ? copy.submitting() : editing ? copy.saveChanges() : copy.addServer()}
               </PidButton>
             </div>
           </form>

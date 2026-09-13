@@ -1,5 +1,8 @@
 import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import { ChevronsUpDown } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../i18n/i18n-types.js";
+import { rich, slot } from "../../i18n/rich.js";
 import type { GroupMode } from "./useGroupModeStore.js";
 
 interface Props {
@@ -13,33 +16,45 @@ interface OptionDef {
   description: string;
 }
 
-const OPTIONS: readonly OptionDef[] = [
-  { value: "file", label: "File", description: "one row per file (default)" },
-  { value: "hunk", label: "Hunk", description: "expand each file into its hunks" },
-  { value: "change", label: "Change type", description: "added · modified · deleted" },
-  { value: "folder", label: "Folder", description: "group by parent directory" },
-];
+/**
+ * Built per render from the catalog rather than held as a module constant: a module-level table
+ * would capture whatever locale was loaded at import time and never update on a language switch.
+ * `value` stays an identifier — it is the persisted grouping mode.
+ *
+ * Exported for `test/i18n/option-tables.test.ts`, which calls it with a sentinel translations
+ * object so a label that comes back as a literal fails there.
+ */
+export function groupModeOptions(t: TranslationFunctions): readonly OptionDef[] {
+  const copy = t.git.groupMenu.option;
+  return [
+    { value: "file", label: copy.file.label(), description: copy.file.description() },
+    { value: "hunk", label: copy.hunk.label(), description: copy.hunk.description() },
+    { value: "change", label: copy.change.label(), description: copy.change.description() },
+    { value: "folder", label: copy.folder.label(), description: copy.folder.description() },
+  ];
+}
 
-const TRIGGER_LABEL: Record<GroupMode, string> = {
-  file: "file",
-  hunk: "hunk",
-  change: "change type",
-  folder: "folder",
-};
+/** The short form shown on the trigger, as opposed to the menu row label. */
+function triggerValue(t: TranslationFunctions, mode: GroupMode): string {
+  return t.git.groupMenu.option[mode].value();
+}
 
 export function GroupModeMenu({ mode, onChange }: Props) {
+  const { LL } = useI18nContext();
   return (
     <RadixDropdown.Root>
       <RadixDropdown.Trigger asChild>
         <button
           type="button"
           className="pid-git-group-trigger"
-          aria-label="Group changes by"
+          aria-label={LL.git.groupMenu.label()}
           data-non-default={mode === "file" ? undefined : true}
         >
           <ChevronsUpDown size={11} aria-hidden />
           <span className="pid-git-group-trigger-label">
-            group: <span className="pid-git-group-trigger-value">{TRIGGER_LABEL[mode]}</span>
+            {rich(LL.git.groupMenu.trigger({ value: slot("value") }), {
+              value: <span className="pid-git-group-trigger-value">{triggerValue(LL, mode)}</span>,
+            })}
           </span>
         </button>
       </RadixDropdown.Trigger>
@@ -50,12 +65,12 @@ export function GroupModeMenu({ mode, onChange }: Props) {
           sideOffset={6}
           className="pid-git-group-menu"
         >
-          <div className="pid-git-group-menu-header">Group changes by</div>
+          <div className="pid-git-group-menu-header">{LL.git.groupMenu.header()}</div>
           <RadixDropdown.RadioGroup
             value={mode}
             onValueChange={(value) => onChange(value as GroupMode)}
           >
-            {OPTIONS.map((opt) => (
+            {groupModeOptions(LL).map((opt) => (
               <RadixDropdown.RadioItem
                 key={opt.value}
                 value={opt.value}

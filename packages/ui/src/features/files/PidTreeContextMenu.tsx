@@ -7,6 +7,7 @@ import {
   Pencil,
   Trash2,
 } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 
 interface PidTreeContextMenuProps {
   /** The right-clicked row, supplied by `@pierre/trees`. */
@@ -35,6 +36,8 @@ export function PidTreeContextMenu({
   onRename,
   onDelete,
 }: PidTreeContextMenuProps) {
+  const { LL } = useI18nContext();
+  const copy = LL.files.menu;
   const run = (fn: (item: ContextMenuItem) => void) => () => {
     fn(item);
     // Don't restore focus to the row — the action typically transfers focus elsewhere
@@ -55,7 +58,7 @@ export function PidTreeContextMenu({
             <span className="pid-context-menu-icon" aria-hidden>
               <ArrowLeftRight size={12} />
             </span>
-            <span className="pid-context-menu-label">Show diff</span>
+            <span className="pid-context-menu-label">{copy.showDiff()}</span>
           </button>
           <div className="pid-context-menu-separator" aria-hidden />
         </>
@@ -69,7 +72,7 @@ export function PidTreeContextMenu({
         <span className="pid-context-menu-icon" aria-hidden>
           <FilePlus size={12} />
         </span>
-        <span className="pid-context-menu-label">New file</span>
+        <span className="pid-context-menu-label">{copy.newFile()}</span>
       </button>
       <button
         type="button"
@@ -80,7 +83,7 @@ export function PidTreeContextMenu({
         <span className="pid-context-menu-icon" aria-hidden>
           <FolderPlus size={12} />
         </span>
-        <span className="pid-context-menu-label">New folder</span>
+        <span className="pid-context-menu-label">{copy.newFolder()}</span>
       </button>
       <div className="pid-context-menu-separator" aria-hidden />
       <button
@@ -92,7 +95,7 @@ export function PidTreeContextMenu({
         <span className="pid-context-menu-icon" aria-hidden>
           <Paperclip size={12} />
         </span>
-        <span className="pid-context-menu-label">Attach to chat</span>
+        <span className="pid-context-menu-label">{copy.attachToChat()}</span>
       </button>
       <div className="pid-context-menu-separator" aria-hidden />
       <button
@@ -104,7 +107,7 @@ export function PidTreeContextMenu({
         <span className="pid-context-menu-icon" aria-hidden>
           <Pencil size={12} />
         </span>
-        <span className="pid-context-menu-label">Rename…</span>
+        <span className="pid-context-menu-label">{copy.rename()}</span>
         <span className="pid-context-menu-shortcut">F2</span>
       </button>
       <button
@@ -117,7 +120,8 @@ export function PidTreeContextMenu({
         <span className="pid-context-menu-icon" aria-hidden>
           <Trash2 size={12} />
         </span>
-        <span className="pid-context-menu-label">Move to Trash</span>
+        <span className="pid-context-menu-label">{copy.moveToTrash()}</span>
+        {/* i18n-exempt: KeyboardEvent.key name, printed on the key itself — same class as PidKbd */}
         <span className="pid-context-menu-shortcut">Del</span>
       </button>
     </div>

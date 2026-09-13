@@ -1,5 +1,6 @@
 import { useCallback } from "react";
-import { BUILT_IN_TOOLS } from "./toolCatalog.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
+import { builtInTools } from "./toolCatalog.js";
 
 interface ToolsListProps {
   /** Tool ids that should appear with their switch OFF. */
@@ -18,6 +19,7 @@ interface ToolsListProps {
  * out of this file so the same list reuses cleanly across both surfaces.
  */
 export function ToolsList({ excludedTools, onChange }: ToolsListProps) {
+  const { LL } = useI18nContext();
   const excluded = new Set(excludedTools);
 
   const onToggle = useCallback(
@@ -32,7 +34,7 @@ export function ToolsList({ excludedTools, onChange }: ToolsListProps) {
 
   return (
     <ul className="pid-tools-list">
-      {BUILT_IN_TOOLS.map((tool) => {
+      {builtInTools(LL).map((tool) => {
         const on = !excluded.has(tool.id);
         return (
           <li key={tool.id} className="pid-tools-list-row" data-on={on || undefined}>
@@ -44,7 +46,11 @@ export function ToolsList({ excludedTools, onChange }: ToolsListProps) {
               type="button"
               role="switch"
               aria-checked={on}
-              aria-label={`${tool.label}: ${on ? "enabled" : "disabled"}`}
+              aria-label={
+                on
+                  ? LL.tools.toggle.enabled({ tool: tool.label })
+                  : LL.tools.toggle.disabled({ tool: tool.label })
+              }
               className="pid-toggle-switch"
               data-on={on || undefined}
               onClick={() => onToggle(tool.id)}

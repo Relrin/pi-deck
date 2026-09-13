@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { isSessionContextScreen, useNavStore } from "../../lib/useNavStore.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
@@ -11,6 +12,7 @@ import { useGroupModeStore } from "./useGroupModeStore.js";
 import { useTurnFileTouches } from "./useTurnFileTouches.js";
 
 export function GitSidebar() {
+  const { LL } = useI18nContext();
   const projectId = useProjectsStore((s) => s.activeProjectId);
 
   const screen = useNavStore((s) => s.screen);
@@ -49,11 +51,11 @@ export function GitSidebar() {
   const touched = useTurnFileTouches(status?.root);
 
   if (!projectId || !inSessionContext) {
-    return <div className="pid-git-placeholder">Start or open a session to see git state.</div>;
+    return <div className="pid-git-placeholder">{LL.git.sidebar.noSession()}</div>;
   }
 
   if (statusLoading && !status) {
-    return <div className="pid-git-placeholder">Reading git…</div>;
+    return <div className="pid-git-placeholder">{LL.git.sidebar.loading()}</div>;
   }
 
   if (status && !status.isRepo) {
@@ -61,7 +63,7 @@ export function GitSidebar() {
   }
 
   if (!status) {
-    return <div className="pid-git-placeholder">No git data.</div>;
+    return <div className="pid-git-placeholder">{LL.git.sidebar.noData()}</div>;
   }
 
   const headShortSha = commits?.[0]?.shortSha;

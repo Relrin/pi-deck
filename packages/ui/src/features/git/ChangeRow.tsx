@@ -3,6 +3,7 @@ import type { MouseEvent } from "react";
 import { FileText, Undo2 } from "../../components/icons/index.js";
 import { PidPierreFileIcon } from "../../components/icons/PidPierreFileIcon.js";
 import { ContextMenu, type ContextMenuItem } from "../../components/ui/ContextMenu.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 
 interface Props {
   change: GitChange;
@@ -60,6 +61,7 @@ export function ChangeRow({
   onRollback,
   hidePathDir,
 }: Props) {
+  const { LL } = useI18nContext();
   const tone = STATUS_TONE[change.status];
   const parts = splitPath(change.path);
 
@@ -73,7 +75,7 @@ export function ChangeRow({
       data-tone={tone}
       data-touched={touched || undefined}
       data-active={active || undefined}
-      title={touched ? `${change.path} · touched by current session` : change.path}
+      title={touched ? LL.git.row.touched({ path: change.path }) : change.path}
     >
       <input
         type="checkbox"
@@ -81,7 +83,7 @@ export function ChangeRow({
         checked={selected}
         onChange={onToggle}
         onClick={stopProp}
-        aria-label={`Stage ${change.path}`}
+        aria-label={LL.git.row.stage({ path: change.path })}
       />
       <button
         type="button"
@@ -111,7 +113,7 @@ export function ChangeRow({
   const items: ContextMenuItem[] = [];
   if (onShowInEditor && change.status !== "D") {
     items.push({
-      label: "Open file in editor",
+      label: LL.git.row.openInEditor(),
       icon: <FileText size={12} />,
       onSelect: onShowInEditor,
     });
@@ -119,7 +121,7 @@ export function ChangeRow({
   if (onRollback) {
     if (items.length > 0) items.push({ kind: "separator" });
     items.push({
-      label: "Rollback",
+      label: LL.git.row.rollback(),
       icon: <Undo2 size={12} />,
       onSelect: onRollback,
       danger: true,

@@ -6,6 +6,7 @@ import {
   RefreshCw,
   Undo2,
 } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { useGitStore } from "./useGitStore.js";
 import { useStagingStore } from "./useStagingStore.js";
 
@@ -26,6 +27,7 @@ interface Props {
  * staging store and tells us via `hasSelection` so we can disable the buttons.
  */
 export function ChangesToolbar({ projectId }: Props) {
+  const { LL } = useI18nContext();
   const refreshAll = useGitStore((s) => s.refreshAll);
   const rollback = useGitStore((s) => s.rollback);
   const stash = useGitStore((s) => s.stash);
@@ -63,19 +65,19 @@ export function ChangesToolbar({ projectId }: Props) {
   });
 
   return (
-    <div className="pid-git-changes-toolbar" role="toolbar" aria-label="Working tree actions">
+    <div className="pid-git-changes-toolbar" role="toolbar" aria-label={LL.git.toolbar.label()}>
       <ToolbarButton
         icon={RefreshCw}
-        label="refresh"
-        title="Refresh git state from disk"
+        label={LL.git.toolbar.refresh()}
+        title={LL.git.toolbar.refreshTitle()}
         busy={busy === "refresh"}
         disabled={Boolean(busy)}
         onClick={wrap("refresh", () => refreshAll(projectId))}
       />
       <ToolbarButton
         icon={Undo2}
-        label="rollback"
-        title={hasSelection ? "Rollback selected files to HEAD" : "Select files to roll back"}
+        label={LL.git.toolbar.rollback()}
+        title={hasSelection ? LL.git.toolbar.rollbackTitle() : LL.git.toolbar.rollbackTitleEmpty()}
         busy={busy === "rollback"}
         disabled={!hasSelection || Boolean(busy)}
         onClick={handleRollback}
@@ -83,16 +85,16 @@ export function ChangesToolbar({ projectId }: Props) {
       <span className="pid-git-changes-toolbar-sep" aria-hidden />
       <ToolbarButton
         icon={Archive}
-        label="stash"
-        title={hasSelection ? "Stash selected changes" : "Stash all working-tree changes"}
+        label={LL.git.toolbar.stash()}
+        title={hasSelection ? LL.git.toolbar.stashTitleSelected() : LL.git.toolbar.stashTitleAll()}
         busy={busy === "stash"}
         disabled={Boolean(busy)}
         onClick={handleStash}
       />
       <ToolbarButton
         icon={ArchiveRestore}
-        label="apply"
-        title="Apply and drop the latest stash entry"
+        label={LL.git.toolbar.apply()}
+        title={LL.git.toolbar.applyTitle()}
         busy={busy === "apply"}
         disabled={Boolean(busy)}
         onClick={wrap("apply", () => stashPop(projectId))}

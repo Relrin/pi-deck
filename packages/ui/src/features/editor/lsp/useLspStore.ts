@@ -2,6 +2,7 @@ import { LSPClient, languageServerExtensions } from "@codemirror/lsp-client";
 import { languageIdForFile, serverForLanguageId } from "@pi-deck/core/lsp/server-defs.js";
 import { deckPathToUri, type LspMapping, uriToDeckPath } from "@pi-deck/core/lsp/uri.js";
 import { create } from "zustand";
+import { ll } from "../../../i18n/t.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore.js";
 import { createLspTransport, disposeLspTransport } from "./transport.js";
@@ -227,10 +228,12 @@ export const useLspStore = create<LspStoreState>((set, get) => ({
     disposeClient(key);
     if (status === "crashed") {
       // One non-blocking notice per crash; the editor quietly falls back to built-in completion.
-      useNotificationStore.getState().error(`${serverId} language server crashed`, {
-        id: `lsp-crash-${key}`,
-        body: message ?? "The editor fell back to basic completion. Reopen a file to retry.",
-      });
+      useNotificationStore
+        .getState()
+        .error(ll().editor.lsp.crashToast.title({ server: serverId }), {
+          id: `lsp-crash-${key}`,
+          body: message ?? ll().editor.lsp.crashToast.body(),
+        });
       set((s) => ({
         servers: {
           ...s.servers,

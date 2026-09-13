@@ -21,6 +21,15 @@ const plan = {
   },
 
   panel: {
+    /** `PlanPanel.tsx` — built but not currently mounted; converted so it is ready when it is. */
+    empty: "Open a session to see its plan.",
+    title: "Plan",
+    copied: "Copied!",
+    copy: "Copy as Markdown",
+    copyLabel: "Copy plan as Markdown",
+    progress: "{done:number} of {total:number} done",
+    noPlan:
+      "No plan yet. Switch the composer to plan mode and send a prompt — the agent will write the plan here.",
     /** Shown when a step is running but the model gave it no label. */
     inProgressFallback: "in progress",
   },

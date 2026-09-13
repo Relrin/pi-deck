@@ -1,6 +1,11 @@
 /**
- * Shared vocabulary and anything that has no better home: buttons reused across features, and the
- * error text the whole app funnels through `lib/format/humanize-error.ts`.
+ * Shared *vocabulary*, and nothing else: buttons reused across features, and the error text the
+ * whole app funnels through `lib/format/humanize-error.ts`.
+ *
+ * Deliberately not a catch-all. A string belongs in the namespace named after the directory its
+ * file lives in — `features/diff/` in `diff`, `features/files/` in `files`, and so on — which is
+ * what keeps parallel sweep sessions from all editing this one file. The `diff` and `files` keys
+ * that used to live here moved out for exactly that reason.
  */
 const common = {
   cancel: "Cancel",
@@ -55,23 +60,6 @@ const common = {
       disconnected: "Lost the connection to the backend.",
       timedOut: "The backend did not respond in time.",
     },
-  },
-
-  /**
-   * `features/diff/` and `features/files/` have no namespace of their own — the ten namespaces
-   * mirror `features/*` only where a feature is large enough to warrant a file. Until phase 07
-   * decides otherwise, their few strings live here.
-   */
-  diff: {
-    /** Commit button label once files are selected. */
-    commitFiles: "commit · {count:number} {{file|files}}",
-    revertAllConfirm:
-      "This reverts {count:number} {{file|files}} to HEAD (untracked files are removed). This can't be undone.",
-  },
-
-  files: {
-    confirmDeleteTitle: "Move {count:number} {{item|items}} to Trash?",
-    moreItems: "+ {count:number} more {{item|items}}",
   },
 } as const;
 

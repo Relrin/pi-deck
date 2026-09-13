@@ -1,6 +1,7 @@
 import { comparePaths } from "@pi-deck/core/fs/collation.js";
 import type { FsNode } from "@pi-deck/core/fs/types.js";
 import { create } from "zustand";
+import { ll } from "../../i18n/t.js";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 
@@ -77,7 +78,7 @@ export const useFileTreeStore = create<FileTreeStoreState>((set, get) => ({
           };
         });
       } catch (err) {
-        const message = humanizeError(err, "Failed to load project files");
+        const message = humanizeError(err, ll().files.errors.load());
         set((state) => {
           const existing = state.byProject[projectId];
           return {

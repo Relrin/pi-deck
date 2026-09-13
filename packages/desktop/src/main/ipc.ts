@@ -1,7 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { basename, extname } from "node:path";
+import { isLocale } from "@pi-deck/core";
 import type { FileFilter } from "electron";
 import { BrowserWindow, dialog, ipcMain, shell } from "electron";
+import { installAppMenu } from "./menu";
 
 export interface BridgeInfo {
   url: string;
@@ -50,6 +52,24 @@ export function registerWindowControlIpc(): void {
     "window:is-maximized",
     (event) => BrowserWindow.fromWebContents(event.sender)?.isMaximized() ?? false,
   );
+}
+
+let localeRegistered = false;
+
+/**
+ * Rebuild the native menu when the renderer's language changes.
+ *
+ * Registered separately from `registerBridgeIpc` because that one only runs once `startBackend()`
+ * has succeeded — and the menu must not depend on the backend coming up. `registerWindowControlIpc`
+ * is the same shape for the same reason.
+ */
+export function registerLocaleIpc(): void {
+  if (localeRegistered) return;
+  localeRegistered = true;
+  ipcMain.handle("app:set-locale", (_event, locale: unknown) => {
+    // Never trust the renderer's string: `isLocale` is the same guard the protocol uses.
+    if (isLocale(locale)) installAppMenu(locale);
+  });
 }
 
 export function registerBridgeIpc(info: BridgeInfo): void {

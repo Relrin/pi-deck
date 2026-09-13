@@ -1,6 +1,7 @@
 import type { ReviewTurn } from "@pi-deck/core/protocol/commands.js";
 import { Check, X } from "lucide-react";
 import { PidIconButton } from "../../components/buttons/PidIconButton.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 
 interface ReviewFileListProps {
   turn: ReviewTurn;
@@ -24,8 +25,9 @@ export function ReviewFileList({
   onAcceptFile,
   onRejectFile,
 }: ReviewFileListProps) {
+  const { LL } = useI18nContext();
   return (
-    <aside className="pid-review-files" aria-label="Files in this turn">
+    <aside className="pid-review-files" aria-label={LL.chat.review.fileList()}>
       {turn.files.map((file) => {
         const isActive = file.path === selectedPath;
         return (
@@ -48,7 +50,7 @@ export function ReviewFileList({
             <span className="pid-review-file-actions">
               <PidIconButton
                 icon={<X size={12} />}
-                label={`Reject ${file.path}`}
+                label={LL.chat.review.rejectFile({ path: file.path })}
                 onClick={(event) => {
                   event.stopPropagation();
                   onRejectFile(file.path);
@@ -56,7 +58,7 @@ export function ReviewFileList({
               />
               <PidIconButton
                 icon={<Check size={12} />}
-                label={`Accept ${file.path}`}
+                label={LL.chat.review.acceptFile({ path: file.path })}
                 onClick={(event) => {
                   event.stopPropagation();
                   onAcceptFile(file.path);

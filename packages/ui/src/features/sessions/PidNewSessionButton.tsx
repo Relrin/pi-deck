@@ -1,12 +1,14 @@
 import { Plus } from "../../components/icons/index.js";
 import { PidKbd } from "../../components/kbd/PidKbd";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { useNavStore } from "../../lib/useNavStore";
 import { useProjectsStore } from "./useProjectsStore";
 
 export function PidNewSessionButton() {
+  const { LL } = useI18nContext();
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const disabled = !activeProjectId;
-  const label = disabled ? "Open a project first" : "New session";
+  const label = disabled ? LL.sessions.newButton.disabled() : LL.sessions.newButton.label();
 
   // Clicking "new session" routes the user to the blank/composer screen instead of
   // eagerly creating an empty session. The actual session is created on the first prompt
@@ -26,7 +28,7 @@ export function PidNewSessionButton() {
       title={label}
     >
       <Plus size={12} />
-      <span className="pid-rail-new-label">new session</span>
+      <span className="pid-rail-new-label">{LL.sessions.newButton.caption()}</span>
       <PidKbd keys={["Mod", "N"]} />
     </button>
   );

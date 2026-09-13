@@ -1,6 +1,7 @@
 import type { PlanGatePolicy } from "@pi-deck/core/domain/session.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { ll } from "../../i18n/t.js";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
@@ -109,7 +110,7 @@ export const useToolsStore = create<ToolsStoreState>()(
           // Roll back the optimistic update — the worker isn't actually running with this
           // exclusion list, so the picker shouldn't claim it is.
           set((state) => ({ bySession: { ...state.bySession, [sessionId]: prev ?? [] } }));
-          useNotificationStore.getState().error(humanizeError(err, "Failed to update tools"));
+          useNotificationStore.getState().error(humanizeError(err, ll().tools.errors.update()));
         }
       },
     }),

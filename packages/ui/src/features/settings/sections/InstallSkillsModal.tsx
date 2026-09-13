@@ -14,6 +14,7 @@ type ScannedSkill = ScanData["skills"][number];
 
 type Phase = "idle" | "scanning" | "scanned" | "error" | "installing";
 
+// i18n-exempt: GitHub `owner/repo` slugs offered as starting points
 const SAMPLE_REPOS: { label: string; url: string }[] = [
   { label: "anthropics/skills", url: "https://github.com/anthropics/skills" },
   { label: "mattpocock/skills", url: "https://github.com/mattpocock/skills" },
@@ -186,7 +187,7 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
               icon={<X size={12} aria-hidden />}
               onClick={() => onOpenChange(false)}
             >
-              esc
+              {LL.settings.escBadge()}
             </PidButton>
           </div>
 

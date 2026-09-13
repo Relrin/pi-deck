@@ -12,6 +12,7 @@ import {
   Star,
 } from "../../components/icons/index.js";
 import { useI18nContext } from "../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../i18n/i18n-types.js";
 import { relativeTime } from "../../lib/format/relative-time.js";
 import { useGitStore } from "./useGitStore.js";
 
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export function BranchPicker({ projectId, branch, ahead, behind, upstream }: Props) {
+  const { LL } = useI18nContext();
   const branches = useGitStore((s) => s.branchesByProject[projectId]);
   const branchesError = useGitStore((s) => s.errorByProject[projectId]);
   const branchesLoading = useGitStore((s) => s.loadingByProject[projectId] ?? false);
@@ -127,7 +129,7 @@ export function BranchPicker({ projectId, branch, ahead, behind, upstream }: Pro
         <button
           type="button"
           className="pid-git-branch-trigger"
-          aria-label="Select branch"
+          aria-label={LL.git.picker.select()}
           disabled={!branch}
         >
           <GitBranch size={14} />
@@ -151,14 +153,14 @@ export function BranchPicker({ projectId, branch, ahead, behind, upstream }: Pro
         >
           <header className="pid-branch-picker-head">
             <div className="pid-branch-picker-head-top">
-              <span className="pid-branch-picker-eyebrow">Current</span>
+              <span className="pid-branch-picker-eyebrow">{LL.git.picker.current()}</span>
               <span className="pid-branch-picker-head-spacer" />
               <button
                 type="button"
                 className="pid-branch-picker-head-btn"
                 onClick={() => branch && void copyBranchName(branch)}
-                title="Copy branch name"
-                aria-label="Copy branch name"
+                title={LL.git.picker.copyName()}
+                aria-label={LL.git.picker.copyName()}
                 disabled={!branch}
               >
                 <Copy size={12} aria-hidden />
@@ -182,9 +184,9 @@ export function BranchPicker({ projectId, branch, ahead, behind, upstream }: Pro
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onSearchKeyDown}
-                placeholder="switch to branch…"
+                placeholder={LL.git.picker.searchPlaceholder()}
                 className="pid-branch-picker-search-input"
-                aria-label="Search branches"
+                aria-label={LL.git.picker.searchLabel()}
                 autoComplete="off"
                 spellCheck={false}
               />
@@ -192,10 +194,10 @@ export function BranchPicker({ projectId, branch, ahead, behind, upstream }: Pro
           </div>
 
           <div className="pid-branch-picker-list">
-            <div className="pid-branch-picker-section-head">Recent</div>
+            <div className="pid-branch-picker-section-head">{LL.git.picker.recent()}</div>
             {filtered.length === 0 ? (
               <div className="pid-branch-picker-empty">
-                {emptyMessage(allBranches.length, branchesLoading, branchesError, trimmedQuery)}
+                {emptyMessage(LL, allBranches.length, branchesLoading, branchesError, trimmedQuery)}
               </div>
             ) : (
               filtered.map((b) => (
@@ -218,9 +220,9 @@ export function BranchPicker({ projectId, branch, ahead, behind, upstream }: Pro
                 value={createValue}
                 onChange={(e) => setCreateValue(e.target.value)}
                 onKeyDown={onCreateKeyDown}
-                placeholder={`new branch from ${defaultBranch}`}
+                placeholder={LL.git.picker.newBranchPlaceholder({ branch: defaultBranch })}
                 className="pid-branch-picker-create-input"
-                aria-label={`Create new branch from ${defaultBranch}`}
+                aria-label={LL.git.picker.newBranchLabel({ branch: defaultBranch })}
                 autoComplete="off"
                 spellCheck={false}
               />
@@ -243,16 +245,17 @@ export function BranchPicker({ projectId, branch, ahead, behind, upstream }: Pro
  * loading, error, "no matches under this filter", or genuinely empty repo.
  */
 function emptyMessage(
+  t: TranslationFunctions,
   total: number,
   loading: boolean,
   error: string | undefined,
   query: string,
 ): string {
-  if (error) return `Failed to load branches: ${error}`;
-  if (loading && total === 0) return "Loading branches…";
-  if (total === 0) return "No branches yet.";
-  if (query) return `No branches match "${query}".`;
-  return "No branches.";
+  if (error) return t.git.picker.loadFailed({ error });
+  if (loading && total === 0) return t.git.picker.loading();
+  if (total === 0) return t.git.picker.noneYet();
+  if (query) return t.git.picker.noMatches({ query });
+  return t.git.picker.none();
 }
 
 interface BranchRowProps {
@@ -262,7 +265,7 @@ interface BranchRowProps {
 }
 
 function BranchRow({ branch, isCurrent, onSelect }: BranchRowProps) {
-  const { locale } = useI18nContext();
+  const { LL, locale } = useI18nContext();
   // Icon precedence: current > merged > plain. Mirrors the screenshot — `★` for the active
   // branch, `✓` (in the merged tone) for branches reachable from default, hollow `○` for
   // everything else.
@@ -283,7 +286,9 @@ function BranchRow({ branch, isCurrent, onSelect }: BranchRowProps) {
     >
       {icon}
       <span className="pid-branch-row-name">{branch.name}</span>
-      {branch.merged && !isCurrent ? <span className="pid-branch-row-merged">merged</span> : null}
+      {branch.merged && !isCurrent ? (
+        <span className="pid-branch-row-merged">{LL.git.picker.merged()}</span>
+      ) : null}
       {branch.lastActivityAt ? (
         <span className="pid-branch-row-time">
           {relativeTime(branch.lastActivityAt, undefined, locale)}

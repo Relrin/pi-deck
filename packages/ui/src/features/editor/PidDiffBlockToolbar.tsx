@@ -1,6 +1,7 @@
 import type { RefObject } from "react";
 import { ArrowDown, ArrowLeftRight, ArrowUp, Undo2 } from "../../components/icons/index.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import type { DiffHoverInfo } from "./diffExtension.js";
 
 interface PidDiffBlockToolbarProps {
@@ -28,6 +29,7 @@ export function PidDiffBlockToolbar({
   onRevert,
   onOpenDiff,
 }: PidDiffBlockToolbarProps) {
+  const { LL } = useI18nContext();
   const wrap = wrapRef.current?.getBoundingClientRect();
   const top = info.clientTop - (wrap?.top ?? 0);
   const left = info.clientLeft - (wrap?.left ?? 0);
@@ -38,14 +40,14 @@ export function PidDiffBlockToolbar({
       className={`pid-diff-block-toolbar pid-diff-block-toolbar-${info.kind}`}
       style={{ top, left }}
       role="toolbar"
-      aria-label="Diff block actions"
+      aria-label={LL.editor.blockToolbar.label()}
     >
       <Tooltip content="Previous change">
         <button
           type="button"
           className="pid-diff-block-toolbar-btn"
           onClick={onPrev}
-          aria-label="Previous change"
+          aria-label={LL.editor.blockToolbar.prev()}
         >
           <ArrowUp size={13} aria-hidden="true" />
         </button>
@@ -55,7 +57,7 @@ export function PidDiffBlockToolbar({
           type="button"
           className="pid-diff-block-toolbar-btn"
           onClick={onNext}
-          aria-label="Next change"
+          aria-label={LL.editor.blockToolbar.next()}
         >
           <ArrowDown size={13} aria-hidden="true" />
         </button>
@@ -65,7 +67,7 @@ export function PidDiffBlockToolbar({
           type="button"
           className="pid-diff-block-toolbar-btn"
           onClick={onRevert}
-          aria-label="Revert this block"
+          aria-label={LL.editor.blockToolbar.revert()}
         >
           <Undo2 size={13} aria-hidden="true" />
         </button>
@@ -75,7 +77,7 @@ export function PidDiffBlockToolbar({
           type="button"
           className="pid-diff-block-toolbar-btn"
           onClick={onOpenDiff}
-          aria-label="Show Diff for lines"
+          aria-label={LL.editor.blockToolbar.showDiff()}
         >
           <ArrowLeftRight size={13} aria-hidden="true" />
         </button>

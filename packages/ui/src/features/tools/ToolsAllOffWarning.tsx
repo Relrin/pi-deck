@@ -1,4 +1,5 @@
 import { TriangleAlert } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 
 /**
  * Quiet (never error) banner shown when every built-in tool is disabled — at that point the
@@ -6,13 +7,11 @@ import { TriangleAlert } from "../../components/icons/index.js";
  * a heads-up rather than a failure. Mirrors the mockup's `ToolsAllOffWarning`.
  */
 export function ToolsAllOffWarning() {
+  const { LL } = useI18nContext();
   return (
     <div className="pid-tools-alloff" role="status">
       <TriangleAlert size={12} className="pid-tools-alloff-icon" aria-hidden />
-      <span>
-        With every tool disabled, the agent can only reply with text — it can't read or modify
-        files.
-      </span>
+      <span>{LL.tools.allOffWarning()}</span>
     </div>
   );
 }

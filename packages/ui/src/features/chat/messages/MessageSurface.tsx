@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 
 export interface MessageSurfaceProps {
   kind: "user" | "agent";
@@ -33,6 +34,7 @@ export function MessageSurface({
   actions,
   children,
 }: MessageSurfaceProps) {
+  const { LL } = useI18nContext();
   return (
     <div className="pid-msg" data-kind={kind}>
       <div className="pid-msg-bubble">
@@ -47,7 +49,7 @@ export function MessageSurface({
               {timestamp}
             </span>
           )}
-          {kind === "user" && <span>you</span>}
+          {kind === "user" && <span>{LL.chat.authorYou()}</span>}
         </div>
         <div className="pid-msg-body">{children}</div>
       </div>

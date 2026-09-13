@@ -2,6 +2,7 @@ import type { FileTree as FileTreeModel } from "@pierre/trees";
 import { useFileTreeSearch } from "@pierre/trees/react";
 import type { KeyboardEvent } from "react";
 import { Search, X } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 
 interface PidTreeSearchProps {
   /** The `@pierre/trees` model from `useFileTree`. */
@@ -18,6 +19,7 @@ interface PidTreeSearchProps {
  * not the whole tree shell.
  */
 export function PidTreeSearch({ model }: PidTreeSearchProps) {
+  const { LL } = useI18nContext();
   const search = useFileTreeSearch(model);
   const value = search.value;
 
@@ -44,18 +46,18 @@ export function PidTreeSearch({ model }: PidTreeSearchProps) {
       <input
         type="text"
         className="pid-tree-filter-input"
-        placeholder="filter files…"
+        placeholder={LL.files.search.placeholder()}
         value={value}
         onChange={(e) => search.setValue(e.target.value || null)}
         onKeyDown={handleKeyDown}
-        aria-label="Filter files"
+        aria-label={LL.files.search.label()}
       />
       {value.length > 0 && (
         <button
           type="button"
           className="pid-tree-filter-clear"
           onClick={() => search.setValue(null)}
-          aria-label="Clear filter"
+          aria-label={LL.files.search.clear()}
         >
           <X size={11} />
         </button>

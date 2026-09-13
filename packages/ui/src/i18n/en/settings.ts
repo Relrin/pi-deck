@@ -465,6 +465,12 @@ const settings = {
       exposure: "Tool exposure",
       proxy: "Proxy",
       direct: "Direct",
+      /**
+       * The row chip spells the same choice in lower case. A separate key rather than
+       * `.toLowerCase()` on the one above: in a language with cases the inline form is a
+       * different word, not a different capitalisation.
+       */
+      directChip: "direct",
       /** `count` is the adapter's tool count, `tokens` the already-localized token figure. */
       exposeDirectCount: "{count:number} {{tool|tools}} registered directly",
       exposeDirectCountTokens:
@@ -521,6 +527,7 @@ const settings = {
       unreachable: "Couldn't reach the registry. Check your connection and try again.",
       /** `query` arrives as its own monospace element, quotes included. */
       noMatch: "No servers match {query:string}.",
+      shownCount: "{count:number} shown",
       loadMore: "Load more",
       loading: "Loading…",
       /** `path` is spliced in as its own accent-coloured element. */
@@ -538,6 +545,12 @@ const settings = {
       tag: "MCP",
     },
   },
+
+  /**
+   * The two install modals' dismiss badge. Distinct from `escHint` above, which is a sentence
+   * with the key spliced in; this is the key cap on its own.
+   */
+  escBadge: "esc",
 
   skills: {
     kicker: "Skills",

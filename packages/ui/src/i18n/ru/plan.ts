@@ -20,6 +20,14 @@ const plan = {
 
   panel: {
     inProgressFallback: "в процессе",
+    empty: "Откройте сессию, чтобы увидеть её план.",
+    title: "План",
+    copied: "Скопировано",
+    copy: "Скопировать как Markdown",
+    copyLabel: "Скопировать план как Markdown",
+    progress: "готово {done} из {total}",
+    noPlan:
+      "Плана пока нет. Переключите композер в режим планирования и отправьте запрос — агент напишет план здесь.",
   },
 } as const satisfies DeepPartial<Translation["plan"]>;
 

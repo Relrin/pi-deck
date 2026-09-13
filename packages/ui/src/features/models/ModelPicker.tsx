@@ -4,6 +4,7 @@ import * as RadixDialog from "@radix-ui/react-dialog";
 import { useEffect, useMemo, useState } from "react";
 import { PidIconButton } from "../../components/buttons/PidIconButton";
 import { X } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { AddCustomProviderDialog } from "./AddCustomProviderDialog.js";
 import { AuthenticateProviderDialog } from "./AuthenticateProviderDialog.js";
@@ -30,6 +31,7 @@ export function ModelPicker({
   sessionId,
   activeModel: activeOverride,
 }: ModelPickerProps) {
+  const { LL } = useI18nContext();
   const providers = useProvidersStore((s) => s.providers);
   const modelsByProvider = useProvidersStore((s) => s.modelsByProvider);
   const loadingByProvider = useProvidersStore((s) => s.loadingModelsByProvider);
@@ -99,10 +101,12 @@ export function ModelPicker({
           <RadixDialog.Overlay className="pid-modal-backdrop" />
           <RadixDialog.Content className="pid-modal" aria-describedby={undefined}>
             <div className="pid-modal-header">
-              <RadixDialog.Title className="pid-modal-title">Select model</RadixDialog.Title>
+              <RadixDialog.Title className="pid-modal-title">
+                {LL.models.picker.title()}
+              </RadixDialog.Title>
               <PidIconButton
                 icon={<X size={14} />}
-                label="Close model picker"
+                label={LL.models.picker.close()}
                 onClick={() => onOpenChange(false)}
               />
             </div>

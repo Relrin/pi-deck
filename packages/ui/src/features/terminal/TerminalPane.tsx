@@ -1,5 +1,6 @@
 import type { TerminalShell } from "@pi-deck/core/protocol/commands.js";
 import { useEffect } from "react";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
 import { TerminalTabs } from "./TerminalTabs.js";
@@ -20,6 +21,7 @@ function newTabId(): string {
  * host buffer snapshot).
  */
 export function TerminalPane() {
+  const { LL } = useI18nContext();
   const scope = useTerminalStore((s) => s.bySession[s.currentKey]);
   const addTab = useTerminalStore((s) => s.addTab);
   const ensureTab = useTerminalStore((s) => s.ensureTab);
@@ -73,7 +75,7 @@ export function TerminalPane() {
           <TerminalView key={activeTab.tabId} tab={activeTab} />
         ) : (
           <div className="pid-terminal-empty">
-            {cwd ? "Starting terminal…" : "Open a project to start a terminal."}
+            {cwd ? LL.terminal.view.starting() : LL.terminal.view.noProject()}
           </div>
         )}
       </div>

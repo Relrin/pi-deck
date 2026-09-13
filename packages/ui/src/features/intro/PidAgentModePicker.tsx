@@ -9,6 +9,8 @@ import {
   ShieldCheck,
   Sparkles,
 } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../i18n/i18n-types.js";
 import { useSessionDefaultsStore } from "../settings/useSessionDefaultsStore.js";
 
 interface ModeEntry {
@@ -18,54 +20,63 @@ interface ModeEntry {
   Icon: ComponentType<{ size?: number; className?: string }>;
 }
 
-const MODES: ModeEntry[] = [
-  {
-    value: "ask",
-    label: "Ask",
-    blurb: "Confirm before each write or shell command.",
-    Icon: ShieldCheck,
-  },
-  {
-    value: "accept-edits",
-    label: "Accept edits",
-    blurb: "Auto-accept edits to listed files & paths.",
-    Icon: CheckCheck,
-  },
-  {
-    value: "auto",
-    label: "Auto",
-    blurb: "Auto-run; risky actions pause for approval.",
-    Icon: Sparkles,
-  },
-  {
-    value: "plan",
-    label: "Plan",
-    blurb: "Plan-only - no writes, no commands.",
-    Icon: MapIcon,
-  },
-];
-
-// Fallback display when the stored mode somehow isn't one of MODES — matches the built-in
-// default (accept-edits) rather than plan.
-const FALLBACK_MODE: ModeEntry = MODES[1] ?? {
-  value: "accept-edits",
-  label: "Accept edits",
-  blurb: "Auto-accept edits to listed files & paths.",
-  Icon: CheckCheck,
-};
+/**
+ * Built per render from the catalog rather than held as a module constant: a module-level table
+ * would capture whatever locale was loaded at import time and never update on a language switch.
+ * `value` stays the protocol agent mode.
+ *
+ * Exported for `test/i18n/option-tables.test.ts`.
+ */
+export function agentModes(t: TranslationFunctions): ModeEntry[] {
+  const copy = t.intro.agentMode;
+  return [
+    {
+      value: "ask",
+      label: copy.ask.label(),
+      blurb: copy.ask.blurb(),
+      Icon: ShieldCheck,
+    },
+    {
+      value: "accept-edits",
+      label: copy.acceptEdits.label(),
+      blurb: copy.acceptEdits.blurb(),
+      Icon: CheckCheck,
+    },
+    {
+      value: "auto",
+      label: copy.auto.label(),
+      blurb: copy.auto.blurb(),
+      Icon: Sparkles,
+    },
+    {
+      value: "plan",
+      label: copy.plan.label(),
+      blurb: copy.plan.blurb(),
+      Icon: MapIcon,
+    },
+  ];
+}
 
 export function PidAgentModePicker() {
+  const { LL } = useI18nContext();
   const agentMode = useSessionDefaultsStore((s) => s.defaultAgentMode);
   const setAgentMode = useSessionDefaultsStore((s) => s.setDefaultAgentMode);
-  const active = MODES.find((m) => m.value === agentMode) ?? FALLBACK_MODE;
-  const ActiveIcon = active.Icon;
+  const modes = agentModes(LL);
+  // Fallback display when the stored mode somehow is not one of the four — matches the built-in
+  // default (accept-edits) rather than plan.
+  const active = modes.find((m) => m.value === agentMode) ?? modes[1] ?? modes[0];
+  const ActiveIcon = active?.Icon ?? CheckCheck;
 
   return (
     <RadixDropdown.Root>
       <RadixDropdown.Trigger asChild>
-        <button type="button" className="pid-picker-trigger" aria-label="Agent mode">
+        <button
+          type="button"
+          className="pid-picker-trigger"
+          aria-label={LL.intro.agentMode.label()}
+        >
           <ActiveIcon size={12} className="pid-picker-trigger-icon" />
-          <span className="pid-picker-trigger-label">{active.label}</span>
+          <span className="pid-picker-trigger-label">{active?.label}</span>
           <ChevronDown size={10} className="pid-picker-trigger-chev" aria-hidden />
         </button>
       </RadixDropdown.Trigger>
@@ -77,8 +88,8 @@ export function PidAgentModePicker() {
           className="pid-picker-menu"
           style={{ minWidth: 280 }}
         >
-          <div className="pid-picker-menu-header">Agent mode</div>
-          {MODES.map((mode) => {
+          <div className="pid-picker-menu-header">{LL.intro.agentMode.header()}</div>
+          {modes.map((mode) => {
             const isActive = mode.value === agentMode;
             const ModeIcon = mode.Icon;
             return (

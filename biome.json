@@ -60,5 +60,35 @@
     "parser": {
       "tailwindDirectives": true
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["packages/ui/src/**/*.tsx", "packages/desktop/src/renderer/**/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/i18n/t",
+                      "**/i18n/t.js",
+                      "**/i18n",
+                      "**/i18n/index",
+                      "**/i18n/index.js",
+                      "@pi-deck/ui/i18n"
+                    ],
+                    "importNamePattern": "(ll|llFor|currentLocale)",
+                    "message": "A .tsx that reads translations imperatively renders correctly once and then goes stale on a language switch, because reading the store creates no subscription. Use `const { LL, locale } = useI18nContext()` instead. See AGENTS.md, Localization (i18n)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

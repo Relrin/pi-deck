@@ -5,6 +5,7 @@ import type {
   ProviderSummary,
 } from "@pi-deck/core/providers/types.js";
 import { create } from "zustand";
+import { ll } from "../../i18n/t.js";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
@@ -60,7 +61,7 @@ export const useProvidersStore = create<ProvidersStoreState>((set, get) => ({
       const res = await client.call("provider.list", {});
       set({ providers: res.providers, defaultModel: res.defaultModel });
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to load providers"));
+      useNotificationStore.getState().error(humanizeError(err, ll().models.errors.loadProviders()));
     } finally {
       set({ loadingProviders: false });
     }
@@ -78,7 +79,7 @@ export const useProvidersStore = create<ProvidersStoreState>((set, get) => ({
         modelsByProvider: { ...s.modelsByProvider, [providerId]: res.models },
       }));
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to load models"));
+      useNotificationStore.getState().error(humanizeError(err, ll().models.errors.loadModels()));
     } finally {
       set((s) => ({
         loadingModelsByProvider: { ...s.loadingModelsByProvider, [providerId]: false },
@@ -140,7 +141,7 @@ export const useProvidersStore = create<ProvidersStoreState>((set, get) => ({
     try {
       await client.call("session.setModel", { sessionId, modelRef, thinkingLevel });
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to switch model"));
+      useNotificationStore.getState().error(humanizeError(err, ll().models.errors.switchModel()));
       throw err;
     }
   },
@@ -162,7 +163,9 @@ export const useProvidersStore = create<ProvidersStoreState>((set, get) => ({
     try {
       await client.call("session.setThinkingLevel", { sessionId, level });
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to set thinking level"));
+      useNotificationStore
+        .getState()
+        .error(humanizeError(err, ll().models.errors.setThinkingLevel()));
       throw err;
     }
   },

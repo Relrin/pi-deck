@@ -9,6 +9,7 @@ import {
   Plus,
   Search,
 } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { useGitStore } from "../git/useGitStore.js";
 
 interface Props {
@@ -16,6 +17,8 @@ interface Props {
 }
 
 export function PidBranchPicker({ projectId }: Props) {
+  const { LL } = useI18nContext();
+  const copy = LL.intro.branch;
   const branches = useGitStore((s) => (projectId ? s.branchesByProject[projectId] : undefined));
   const currentBranch = useGitStore((s) =>
     projectId ? s.currentBranchByProject[projectId] : undefined,
@@ -112,7 +115,7 @@ export function PidBranchPicker({ projectId }: Props) {
   return (
     <RadixDropdown.Root open={open} onOpenChange={setOpen}>
       <RadixDropdown.Trigger asChild disabled={!projectId}>
-        <button type="button" className="pid-picker-trigger" aria-label="Select branch">
+        <button type="button" className="pid-picker-trigger" aria-label={copy.label()}>
           <GitMerge size={12} aria-hidden />
           <span className="pid-picker-trigger-label">{currentBranch || "none"}</span>
           <ChevronDown size={10} className="pid-picker-trigger-chev" />
@@ -135,9 +138,9 @@ export function PidBranchPicker({ projectId }: Props) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onInputKeyDown}
-              placeholder="Search or type new branch…"
+              placeholder={copy.searchPlaceholder()}
               className="pid-model-menu-search-input"
-              aria-label="Search or type new branch"
+              aria-label={copy.searchLabel()}
               autoComplete="off"
               spellCheck={false}
             />
@@ -155,7 +158,8 @@ export function PidBranchPicker({ projectId }: Props) {
                   <Plus size={12} />
                 </span>
                 <span className="pid-branch-menu-create-label">
-                  Create branch <span className="pid-branch-menu-create-name">{trimmedQuery}</span>
+                  {copy.create()}{" "}
+                  <span className="pid-branch-menu-create-name">{trimmedQuery}</span>
                 </span>
                 <span className="pid-branch-menu-create-kbd" aria-hidden>
                   <CornerDownLeft size={12} />
@@ -164,11 +168,11 @@ export function PidBranchPicker({ projectId }: Props) {
             ) : (
               <>
                 <div className="pid-model-menu-section-head">
-                  <span>Branch</span>
+                  <span>{copy.header()}</span>
                 </div>
                 {filtered.length === 0 ? (
                   <div className="pid-model-menu-empty">
-                    {allBranches.length === 0 ? "No branches" : "No matches"}
+                    {allBranches.length === 0 ? copy.none() : copy.noMatches()}
                   </div>
                 ) : (
                   filtered.map((b) => {

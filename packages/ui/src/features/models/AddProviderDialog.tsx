@@ -3,6 +3,8 @@ import * as RadixDialog from "@radix-ui/react-dialog";
 import { Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PidButton } from "../../components/buttons/PidButton";
+import { useI18nContext } from "../../i18n/i18n-react.js";
+import { rich, slot } from "../../i18n/rich.js";
 import { ProviderAvatar } from "./icons";
 
 interface Props {
@@ -28,6 +30,7 @@ const THIN_CTL = {
  * the parent) so the user pastes a token — the same flow as "Replace key" on a configured row.
  */
 export function AddProviderDialog({ open, onOpenChange, providers, onSelect }: Props) {
+  const { LL } = useI18nContext();
   const [query, setQuery] = useState("");
 
   useEffect(() => {
@@ -55,14 +58,13 @@ export function AddProviderDialog({ open, onOpenChange, providers, onSelect }: P
         >
           <div className="pid-modal-header">
             <div>
-              <div className="pid-settings-section-kicker">providers · pi</div>
+              <div className="pid-settings-section-kicker">{LL.models.addProvider.eyebrow()}</div>
               <RadixDialog.Title className="pid-modal-title" style={{ fontStyle: "normal" }}>
-                Add provider
+                {LL.models.addProvider.title()}
               </RadixDialog.Title>
             </div>
             <RadixDialog.Description className="pid-modal-description">
-              Choose a provider and add an API key. Its models appear in the picker once a key is
-              saved.
+              {LL.models.addProvider.description()}
             </RadixDialog.Description>
             <PidButton
               variant="ghost"
@@ -70,7 +72,7 @@ export function AddProviderDialog({ open, onOpenChange, providers, onSelect }: P
               icon={<X size={12} aria-hidden />}
               onClick={() => onOpenChange(false)}
             >
-              esc
+              {LL.models.addProvider.escHint()}
             </PidButton>
           </div>
 
@@ -113,7 +115,7 @@ export function AddProviderDialog({ open, onOpenChange, providers, onSelect }: P
                 }}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search providers — name or env var…"
+                placeholder={LL.models.addProvider.search()}
                 spellCheck={false}
               />
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}>
@@ -126,11 +128,11 @@ export function AddProviderDialog({ open, onOpenChange, providers, onSelect }: P
           <div className="pid-provider-pick-list">
             {providers.length === 0 ? (
               <div className="pid-list-empty" style={{ padding: "32px 16px" }}>
-                Every built-in provider already has a key. Manage them on the previous screen.
+                {LL.models.addProvider.allConfigured()}
               </div>
             ) : filtered.length === 0 ? (
               <div className="pid-list-empty" style={{ padding: "32px 16px" }}>
-                No providers match{" "}
+                {LL.models.addProvider.noMatches()}{" "}
                 <span style={{ fontFamily: "var(--font-mono)", color: "var(--ink-1)" }}>
                   “{query}”
                 </span>
@@ -149,7 +151,7 @@ export function AddProviderDialog({ open, onOpenChange, providers, onSelect }: P
                     <div className="pid-provider-pick-name">{p.name}</div>
                     {p.envVar && <div className="pid-provider-pick-env">{p.envVar}</div>}
                   </div>
-                  <span className="pid-provider-pick-add">Add key</span>
+                  <span className="pid-provider-pick-add">{LL.models.addProvider.addKey()}</span>
                 </button>
               ))
             )}
@@ -170,9 +172,12 @@ export function AddProviderDialog({ open, onOpenChange, providers, onSelect }: P
               letterSpacing: "0.04em",
             }}
           >
-            <span>{filtered.length} available</span>
+            <span>{LL.models.addProvider.available({ count: filtered.length })}</span>
             <span style={{ marginLeft: "auto", color: "var(--ink-2)" }}>
-              keys saved to <span style={{ color: "var(--accent)" }}>~/.pi/agent/auth.json</span>
+              {rich(LL.models.addProvider.keysSavedTo({ path: slot("path") }), {
+                // i18n-exempt: the auth file's path on disk
+                path: <span style={{ color: "var(--accent)" }}>~/.pi/agent/auth.json</span>,
+              })}
             </span>
           </div>
         </RadixDialog.Content>

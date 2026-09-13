@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useI18nContext } from "../../src/i18n/i18n-react";
 import { loadLocale } from "../../src/i18n/i18n-util.sync";
 import { LocaleProvider } from "../../src/i18n/LocaleProvider";
-import { ll } from "../../src/i18n/t";
+import { ll, llFor } from "../../src/i18n/t";
 import { useLocaleStore } from "../../src/i18n/useLocaleStore";
 import { PidRightPane } from "../../src/layout/PidRightPane";
 // `screen` must come from `test/utils`: the stock one binds to `document.body` at module-load
@@ -78,15 +78,20 @@ describe("locale reactivity", () => {
     expect(after).not.toBe(before);
   });
 
-  test("shell labels survive a switch even though `shell` is untranslated", () => {
-    // Per-key fallback: phase 04 ships English-only shell copy and phase 07 translates it. Until
-    // then Russian must render the English string rather than a blank or a raw key path.
+  test("shell labels follow a language switch in a mounted component", () => {
+    // Until the `shell` namespace was translated this could only assert that the English string
+    // survived; now that Russian exists the label itself has to change, which is the stronger
+    // property. The per-key *fallback* is covered synthetically in `catalog.test.ts`, so it does
+    // not need a live key here — one that someone later translates would break the test again.
     renderWithLocale(<PidRightPane git={<div>git body</div>} context={<div>context body</div>} />);
     expect(screen.getByRole("tablist").getAttribute("aria-label")).toBe("Right pane tabs");
 
     switchTo("ru");
 
-    expect(screen.getByRole("tablist").getAttribute("aria-label")).toBe("Right pane tabs");
+    expect(screen.getByRole("tablist").getAttribute("aria-label")).toBe(
+      llFor("ru").shell.rightPane.tabs(),
+    );
+    // `Git` is a proper noun and reads the same in both locales — the tab is still findable.
     expect(screen.getByRole("tab", { name: /git/i })).toBeInTheDocument();
   });
 });

@@ -13,13 +13,14 @@
     "packages/*"
   ],
   "scripts": {
-    "check": "bun run lint && bun run format:check && bun run type-check",
+    "check": "bun run lint && bun run format:check && bun run type-check && bun run i18n:check",
     "lint": "biome lint .",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "type-check": "tsc -p tsconfig.json --noEmit && tsc -p packages/desktop/tsconfig.main.json --noEmit",
     "test": "bun test",
     "i18n:generate": "bun run --filter @pi-deck/ui i18n:generate",
+    "i18n:check": "bun packages/ui/scripts/i18n-check.ts",
     "desktop:dev": "bun run --filter @pi-deck/desktop dev",
     "desktop:build": "bun run --filter @pi-deck/desktop build",
     "dist": "bun run --filter @pi-deck/desktop dist",

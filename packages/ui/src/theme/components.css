@@ -148,6 +148,10 @@
   background: var(--bg-2);
   color: var(--ink-1);
   border: 1px solid var(--line);
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .pid-chip[data-variant="accent"] {
   color: var(--accent);
@@ -492,8 +496,12 @@
 }
 
 /* Segmented control */
+/* `flex-wrap` so a longer-label locale spills onto a second row instead of overflowing its
+   settings card. The existing `gap` doubles as the row gap, so no English layout moves: every
+   group fits on one line today. */
 .pid-segmented {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
 

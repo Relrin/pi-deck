@@ -13,27 +13,41 @@ import {
   useSessionsFilterStore,
 } from "./useSessionsFilterStore";
 
-const SINCE_OPTIONS: { id: SessionsSince; label: string }[] = [
-  { id: "1d", label: "1d" },
-  { id: "7d", label: "7d" },
-  { id: "14d", label: "14d" },
-  { id: "30d", label: "30d" },
-  { id: "all", label: "all" },
-];
+/**
+ * Built per render from the catalog rather than held as module constants: a module-level table
+ * would capture whatever locale was loaded at import time and never update on a language switch.
+ * The `id` fields stay identifiers — they are the persisted filter values.
+ *
+ * Exported for `test/i18n/option-tables.test.ts`.
+ */
+export function sinceOptions(t: TranslationFunctions): { id: SessionsSince; label: string }[] {
+  return SINCE_DURATIONS.map((id) =>
+    id === "all" ? { id, label: t.sessions.filter.since.all() } : { id, label: id },
+  );
+}
 
-const SORT_OPTIONS: { id: SessionsSort; label: string }[] = [
-  { id: "recent", label: "recent" },
-  { id: "created", label: "created" },
-  { id: "branch", label: "branch" },
-  { id: "status", label: "status" },
-];
+export function sortOptions(t: TranslationFunctions): { id: SessionsSort; label: string }[] {
+  const copy = t.sessions.filter.sort;
+  return [
+    { id: "recent", label: copy.recent() },
+    { id: "created", label: copy.created() },
+    { id: "branch", label: copy.branch() },
+    { id: "status", label: copy.status() },
+  ];
+}
 
-const GROUP_OPTIONS: { id: SessionsGroup; label: string }[] = [
-  { id: "workspace", label: "workspace" },
-  { id: "branch", label: "branch" },
-  { id: "status", label: "status" },
-  { id: "flat", label: "flat" },
-];
+export function groupOptions(t: TranslationFunctions): { id: SessionsGroup; label: string }[] {
+  const copy = t.sessions.filter.group;
+  return [
+    { id: "workspace", label: copy.workspace() },
+    { id: "branch", label: copy.branch() },
+    { id: "status", label: copy.status() },
+    { id: "flat", label: copy.flat() },
+  ];
+}
+
+/** Durations are not copy — `7d` reads the same in every locale. Only `all` is a word. */
+const SINCE_DURATIONS: readonly SessionsSince[] = ["1d", "7d", "14d", "30d", "all"];
 
 /**
  * "Sort, group & filter sessions" popover.
@@ -63,11 +77,11 @@ export function SessionsFilterPopover({ onClose }: { onClose: () => void }) {
     });
 
   return (
-    <div className="pid-sessions-filter-pop" role="dialog" aria-label="Filter sessions">
+    <div className="pid-sessions-filter-pop" role="dialog" aria-label={LL.sessions.filter.label()}>
       <div className="pid-sessions-filter-list">
         <AccordionSection
           id="project"
-          label="project"
+          label={LL.sessions.filter.section.project()}
           summary={summariseProject(LL, state.project, allProjectIds.length)}
           dirty={isSectionDirty(state, "project")}
           open={openSections.has("project")}
@@ -78,13 +92,13 @@ export function SessionsFilterPopover({ onClose }: { onClose: () => void }) {
 
         <AccordionSection
           id="since"
-          label="since"
+          label={LL.sessions.filter.section.since()}
           summary={state.since}
           dirty={isSectionDirty(state, "since")}
           open={openSections.has("since")}
           onToggle={() => toggleSection("since")}
         >
-          {SINCE_OPTIONS.map((o) => (
+          {sinceOptions(LL).map((o) => (
             <FilterRadio
               key={o.id}
               label={o.label}
@@ -98,13 +112,13 @@ export function SessionsFilterPopover({ onClose }: { onClose: () => void }) {
 
         <AccordionSection
           id="sort"
-          label="sort"
+          label={LL.sessions.filter.section.sort()}
           summary={state.sort}
           dirty={isSectionDirty(state, "sort")}
           open={openSections.has("sort")}
           onToggle={() => toggleSection("sort")}
         >
-          {SORT_OPTIONS.map((o) => (
+          {sortOptions(LL).map((o) => (
             <FilterRadio
               key={o.id}
               label={o.label}
@@ -116,13 +130,13 @@ export function SessionsFilterPopover({ onClose }: { onClose: () => void }) {
 
         <AccordionSection
           id="group"
-          label="group"
+          label={LL.sessions.filter.section.group()}
           summary={state.group}
           dirty={isSectionDirty(state, "group")}
           open={openSections.has("group")}
           onToggle={() => toggleSection("group")}
         >
-          {GROUP_OPTIONS.map((o) => (
+          {groupOptions(LL).map((o) => (
             <FilterRadio
               key={o.id}
               label={o.label}
@@ -135,7 +149,9 @@ export function SessionsFilterPopover({ onClose }: { onClose: () => void }) {
 
       <div className="pid-sessions-filter-footer">
         <span className="pid-sessions-filter-footer-status">
-          {dirty === 0 ? "defaults" : `${dirty} active`}
+          {dirty === 0
+            ? LL.sessions.filter.defaults()
+            : LL.sessions.filter.activeCount({ count: dirty })}
         </span>
         <button
           type="button"
@@ -143,10 +159,10 @@ export function SessionsFilterPopover({ onClose }: { onClose: () => void }) {
           disabled={dirty === 0}
           onClick={() => useSessionsFilterStore.getState().reset()}
         >
-          reset
+          {LL.sessions.filter.reset()}
         </button>
         <button type="button" className="pid-sessions-filter-footer-done" onClick={onClose}>
-          done
+          {LL.sessions.filter.done()}
         </button>
       </div>
     </div>
@@ -244,6 +260,7 @@ function FilterRadio({ label, checked, onChange }: FilterRadioProps) {
  * projects. The "All" toggle flips between selecting every project and clearing the list.
  */
 function ProjectPicker() {
+  const { LL } = useI18nContext();
   const projects = useProjectsStore((s) => s.projects);
   const selection = useSessionsFilterStore((s) => s.project);
   const [q, setQ] = useState("");
@@ -276,7 +293,7 @@ function ProjectPicker() {
         <Search size={10} />
         <input
           type="text"
-          placeholder="filter project…"
+          placeholder={LL.sessions.filter.projectPlaceholder()}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -300,7 +317,7 @@ function ProjectPicker() {
               <span className="pid-sessions-filter-option-check-dash" />
             ) : null}
           </span>
-          <span className="pid-sessions-filter-option-label">All</span>
+          <span className="pid-sessions-filter-option-label">{LL.sessions.filter.all()}</span>
           <span className="pid-sessions-filter-option-count">
             {selectedIds.size} / {allIds.length}
           </span>
@@ -308,7 +325,7 @@ function ProjectPicker() {
       )}
       <div className="pid-sessions-filter-project-list">
         {filtered.length === 0 ? (
-          <div className="pid-sessions-filter-empty">no matches</div>
+          <div className="pid-sessions-filter-empty">{LL.sessions.filter.noMatches()}</div>
         ) : (
           filtered.map((p) => (
             <FilterCheckbox
@@ -334,8 +351,8 @@ function summariseProject(
   selection: ProjectSelection,
   total: number,
 ): string {
-  if (selection.kind === "all") return "all";
-  if (selection.ids.length === 0) return "none";
-  if (selection.ids.length === total) return "all";
+  if (selection.kind === "all") return t.sessions.filter.summaryAll();
+  if (selection.ids.length === 0) return t.sessions.filter.summaryNone();
+  if (selection.ids.length === total) return t.sessions.filter.summaryAll();
   return t.sessions.filter.selectedCount({ count: selection.ids.length });
 }

@@ -7,7 +7,7 @@ import { useI18nContext } from "../../../i18n/i18n-react.js";
 import type { TranslationFunctions } from "../../../i18n/i18n-types.js";
 import { ToolsAllOffWarning } from "../../tools/ToolsAllOffWarning.js";
 import { ToolsList } from "../../tools/ToolsList.js";
-import { BUILT_IN_TOOLS } from "../../tools/toolCatalog.js";
+import { BUILT_IN_TOOL_IDS } from "../../tools/toolCatalog.js";
 import { useToolsStore } from "../../tools/useToolsStore.js";
 
 /**
@@ -37,7 +37,7 @@ export function ToolsSection() {
   const planGatePolicy = useToolsStore((s) => s.planGatePolicy);
   const setPlanGatePolicy = useToolsStore((s) => s.setPlanGatePolicy);
 
-  const allOff = defaultExcludedTools.length === BUILT_IN_TOOLS.length;
+  const allOff = defaultExcludedTools.length === BUILT_IN_TOOL_IDS.length;
 
   return (
     <div className="pid-settings-panel-inner">

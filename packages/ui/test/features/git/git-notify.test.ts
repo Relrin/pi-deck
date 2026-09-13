@@ -188,11 +188,12 @@ describe("a language switch reaches the builders", () => {
       actions: [],
     }).body;
 
-    // `git` is untranslated until phase 07, so the text is still the English fallback. What this
-    // pins is that the lookup happened again under the new locale rather than returning a value
-    // captured at module scope — assert on the store, and on the call having succeeded at all.
+    // Until `git` was translated this could only assert that the second call still *returned*
+    // something; now that Russian exists the real property is directly observable. A builder that
+    // had captured its catalog at module scope would hand back the English string here.
     expect(useLocaleStore.getState().uiLocale).toBe("ru");
-    expect(russian).toBe(english);
+    expect(russian).not.toBe(english);
+    expect(russian).toBe(llFor("ru").git.notify.push.reason.authFailed());
     expect(russian ?? "").not.toBe("");
   });
 

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { ll } from "../../i18n/t.js";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
@@ -288,7 +289,7 @@ export const useEditorStore = create<EditorStoreState>((set, get) => ({
       });
       return true;
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to save file"));
+      useNotificationStore.getState().error(humanizeError(err, ll().editor.errors.save()));
       return false;
     }
   },
@@ -304,7 +305,11 @@ async function loadTab(
   if (!tab) return;
   const client = useSessionsStore.getState().client;
   if (!client) {
-    patchTab(id, set, get, { status: "error", errorMessage: "Not connected", readOnly: true });
+    patchTab(id, set, get, {
+      status: "error",
+      errorMessage: ll().editor.errors.notConnected(),
+      readOnly: true,
+    });
     return;
   }
   try {
@@ -351,7 +356,7 @@ async function loadTab(
     if (!get().tabs[id]) return;
     patchTab(id, set, get, {
       status: "error",
-      errorMessage: humanizeError(err, "Failed to open file"),
+      errorMessage: humanizeError(err, ll().editor.errors.open()),
       readOnly: true,
     });
   }

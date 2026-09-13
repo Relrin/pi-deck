@@ -2,6 +2,8 @@ import type { ProviderSummary } from "@pi-deck/core/providers/types.js";
 import * as RadixDialog from "@radix-ui/react-dialog";
 import { type FormEvent, useEffect, useState } from "react";
 import { PidButton } from "../../components/buttons/PidButton";
+import { useI18nContext } from "../../i18n/i18n-react.js";
+import { rich, slot } from "../../i18n/rich.js";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { useProvidersStore } from "./useProvidersStore.js";
 
@@ -16,6 +18,8 @@ interface Props {
  * never echoed back to the renderer — once submitted, this component clears the input.
  */
 export function AuthenticateProviderDialog({ provider, open, onOpenChange }: Props) {
+  const { LL } = useI18nContext();
+  const copy = LL.models.authenticate;
   const [secret, setSecret] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
@@ -38,7 +42,7 @@ export function AuthenticateProviderDialog({ provider, open, onOpenChange }: Pro
       await setApiKey(provider.authJsonKey, secret.trim());
       onOpenChange(false);
     } catch (err) {
-      setError(humanizeError(err, "Failed to save API key"));
+      setError(humanizeError(err, copy.saveFailed()));
     } finally {
       setSubmitting(false);
     }
@@ -54,17 +58,16 @@ export function AuthenticateProviderDialog({ provider, open, onOpenChange }: Pro
         >
           <div className="pid-modal-header">
             <RadixDialog.Title className="pid-modal-title">
-              Authenticate {provider?.name ?? "provider"}
+              {copy.title({ provider: provider?.name ?? copy.titleFallback() })}
             </RadixDialog.Title>
             <RadixDialog.Description className="pid-modal-description">
-              Paste an API key — it's forwarded to the host process and stored in pi's auth file,
-              never echoed back to the renderer.
+              {copy.description()}
             </RadixDialog.Description>
           </div>
           <form className="pid-form" onSubmit={onSubmit}>
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="api-key-input">
-                API key
+                {copy.apiKey()}
               </label>
               <input
                 id="api-key-input"
@@ -77,8 +80,10 @@ export function AuthenticateProviderDialog({ provider, open, onOpenChange }: Pro
                 placeholder={provider?.envVar ?? "sk-…"}
               />
               <span className="pid-form-hint">
-                Stored in pi's {`~/.pi/agent/auth.json`} (0600 perms). Never logged or sent back to
-                the renderer.
+                {rich(copy.storageHint({ path: slot("path") }), {
+                  // i18n-exempt: the auth file's path on disk
+                  path: <>~/.pi/agent/auth.json</>,
+                })}
               </span>
             </div>
             {provider?.oauthSupported && (
@@ -89,9 +94,9 @@ export function AuthenticateProviderDialog({ provider, open, onOpenChange }: Pro
                   data-variant="ghost"
                   data-long-label
                   disabled
-                  title="OAuth landing in a future plan"
+                  title={copy.oauthTitle()}
                 >
-                  Use {provider.name} OAuth (coming soon)
+                  {copy.oauth({ provider: provider.name })}
                 </button>
               </div>
             )}
@@ -102,7 +107,7 @@ export function AuthenticateProviderDialog({ provider, open, onOpenChange }: Pro
             )}
             <div className="pid-form-row">
               <PidButton variant="ghost" onClick={() => onOpenChange(false)} longLabel>
-                Cancel
+                {LL.common.cancel()}
               </PidButton>
               <PidButton
                 variant="primary"
@@ -110,7 +115,7 @@ export function AuthenticateProviderDialog({ provider, open, onOpenChange }: Pro
                 disabled={!secret.trim() || submitting}
                 longLabel
               >
-                {submitting ? "Saving…" : "Save & test"}
+                {submitting ? copy.submitting() : copy.submit()}
               </PidButton>
             </div>
           </form>

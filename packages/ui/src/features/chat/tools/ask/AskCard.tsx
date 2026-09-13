@@ -388,7 +388,7 @@ function CustomAnswer({
   return (
     <div className="pid-ask-custom" data-on>
       <div className="pid-ask-custom-top">
-        <Plus size={11} /> your answer
+        <Plus size={11} /> {LL.chat.ask.yourAnswer()}
       </div>
       <textarea
         className="pid-ask-custom-input"
@@ -416,7 +416,7 @@ function CustomAnswer({
           )}
         </span>
         <button type="button" className="pid-ask-link" onClick={onBack}>
-          back to options
+          {LL.chat.ask.backToOptions()}
         </button>
       </div>
     </div>
@@ -659,9 +659,9 @@ function MultiLayout({
               </span>
               <span className="pid-ask-opt-main">
                 <span className="pid-ask-opt-row1">
-                  <span className="pid-ask-opt-label">Add one I missed…</span>
+                  <span className="pid-ask-opt-label">{LL.chat.ask.addMissing()}</span>
                 </span>
-                <span className="pid-ask-opt-desc">Include something the list didn't cover.</span>
+                <span className="pid-ask-opt-desc">{LL.chat.ask.addMissingHint()}</span>
               </span>
             </button>
           ))}
@@ -756,13 +756,13 @@ function PreviewLayout({
           <div className="pid-ask-preview">
             <div className="pid-ask-preview-head">
               <span className="pid-ask-preview-title">{activeOpt?.label}</span>
-              <span className="pid-ask-preview-badge">preview</span>
+              <span className="pid-ask-preview-badge">{LL.chat.ask.previewBadge()}</span>
             </div>
             <div className="pid-ask-preview-body">
               {activeOpt?.preview ? (
                 <Markdown text={activeOpt.preview} isComplete />
               ) : (
-                <span className="pid-ask-muted">No preview for this option.</span>
+                <span className="pid-ask-muted">{LL.chat.ask.noPreview()}</span>
               )}
             </div>
           </div>
@@ -846,11 +846,18 @@ function TabsLayout({
         ) : (
           <>
             <span className="pid-ask-hint">
-              <kbd className="pid-kbd">1</kbd>–
-              <kbd className="pid-kbd">{q?.options.length ?? 0}</kbd> pick ·{" "}
-              {rich(LL.chat.ask.nextHint({ enter: slot("enter") }), {
-                enter: <PidKbd keys={["Enter"]} />,
-              })}
+              {rich(
+                LL.chat.ask.pickNextHint({
+                  from: slot("from"),
+                  to: slot("to"),
+                  enter: slot("enter"),
+                }),
+                {
+                  from: <kbd className="pid-kbd">1</kbd>,
+                  to: <kbd className="pid-kbd">{q?.options.length ?? 0}</kbd>,
+                  enter: <PidKbd keys={["Enter"]} />,
+                },
+              )}
             </span>
             <Spacer />
             <PidButton longLabel onClick={() => h.skip(activeTab)}>

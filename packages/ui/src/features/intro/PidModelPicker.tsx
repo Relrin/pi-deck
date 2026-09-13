@@ -5,6 +5,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import Fuse from "fuse.js";
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Search } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { ProviderIcon } from "../models/icons/index.js";
 import { useProvidersStore } from "../models/useProvidersStore.js";
 import { useIntroComposerStore } from "./useIntroComposerStore.js";
@@ -58,6 +59,7 @@ function formatContextWindow(n: number | undefined): string | undefined {
 }
 
 export function PidModelPicker() {
+  const { LL } = useI18nContext();
   const providers = useProvidersStore((s) => s.providers);
   const modelsByProvider = useProvidersStore((s) => s.modelsByProvider);
   const defaultModel = useProvidersStore((s) => s.defaultModel);
@@ -123,14 +125,14 @@ export function PidModelPicker() {
   }, [activeRef, providers]);
 
   const activeLabel = useMemo(() => {
-    if (!activeRef) return "model";
+    if (!activeRef) return LL.intro.modelPicker.fallback();
     for (const group of groups) {
       if (group.id !== activeRef.providerId) continue;
       const m = group.models.find((mm) => mm.id === activeRef.modelId);
       if (m) return m.label;
     }
     return activeRef.modelId;
-  }, [activeRef, groups]);
+  }, [activeRef, groups, LL]);
 
   // Flatten once for Fuse; matches reference the original (group, model) tuple by key.
   const searchable = useMemo(
@@ -281,7 +283,11 @@ export function PidModelPicker() {
   return (
     <RadixDropdown.Root open={open} onOpenChange={setOpen}>
       <RadixDropdown.Trigger asChild disabled={groups.length === 0}>
-        <button type="button" className="pid-picker-trigger" aria-label="Select model">
+        <button
+          type="button"
+          className="pid-picker-trigger"
+          aria-label={LL.intro.modelPicker.label()}
+        >
           {activeIconKey ? (
             <ProviderIcon iconKey={activeIconKey} size={14} className="pid-picker-trigger-icon" />
           ) : (
@@ -311,7 +317,7 @@ export function PidModelPicker() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search options…"
+              placeholder={LL.intro.modelPicker.searchPlaceholder()}
               className="pid-model-menu-search-input"
               onKeyDown={onInputKeyDown}
             />
@@ -324,7 +330,7 @@ export function PidModelPicker() {
               `highlightedKey` + arrow-key handling on the search input above. */}
           <div ref={setScrollParent} className="pid-model-menu-list">
             {rows.length === 0 ? (
-              <div className="pid-model-menu-empty">No models match</div>
+              <div className="pid-model-menu-empty">{LL.intro.modelPicker.noMatches()}</div>
             ) : (
               <div
                 style={{
@@ -353,7 +359,9 @@ export function PidModelPicker() {
                         <div className="pid-model-menu-section-head">
                           <span>{row.groupName}</span>
                           {row.isDefault && (
-                            <span className="pid-model-menu-section-default">default</span>
+                            <span className="pid-model-menu-section-default">
+                              {LL.intro.modelPicker.defaultBadge()}
+                            </span>
                           )}
                         </div>
                       ) : (

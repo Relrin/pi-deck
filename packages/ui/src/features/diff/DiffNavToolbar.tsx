@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Pencil } from "../../components/icons/index.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 
 interface DiffNavToolbarProps {
   /** Scroll to the previous / next change block within the current file's diff. */
@@ -29,57 +30,59 @@ export function DiffNavToolbar({
   prevFileDisabled,
   nextFileDisabled,
 }: DiffNavToolbarProps) {
+  const { LL } = useI18nContext();
+  const copy = LL.diff.nav;
   return (
-    <div className="pid-diff-nav-toolbar" role="toolbar" aria-label="Diff navigation">
-      <Tooltip content="Previous diff">
+    <div className="pid-diff-nav-toolbar" role="toolbar" aria-label={copy.label()}>
+      <Tooltip content={copy.prevDiff()}>
         <button
           type="button"
           className="pid-diff-nav-btn"
           onClick={onPrevDiff}
-          aria-label="Previous diff"
+          aria-label={copy.prevDiff()}
         >
           <ArrowUp size={14} aria-hidden />
         </button>
       </Tooltip>
-      <Tooltip content="Next diff">
+      <Tooltip content={copy.nextDiff()}>
         <button
           type="button"
           className="pid-diff-nav-btn"
           onClick={onNextDiff}
-          aria-label="Next diff"
+          aria-label={copy.nextDiff()}
         >
           <ArrowDown size={14} aria-hidden />
         </button>
       </Tooltip>
-      <Tooltip content="Jump to source">
+      <Tooltip content={copy.jumpToSource()}>
         <button
           type="button"
           className="pid-diff-nav-btn"
           onClick={onJumpToSource}
-          aria-label="Jump to source"
+          aria-label={copy.jumpToSource()}
         >
           <Pencil size={14} aria-hidden />
         </button>
       </Tooltip>
       <span className="pid-diff-nav-sep" aria-hidden />
-      <Tooltip content="Compare previous file">
+      <Tooltip content={copy.prevFile()}>
         <button
           type="button"
           className="pid-diff-nav-btn"
           onClick={onPrevFile}
           disabled={prevFileDisabled}
-          aria-label="Compare previous file"
+          aria-label={copy.prevFile()}
         >
           <ArrowLeft size={14} aria-hidden />
         </button>
       </Tooltip>
-      <Tooltip content="Compare next file">
+      <Tooltip content={copy.nextFile()}>
         <button
           type="button"
           className="pid-diff-nav-btn"
           onClick={onNextFile}
           disabled={nextFileDisabled}
-          aria-label="Compare next file"
+          aria-label={copy.nextFile()}
         >
           <ArrowRight size={14} aria-hidden />
         </button>

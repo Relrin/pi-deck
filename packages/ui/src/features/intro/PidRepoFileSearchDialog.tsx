@@ -2,6 +2,7 @@ import * as RadixDialog from "@radix-ui/react-dialog";
 import Fuse from "fuse.js";
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Check, File, Search, X } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
@@ -21,6 +22,8 @@ const RESULT_LIMIT = 20;
 const MAX_PICKS = 5;
 
 export function PidRepoFileSearchDialog({ open, onClose, onSelect }: PidRepoFileSearchDialogProps) {
+  const { LL } = useI18nContext();
+  const copy = LL.intro.repoSearch;
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const client = useSessionsStore((s) => s.client);
   const [entries, setEntries] = useState<FileEntry[] | undefined>(undefined);
@@ -41,11 +44,11 @@ export function PidRepoFileSearchDialog({ open, onClose, onSelect }: PidRepoFile
       .call("project.listFiles", { projectId: activeProjectId })
       .then((res) => setEntries(res.entries.map((e) => ({ path: e.path }))))
       .catch((err) => {
-        useNotificationStore.getState().error(humanizeError(err, "Failed to list project files"));
+        useNotificationStore.getState().error(humanizeError(err, copy.loadFailed()));
         setEntries([]);
       })
       .finally(() => setLoading(false));
-  }, [open, activeProjectId, client, entries]);
+  }, [open, activeProjectId, client, entries, copy]);
 
   // Invalidate cached entries on project switch so the next open re-fetches.
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional — fire on activeProjectId change, ignore the inner setter refs.
@@ -135,9 +138,9 @@ export function PidRepoFileSearchDialog({ open, onClose, onSelect }: PidRepoFile
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="pid-dialog-overlay" />
         <RadixDialog.Content className="pid-dialog pid-repo-search-dialog" onKeyDown={onKeyDown}>
-          <RadixDialog.Title className="sr-only">Reference from repo</RadixDialog.Title>
+          <RadixDialog.Title className="sr-only">{copy.title()}</RadixDialog.Title>
           <RadixDialog.Description className="sr-only">
-            Search project files and attach up to {MAX_PICKS} as references for the next prompt.
+            {copy.description({ max: MAX_PICKS })}
           </RadixDialog.Description>
           <div className="pid-repo-search-input-row">
             <Search size={14} className="pid-repo-search-input-icon" />
@@ -148,24 +151,22 @@ export function PidRepoFileSearchDialog({ open, onClose, onSelect }: PidRepoFile
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={loading ? "Loading project files…" : "Search files…"}
-              aria-label="Search project files"
+              aria-label={copy.searchLabel()}
             />
             <button
               type="button"
               className="pid-repo-search-close"
               onClick={onClose}
-              aria-label="Close"
+              aria-label={copy.close()}
             >
               <X size={14} />
             </button>
           </div>
           <div className="pid-repo-search-results" role="listbox">
-            {loading && <div className="pid-repo-search-empty">Loading…</div>}
+            {loading && <div className="pid-repo-search-empty">{copy.loading()}</div>}
             {!loading && results.length === 0 && (
               <div className="pid-repo-search-empty">
-                {entries && entries.length === 0
-                  ? "No tracked files in this project."
-                  : "No matches."}
+                {entries && entries.length === 0 ? copy.noFiles() : copy.noMatches()}
               </div>
             )}
             {results.map((entry, ix) => {
@@ -194,8 +195,8 @@ export function PidRepoFileSearchDialog({ open, onClose, onSelect }: PidRepoFile
           <div className="pid-repo-search-footer">
             <span className="pid-repo-search-hint">
               {picked.size === 0
-                ? "↑↓ navigate · ↵ toggle"
-                : `${picked.size}/${MAX_PICKS} selected`}
+                ? copy.navHint()
+                : copy.selected({ count: picked.size, max: MAX_PICKS })}
             </span>
             <button
               type="button"
@@ -203,7 +204,7 @@ export function PidRepoFileSearchDialog({ open, onClose, onSelect }: PidRepoFile
               onClick={confirm}
               disabled={picked.size === 0}
             >
-              Add{picked.size > 0 ? ` (${picked.size})` : ""}
+              {picked.size > 0 ? copy.addCount({ count: picked.size }) : copy.add()}
             </button>
           </div>
         </RadixDialog.Content>

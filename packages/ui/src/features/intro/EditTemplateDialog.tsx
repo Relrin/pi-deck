@@ -1,6 +1,7 @@
 import * as RadixDialog from "@radix-ui/react-dialog";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { PidButton } from "../../components/buttons/PidButton";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { useAutoGrowTextarea } from "../../lib/useAutoGrowTextarea";
 import type { IntroTemplate } from "./templates";
 import { useTemplatesStore } from "./useTemplatesStore";
@@ -18,6 +19,8 @@ interface Props {
  * "Reset to default" only appears when an override is currently in effect for this slot.
  */
 export function EditTemplateDialog({ template, open, onOpenChange }: Props) {
+  const { LL } = useI18nContext();
+  const copy = LL.intro.editDialog;
   const overrides = useTemplatesStore((s) => s.overrides);
   const setOverride = useTemplatesStore((s) => s.setOverride);
   const resetOverride = useTemplatesStore((s) => s.resetOverride);
@@ -65,15 +68,15 @@ export function EditTemplateDialog({ template, open, onOpenChange }: Props) {
           style={{ width: "min(560px, 92vw)", maxHeight: "min(640px, 90vh)" }}
         >
           <div className="pid-modal-header">
-            <RadixDialog.Title className="pid-modal-title">Edit template</RadixDialog.Title>
+            <RadixDialog.Title className="pid-modal-title">{copy.title()}</RadixDialog.Title>
             <RadixDialog.Description className="pid-modal-description">
-              Override this template's title, description, and prompt. Changes are saved locally.
+              {copy.description()}
             </RadixDialog.Description>
           </div>
           <form className="pid-form" onSubmit={onSubmit}>
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="tpl-title">
-                Title
+                {copy.fieldTitle()}
               </label>
               <input
                 id="tpl-title"
@@ -85,7 +88,7 @@ export function EditTemplateDialog({ template, open, onOpenChange }: Props) {
             </div>
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="tpl-blurb">
-                Short description
+                {copy.fieldBlurb()}
               </label>
               <input
                 id="tpl-blurb"
@@ -97,7 +100,7 @@ export function EditTemplateDialog({ template, open, onOpenChange }: Props) {
             </div>
             <div className="pid-form-field">
               <label className="pid-form-label" htmlFor="tpl-body">
-                Prompt
+                {copy.fieldPrompt()}
               </label>
               <textarea
                 id="tpl-body"
@@ -108,9 +111,7 @@ export function EditTemplateDialog({ template, open, onOpenChange }: Props) {
                 placeholder={template.body}
                 spellCheck={false}
               />
-              <span className="pid-form-hint">
-                Inserted into the composer when the card is clicked.
-              </span>
+              <span className="pid-form-hint">{copy.promptHint()}</span>
             </div>
             <div className="pid-form-row">
               {hasOverride && (
@@ -120,14 +121,14 @@ export function EditTemplateDialog({ template, open, onOpenChange }: Props) {
                   longLabel
                   className="pid-form-row-spacer"
                 >
-                  Reset to default
+                  {copy.reset()}
                 </PidButton>
               )}
               <PidButton variant="ghost" onClick={() => onOpenChange(false)} longLabel>
-                Cancel
+                {LL.common.cancel()}
               </PidButton>
               <PidButton variant="primary" type="submit" disabled={!canApply} longLabel>
-                Apply
+                {copy.apply()}
               </PidButton>
             </div>
           </form>

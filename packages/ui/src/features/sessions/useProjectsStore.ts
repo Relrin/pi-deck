@@ -1,6 +1,7 @@
 import type { Project, ProjectSummary } from "@pi-deck/core/domain/project.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { ll } from "../../i18n/t.js";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import type { ProtocolClient } from "../../lib/transport/protocol-client.js";
 import { useNotificationStore } from "../_status/useNotificationStore.js";
@@ -43,7 +44,9 @@ export const useProjectsStore = create<ProjectsStoreState>()(
           set({ activeProjectId: project.id });
           return project;
         } catch (err) {
-          useNotificationStore.getState().error(humanizeError(err, "Failed to open project"));
+          useNotificationStore
+            .getState()
+            .error(humanizeError(err, ll().sessions.errors.openProject()));
           return undefined;
         }
       },
@@ -65,7 +68,9 @@ export const useProjectsStore = create<ProjectsStoreState>()(
         try {
           await get().loadProjects(client);
         } catch (err) {
-          useNotificationStore.getState().error(humanizeError(err, "Failed to load projects"));
+          useNotificationStore
+            .getState()
+            .error(humanizeError(err, ll().sessions.errors.loadProjects()));
         }
         const id = get().activeProjectId;
         if (!id) return;

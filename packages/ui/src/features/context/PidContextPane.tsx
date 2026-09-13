@@ -1,7 +1,8 @@
 import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
 import { useEffect, useMemo } from "react";
 import { ExternalLink, File, FolderOpen } from "../../components/icons";
-import { useNotificationStore } from "../_status/useNotificationStore.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../i18n/i18n-types.js";
 import { selectMessages, useMessagesStore } from "../chat/useMessagesStore.js";
 import { selectSessionUsage, useUsageStore } from "../chat/useUsageStore.js";
 import { selectPlanSession, usePlanStore } from "../plan-panel/usePlanStore.js";
@@ -11,6 +12,7 @@ import {
   computeContextBreakdown,
   formatTokens,
 } from "./contextBreakdown.js";
+import { openWithDefault, revealInFolder } from "./openExternal.js";
 import { type ArtefactRecord, selectArtefacts, useArtefactsStore } from "./useArtefactsStore.js";
 
 interface PidContextPaneProps {
@@ -46,6 +48,7 @@ interface ArtefactEntry {
  * three identical "no data" cards stacked on top of each other.
  */
 export function PidContextPane({ sessionId }: PidContextPaneProps) {
+  const { LL } = useI18nContext();
   const usage = useUsageStore(selectSessionUsage(sessionId));
   const messages = useMessagesStore(selectMessages(sessionId));
   const artefacts = useArtefactsStore(selectArtefacts(sessionId));
@@ -84,7 +87,7 @@ export function PidContextPane({ sessionId }: PidContextPaneProps) {
   );
 
   if (!sessionId) {
-    return <div className="pid-rightpane-placeholder">Start or open a session to see context.</div>;
+    return <div className="pid-rightpane-placeholder">{LL.context.empty()}</div>;
   }
 
   const hasData = usage?.context !== undefined;
@@ -118,75 +121,80 @@ function ContextWindowSection({
   active: boolean;
   mcpToolCount: number;
 }) {
+  const { LL } = useI18nContext();
   const { messages, systemPrompt, projectContext, tools, mcp, free, contextWindow, used } =
     breakdown;
   const basePrompt = systemPrompt - projectContext;
   const seg = (n: number): number => (contextWindow > 0 ? (n / contextWindow) * 100 : 0);
   return (
     <section className="pid-context-section">
-      <div className="pid-mono-label pid-context-section-label">context window</div>
+      <div className="pid-mono-label pid-context-section-label">{LL.context.window.label()}</div>
       <div className="pid-context-window-row">
         <span className={`pid-context-window-percent${active ? "" : " is-idle"}`}>{percent}%</span>
         <span className="pid-context-window-totals">
-          {formatTokens(used)} / {formatTokens(contextWindow)} tok
+          {LL.context.window.totals({
+            used: formatTokens(used),
+            total: formatTokens(contextWindow),
+          })}
         </span>
       </div>
-      <div className="pid-context-bar" role="img" aria-label={`Context usage ${percent}%`}>
+      <div className="pid-context-bar" role="img" aria-label={LL.context.window.usage({ percent })}>
         <span
           className="pid-context-bar-segment pid-context-bar-system"
           style={{ width: `${seg(basePrompt)}%` }}
-          title={`System prompt — ${formatTokens(basePrompt)} tok`}
+          title={LL.context.window.tooltip.system({ tokens: formatTokens(basePrompt) })}
         />
         <span
           className="pid-context-bar-segment pid-context-bar-project"
           style={{ width: `${seg(projectContext)}%` }}
-          title={`Project context (AGENTS.md, CLAUDE.md, etc.) — ${formatTokens(projectContext)} tok`}
+          title={LL.context.window.tooltip.project({ tokens: formatTokens(projectContext) })}
         />
         <span
           className="pid-context-bar-segment pid-context-bar-messages"
           style={{ width: `${seg(messages)}%` }}
-          title={`Messages — ${formatTokens(messages)} tok`}
+          title={LL.context.window.tooltip.messages({ tokens: formatTokens(messages) })}
         />
         <span
           className="pid-context-bar-segment pid-context-bar-tools"
           style={{ width: `${seg(tools)}%` }}
-          title={`Skills / tool definitions — ${formatTokens(tools)} tok`}
+          title={LL.context.window.tooltip.tools({ tokens: formatTokens(tools) })}
         />
         <span
           className="pid-context-bar-segment pid-context-bar-mcp"
           style={{ width: `${seg(mcp)}%` }}
-          title={`MCP tools — ${formatTokens(mcp)} tok`}
+          title={LL.context.window.tooltip.mcp({ tokens: formatTokens(mcp) })}
         />
         <span
           className="pid-context-bar-segment pid-context-bar-free"
           style={{ width: `${seg(free)}%` }}
-          title={`Free space — ${formatTokens(free)} tok`}
+          title={LL.context.window.tooltip.free({ tokens: formatTokens(free) })}
         />
       </div>
       <ul className="pid-context-legend">
         <li>
           <span className="pid-context-swatch pid-context-bar-system" />
-          system
+          {LL.context.window.legend.system()}
         </li>
         <li>
           <span className="pid-context-swatch pid-context-bar-project" />
-          project
+          {LL.context.window.legend.project()}
         </li>
         <li>
           <span className="pid-context-swatch pid-context-bar-messages" />
-          chat
+          {LL.context.window.legend.chat()}
         </li>
         <li>
           <span className="pid-context-swatch pid-context-bar-tools" />
-          tools
+          {LL.context.window.legend.tools()}
         </li>
         <li>
           <span className="pid-context-swatch pid-context-bar-mcp" />
-          mcp{mcpToolCount > 0 ? ` · ${mcpToolCount}` : ""}
+          {LL.context.window.legend.mcp()}
+          {mcpToolCount > 0 ? ` · ${mcpToolCount}` : ""}
         </li>
         <li>
           <span className="pid-context-swatch pid-context-bar-free" />
-          free
+          {LL.context.window.legend.free()}
         </li>
       </ul>
     </section>
@@ -194,20 +202,19 @@ function ContextWindowSection({
 }
 
 function ScopeSection({ entries }: { entries: ScopeEntry[] }) {
+  const { LL } = useI18nContext();
   return (
     <section className="pid-context-section">
       <div className="pid-context-section-head">
-        <span className="pid-mono-label">in scope · {entries.length}</span>
+        <span className="pid-mono-label">{LL.context.scope.label({ count: entries.length })}</span>
       </div>
       {entries.length === 0 ? (
-        <p className="pid-context-empty">
-          No files or folders attached yet. Drag from the file tree to share context with pi.
-        </p>
+        <p className="pid-context-empty">{LL.context.scope.empty()}</p>
       ) : (
         <ul className="pid-context-rows">
           {entries.map((entry) => (
             <li key={entry.key} className="pid-context-row">
-              <span className="pid-tag pid-context-row-tag">{tagLabel(entry.kind)}</span>
+              <span className="pid-tag pid-context-row-tag">{tagLabel(LL, entry.kind)}</span>
               <span className="pid-context-row-path" title={entry.path}>
                 {displayPath(entry.path)}
               </span>
@@ -221,16 +228,16 @@ function ScopeSection({ entries }: { entries: ScopeEntry[] }) {
 }
 
 function ArtefactsSection({ entries }: { entries: ArtefactEntry[] }) {
+  const { LL } = useI18nContext();
   return (
     <section className="pid-context-section">
       <div className="pid-context-section-head">
-        <span className="pid-mono-label">artefacts produced · {entries.length}</span>
+        <span className="pid-mono-label">
+          {LL.context.artefacts.label({ count: entries.length })}
+        </span>
       </div>
       {entries.length === 0 ? (
-        <p className="pid-context-empty">
-          Nothing produced yet. New files the agent writes (plans, reports, generated code…) will
-          appear here.
-        </p>
+        <p className="pid-context-empty">{LL.context.artefacts.empty()}</p>
       ) : (
         <ul className="pid-context-rows">
           {entries.map((entry) => (
@@ -249,13 +256,14 @@ function ArtefactsSection({ entries }: { entries: ArtefactEntry[] }) {
 }
 
 function RowActions({ path }: { path: string }) {
+  const { LL } = useI18nContext();
   return (
     <span className="pid-context-row-actions">
       <button
         type="button"
         className="pid-context-row-action"
-        title="Open with default app"
-        aria-label={`Open ${path}`}
+        title={LL.context.row.openTitle()}
+        aria-label={LL.context.row.open({ path })}
         onClick={() => void openWithDefault(path)}
       >
         <ExternalLink size={11} aria-hidden />
@@ -263,8 +271,8 @@ function RowActions({ path }: { path: string }) {
       <button
         type="button"
         className="pid-context-row-action"
-        title="Reveal in file manager"
-        aria-label={`Reveal ${path} in file manager`}
+        title={LL.context.row.revealTitle()}
+        aria-label={LL.context.row.reveal({ path })}
         onClick={() => void revealInFolder(path)}
       >
         <FolderOpen size={11} aria-hidden />
@@ -273,14 +281,14 @@ function RowActions({ path }: { path: string }) {
   );
 }
 
-function tagLabel(kind: PromptAttachment["kind"]): string {
+function tagLabel(t: TranslationFunctions, kind: PromptAttachment["kind"]): string {
   switch (kind) {
     case "file":
-      return "file";
+      return t.context.tag.file();
     case "folder":
-      return "dir";
+      return t.context.tag.folder();
     case "repo-ref":
-      return "ref";
+      return t.context.tag.repoRef();
   }
 }
 
@@ -346,35 +354,4 @@ function collectArtefacts(
 
 function samePath(a: string, b: string): boolean {
   return a.replace(/\\/g, "/") === b.replace(/\\/g, "/");
-}
-
-async function openWithDefault(path: string): Promise<void> {
-  const bridge = window.bridge;
-  if (!bridge?.openPath) {
-    useNotificationStore.getState().error("Opening files is not supported on this platform.");
-    return;
-  }
-  try {
-    const err = await bridge.openPath(path);
-    if (err) useNotificationStore.getState().error(err);
-  } catch (err) {
-    useNotificationStore
-      .getState()
-      .error(err instanceof Error ? err.message : "Failed to open file");
-  }
-}
-
-async function revealInFolder(path: string): Promise<void> {
-  const bridge = window.bridge;
-  if (!bridge?.showItemInFolder) {
-    useNotificationStore.getState().error("Reveal in file manager is not supported here.");
-    return;
-  }
-  try {
-    await bridge.showItemInFolder(path);
-  } catch (err) {
-    useNotificationStore
-      .getState()
-      .error(err instanceof Error ? err.message : "Failed to reveal file");
-  }
 }

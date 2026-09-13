@@ -127,7 +127,25 @@ const chat = {
      * which is why the leading space here is safe.
      */
     turnSuffix: " · {count:number} {{turn|turns}}",
+
+    /** `features/review/` renders inside the chat column, so its chrome keys under `chat`. */
+    cta: "Review changes →",
+    title: "Review changes",
+    rejectAll: "Reject all",
+    acceptAll: "Accept all",
+    close: "Close review",
+    selectFile: "select a file",
+    loadingDiff: "Loading diff…",
+    fileList: "Files in this turn",
+    rejectFile: "Reject {path:string}",
+    acceptFile: "Accept {path:string}",
   },
+
+  /** `MessageSurface.tsx`'s author tag on a user bubble. */
+  authorYou: "you",
+
+  /** `ModelBadge.tsx` — the empty state before a model has been chosen. */
+  selectModel: "select model",
 
   tools: {
     moreLines: "⋯ {count:number} more {{line|lines}}",
@@ -415,6 +433,12 @@ const chat = {
    */
   ask: {
     sendChoices: "Send {count:number} {{choice|choices}}",
+    yourAnswer: "your answer",
+    backToOptions: "back to options",
+    addMissing: "Add one I missed…",
+    addMissingHint: "Include something the list didn't cover.",
+    previewBadge: "preview",
+    noPreview: "No preview for this option.",
 
     eyebrow: "pi is asking",
     eyebrowResolved: "pi asked",
@@ -436,7 +460,8 @@ const chat = {
     pickHint: "{from:string}–{to:string} pick · {enter:string} send",
     toggleHint: "{from:string}–{to:string} toggle",
     previewHint: "{up:string}{down:string} preview · {enter:string} choose",
-    nextHint: "{enter:string} next",
+    /** Same shape as `pickHint`, for the branch whose Enter advances rather than sends. */
+    pickNextHint: "{from:string}–{to:string} pick · {enter:string} next",
 
     sendPick: "Send pick",
     sendCustom: "Send custom answer",

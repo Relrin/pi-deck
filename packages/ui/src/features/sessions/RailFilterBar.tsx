@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, Settings2 } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { SessionsFilterPopover } from "./SessionsFilterPopover";
 
 export function RailFilterBar({
@@ -9,6 +10,7 @@ export function RailFilterBar({
   query: string;
   onQueryChange: (next: string) => void;
 }) {
+  const { LL } = useI18nContext();
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -29,10 +31,10 @@ export function RailFilterBar({
         <input
           type="text"
           className="pid-rail-sessions-filter-input"
-          placeholder="filter sessions…"
+          placeholder={LL.sessions.filter.searchPlaceholder()}
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          aria-label="Filter sessions"
+          aria-label={LL.sessions.filter.label()}
         />
       </span>
       <button
@@ -40,7 +42,7 @@ export function RailFilterBar({
         className="pid-rail-filterbar-trigger"
         data-active={open || undefined}
         aria-expanded={open}
-        aria-label="Sort, group, and filter sessions"
+        aria-label={LL.sessions.filter.controls()}
         onClick={() => setOpen((v) => !v)}
       >
         <Settings2 size={12} />

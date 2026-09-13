@@ -1,8 +1,10 @@
+import { LOCALES } from "@pi-deck/core";
 import { app, BrowserWindow } from "electron";
 import { type BackendHandle, startBackend } from "./backend";
 import { waitForViteServer } from "./dev";
-import { registerBridgeIpc, registerWindowControlIpc } from "./ipc";
+import { registerBridgeIpc, registerLocaleIpc, registerWindowControlIpc } from "./ipc";
 import { installAppMenu } from "./menu";
+import { systemLocaleGuess } from "./menu-strings";
 import { installCspHeaders } from "./security";
 import { createWindow } from "./window";
 
@@ -30,10 +32,32 @@ async function shutdown(reason: string): Promise<void> {
 process.on("SIGINT", () => void shutdown("SIGINT"));
 process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
+/**
+ * Warn if this build shipped without full ICU.
+ *
+ * Every date, duration, relative time and plural in the app goes through `Intl`, so a small-icu
+ * Electron degrades all of them silently — and the test suite cannot catch it, because Bun has
+ * full ICU. Packaged builds also gate out the devtools menu item, so the renderer console is not
+ * reachable to check from; this reports on stdout, where launching the binary from a terminal
+ * shows it.
+ */
+function warnOnStrippedIcu(): void {
+  const supported = Intl.DateTimeFormat.supportedLocalesOf([...LOCALES]);
+  if (supported.length === LOCALES.length) return;
+  console.warn(
+    `[pi-deck] This build lacks full ICU — Intl supports only [${supported.join(", ")}] ` +
+      `of [${LOCALES.join(", ")}]. Dates, durations and plurals will fall back to the root locale.`,
+  );
+}
+
 app.whenReady().then(async () => {
+  warnOnStrippedIcu();
   installCspHeaders();
-  installAppMenu();
+  // Seeded from the OS locale so the first paint agrees with Electron's own `role:` labels; the
+  // renderer corrects it over `app:set-locale` if the user chose a different UI language.
+  installAppMenu(systemLocaleGuess());
   registerWindowControlIpc();
+  registerLocaleIpc();
 
   try {
     backend = await startBackend(app);

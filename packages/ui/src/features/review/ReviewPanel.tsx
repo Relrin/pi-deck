@@ -130,16 +130,16 @@ function ReviewPanelBody({
   return (
     <>
       <div className="pid-modal-header pid-review-panel-header">
-        <RadixDialog.Title className="pid-modal-title">Review changes</RadixDialog.Title>
+        <RadixDialog.Title className="pid-modal-title">{LL.chat.review.title()}</RadixDialog.Title>
         <PidChip>{LL.chat.review.fileCount({ count: turn.files.length })}</PidChip>
         <span className="pid-review-panel-header-spacer" />
         <PidButton variant="ghost" icon={<X size={12} />} onClick={onRejectTurn}>
-          Reject all
+          {LL.chat.review.rejectAll()}
         </PidButton>
         <PidButton variant="primary" icon={<Check size={12} />} onClick={onAcceptTurn}>
-          Accept all
+          {LL.chat.review.acceptAll()}
         </PidButton>
-        <PidIconButton icon={<X size={14} />} label="Close review" onClick={onClose} />
+        <PidIconButton icon={<X size={14} />} label={LL.chat.review.close()} onClick={onClose} />
       </div>
       <div className="pid-modal-body pid-review-panel-body">
         <ReviewFileList
@@ -156,7 +156,7 @@ function ReviewPanelBody({
                 {selectedPath}
               </span>
             ) : (
-              <span className="pid-mono-label">select a file</span>
+              <span className="pid-mono-label">{LL.chat.review.selectFile()}</span>
             )}
             <span className="pid-review-panel-header-spacer" />
             <DiffToolbar />
@@ -168,7 +168,7 @@ function ReviewPanelBody({
               </div>
             ) : diff === null ? (
               <div className="pid-route-placeholder">
-                <span>Loading diff…</span>
+                <span>{LL.chat.review.loadingDiff()}</span>
               </div>
             ) : (
               <DiffView unified={diff.unified} />

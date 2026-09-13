@@ -1,0 +1,5 @@
+{
+  "note": "Per-file counts of strings that have not yet been routed through the catalog. Regenerate with `bun run i18n:check --update-baseline`. A count may only go down; a file reaching zero loses its entry and is gated at zero from then on. Raising a count needs --allow-increase and a written reason in the commit.",
+  "hardcoded": {},
+  "frozenTables": {}
+}

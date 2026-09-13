@@ -95,8 +95,8 @@ export function DiffChangesetHeader() {
   return (
     <header className="pid-diff-changeset-head">
       <div className="pid-diff-changeset-head-row">
-        <span className="pid-mono-label">review · changeset</span>
-        <span className="pid-tag">{count} files</span>
+        <span className="pid-mono-label">{LL.diff.changeset.eyebrow()}</span>
+        <span className="pid-tag">{LL.diff.changeset.fileCount({ count })}</span>
         <span className="pid-diff-changeset-head-spacer" />
         <div className="pid-diff-changeset-head-actions">
           <button
@@ -105,38 +105,40 @@ export function DiffChangesetHeader() {
             onClick={handleRevertAll}
             disabled={disabled || busy === "revert"}
             title={
-              disabled ? "Nothing to revert" : "Discard every working-tree change against HEAD"
+              disabled ? LL.diff.changeset.revertAllNothing() : LL.diff.changeset.revertAllTitle()
             }
           >
-            <X size={12} aria-hidden /> revert all
+            <X size={12} aria-hidden /> {LL.diff.changeset.revertAll()}
           </button>
           <button
             type="button"
             className="pid-git-commit-btn"
             onClick={handleStageAll}
             disabled={disabled}
-            title={disabled ? "Nothing to stage" : "Select every changed file for the next commit"}
+            title={disabled ? LL.diff.changeset.stageNothing() : LL.diff.changeset.stageTitle()}
           >
-            <GitCommitHorizontal size={12} aria-hidden /> stage hunks
+            <GitCommitHorizontal size={12} aria-hidden /> {LL.diff.changeset.stageHunks()}
           </button>
           <button
             type="button"
             className="pid-git-commit-btn pid-git-commit-btn-primary"
             onClick={handleCommit}
             disabled={disabled}
-            title={disabled ? "No changes to commit" : "Jump to the commit composer"}
+            title={disabled ? LL.diff.changeset.commitNothing() : LL.diff.changeset.commitTitle()}
           >
             <Check size={12} aria-hidden />{" "}
-            {selectedCount > 0 ? LL.common.diff.commitFiles({ count: selectedCount }) : "commit"}
+            {selectedCount > 0
+              ? LL.diff.commitFiles({ count: selectedCount })
+              : LL.diff.changeset.commit()}
           </button>
         </div>
       </div>
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Discard all working-tree changes?"
-        description={LL.common.diff.revertAllConfirm({ count })}
-        confirmLabel="Discard all"
+        title={LL.diff.changeset.confirmTitle()}
+        description={LL.diff.revertAllConfirm({ count })}
+        confirmLabel={LL.diff.changeset.confirmLabel()}
         destructive
         onConfirm={confirmRevertAll}
       />

@@ -1,4 +1,5 @@
-import type { DiffKind, DiffOverviewMark } from "./diffExtension.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
+import type { DiffOverviewMark } from "./diffExtension.js";
 
 interface PidDiffMinimapProps {
   /** Per-block marks, already projected onto a 0..1 vertical axis (see `diffOverview`). */
@@ -7,18 +8,13 @@ interface PidDiffMinimapProps {
   onJumpToChunk: (index: number) => void;
 }
 
-const KIND_LABEL: Record<DiffKind, string> = {
-  add: "Added",
-  mod: "Modified",
-  del: "Removed",
-};
-
 /**
  * Git-diff overview ruler shown beside the editor's vertical scrollbar — a whole-file map of where
  * changes sit (not a code minimap). Each change block is a clickable mark coloured with the same
  * add/mod/del tokens as the gutter bar, positioned by its line fraction in the document.
  */
 export function PidDiffMinimap({ marks, onJumpToChunk }: PidDiffMinimapProps) {
+  const { LL } = useI18nContext();
   return (
     <div className="pid-editor-cm-minimap">
       {marks.map((m) => (
@@ -31,8 +27,10 @@ export function PidDiffMinimap({ marks, onJumpToChunk }: PidDiffMinimapProps) {
             e.stopPropagation();
             onJumpToChunk(m.index);
           }}
-          aria-label={`Jump to ${KIND_LABEL[m.kind].toLowerCase()} change`}
-          title={`${KIND_LABEL[m.kind]} change`}
+          // Two complete key sets rather than one plus `.toLowerCase()`: in a language with
+          // cases the mid-sentence form is a different word, not a different capitalisation.
+          aria-label={LL.editor.minimap.jumpTo[m.kind]()}
+          title={LL.editor.minimap.kind[m.kind]()}
         />
       ))}
     </div>

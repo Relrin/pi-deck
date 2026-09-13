@@ -1,6 +1,8 @@
 import type { ProviderSummary } from "@pi-deck/core/providers/types.js";
 import { PidButton } from "../../components/buttons/PidButton";
 import { ChevronRight, Plus } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../i18n/i18n-types.js";
 import { ProviderIcon } from "./icons";
 
 interface ProviderListProps {
@@ -10,19 +12,30 @@ interface ProviderListProps {
   onAddCustom: () => void;
 }
 
-const STATE_LABEL: Record<ProviderSummary["authState"], string> = {
-  authenticated: "Authenticated",
-  "needs-key": "Needs API key",
-  unreachable: "Unreachable",
-};
+/**
+ * Built per render from the catalog rather than held as a module constant: a module-level table
+ * would capture whatever locale was loaded at import time and never update on a language switch.
+ * Exported for `test/i18n/option-tables.test.ts`.
+ */
+export function providerStateLabels(
+  t: TranslationFunctions,
+): Record<ProviderSummary["authState"], string> {
+  const copy = t.models.providers.state;
+  return {
+    authenticated: copy.authenticated(),
+    "needs-key": copy.needsKey(),
+    unreachable: copy.unreachable(),
+  };
+}
 
 export function ProviderList({ providers, selectedId, onSelect, onAddCustom }: ProviderListProps) {
+  const { LL } = useI18nContext();
   const builtIns = providers.filter((p) => p.kind === "built-in");
   const customs = providers.filter((p) => p.kind === "custom-openai-compatible");
 
   return (
     <div className="pid-providers-col">
-      <div className="pid-providers-col-section">Providers</div>
+      <div className="pid-providers-col-section">{LL.models.providers.heading()}</div>
       {builtIns.map((p) => (
         <ProviderRow
           key={p.id}
@@ -31,7 +44,9 @@ export function ProviderList({ providers, selectedId, onSelect, onAddCustom }: P
           onSelect={() => onSelect(p.id)}
         />
       ))}
-      {customs.length > 0 && <div className="pid-providers-col-section">Custom</div>}
+      {customs.length > 0 && (
+        <div className="pid-providers-col-section">{LL.models.providers.custom()}</div>
+      )}
       {customs.map((p) => (
         <ProviderRow
           key={p.id}
@@ -46,9 +61,9 @@ export function ProviderList({ providers, selectedId, onSelect, onAddCustom }: P
           icon={<Plus size={14} />}
           longLabel
           onClick={onAddCustom}
-          aria-label="Add custom provider"
+          aria-label={LL.models.providers.addCustomLabel()}
         >
-          Add custom…
+          {LL.models.providers.addCustom()}
         </PidButton>
       </div>
     </div>
@@ -64,13 +79,14 @@ function ProviderRow({
   active: boolean;
   onSelect: () => void;
 }) {
+  const { LL } = useI18nContext();
   return (
     <button
       type="button"
       className="pid-provider-row"
       data-active={active || undefined}
       onClick={onSelect}
-      title={STATE_LABEL[provider.authState]}
+      title={providerStateLabels(LL)[provider.authState]}
     >
       <ProviderIcon iconKey={provider.iconKey} />
       <span className="pid-provider-row-name">{provider.name}</span>

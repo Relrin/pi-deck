@@ -1,5 +1,6 @@
 import type { SessionModelRef, ThinkingLevel } from "@pi-deck/core/domain/session.js";
 import type { ProviderSummary } from "@pi-deck/core/providers/types.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { ProviderIcon } from "../models/icons";
 
 interface ModelBadgeProps {
@@ -17,10 +18,11 @@ export function ModelBadge({
   thinkingLevel,
   onOpenPicker,
 }: ModelBadgeProps) {
+  const { LL } = useI18nContext();
   if (!modelRef) {
     return (
       <button type="button" className="pid-model-badge" data-empty="true" onClick={onOpenPicker}>
-        select model
+        {LL.chat.selectModel()}
       </button>
     );
   }

@@ -2,6 +2,7 @@ import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import { useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown } from "../../components/icons/index.js";
 import { PidPierreFileIcon } from "../../components/icons/PidPierreFileIcon.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { cn } from "../../lib/cn.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { selectActiveTabId, selectProjectOrder, useEditorStore } from "./useEditorStore.js";
@@ -26,6 +27,7 @@ function fileNameOf(id: string): string {
  * fit calculation never fights the rendered (clipped) row.
  */
 export function PidEditorTabBar() {
+  const { LL } = useI18nContext();
   const projectId = useProjectsStore((s) => s.activeProjectId);
   const order = useEditorStore(selectProjectOrder(projectId));
   const activeTabId = useEditorStore(selectActiveTabId(projectId));
@@ -72,7 +74,12 @@ export function PidEditorTabBar() {
   const hiddenIds = fits ? [] : order.filter((id) => !visibleIds.includes(id));
 
   return (
-    <div className="pid-editor-tabs" role="tablist" aria-label="Open files" ref={stripRef}>
+    <div
+      className="pid-editor-tabs"
+      role="tablist"
+      aria-label={LL.editor.tabs.label()}
+      ref={stripRef}
+    >
       {/* Off-screen measurement row: identical markup at natural width. */}
       <div className="pid-editor-tabs-ghost" aria-hidden="true">
         {order.map((id) => (
@@ -101,8 +108,8 @@ export function PidEditorTabBar() {
             <button
               type="button"
               className="pid-editor-tab-overflow"
-              aria-label={`${hiddenIds.length} more open files`}
-              title={`${hiddenIds.length} more open files`}
+              aria-label={LL.editor.tabs.overflow({ count: hiddenIds.length })}
+              title={LL.editor.tabs.overflow({ count: hiddenIds.length })}
             >
               <ChevronDown size={14} aria-hidden="true" />
               <span>{hiddenIds.length}</span>
@@ -145,6 +152,7 @@ function computeVisible(order: string[], active: string | null, count: number): 
 /** A single tab row. Subscribes only to its own name + dirty + active so cursor churn on the
  * active tab doesn't re-render the whole strip. */
 function PidEditorTab({ id }: { id: string }) {
+  const { LL } = useI18nContext();
   const fileName = useEditorStore((s) => s.tabs[id]?.fileName ?? "");
   const dirty = useEditorStore((s) => s.tabs[id]?.dirty ?? false);
   const active = useEditorStore((s) => {
@@ -170,11 +178,11 @@ function PidEditorTab({ id }: { id: string }) {
     >
       <PidPierreFileIcon path={fileName} size={14} className="pid-editor-tab-icon" />
       <span className="name">{fileName}</span>
-      {dirty ? <span className="dot" role="img" aria-label="Unsaved changes" /> : null}
+      {dirty ? <span className="dot" role="img" aria-label={LL.editor.tabs.unsaved()} /> : null}
       <button
         type="button"
         className="close"
-        aria-label={`Close ${fileName}`}
+        aria-label={LL.editor.tabs.close({ name: fileName })}
         tabIndex={-1}
         onClick={(e) => {
           e.stopPropagation();

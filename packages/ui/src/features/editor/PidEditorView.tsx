@@ -1,3 +1,4 @@
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { useProjectsStore } from "../sessions/useProjectsStore.js";
 import { CodeMirrorEditor } from "./CodeMirrorEditor.js";
 import { PidEditorBreadcrumb } from "./PidEditorBreadcrumb.js";
@@ -9,6 +10,7 @@ import { useEditorStore } from "./useEditorStore.js";
  * by `PidCenterRouter` when `useNavStore.screen === "editor"`. Open files are isolated per workspace.
  */
 export function PidEditorView() {
+  const { LL } = useI18nContext();
   const projectId = useProjectsStore((s) => s.activeProjectId);
   const hasTabs = useEditorStore((s) =>
     projectId ? (s.byProject[projectId]?.order.length ?? 0) > 0 : false,
@@ -18,8 +20,8 @@ export function PidEditorView() {
     return (
       <div className="pid-editor">
         <div className="pid-editor-empty">
-          <p className="pid-editor-empty-title">No file open</p>
-          <p className="pid-editor-empty-hint">Select a file in the tree to open it here.</p>
+          <p className="pid-editor-empty-title">{LL.editor.empty.title()}</p>
+          <p className="pid-editor-empty-hint">{LL.editor.empty.hint()}</p>
         </div>
       </div>
     );

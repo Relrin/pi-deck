@@ -5,6 +5,7 @@ import {
   GitPullRequestArrow,
   Loader2,
 } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { BranchPicker } from "./BranchPicker.js";
 import { useGitStore } from "./useGitStore.js";
 
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function BranchHeader({ projectId, branch, ahead, behind, remotes, upstream }: Props) {
+  const { LL } = useI18nContext();
   const pull = useGitStore((s) => s.pull);
   const push = useGitStore((s) => s.push);
   const openPr = useGitStore((s) => s.openPr);
@@ -32,7 +34,7 @@ export function BranchHeader({ projectId, branch, ahead, behind, remotes, upstre
   // All three remote-side actions (pull / push / open PR) require *something* to talk to.
   // If `git remote` came back empty, the repo is local-only and the row stays disabled.
   const hasRemote = remotes.length > 0;
-  const disabledReason = hasRemote ? undefined : "no remote configured";
+  const disabledReason = hasRemote ? undefined : LL.git.branch.noRemote();
 
   const wrap = (key: string, fn: () => Promise<unknown>) => async () => {
     setBusy((b) => ({ ...b, [key]: true }));
@@ -45,7 +47,7 @@ export function BranchHeader({ projectId, branch, ahead, behind, remotes, upstre
 
   return (
     <div className="pid-git-section pid-git-branch">
-      <div className="pid-mono-label pid-git-section-label">branch</div>
+      <div className="pid-mono-label pid-git-section-label">{LL.git.branch.sectionLabel()}</div>
       <BranchPicker
         projectId={projectId}
         branch={branch}
@@ -57,21 +59,21 @@ export function BranchHeader({ projectId, branch, ahead, behind, remotes, upstre
       <div className="pid-git-branch-actions">
         <BranchAction
           icon={ArrowDownToLine}
-          label="pull"
+          label={LL.git.branch.pull()}
           disabledReason={disabledReason}
           busy={busy.pull}
           onClick={wrap("pull", () => pull(projectId))}
         />
         <BranchAction
           icon={ArrowUpFromLine}
-          label="push"
+          label={LL.git.branch.push()}
           disabledReason={disabledReason}
           busy={busy.push}
           onClick={wrap("push", () => push(projectId))}
         />
         <BranchAction
           icon={GitPullRequestArrow}
-          label="open pr"
+          label={LL.git.branch.openPr()}
           disabledReason={disabledReason}
           busy={busy.openPr}
           onClick={wrap("openPr", () => openPr(projectId))}
@@ -91,9 +93,14 @@ interface ActionProps {
 }
 
 function BranchAction({ icon: Icon, label, disabledReason, busy, onClick }: ActionProps) {
+  const { LL } = useI18nContext();
   const disabled = Boolean(disabledReason) || Boolean(busy);
-  const tooltip = disabledReason ? `${label} — ${disabledReason}` : label;
-  const ariaLabel = disabledReason ? `${label} (${disabledReason})` : label;
+  const tooltip = disabledReason
+    ? LL.git.branch.disabledTooltip({ label, reason: disabledReason })
+    : label;
+  const ariaLabel = disabledReason
+    ? LL.git.branch.disabledLabel({ label, reason: disabledReason })
+    : label;
   return (
     <button
       type="button"

@@ -5,6 +5,7 @@ import { InlineRename } from "../../components/InlineRename.js";
 import { CheckCheck, Package, Pencil, Trash2 } from "../../components/icons/index.js";
 import { ContextMenu, type ContextMenuItem } from "../../components/ui/ContextMenu.js";
 import { useI18nContext } from "../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../i18n/i18n-types.js";
 import { relativeTime } from "../../lib/format/relative-time";
 import { useNavStore } from "../../lib/useNavStore";
 import type { RailStatus } from "../chat/types.js";
@@ -20,12 +21,20 @@ const MENU_ICON_SIZE = 14;
 
 // Accessible name for the status dot per state. `idle` gets no label (it's the resting default —
 // labelling every quiet row just adds screen-reader noise).
-const STATUS_LABEL: Record<Exclude<RailStatus, "idle">, string> = {
-  working: "Running",
-  waiting: "Waiting for your input",
-  done: "Finished",
-  failed: "Failed",
-};
+/**
+ * Built per render from the catalog rather than held as a module constant: a module-level table
+ * would capture whatever locale was loaded at import time and never update on a language switch.
+ * Exported for `test/i18n/option-tables.test.ts`.
+ */
+export function statusLabels(t: TranslationFunctions): Record<Exclude<RailStatus, "idle">, string> {
+  const copy = t.sessions.row.status;
+  return {
+    working: copy.working(),
+    waiting: copy.waiting(),
+    done: copy.done(),
+    failed: copy.failed(),
+  };
+}
 
 export interface PidSessionRowProps {
   session: SessionSummary;
@@ -33,6 +42,7 @@ export interface PidSessionRowProps {
 }
 
 export function PidSessionRow({ session, active }: PidSessionRowProps) {
+  const { LL } = useI18nContext();
   const { locale } = useI18nContext();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -91,7 +101,7 @@ export function PidSessionRow({ session, active }: PidSessionRowProps) {
     ...(canAcknowledge
       ? ([
           {
-            label: "Mark as completed",
+            label: LL.sessions.row.menu.markCompleted(),
             icon: <CheckCheck size={MENU_ICON_SIZE} aria-hidden />,
             onSelect: () => useMessagesStore.getState().markViewed(session.id),
           },
@@ -99,28 +109,28 @@ export function PidSessionRow({ session, active }: PidSessionRowProps) {
         ] satisfies ContextMenuItem[])
       : []),
     {
-      label: "Rename",
+      label: LL.sessions.row.menu.rename(),
       icon: <Pencil size={MENU_ICON_SIZE} aria-hidden />,
       onSelect: () => setEditing(true),
     },
     { kind: "separator" },
     session.archived
       ? {
-          label: "Unarchive",
+          label: LL.sessions.row.menu.unarchive(),
           icon: <Package size={MENU_ICON_SIZE} aria-hidden />,
           onSelect: () => {
             void useSessionsStore.getState().unarchiveSession(session.id);
           },
         }
       : {
-          label: "Archive",
+          label: LL.sessions.row.menu.archive(),
           icon: <Package size={MENU_ICON_SIZE} aria-hidden />,
           onSelect: () => {
             void useSessionsStore.getState().archiveSession(session.id);
           },
         },
     {
-      label: "Delete",
+      label: LL.sessions.row.menu.delete(),
       icon: <Trash2 size={MENU_ICON_SIZE} aria-hidden />,
       danger: true,
       onSelect: () => setConfirmOpen(true),
@@ -144,7 +154,11 @@ export function PidSessionRow({ session, active }: PidSessionRowProps) {
             data-status={status}
             {...(status === "idle"
               ? { "aria-hidden": true }
-              : { role: "img", "aria-label": STATUS_LABEL[status], title: STATUS_LABEL[status] })}
+              : {
+                  role: "img",
+                  "aria-label": statusLabels(LL)[status],
+                  title: statusLabels(LL)[status],
+                })}
           />
           <span className="pid-rail-row-main">
             {editing ? (
@@ -156,7 +170,7 @@ export function PidSessionRow({ session, active }: PidSessionRowProps) {
                 onCancel={() => setEditing(false)}
                 className="pid-rail-row-rename"
                 inputClassName="pid-rail-row-rename-input"
-                ariaLabel="Session title"
+                ariaLabel={LL.sessions.row.title()}
               />
             ) : (
               <span className="pid-rail-row-title">{session.title}</span>
@@ -171,9 +185,9 @@ export function PidSessionRow({ session, active }: PidSessionRowProps) {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Delete session?"
-        description={`"${session.title}" and its conversation history will be removed permanently. This can't be undone.`}
-        confirmLabel="Delete"
+        title={LL.sessions.row.confirmDeleteTitle()}
+        description={LL.sessions.row.confirmDeleteBody({ title: session.title })}
+        confirmLabel={LL.sessions.row.confirmDeleteLabel()}
         destructive
         onConfirm={() => useSessionsStore.getState().deleteSession(session.id)}
       />

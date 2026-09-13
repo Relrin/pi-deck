@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { PidButton } from "../../components/buttons/PidButton.js";
 import { Dialog } from "../../components/ui/Dialog.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { gotoLineColumn } from "./editorViewBridge.js";
 
 interface PidGotoLineDialogProps {
@@ -23,6 +24,7 @@ function parseTarget(value: string): { line: number; col: number } | null {
  * mounted CodeMirror view via `gotoLineColumn` (out-of-range values are clamped there).
  */
 export function PidGotoLineDialog({ open, onOpenChange, line, col }: PidGotoLineDialogProps) {
+  const { LL } = useI18nContext();
   const [value, setValue] = useState(`${line}:${col}`);
 
   // Re-seed the field at the current caret each time the dialog opens.
@@ -40,8 +42,8 @@ export function PidGotoLineDialog({ open, onOpenChange, line, col }: PidGotoLine
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Go to Line:Column"
-      description="Enter a line number, or line:column."
+      title={LL.editor.goto.title()}
+      description={LL.editor.goto.description()}
     >
       <form
         onSubmit={(e) => {
@@ -54,16 +56,16 @@ export function PidGotoLineDialog({ open, onOpenChange, line, col }: PidGotoLine
           className="pid-goto-input"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="e.g. 120 or 120:8"
+          placeholder={LL.editor.goto.placeholder()}
           inputMode="numeric"
-          aria-label="Line and column"
+          aria-label={LL.editor.goto.label()}
         />
         <div className="mt-4 flex justify-end gap-2">
           <PidButton variant="ghost" type="button" onClick={() => onOpenChange(false)}>
-            Cancel
+            {LL.common.cancel()}
           </PidButton>
           <PidButton variant="primary" type="submit">
-            Go
+            {LL.editor.goto.submit()}
           </PidButton>
         </div>
       </form>

@@ -38,7 +38,7 @@ describe("Russian plural forms", () => {
 
   test("the `zero` slot repeats the `many` text, because 0 never reaches CLDR's category", () => {
     expect(String(ru.chat.review.fileCount({ count: 0 }))).toBe("0 файлов");
-    expect(String(ru.common.files.moreItems({ count: 0 }))).toContain("элементов");
+    expect(String(ru.files.moreItems({ count: 0 }))).toContain("элементов");
   });
 
   test("a plural that selects without printing its count still declines", () => {
@@ -53,9 +53,9 @@ describe("Russian plural forms", () => {
   test("every converted plural declines rather than repeating one form", () => {
     const cases: Array<[string, string, string]> = [
       [
-        ru.common.files.confirmDeleteTitle({ count: 1 }),
-        ru.common.files.confirmDeleteTitle({ count: 2 }),
-        ru.common.files.confirmDeleteTitle({ count: 5 }),
+        ru.files.confirmDeleteTitle({ count: 1 }),
+        ru.files.confirmDeleteTitle({ count: 2 }),
+        ru.files.confirmDeleteTitle({ count: 5 }),
       ],
       [
         ru.chat.tools.moreLines({ count: 1 }),
@@ -83,9 +83,9 @@ describe("Russian plural forms", () => {
         ru.chat.ask.sendChoices({ count: 5 }),
       ],
       [
-        ru.common.diff.commitFiles({ count: 1 }),
-        ru.common.diff.commitFiles({ count: 2 }),
-        ru.common.diff.commitFiles({ count: 5 }),
+        ru.diff.commitFiles({ count: 1 }),
+        ru.diff.commitFiles({ count: 2 }),
+        ru.diff.commitFiles({ count: 5 }),
       ],
       [
         ru.settings.skills.installedTitle({ count: 1 }),
@@ -112,10 +112,10 @@ describe("English plural forms are unchanged by the conversion", () => {
   });
 
   test("converted call sites reproduce the strings they replaced", () => {
-    expect(String(en.common.files.confirmDeleteTitle({ count: 1 }))).toBe("Move 1 item to Trash?");
-    expect(String(en.common.files.confirmDeleteTitle({ count: 3 }))).toBe("Move 3 items to Trash?");
-    expect(String(en.common.diff.commitFiles({ count: 1 }))).toBe("commit · 1 file");
-    expect(String(en.common.diff.revertAllConfirm({ count: 1 }))).toBe(
+    expect(String(en.files.confirmDeleteTitle({ count: 1 }))).toBe("Move 1 item to Trash?");
+    expect(String(en.files.confirmDeleteTitle({ count: 3 }))).toBe("Move 3 items to Trash?");
+    expect(String(en.diff.commitFiles({ count: 1 }))).toBe("commit · 1 file");
+    expect(String(en.diff.revertAllConfirm({ count: 1 }))).toBe(
       "This reverts 1 file to HEAD (untracked files are removed). This can't be undone.",
     );
     expect(String(en.chat.tools.editCount({ count: 1 }))).toBe("1 edit");

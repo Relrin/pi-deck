@@ -160,7 +160,7 @@ export function InstallMcpServerModal({
               icon={<X size={12} aria-hidden />}
               onClick={() => onOpenChange(false)}
             >
-              esc
+              {LL.settings.escBadge()}
             </PidButton>
           </div>
 
@@ -278,7 +278,7 @@ export function InstallMcpServerModal({
               letterSpacing: "0.04em",
             }}
           >
-            <span>{results.length} shown</span>
+            <span>{LL.settings.mcp.install.shownCount({ count: results.length })}</span>
             <span
               style={{
                 marginLeft: "auto",

@@ -37,6 +37,13 @@ declare global {
       /** Subscribe to OS maximize/unmaximize; returns an unsubscribe fn. */
       onMaximizedChange?: (cb: (maximized: boolean) => void) => () => void;
     };
+    /**
+     * Pushes the UI locale to the Electron main process so the native menu can be relabelled.
+     * Optional because the web target has no preload — callers use `?.`.
+     */
+    appLocale?: {
+      set?: (locale: string) => Promise<void>;
+    };
     appVersion?: string;
   }
 }

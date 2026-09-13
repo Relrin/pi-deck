@@ -175,6 +175,11 @@
   --t-16: 16px;
 }
 
+/* ---------- Script coverage ---------- */
+[data-lang-script="cyrillic"] {
+  --font-display: var(--font-ui);
+}
+
 /* ---------- Font pairing ---------- */
 [data-fonts="sans-only"] {
   --font-display: var(--font-ui);

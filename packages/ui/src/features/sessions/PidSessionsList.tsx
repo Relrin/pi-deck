@@ -1,6 +1,7 @@
 import type { SessionSummary } from "@pi-deck/core/domain/session.js";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { useNavStore, useRailExpanded } from "../../lib/useNavStore";
 import { PidNewSessionButton } from "./PidNewSessionButton";
 import { PidProjectSwitcher } from "./PidProjectSwitcher";
@@ -116,6 +117,7 @@ function SessionsBody({ query }: { query: string }) {
 }
 
 function ProjectsListing({ query }: { query: string }) {
+  const { LL } = useI18nContext();
   const projects = useProjectsStore((s) => s.projects);
   const projectSelection = useSessionsFilterStore((s) => s.project);
   // Project filter hides whole project blocks. `kind: "all"` is the default and the most
@@ -128,7 +130,7 @@ function ProjectsListing({ query }: { query: string }) {
   if (visibleProjects.length === 0) {
     return (
       <div className="pid-list-empty" style={{ padding: "12px 14px" }}>
-        {projects.length === 0 ? "no projects" : "no projects match the filter"}
+        {projects.length === 0 ? LL.sessions.list.noProjects() : LL.sessions.list.noProjectsMatch()}
       </div>
     );
   }
@@ -150,6 +152,7 @@ function ProjectsListing({ query }: { query: string }) {
  * haven't fetched yet. The store dedups in-flight fetches.
  */
 function FlatListing({ query }: { query: string }) {
+  const { LL } = useI18nContext();
   const projects = useProjectsStore((s) => s.projects);
   const projectSelection = useSessionsFilterStore((s) => s.project);
   const sessionsByProject = useSessionsStore((s) => s.sessionsByProject);
@@ -179,7 +182,7 @@ function FlatListing({ query }: { query: string }) {
   if (visibleProjectIds.length === 0) {
     return (
       <div className="pid-list-empty" style={{ padding: "12px 14px" }}>
-        {projects.length === 0 ? "no projects" : "no projects match the filter"}
+        {projects.length === 0 ? LL.sessions.list.noProjects() : LL.sessions.list.noProjectsMatch()}
       </div>
     );
   }
@@ -257,6 +260,7 @@ interface RailRowListProps {
  * own row disappear from the rail.
  */
 function RailRowList({ sessions, activeSessionId }: RailRowListProps) {
+  const { LL } = useI18nContext();
   const [showAll, setShowAll] = useState(false);
   const overflow = sessions.length - RAIL_VISIBLE_CAP;
 
@@ -286,7 +290,7 @@ function RailRowList({ sessions, activeSessionId }: RailRowListProps) {
         >
           <span className="pid-rail-overflow-rule" />
           <span className="pid-rail-overflow-label">
-            {showAll ? "show less" : `${overflow} more`}
+            {showAll ? LL.sessions.list.showLess() : LL.sessions.list.showMore({ count: overflow })}
           </span>
           <span className="pid-rail-overflow-rule" />
         </button>
@@ -296,6 +300,7 @@ function RailRowList({ sessions, activeSessionId }: RailRowListProps) {
 }
 
 function ArchiveBlock({ query }: { query: string }) {
+  const { LL } = useI18nContext();
   const archived = useSessionsStore((s) => s.archivedSessions);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
   const expanded = useNavStore((s) => s.expandedProjectsRail[ARCHIVE_KEY] ?? false);
@@ -319,7 +324,7 @@ function ArchiveBlock({ query }: { query: string }) {
         onClick={toggle}
       >
         <span className="pid-rail-project-sq" aria-hidden />
-        <span className="pid-rail-project-name">archive</span>
+        <span className="pid-rail-project-name">{LL.sessions.list.archive()}</span>
         <span className="pid-rail-project-count">{sortedArchived.length}</span>
         <span className="pid-rail-project-caret" aria-hidden>
           {expanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}

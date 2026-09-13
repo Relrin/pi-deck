@@ -3,6 +3,18 @@ import { modeEntries } from "../../src/features/chat/composer/SessionAgentModePi
 import { effortLevels } from "../../src/features/chat/composer/SessionEffortPicker";
 import { targetModes } from "../../src/features/chat/messages/PlanCard";
 import { thinkingLevels } from "../../src/features/chat/ThinkingLevelPicker";
+import { lineDiffOptions } from "../../src/features/diff/DiffToolbar";
+import { encodingOptions, eolOptions } from "../../src/features/editor/PidEditorStatus";
+import { groupModeOptions } from "../../src/features/git/GroupModeMenu";
+import { agentModes } from "../../src/features/intro/PidAgentModePicker";
+import { effortLevelOptions } from "../../src/features/intro/PidEffortPicker";
+import { providerStateLabels } from "../../src/features/models/ProviderList";
+import { statusLabels } from "../../src/features/sessions/PidSessionRow";
+import {
+  groupOptions,
+  sinceOptions,
+  sortOptions,
+} from "../../src/features/sessions/SessionsFilterPopover";
 import { navItems } from "../../src/features/settings/PidSettingsView";
 import {
   densityOptions,
@@ -25,6 +37,7 @@ import {
 } from "../../src/features/settings/sections/ProvidersSection";
 import { cwdOptions } from "../../src/features/settings/sections/TerminalSection";
 import { planGateOptions } from "../../src/features/settings/sections/ToolsSection";
+import { builtInTools } from "../../src/features/tools/toolCatalog";
 import type { TranslationFunctions } from "../../src/i18n/i18n-types";
 
 /**
@@ -101,6 +114,25 @@ const TABLES: ReadonlyArray<readonly [string, readonly string[], readonly string
   ["effortLevels", effortLevels(t).map((o) => o.label), []],
   ["thinkingLevels", thinkingLevels(t).map((o) => o.label), []],
   ["targetModes", targetModes(t).map((o) => o.label), targetModes(t).map((o) => o.blurb)],
+  ["agentModes", agentModes(t).map((o) => o.label), agentModes(t).map((o) => o.blurb)],
+  ["effortLevelOptions", effortLevelOptions(t).map((o) => o.label), []],
+  ["sortOptions", sortOptions(t).map((o) => o.label), []],
+  ["groupOptions", groupOptions(t).map((o) => o.label), []],
+  ["statusLabels", Object.values(statusLabels(t)), []],
+  ["providerStateLabels", Object.values(providerStateLabels(t)), []],
+  ["builtInTools", builtInTools(t).map((o) => o.description), []],
+  ["encodingOptions", encodingOptions(t).map((o) => o.label), []],
+  ["eolOptions", eolOptions(t).map((o) => o.hint), []],
+  [
+    "lineDiffOptions",
+    lineDiffOptions(t).map((o) => o.label),
+    lineDiffOptions(t).map((o) => o.description),
+  ],
+  [
+    "groupModeOptions",
+    groupModeOptions(t).map((o) => o.label),
+    groupModeOptions(t).map((o) => o.description),
+  ],
 ];
 
 describe("option tables", () => {
@@ -162,6 +194,41 @@ describe("option tables", () => {
       "word",
       "char",
       "none",
+    ]);
+    expect(groupModeOptions(t).map((o) => o.value)).toEqual(["file", "hunk", "change", "folder"]);
+    expect(lineDiffOptions(t).map((o) => o.value)).toEqual(["word-alt", "word", "char", "none"]);
+    expect(encodingOptions(t).map((o) => o.name)).toEqual([
+      "utf-8",
+      "utf-16le",
+      "utf-16be",
+      "win1252",
+      "latin1",
+      "ascii",
+    ]);
+    // `label` here is the separator name itself, not copy — only `hint` comes from the catalog.
+    expect(eolOptions(t).map((o) => o.value)).toEqual(["lf", "crlf"]);
+    expect(eolOptions(t).map((o) => o.label)).toEqual(["LF", "CRLF"]);
+    // Tool ids AND labels are pi vocabulary: `id` is what we send as `excludeTools`, and `label`
+    // is deliberately identical to it. Only the description comes from the catalog.
+    expect(builtInTools(t).map((o) => o.id)).toEqual(["read", "bash", "edit", "write"]);
+    expect(builtInTools(t).map((o) => o.label)).toEqual(["read", "bash", "edit", "write"]);
+    expect(agentModes(t).map((o) => o.value)).toEqual(["ask", "accept-edits", "auto", "plan"]);
+    expect(effortLevelOptions(t).map((o) => o.value)).toEqual(["low", "medium", "high"]);
+    expect(sortOptions(t).map((o) => o.id)).toEqual(["recent", "created", "branch", "status"]);
+    expect(groupOptions(t).map((o) => o.id)).toEqual(["workspace", "branch", "status", "flat"]);
+    // `since` is mostly durations, which are not copy — only the `all` row resolves from the
+    // catalog, so the table is asserted on its ids rather than added to the sentinel sweep above.
+    expect(sinceOptions(t).map((o) => o.id)).toEqual(["1d", "7d", "14d", "30d", "all"]);
+    expect(
+      sinceOptions(t)
+        .slice(0, 4)
+        .map((o) => o.label),
+    ).toEqual(["1d", "7d", "14d", "30d"]);
+    expect(Object.keys(statusLabels(t))).toEqual(["working", "waiting", "done", "failed"]);
+    expect(Object.keys(providerStateLabels(t))).toEqual([
+      "authenticated",
+      "needs-key",
+      "unreachable",
     ]);
   });
 });

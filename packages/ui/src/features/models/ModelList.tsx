@@ -3,6 +3,7 @@ import type { ModelInfo, ProviderSummary } from "@pi-deck/core/providers/types.j
 import { useMemo, useState } from "react";
 import { PidChip } from "../../components/chip/PidChip";
 import { Spinner } from "../../components/ui/Spinner";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 
 interface ModelListProps {
   provider: ProviderSummary | undefined;
@@ -38,6 +39,7 @@ export function ModelList({
   onAuthenticate,
   onSelectModel,
 }: ModelListProps) {
+  const { LL } = useI18nContext();
   const [filter, setFilter] = useState("");
 
   const filtered = useMemo(() => {
@@ -52,7 +54,7 @@ export function ModelList({
   if (!provider) {
     return (
       <div className="pid-models-col">
-        <div className="pid-models-empty">Select a provider to see models.</div>
+        <div className="pid-models-empty">{LL.models.list.pickProvider()}</div>
       </div>
     );
   }
@@ -63,7 +65,8 @@ export function ModelList({
     return (
       <div className="pid-models-col">
         <div className="pid-models-empty">
-          {provider.name} needs an API key.{"\n"}
+          {LL.models.list.needsKey({ provider: provider.name })}
+          {"\n"}
           <button
             type="button"
             className="pid-btn"
@@ -72,7 +75,7 @@ export function ModelList({
             style={{ marginTop: 12 }}
             onClick={onAuthenticate}
           >
-            Add API key
+            {LL.models.list.addKey()}
           </button>
         </div>
       </div>
@@ -84,7 +87,7 @@ export function ModelList({
       <div className="pid-models-toolbar">
         <input
           className="pid-models-filter"
-          placeholder="Filter models"
+          placeholder={LL.models.list.filter()}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
@@ -92,7 +95,7 @@ export function ModelList({
       <div className="pid-models-list">
         {loading && !filtered ? (
           <div className="pid-models-empty">
-            <Spinner /> Loading models…
+            <Spinner /> {LL.models.list.loading()}
           </div>
         ) : filtered && filtered.length > 0 ? (
           filtered.map((m) => {
@@ -109,20 +112,27 @@ export function ModelList({
                 <span className="pid-model-row-id">{m.id}</span>
                 <span className="pid-model-row-chips">
                   {formatContext(m.contextWindow) && (
-                    <PidChip>{formatContext(m.contextWindow)} ctx</PidChip>
+                    <PidChip>
+                      {formatContext(m.contextWindow)} {LL.models.list.chipContext()}
+                    </PidChip>
                   )}
                   {m.cost && formatPrice(m.cost.input) && (
                     <PidChip variant="info">
-                      in {formatPrice(m.cost.input)} / out {formatPrice(m.cost.output)}
+                      {LL.models.list.chipPriceIn()} {formatPrice(m.cost.input)}{" "}
+                      {LL.models.list.chipPriceOut()} {formatPrice(m.cost.output)}
                     </PidChip>
                   )}
-                  {m.supportsThinking && <PidChip variant="accent">thinking</PidChip>}
+                  {m.supportsThinking && (
+                    <PidChip variant="accent">{LL.models.list.chipThinking()}</PidChip>
+                  )}
                 </span>
               </button>
             );
           })
         ) : (
-          <div className="pid-models-empty">{filter ? "No matches." : "No models found."}</div>
+          <div className="pid-models-empty">
+            {filter ? LL.models.list.noMatches() : LL.models.list.noModels()}
+          </div>
         )}
       </div>
     </div>

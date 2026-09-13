@@ -40,7 +40,7 @@ export function ReviewBanner({ sessionId }: ReviewBannerProps) {
         {LL.chat.review.filesChanged({ count: fileCount })}
         {turnSuffix}
       </span>
-      <span className="pid-review-banner-cta">Review changes →</span>
+      <span className="pid-review-banner-cta">{LL.chat.review.cta()}</span>
     </button>
   );
 }

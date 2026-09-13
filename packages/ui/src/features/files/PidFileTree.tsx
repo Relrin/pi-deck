@@ -9,6 +9,7 @@ import type {
 import { themeToTreeStyles } from "@pierre/trees";
 import { FileTree, useFileTree } from "@pierre/trees/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { useNavStore } from "../../lib/useNavStore.js";
 import { useThemeStore } from "../../theme/useThemeStore.js";
@@ -55,6 +56,7 @@ interface PendingCreate {
  * commands (`fs.rename` / `fs.move` / `fs.createFile` / `fs.createFolder` / `fs.delete`).
  */
 export function PidFileTree() {
+  const { LL } = useI18nContext();
   const projectId = useProjectsStore((s) => s.activeProjectId);
   const project = useProjectsStore((s) =>
     s.activeProjectId ? s.projects.find((p) => p.id === s.activeProjectId) : undefined,
@@ -103,57 +105,65 @@ export function PidFileTree() {
   }, [themeName, themeKind]);
 
   // Rename / create
-  const handleRename = useCallback((event: FileTreeRenameEvent) => {
-    const pid = projectIdRef.current;
-    const r = rootRef.current;
-    const client = useSessionsStore.getState().client;
-    if (!pid || !r || !client) return;
-    const srcKey = stripTrailingSlash(event.sourcePath);
-    const name = treePathBasename(event.destinationPath);
-    const pending = pendingCreateRef.current.get(srcKey);
-    if (pending) {
-      pendingCreateRef.current.delete(srcKey);
-      const parentDir = treeRelToAbs(r, pending.parentRel);
-      const command = pending.mode === "folder" ? "fs.createFolder" : "fs.createFile";
-      client.call(command, { projectId: pid, parentDir, name }).catch((err: unknown) => {
-        useNotificationStore.getState().error(humanizeError(err, "Failed to create item"));
-        // Roll back the optimistic node Pierre added so the tree matches disk.
-        try {
-          modelRef.current?.remove(event.destinationPath);
-        } catch {
-          // best-effort
-        }
+  const handleRename = useCallback(
+    (event: FileTreeRenameEvent) => {
+      const pid = projectIdRef.current;
+      const r = rootRef.current;
+      const client = useSessionsStore.getState().client;
+      if (!pid || !r || !client) return;
+      const srcKey = stripTrailingSlash(event.sourcePath);
+      const name = treePathBasename(event.destinationPath);
+      const pending = pendingCreateRef.current.get(srcKey);
+      if (pending) {
+        pendingCreateRef.current.delete(srcKey);
+        const parentDir = treeRelToAbs(r, pending.parentRel);
+        const command = pending.mode === "folder" ? "fs.createFolder" : "fs.createFile";
+        client.call(command, { projectId: pid, parentDir, name }).catch((err: unknown) => {
+          useNotificationStore.getState().error(humanizeError(err, LL.files.errors.create()));
+          // Roll back the optimistic node Pierre added so the tree matches disk.
+          try {
+            modelRef.current?.remove(event.destinationPath);
+          } catch {
+            // best-effort
+          }
+        });
+        return;
+      }
+      const fromPath = treeRelToAbs(r, srcKey);
+      client.call("fs.rename", { projectId: pid, fromPath, toName: name }).catch((err: unknown) => {
+        useNotificationStore.getState().error(humanizeError(err, LL.files.errors.rename()));
       });
-      return;
-    }
-    const fromPath = treeRelToAbs(r, srcKey);
-    client.call("fs.rename", { projectId: pid, fromPath, toName: name }).catch((err: unknown) => {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to rename"));
-    });
-  }, []);
+      // `LL` is a dependency so the callback re-creates on a language switch; `LocaleProvider`
+      // remounts on one, so this costs nothing at steady state.
+    },
+    [LL],
+  );
 
   const handleRenameError = useCallback((error: string) => {
     useNotificationStore.getState().error(error);
   }, []);
 
   // In-tree drag-and-drop support
-  const handleDrop = useCallback((event: FileTreeDropResult) => {
-    const pid = projectIdRef.current;
-    const r = rootRef.current;
-    const client = useSessionsStore.getState().client;
-    if (!pid || !r || event.draggedPaths.length === 0) {
-      return;
-    }
-    if (!client) return;
-    const toDir = treeRelToAbs(r, event.target.directoryPath ?? "");
-    const moves = event.draggedPaths.map((p) =>
-      client.call("fs.move", { projectId: pid, fromPath: treeRelToAbs(r, p), toDir }),
-    );
-    Promise.all(moves).catch((err: unknown) => {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to move"));
-      modelRef.current?.resetPaths(flattenFsNodes(nodesRef.current ?? []));
-    });
-  }, []);
+  const handleDrop = useCallback(
+    (event: FileTreeDropResult) => {
+      const pid = projectIdRef.current;
+      const r = rootRef.current;
+      const client = useSessionsStore.getState().client;
+      if (!pid || !r || event.draggedPaths.length === 0) {
+        return;
+      }
+      if (!client) return;
+      const toDir = treeRelToAbs(r, event.target.directoryPath ?? "");
+      const moves = event.draggedPaths.map((p) =>
+        client.call("fs.move", { projectId: pid, fromPath: treeRelToAbs(r, p), toDir }),
+      );
+      Promise.all(moves).catch((err: unknown) => {
+        useNotificationStore.getState().error(humanizeError(err, LL.files.errors.move()));
+        modelRef.current?.resetPaths(flattenFsNodes(nodesRef.current ?? []));
+      });
+    },
+    [LL],
+  );
 
   const handleDropError = useCallback((error: string) => {
     useNotificationStore.getState().error(error);
@@ -363,7 +373,7 @@ export function PidFileTree() {
           style={themeStyle}
           renderContextMenu={renderContextMenu}
           onDoubleClick={handleDoubleClick}
-          aria-label="Project files"
+          aria-label={LL.files.tree.label()}
         />
       </div>
 
@@ -381,9 +391,7 @@ export function PidFileTree() {
               try {
                 await client.call("fs.delete", { projectId, paths: pendingDelete });
               } catch (err) {
-                useNotificationStore
-                  .getState()
-                  .error(humanizeError(err, "Failed to move to trash"));
+                useNotificationStore.getState().error(humanizeError(err, LL.files.errors.trash()));
               }
             }
             setPendingDelete(undefined);

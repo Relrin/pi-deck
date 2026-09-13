@@ -12,6 +12,7 @@ export function PidFooter() {
   return (
     <footer className="pid-footer">
       <div className="seg">
+        {/* i18n-exempt: the product name */}
         <span className="accent">pi-deck</span>
         <span className="lbl">{version}</span>
       </div>
