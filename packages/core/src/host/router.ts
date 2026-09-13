@@ -819,12 +819,12 @@ const handlers: { [C in CommandName]: CommandHandler } = {
   },
   "provider.setApiKey": async (ctx, payload) => {
     const parsed = CommandSchemas["provider.setApiKey"].request.parse(payload);
-    ctx.providerManager.setApiKey(parsed.authJsonKey, parsed.secret);
+    await ctx.providerManager.setApiKey(parsed.authJsonKey, parsed.secret);
     return { ok: true as const };
   },
   "provider.clearApiKey": async (ctx, payload) => {
     const parsed = CommandSchemas["provider.clearApiKey"].request.parse(payload);
-    ctx.providerManager.clearApiKey(parsed.authJsonKey);
+    await ctx.providerManager.clearApiKey(parsed.authJsonKey);
     return { ok: true as const };
   },
   "fs.tree": async (ctx, payload) => {

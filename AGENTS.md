@@ -41,7 +41,7 @@ pi-deck/
   - `themes/` — installed JSON themes.
   - `providers.json` — custom provider endpoints (OpenRouter keys, LM Studio URL, etc.).
   - `settings.json` — Every user preference is renderer-local under a `pi-deck:*` localStorage key (`pi-deck:prefs`, `pi-deck:locale`, `pi-deck:terminal:v1`, …).
-- **Provider data inside `~/.pi/`** — two documented exceptions where pi-deck writes inside pi's directory: `~/.pi/agent/models.json` (custom provider registry materialised via `models-json.ts`) and `~/.pi/agent/auth.json` (API keys via pi's `AuthStorage` API). Everywhere else, go through pi's API.
+- **Provider data inside `~/.pi/`** — two documented exceptions where pi-deck writes inside pi's directory: `~/.pi/agent/models.json` (custom provider registry materialised via `models-json.ts`) and `~/.pi/agent/auth.json` (API keys via pi's `ModelRuntime.login` / `logout`). Everywhere else, go through pi's API.
 
 ## Commands
 The following list of commands are used during the regular development process
@@ -128,7 +128,7 @@ bun run build         # Production build
 - **Three processes.** Electron main (host), BrowserWindow (renderer), one Node subprocess per active session (worker). Worker is spawned in production via `process.execPath` with `ELECTRON_RUN_AS_NODE=1`.
 - **Renderer & host transport.** WebSocket bound to `127.0.0.1` only, authenticated with a per-launch token surfaced through the preload bridge. Protocol is versioned (`packages/core/src/protocol/version.ts`); renderer and host always ship together.
 - **Host & worker transport.** LF-delimited JSONL on stdio. Internal and unversioned — workers are spawned from the same binary so they're always in sync.
-- **Provider system.** Built-in providers come from pi-ai's `ModelRegistry`. Custom OpenAI-compatible providers are stored in `~/.config/pi-deck/providers.json` and materialised to `~/.pi/agent/models.json` so pi picks them up natively. Secrets live in pi's `~/.pi/agent/auth.json` via `AuthStorage` — never copied into pi-deck's directories or the renderer.
+- **Provider system.** Built-in providers come from pi-ai's `ModelRegistry`. Custom OpenAI-compatible providers are stored in `~/.config/pi-deck/providers.json` and materialised to `~/.pi/agent/models.json` so pi picks them up natively. Secrets live in pi's `~/.pi/agent/auth.json` via `ModelRuntime` — never copied into pi-deck's directories or the renderer.
 
 ## App shell rules
 
@@ -181,7 +181,7 @@ Append new entry points under the matching sub-heading. Keep entries to one line
 ### Providers & secrets
 
 - **Registry** — `packages/core/src/providers/`. Built-ins come from pi-ai's `ModelRegistry`. Custom OpenAI-compatible providers materialise to `~/.pi/agent/models.json` via `models-json.ts`.
-- **Auth bridge** — `packages/core/src/providers/auth-bridge.ts`. API keys live in pi's `~/.pi/agent/auth.json` via `AuthStorage`. pi-deck never persists keys itself, never sends them to the renderer, and only materialises them at request time when pi's session resolves a provider. The renderer only ever sees an `AuthState` (`authenticated` / `needs-key` / `unreachable`).
+- **Auth bridge** — `packages/core/src/providers/auth-bridge.ts`. API keys live in pi's `~/.pi/agent/auth.json` via `ModelRuntime`: `getProviderAuthStatus` for the badge (synchronous, which is what keeps `listProviders()` synchronous), and `login(id, "api_key", …)` / `logout(id)` to write. **Not** `setRuntimeApiKey` — that is an in-memory overlay and a key set through it is lost on restart. `packages/core/test/providers/auth-bridge.test.ts` pins the on-disk shape against a temp `auth.json`. pi-deck never persists keys itself, never sends them to the renderer, and only materialises them at request time when pi's session resolves a provider. The renderer only ever sees an `AuthState` (`authenticated` / `needs-key` / `unreachable`).
 
 ### App shell & layout
 

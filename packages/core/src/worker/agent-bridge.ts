@@ -5,13 +5,12 @@ import { join as pathJoin } from "node:path";
 import {
   type AgentSession,
   type AgentSessionEvent,
-  AuthStorage,
   createAgentSession,
   DefaultResourceLoader,
   type ExtensionAPI,
   type ExtensionFactory,
   getAgentDir,
-  ModelRegistry,
+  ModelRuntime,
   SessionManager as PiSessionManager,
   SettingsManager,
 } from "@earendil-works/pi-coding-agent";
@@ -224,14 +223,14 @@ function emitContextCost(
 export async function initBridge(params: InitParams, emit: EventEmitter): Promise<AgentBridge> {
   validateAndChdir(params.projectPath);
 
-  // The worker constructs its own AuthStorage + ModelRegistry pointing at pi's default paths
+  // The worker constructs its own ModelRuntime pointing at pi's default paths
   // (`~/.pi/agent/auth.json` / `~/.pi/agent/models.json`). The host writes both, so the
-  // worker just reads the latest snapshot at spawn time.
-  const authStorage = AuthStorage.create();
-  const modelRegistry = ModelRegistry.create(authStorage);
+  // worker just reads the latest snapshot at spawn time. Since pi 0.85 the runtime owns both
+  // the credential store and the model catalogue, so this is one object rather than two.
+  const modelRuntime = await ModelRuntime.create();
 
   const model = params.modelRef
-    ? modelRegistry.find(params.modelRef.providerId, params.modelRef.modelId)
+    ? modelRuntime.getModel(params.modelRef.providerId, params.modelRef.modelId)
     : undefined;
 
   if (params.modelRef && !model) {
@@ -327,8 +326,7 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
 
   const { session } = await createAgentSession({
     cwd: params.projectPath,
-    authStorage,
-    modelRegistry,
+    modelRuntime,
     resourceLoader,
     ...(sessionManager ? { sessionManager } : {}),
     ...(model ? { model } : {}),
@@ -399,7 +397,7 @@ export async function initBridge(params: InitParams, emit: EventEmitter): Promis
       await session.abort();
     },
     setModel: async (ref: SessionModelRef, level?: ThinkingLevel) => {
-      const next = modelRegistry.find(ref.providerId, ref.modelId);
+      const next = modelRuntime.getModel(ref.providerId, ref.modelId);
       if (!next) {
         throw new Error(`Model ${ref.providerId}/${ref.modelId} is not registered`);
       }

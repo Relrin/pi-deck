@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { AuthStorage, ModelRegistry } from "@earendil-works/pi-coding-agent";
+import type { ModelRegistry, ModelRuntime } from "@earendil-works/pi-coding-agent";
 import type { SessionModelRef, ThinkingLevel } from "../domain/session.js";
 import {
   EVENT_PROVIDER_CHANGED,
@@ -23,36 +23,40 @@ export type ProviderManagerEvents = {
  * over the WS server alongside the existing SessionManager / ThemeManager events.
  *
  * pi-coding-agent is ESM-only and the host bundle is CommonJS, so we cannot use a static
- * `import` of `AuthStorage` / `ModelRegistry` — `create()` loads them via a dynamic
+ * `import` of `ModelRuntime` / `ModelRegistry` — `create()` loads them via a dynamic
  * `import()` at runtime, which Node handles transparently across the module-format gap.
+ *
+ * `ModelRuntime` is the canonical model + credential runtime as of pi 0.85: it replaced the old
+ * `AuthStorage` (which is no longer exported) and owns login/logout. `ModelRegistry` is now a
+ * synchronous read-facade over it, which is what `ModelCatalogue` consumes.
  */
 export class ProviderManager extends EventEmitter<ProviderManagerEvents> {
   readonly registry: ProviderRegistry;
-  readonly authStorage: AuthStorage;
+  readonly modelRuntime: ModelRuntime;
   readonly modelRegistry: ModelRegistry;
 
   private constructor(
     registry: ProviderRegistry,
-    authStorage: AuthStorage,
+    modelRuntime: ModelRuntime,
     modelRegistry: ModelRegistry,
   ) {
     super();
     this.registry = registry;
-    this.authStorage = authStorage;
+    this.modelRuntime = modelRuntime;
     this.modelRegistry = modelRegistry;
   }
 
   static async create(userDataDir: string): Promise<ProviderManager> {
     const pi = await import("@earendil-works/pi-coding-agent");
-    const authStorage = pi.AuthStorage.create();
-    const modelRegistry = pi.ModelRegistry.create(authStorage);
-    const authBridge = new AuthBridge(authStorage);
+    const modelRuntime = await pi.ModelRuntime.create();
+    const modelRegistry = new pi.ModelRegistry(modelRuntime);
+    const authBridge = new AuthBridge(modelRuntime);
     const catalogue = new ModelCatalogue(modelRegistry);
     const modelsJson = new ModelsJsonWriter();
     const store = new ProvidersStore(userDataDir);
     const registry = new ProviderRegistry(store, authBridge, catalogue, modelsJson);
     await registry.init();
-    return new ProviderManager(registry, authStorage, modelRegistry);
+    return new ProviderManager(registry, modelRuntime, modelRegistry);
   }
 
   listProviders(): { providers: ProviderSummary[]; defaultModel?: SessionModelRef } {
@@ -64,14 +68,14 @@ export class ProviderManager extends EventEmitter<ProviderManagerEvents> {
 
   async listModels(providerId: string): Promise<ModelInfo[]> {
     const models = await this.registry.listModels(providerId);
-    // Refresh the in-process ModelRegistry so future spawns see the latest models.json shape.
-    this.modelRegistry.refresh();
+    // Refresh the in-process registry so future spawns see the latest models.json shape.
+    await this.modelRegistry.refresh();
     return models;
   }
 
   async addCustom(input: CustomProviderInput): Promise<ProviderSummary> {
     const def = await this.registry.addCustom(input);
-    this.modelRegistry.refresh();
+    await this.modelRegistry.refresh();
     this.emit("event", EVENT_PROVIDER_CHANGED, { providerId: def.id });
     const summary = this.registry.listProviders().find((p) => p.id === def.id);
     if (!summary) throw new Error("Provider missing after add");
@@ -80,18 +84,18 @@ export class ProviderManager extends EventEmitter<ProviderManagerEvents> {
 
   async removeCustom(id: string): Promise<void> {
     await this.registry.removeCustom(id);
-    this.modelRegistry.refresh();
+    await this.modelRegistry.refresh();
     this.emit("event", EVENT_PROVIDER_CHANGED, { providerId: id });
   }
 
-  setApiKey(authJsonKey: string, secret: string): void {
-    this.registry.setApiKey(authJsonKey, secret);
+  async setApiKey(authJsonKey: string, secret: string): Promise<void> {
+    await this.registry.setApiKey(authJsonKey, secret);
     const provider = this.registry.getProviderForAuthKey(authJsonKey);
     this.emit("event", EVENT_PROVIDER_CHANGED, { providerId: provider?.id });
   }
 
-  clearApiKey(authJsonKey: string): void {
-    this.registry.clearApiKey(authJsonKey);
+  async clearApiKey(authJsonKey: string): Promise<void> {
+    await this.registry.clearApiKey(authJsonKey);
     const provider = this.registry.getProviderForAuthKey(authJsonKey);
     this.emit("event", EVENT_PROVIDER_CHANGED, { providerId: provider?.id });
   }

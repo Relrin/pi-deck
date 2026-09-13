@@ -87,7 +87,7 @@ export class ProviderRegistry {
     if (parsed.apiKey?.trim()) {
       // Persist the literal key into pi's auth.json under this provider id. pi-ai's
       // resolver picks it up at request time without needing an env var dance.
-      this.auth.setApiKey(def.id, parsed.apiKey);
+      await this.auth.setApiKey(def.id, parsed.apiKey);
     }
     this.catalogue.invalidate(id);
     await this.rewriteModelsJson();
@@ -97,20 +97,20 @@ export class ProviderRegistry {
   async removeCustom(id: string): Promise<void> {
     const def = this.store.getCustom(id);
     if (!def) return;
-    this.auth.clearApiKey(id);
+    await this.auth.clearApiKey(id);
     await this.store.removeCustom(id);
     this.catalogue.invalidate(id);
     await this.rewriteModelsJson();
   }
 
-  setApiKey(authJsonKey: string, secret: string): void {
-    this.auth.setApiKey(authJsonKey, secret);
+  async setApiKey(authJsonKey: string, secret: string): Promise<void> {
+    await this.auth.setApiKey(authJsonKey, secret);
     // Forget any cached unreachable state.
     this.catalogue.invalidate();
   }
 
-  clearApiKey(authJsonKey: string): void {
-    this.auth.clearApiKey(authJsonKey);
+  async clearApiKey(authJsonKey: string): Promise<void> {
+    await this.auth.clearApiKey(authJsonKey);
     this.catalogue.invalidate();
   }
 
