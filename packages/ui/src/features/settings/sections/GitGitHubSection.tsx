@@ -15,6 +15,8 @@ import {
 import type { ReactNode } from "react";
 import { PidSegmentedPill } from "../../../components/segmented/PidSegmentedPill";
 import { PidTogglePill } from "../../../components/segmented/PidTogglePill";
+import { useI18nContext } from "../../../i18n/i18n-react";
+import type { TranslationFunctions } from "../../../i18n/i18n-types";
 import {
   type DiffIndicators,
   type DiffLayout,
@@ -37,26 +39,34 @@ interface IndicatorOption {
   icon: ReactNode;
 }
 
-const DIFF_INDICATOR_OPTIONS: IndicatorOption[] = [
-  {
-    value: "bars",
-    label: "Bars",
-    description: "Thin coloured bar at the row's leading edge, no full-width background.",
-    icon: <SquareMenu size={12} aria-hidden />,
-  },
-  {
-    value: "classic",
-    label: "Classic",
-    description: "+ / − markers in the gutter with full-width add/del background.",
-    icon: <Diff size={12} aria-hidden />,
-  },
-  {
-    value: "none",
-    label: "None",
-    description: "No markers, no background. Cleanest read for prose-heavy diffs.",
-    icon: <SquareChartGantt size={12} aria-hidden />,
-  },
-];
+/**
+ * The three option tables below are built per render rather than held as module constants: a
+ * module-level table would capture whatever locale was loaded at import time. Every `value` is a
+ * persisted preference and stays an identifier.
+ */
+export function diffIndicatorOptions(t: TranslationFunctions): IndicatorOption[] {
+  const copy = t.settings.git.lineStyle;
+  return [
+    {
+      value: "bars",
+      label: copy.bars.label(),
+      description: copy.bars.description(),
+      icon: <SquareMenu size={12} aria-hidden />,
+    },
+    {
+      value: "classic",
+      label: copy.classic.label(),
+      description: copy.classic.description(),
+      icon: <Diff size={12} aria-hidden />,
+    },
+    {
+      value: "none",
+      label: copy.none.label(),
+      description: copy.none.description(),
+      icon: <SquareChartGantt size={12} aria-hidden />,
+    },
+  ];
+}
 
 interface LayoutOption {
   value: DiffLayout;
@@ -65,20 +75,23 @@ interface LayoutOption {
   icon: ReactNode;
 }
 
-const DIFF_LAYOUT_OPTIONS: LayoutOption[] = [
-  {
-    value: "split",
-    label: "Side-by-side",
-    description: "Old and new content in adjacent columns.",
-    icon: <SquareSplitHorizontal size={12} aria-hidden />,
-  },
-  {
-    value: "unified",
-    label: "Unified",
-    description: "Stacked old + new in one column, like `git diff` output.",
-    icon: <SquareSplitVertical size={12} aria-hidden />,
-  },
-];
+export function diffLayoutOptions(t: TranslationFunctions): LayoutOption[] {
+  const copy = t.settings.git.layout;
+  return [
+    {
+      value: "split",
+      label: copy.split.label(),
+      description: copy.split.description(),
+      icon: <SquareSplitHorizontal size={12} aria-hidden />,
+    },
+    {
+      value: "unified",
+      label: copy.unified.label(),
+      description: copy.unified.description(),
+      icon: <SquareSplitVertical size={12} aria-hidden />,
+    },
+  ];
+}
 
 interface LineDiffOption {
   value: DiffLineDiffType;
@@ -87,32 +100,35 @@ interface LineDiffOption {
   icon: ReactNode;
 }
 
-const DIFF_LINE_DIFF_OPTIONS: LineDiffOption[] = [
-  {
-    value: "word-alt",
-    label: "Word-Alt",
-    description: "Whole-word highlights, enhanced algorithm.",
-    icon: <WholeWord size={12} aria-hidden />,
-  },
-  {
-    value: "word",
-    label: "Word",
-    description: "Changed words within lines.",
-    icon: <Type size={12} aria-hidden />,
-  },
-  {
-    value: "char",
-    label: "Character",
-    description: "Individual character changes.",
-    icon: <Baseline size={12} aria-hidden />,
-  },
-  {
-    value: "none",
-    label: "None",
-    description: "Line-level changes only.",
-    icon: <Ban size={12} aria-hidden />,
-  },
-];
+export function diffLineDiffOptions(t: TranslationFunctions): LineDiffOption[] {
+  const copy = t.settings.git.lineDiff;
+  return [
+    {
+      value: "word-alt",
+      label: copy.wordAlt.label(),
+      description: copy.wordAlt.description(),
+      icon: <WholeWord size={12} aria-hidden />,
+    },
+    {
+      value: "word",
+      label: copy.word.label(),
+      description: copy.word.description(),
+      icon: <Type size={12} aria-hidden />,
+    },
+    {
+      value: "char",
+      label: copy.char.label(),
+      description: copy.char.description(),
+      icon: <Baseline size={12} aria-hidden />,
+    },
+    {
+      value: "none",
+      label: copy.none.label(),
+      description: copy.none.description(),
+      icon: <Ban size={12} aria-hidden />,
+    },
+  ];
+}
 
 /**
  * Tiny unified-diff snippet shown in the live preview. Kept inline so the preview
@@ -132,6 +148,7 @@ const PREVIEW_PATCH = [
 ].join("\n");
 
 export function GitGitHubSection() {
+  const { LL } = useI18nContext();
   const diffIndicators = usePreferencesStore((s) => s.diffIndicators);
   const setDiffIndicators = usePreferencesStore((s) => s.setDiffIndicators);
   const diffBackground = usePreferencesStore((s) => s.diffBackground);
@@ -152,74 +169,66 @@ export function GitGitHubSection() {
   return (
     <div className="pid-settings-panel-inner">
       <header>
-        <div className="pid-settings-section-kicker">Settings · Git & GitHub</div>
-        <h1 className="pid-settings-section-title">Git & GitHub</h1>
+        <div className="pid-settings-section-kicker">
+          {LL.settings.kicker({ section: LL.settings.git.kicker() })}
+        </div>
+        <h1 className="pid-settings-section-title">{LL.settings.git.title()}</h1>
       </header>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Diff line style</div>
-        <div className="pid-settings-block-desc">
-          How added and removed lines are marked in the diff viewer.
-        </div>
+        <div className="pid-settings-block-label">{LL.settings.git.lineStyle.label()}</div>
+        <div className="pid-settings-block-desc">{LL.settings.git.lineStyle.desc()}</div>
         <PidSegmentedPill
-          ariaLabel="Diff line style"
+          ariaLabel={LL.settings.git.lineStyle.ariaLabel()}
           value={diffIndicators}
-          options={DIFF_INDICATOR_OPTIONS}
+          options={diffIndicatorOptions(LL)}
           onChange={setDiffIndicators}
         />
       </section>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Diff layout</div>
-        <div className="pid-settings-block-desc">
-          Default arrangement when a diff opens. Per-view, the diff toolbar can flip between the two
-          — the value here is the starting point that change persists into.
-        </div>
+        <div className="pid-settings-block-label">{LL.settings.git.layout.label()}</div>
+        <div className="pid-settings-block-desc">{LL.settings.git.layout.desc()}</div>
         <PidSegmentedPill
-          ariaLabel="Diff layout"
+          ariaLabel={LL.settings.git.layout.ariaLabel()}
           value={diffLayout}
-          options={DIFF_LAYOUT_OPTIONS}
+          options={diffLayoutOptions(LL)}
           onChange={setDiffLayout}
         />
       </section>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Inline change highlight</div>
-        <div className="pid-settings-block-desc">
-          How fine-grained the within-line highlight is. The per-diff toolbar's dropdown shows the
-          same options and writes back here.
-        </div>
+        <div className="pid-settings-block-label">{LL.settings.git.lineDiff.label()}</div>
+        <div className="pid-settings-block-desc">{LL.settings.git.lineDiff.desc()}</div>
         <PidSegmentedPill
-          ariaLabel="Inline change highlight algorithm"
+          ariaLabel={LL.settings.git.lineDiff.ariaLabel()}
           value={diffLineDiffType}
-          options={DIFF_LINE_DIFF_OPTIONS}
+          options={diffLineDiffOptions(LL)}
           onChange={setDiffLineDiffType}
         />
       </section>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Diff display</div>
-        <div className="pid-settings-block-desc">
-          Independent on/off toggles applied to every diff view in the app.
-        </div>
+        <div className="pid-settings-block-label">{LL.settings.git.display.label()}</div>
+        <div className="pid-settings-block-desc">{LL.settings.git.display.desc()}</div>
         <div className="pid-toggle-pill-row">
           <PidTogglePill
-            label="Backgrounds"
-            description="Full-width add/del row background."
+            label={LL.settings.git.display.backgrounds.label()}
+            description={LL.settings.git.display.backgrounds.description()}
             icon={<ImageIcon size={12} aria-hidden />}
             checked={diffBackground}
             onChange={setDiffBackground}
           />
           <PidTogglePill
-            label="Line Numbers"
-            description="Show the line-number gutter."
+            label={LL.settings.git.display.lineNumbers.label()}
+            description={LL.settings.git.display.lineNumbers.description()}
             icon={<ListOrdered size={12} aria-hidden />}
             checked={diffLineNumbers}
             onChange={setDiffLineNumbers}
           />
           <PidTogglePill
-            label="Wrapping"
-            description="Wrap long lines instead of horizontal scrolling."
+            label={LL.settings.git.display.wrapping.label()}
+            description={LL.settings.git.display.wrapping.description()}
             icon={<WrapText size={12} aria-hidden />}
             checked={diffLineWrap}
             onChange={setDiffLineWrap}
@@ -228,11 +237,8 @@ export function GitGitHubSection() {
       </section>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Diff themes</div>
-        <div className="pid-settings-block-desc">
-          Separate Pierre/Shiki themes for light and dark app modes. The one matching the active
-          theme's kind is applied to every diff view.
-        </div>
+        <div className="pid-settings-block-label">{LL.settings.git.themes.label()}</div>
+        <div className="pid-settings-block-desc">{LL.settings.git.themes.desc()}</div>
         <div className="pid-diff-theme-grid">
           <DiffThemeCard
             kind="light"
@@ -260,15 +266,18 @@ interface DiffThemeCardProps {
 }
 
 function DiffThemeCard({ kind, value, options, onChange }: DiffThemeCardProps) {
+  const { LL } = useI18nContext();
+  const copy = LL.settings.git.themes;
   return (
+    // `kind` stays the raw identifier for `data-kind` — the stylesheet keys off it.
     <div className="pid-diff-theme-card" data-kind={kind}>
       <div className="pid-diff-theme-card-head">
-        <span className="pid-mono-label">{kind}</span>
+        <span className="pid-mono-label">{kind === "light" ? copy.light() : copy.dark()}</span>
         <DiffThemePicker
           value={value}
           options={options}
           onChange={onChange}
-          ariaLabel={`${kind === "light" ? "Light" : "Dark"}-mode diff theme`}
+          ariaLabel={kind === "light" ? copy.lightPicker() : copy.darkPicker()}
         />
       </div>
       <div className="pid-diff-theme-card-preview">

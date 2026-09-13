@@ -1,5 +1,6 @@
 import type { SessionCommandInfo } from "@pi-deck/core/protocol/commands.js";
 import { useEffect, useRef } from "react";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 
 interface Props {
   items: readonly SessionCommandInfo[];
@@ -8,18 +9,13 @@ interface Props {
   onHover: (index: number) => void;
 }
 
-const SOURCE_LABEL: Record<SessionCommandInfo["source"], string> = {
-  skill: "skill",
-  prompt: "template",
-  extension: "extension",
-};
-
 /**
  * The `/` autocomplete dropdown, anchored above the composer textarea. Pure render — the
  * textarea keeps focus and owns the keyboard (arrows / Enter / Tab / Esc in MessageInput);
  * the mouse path goes through `onPick`.
  */
 export function SlashCommandMenu({ items, activeIndex, onPick, onHover }: Props) {
+  const { LL } = useI18nContext();
   const listRef = useRef<HTMLDivElement | null>(null);
 
   // Keep the active row in view while arrowing through a long list.
@@ -32,7 +28,12 @@ export function SlashCommandMenu({ items, activeIndex, onPick, onHover }: Props)
   if (items.length === 0) return null;
 
   return (
-    <div className="pid-slash-menu" role="listbox" aria-label="Slash commands" ref={listRef}>
+    <div
+      className="pid-slash-menu"
+      role="listbox"
+      aria-label={LL.chat.slashMenu.ariaLabel()}
+      ref={listRef}
+    >
       {items.map((item, index) => (
         <button
           key={`${item.source}:${item.name}`}
@@ -52,7 +53,7 @@ export function SlashCommandMenu({ items, activeIndex, onPick, onHover }: Props)
             <span className="pid-slash-menu-desc">{item.description}</span>
           ) : null}
           <span className="pid-slash-menu-source" data-source={item.source}>
-            {SOURCE_LABEL[item.source]}
+            {LL.chat.slashMenu.source[item.source]()}
           </span>
         </button>
       ))}

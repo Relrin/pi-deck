@@ -1,3 +1,4 @@
+import { useI18nContext } from "../../../../i18n/i18n-react.js";
 import type { ToolRendererProps, ToolSummarizer } from "../types.js";
 import { extractTextContent } from "./common.js";
 import { Section } from "./DefaultRenderer.js";
@@ -43,6 +44,7 @@ export const mcpSummary: ToolSummarizer = (input) => {
 };
 
 export function McpRenderer({ call }: ToolRendererProps) {
+  const { LL } = useI18nContext();
   const input = (call.input ?? {}) as McpInput;
   const tool = typeof input.tool === "string" ? input.tool : undefined;
   const args = parseArgs(input.args);
@@ -56,19 +58,21 @@ export function McpRenderer({ call }: ToolRendererProps) {
   return (
     <div className="space-y-2 font-mono">
       {tool && (
-        <Section label="Tool">
+        <Section label={LL.chat.tools.section.tool()}>
           <pre className="whitespace-pre-wrap break-words text-[var(--color-text)] m-0">{tool}</pre>
         </Section>
       )}
       {hasArgs && (
-        <Section label="Arguments">
+        <Section label={LL.chat.tools.section.args()}>
           <pre className="whitespace-pre-wrap break-words text-[var(--color-text)] m-0">
             {prettyJson(args)}
           </pre>
         </Section>
       )}
       {hasResult && (
-        <Section label={partial ? "Partial result" : "Result"}>
+        <Section
+          label={partial ? LL.chat.tools.section.partialResult() : LL.chat.tools.section.result()}
+        >
           <pre className="whitespace-pre-wrap break-words text-[var(--color-text)] m-0">
             {resultText || prettyJson(resultRaw)}
           </pre>

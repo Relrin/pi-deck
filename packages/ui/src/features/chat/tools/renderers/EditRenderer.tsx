@@ -65,7 +65,7 @@ function EditFragments({ call }: ToolRendererProps) {
           onClick={() => setShowAll(true)}
           className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded-[var(--radius-sm)] px-1"
         >
-          Show all {edits.length} edits
+          {LL.chat.tools.showAllEdits({ count: edits.length })}
         </button>
       )}
     </div>

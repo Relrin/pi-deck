@@ -1,6 +1,7 @@
 import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import { useEffect, useMemo, useState } from "react";
 import { Check } from "../../../components/icons/index.js";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 import { cn } from "../../../lib/cn.js";
 import { ModelPicker } from "../../models/ModelPicker.js";
 import { useProvidersStore } from "../../models/useProvidersStore.js";
@@ -22,6 +23,7 @@ const LABEL_CLASSES =
  * an "Open model picker…" entry reveals the full two-column picker (same as the header).
  */
 export function ModelMenu() {
+  const { LL } = useI18nContext();
   const sessionId = useSessionsStore((s) => s.activeSessionId);
   const session = useSessionsStore((s) =>
     sessionId ? s.sessions.find((x) => x.id === sessionId) : undefined,
@@ -53,11 +55,13 @@ export function ModelMenu() {
     }
   }, [provider, models, refreshModels]);
 
-  const triggerLabel = activeModel?.label ?? modelRef?.modelId ?? "Select model";
+  const triggerLabel = activeModel?.label ?? modelRef?.modelId ?? LL.chat.modelMenu.selectModel();
   const supportsThinking = activeModel?.supportsThinking ?? false;
   const thinkingLevel = sessionSelection?.thinkingLevel ?? session?.thinkingLevel;
   const triggerSuffix =
-    supportsThinking && thinkingLevel && thinkingLevel !== "off" ? ` · ${thinkingLevel}` : "";
+    supportsThinking && thinkingLevel && thinkingLevel !== "off"
+      ? LL.chat.modelMenu.thinkingSuffix({ level: thinkingLevel })
+      : "";
 
   return (
     <>
@@ -65,7 +69,7 @@ export function ModelMenu() {
         <RadixDropdown.Trigger asChild>
           <button
             type="button"
-            aria-label={`Model: ${triggerLabel}`}
+            aria-label={LL.chat.modelMenu.triggerAria({ label: triggerLabel })}
             className="inline-flex items-center gap-1.5 rounded-[var(--radius)] px-2 py-1 text-xs text-[var(--ink-2)] hover:bg-[var(--bg-2)] hover:text-[var(--ink-0)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-line)]"
           >
             <span>
@@ -99,7 +103,7 @@ export function ModelMenu() {
                     </span>
                     {m.supportsThinking && (
                       <span className="text-[10px]" style={{ color: "var(--ink-3)" }}>
-                        thinking
+                        {LL.chat.modelMenu.thinkingTag()}
                       </span>
                     )}
                   </RadixDropdown.Item>
@@ -109,16 +113,16 @@ export function ModelMenu() {
               <div className="px-3 py-2 text-xs" style={{ color: "var(--ink-3)" }}>
                 {provider
                   ? provider.authState === "authenticated"
-                    ? "Loading models…"
-                    : "Provider needs an API key."
-                  : "No model selected — open the picker."}
+                    ? LL.chat.modelMenu.loadingModels()
+                    : LL.chat.modelMenu.needsKey()
+                  : LL.chat.modelMenu.noModel()}
               </div>
             )}
             <RadixDropdown.Separator className="my-1 h-px" style={{ background: "var(--line)" }} />
             <RadixDropdown.Item className={cn(ITEM_CLASSES)} onSelect={() => setPickerOpen(true)}>
               <span className="w-3 shrink-0" />
               <span className="flex-1" style={{ color: "var(--ink-0)" }}>
-                Open model picker…
+                {LL.chat.modelMenu.openPicker()}
               </span>
             </RadixDropdown.Item>
           </RadixDropdown.Content>

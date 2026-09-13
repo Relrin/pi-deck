@@ -2,6 +2,9 @@ import { useMemo, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
 import { PidSelect } from "../../../components/inputs/PidSelect";
 import { PidStepper } from "../../../components/inputs/PidStepper";
+import { useI18nContext } from "../../../i18n/i18n-react";
+import type { TranslationFunctions } from "../../../i18n/i18n-types";
+import { rich, slot } from "../../../i18n/rich";
 import { CUSTOM_FONT_VALUE, detectAvailableMonoFonts } from "../../terminal/terminalFonts";
 import { useDetectedShells } from "../../terminal/useDetectedShells";
 import {
@@ -11,12 +14,18 @@ import {
   useTerminalSettingsStore,
 } from "../../terminal/useTerminalSettingsStore";
 
-const CWD_OPTIONS: Array<{ value: DefaultCwdMode; label: string }> = [
-  { value: "session", label: "Session root" },
-  { value: "last-used", label: "Last used" },
-];
+/** Built per render — a module constant would freeze the launch locale. `value` is an identifier. */
+export function cwdOptions(
+  t: TranslationFunctions,
+): Array<{ value: DefaultCwdMode; label: string }> {
+  return [
+    { value: "session", label: t.settings.terminal.cwd.session() },
+    { value: "last-used", label: t.settings.terminal.cwd.lastUsed() },
+  ];
+}
 
 export function TerminalSection() {
+  const { LL } = useI18nContext();
   const shellPath = useTerminalSettingsStore((s) => s.shellPath);
   const setShellPath = useTerminalSettingsStore((s) => s.setShellPath);
   const fontFamily = useTerminalSettingsStore((s) => s.fontFamily);
@@ -50,36 +59,42 @@ export function TerminalSection() {
   return (
     <div className="pid-settings-panel-inner">
       <header>
-        <div className="pid-settings-section-kicker">Settings · Terminal</div>
-        <h1 className="pid-settings-section-title">Terminal</h1>
+        <div className="pid-settings-section-kicker">
+          {LL.settings.kicker({ section: LL.settings.terminal.kicker() })}
+        </div>
+        <h1 className="pid-settings-section-title">{LL.settings.terminal.title()}</h1>
       </header>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Shell</div>
-        <div className="pid-settings-block-desc">
-          Shells detected on this system. Choosing one applies to terminals opened afterward.
-        </div>
+        <div className="pid-settings-block-label">{LL.settings.terminal.shell.label()}</div>
+        <div className="pid-settings-block-desc">{LL.settings.terminal.shell.desc()}</div>
         <PidSelect
-          aria-label="Shell"
+          aria-label={LL.settings.terminal.shell.ariaLabel()}
           value={shellPath ?? ""}
           onChange={(e) => setShellPath(e.target.value || null)}
         >
-          <option value="">System default{defaultLabel ? ` (${defaultLabel})` : ""}</option>
+          <option value="">
+            {defaultLabel
+              ? LL.settings.terminal.shell.systemDefaultNamed({ name: defaultLabel })
+              : LL.settings.terminal.shell.systemDefault()}
+          </option>
           {selectableShells.map((shell) => (
             <option key={shell.path} value={shell.path}>
-              {shell.label} — {shell.path}
+              {LL.settings.terminal.shell.option({ label: shell.label, path: shell.path })}
             </option>
           ))}
         </PidSelect>
       </section>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Working directory</div>
-        <div className="pid-settings-block-desc">
-          New terminals open in the active session's root folder, inheriting its git branch.
-        </div>
-        <div className="pid-segmented" role="radiogroup" aria-label="Default working directory">
-          {CWD_OPTIONS.map((option) => (
+        <div className="pid-settings-block-label">{LL.settings.terminal.cwd.label()}</div>
+        <div className="pid-settings-block-desc">{LL.settings.terminal.cwd.desc()}</div>
+        <div
+          className="pid-segmented"
+          role="radiogroup"
+          aria-label={LL.settings.terminal.cwd.ariaLabel()}
+        >
+          {cwdOptions(LL).map((option) => (
             <PidButton
               key={option.value}
               role="radio"
@@ -94,40 +109,42 @@ export function TerminalSection() {
       </section>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Font</div>
+        <div className="pid-settings-block-label">{LL.settings.terminal.font.label()}</div>
         <div className="pid-settings-block-desc">
-          Pick an installed monospace family, or choose <code>Custom…</code> to type your own. The
-          default follows the UI mono font (<code>--font-mono</code>).
+          {rich(LL.settings.terminal.font.desc({ custom: slot("custom"), mono: slot("mono") }), {
+            custom: <code>{LL.settings.terminal.font.custom()}</code>,
+            mono: <code>{LL.settings.terminal.font.monoVar()}</code>,
+          })}
         </div>
         <div className="pid-terminal-font-row">
           <PidSelect
-            aria-label="Font family"
+            aria-label={LL.settings.terminal.font.familyAriaLabel()}
             wrapperClassName="pid-terminal-font-family"
             value={fontSelectValue}
             onChange={(e) => handleSelectFont(e.target.value)}
           >
-            <option value="">Default (--font-mono)</option>
+            <option value="">{LL.settings.terminal.font.defaultOption()}</option>
             {availableFonts.map((family) => (
               <option key={family} value={family} style={{ fontFamily: `"${family}", monospace` }}>
                 {family}
               </option>
             ))}
-            <option value={CUSTOM_FONT_VALUE}>Custom…</option>
+            <option value={CUSTOM_FONT_VALUE}>{LL.settings.terminal.font.custom()}</option>
           </PidSelect>
           <PidStepper
             value={fontSize}
             min={TERMINAL_FONT_SIZE_MIN}
             max={TERMINAL_FONT_SIZE_MAX}
             onChange={setFontSize}
-            ariaLabel="font size"
+            ariaLabel={LL.settings.terminal.font.sizeLabel()}
           />
         </div>
         {showCustomFont && (
           <input
             className="pid-input pid-terminal-font-custom"
             type="text"
-            aria-label="Custom font family"
-            placeholder="e.g. Fira Code, monospace"
+            aria-label={LL.settings.terminal.font.customAriaLabel()}
+            placeholder={LL.settings.terminal.font.customPlaceholder()}
             value={fontFamily}
             onChange={(e) => setFontFamily(e.target.value)}
           />

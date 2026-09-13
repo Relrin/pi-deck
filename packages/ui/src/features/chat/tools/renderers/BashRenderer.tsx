@@ -1,3 +1,4 @@
+import { useI18nContext } from "../../../../i18n/i18n-react.js";
 import { truncateEnd } from "../../../../lib/format/truncate.js";
 import type { ToolRendererProps, ToolSummarizer } from "../types.js";
 import { CodeBlock, extractTextContent } from "./common.js";
@@ -8,6 +9,7 @@ interface BashInput {
 }
 
 export function BashRenderer({ call }: ToolRendererProps) {
+  const { LL } = useI18nContext();
   const input = (call.input ?? {}) as BashInput;
   const output = extractTextContent(call.result) || extractTextContent(call.partialResult);
   return (
@@ -15,7 +17,7 @@ export function BashRenderer({ call }: ToolRendererProps) {
       <div className="rounded-[var(--radius-sm)] bg-[var(--color-panel-2)] p-2 font-mono text-xs text-[var(--color-text)] whitespace-pre-wrap break-words">
         <span className="text-[var(--color-accent)]">$</span> <span>{input.command ?? ""}</span>
       </div>
-      {output && <CodeBlock text={output} ariaLabel="Bash output" />}
+      {output && <CodeBlock text={output} ariaLabel={LL.chat.tools.bash.output()} />}
     </div>
   );
 }

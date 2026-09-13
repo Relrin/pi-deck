@@ -47,9 +47,50 @@ type RootTranslation = {
 				}
 			}
 		}
-		languagePicker: {
-			label: string
-			matchGlobal: string
+		composer: {
+			placeholder: string
+			ariaLabel: string
+			send: string
+			sendAria: string
+			sendTooltip: string
+			stop: string
+			stopAria: string
+			stopTooltip: string
+			forceStop: string
+			forceStopTooltip: string
+			removeAttachment: RequiredParams<'path'>
+			previewImage: RequiredParams<'name'>
+			removeImage: RequiredParams<'name'>
+		}
+		approvalPill: {
+			alwaysAllowTooltip: string
+			alwaysAllow: RequiredParams<'key'>
+			deny: string
+			allowOnce: string
+		}
+		planCard: {
+			header: string
+			commentsPending: RequiredParams<'count'>
+			approvingHint: string
+			revise: string
+			reviseAria: string
+			approve: string
+			approveAria: string
+			targetModeAria: RequiredParams<'mode'>
+			targetMode: {
+				ask: {
+					label: string
+					blurb: string
+				}
+				acceptEdits: {
+					label: string
+					blurb: string
+				}
+				auto: {
+					label: string
+					blurb: string
+				}
+			}
 		}
 		review: {
 			fileCount: RequiredParams<'count'>
@@ -59,19 +100,242 @@ type RootTranslation = {
 		tools: {
 			moreLines: RequiredParams<'count'>
 			editCount: RequiredParams<'count'>
+			showLess: string
+			showFullOutput: RequiredParams<'count'>
+			linesTotal: RequiredParams<'count'>
+			showAllEdits: RequiredParams<'count'>
+			stat: {
+				ok: string
+				error: string
+			}
+			errorHeading: string
+			status: {
+				fallbackName: string
+				queued: RequiredParams<'name'>
+				running: RequiredParams<'name'>
+				completed: RequiredParams<'name'>
+				failed: RequiredParams<'name'>
+				failedWith: RequiredParams<'error' | 'name'>
+				cancelled: RequiredParams<'name'>
+			}
+			section: {
+				input: string
+				result: string
+				partialResult: string
+				tool: string
+				args: string
+			}
+			read: {
+				offset: RequiredParams<'offset'>
+				limit: RequiredParams<'limit'>
+				contents: string
+			}
+			write: {
+				contents: string
+			}
+			bash: {
+				output: string
+			}
+			grep: {
+				'in': RequiredParams<'path'>
+				glob: RequiredParams<'glob'>
+				caseInsensitive: string
+				literal: string
+				matches: string
+			}
+			find: {
+				'in': RequiredParams<'path'>
+				results: string
+			}
+			ls: {
+				listing: string
+			}
 		}
-		planSnapshot: {
-			earlierSteps: RequiredParams<'count'>
-			moreSteps: RequiredParams<'count'>
+		header: {
+			sessionTitle: string
 		}
-		planCard: {
-			commentsPending: RequiredParams<'count'>
+		modeMenu: {
+			ariaLabel: string
+			header: string
+			ask: {
+				label: string
+				blurb: string
+			}
+			acceptEdits: {
+				label: string
+				blurb: string
+			}
+			auto: {
+				label: string
+				blurb: string
+			}
+			plan: {
+				label: string
+				blurb: string
+			}
+		}
+		effortPicker: {
+			header: string
+			ariaLabel: string
+			adaptive: string
+			adaptiveTooltip: string
+			adaptiveChip: string
+			level: {
+				low: string
+				medium: string
+				high: string
+			}
+		}
+		thinkingPicker: {
+			chip: RequiredParams<'level'>
+			ariaLabel: RequiredParams<'level'>
+			level: {
+				off: string
+				minimal: string
+				low: string
+				medium: string
+				high: string
+				xhigh: string
+			}
+		}
+		modelMenu: {
+			triggerAria: RequiredParams<'label'>
+			selectModel: string
+			thinkingSuffix: RequiredParams<'level'>
+			thinkingTag: string
+			loadingModels: string
+			needsKey: string
+			noModel: string
+			openPicker: string
+		}
+		modelPicker: {
+			ariaLabel: string
+			searchPlaceholder: string
+			empty: string
+			'default': string
+			fallbackLabel: string
+		}
+		contextUsage: {
+			buttonAria: RequiredParams<'percent'>
+			title: string
+			ofTokens: RequiredParams<'total' | 'used'>
+			messages: string
+			systemPrompt: string
+			projectContext: string
+			projectContextTitle: string
+			tools: string
+			mcp: string
+			free: string
+		}
+		slashMenu: {
+			ariaLabel: string
+			source: {
+				skill: string
+				prompt: string
+				extension: string
+			}
+		}
+		imagePreview: {
+			close: string
+			untitled: string
+			altFallback: string
+			pastedName: string
+			fileFilter: string
+		}
+		messageList: {
+			jumpToLatest: string
+			jumpToLatestAria: string
+		}
+		streaming: {
+			thinking: string
+		}
+		messageActions: {
+			copy: string
+			rewind: string
+			fork: string
+			streamingHint: string
+			noAnchor: string
+			confirmTitle: string
+			confirmDescription: string
+			confirmLabel: string
+		}
+		contextMenu: {
+			copyText: string
+			copyMarkdown: string
+			commentSelection: string
+			attachSelection: string
+		}
+		checkbox: {
+			completed: string
+			inProgress: string
+			notStarted: string
 		}
 		planComments: {
 			count: RequiredParams<'count'>
+			placeholder: string
+			ariaLabel: string
+			edit: string
+			'delete': string
+			submit: string
+			save: string
+		}
+		errors: {
+			copy: string
+			approveTool: string
+			denyTool: string
+			approvePlan: string
+			sendAnswer: string
+			filePickerUnavailable: string
+			folderPickerUnavailable: string
+			changeAgentMode: string
+			imagePickerUnavailable: string
+			unsupportedImageType: RequiredParams<'type'>
+			unknownType: string
+			imageTooLarge: RequiredParams<'mb'>
+			attachImage: RequiredParams<'message'>
+			readImage: string
+			openFileDialog: string
+			decodeImage: string
+			fileReader: string
+		}
+		planSnapshot: {
+			chip: string
+			summary: RequiredParams<'done' | 'total'>
+			earlierSteps: RequiredParams<'count'>
+			moreSteps: RequiredParams<'count'>
 		}
 		ask: {
 			sendChoices: RequiredParams<'count'>
+			eyebrow: string
+			eyebrowResolved: string
+			awaitingPick: string
+			pickAny: string
+			answeredCount: RequiredParams<'answered' | 'total'>
+			answeredStatus: string
+			noAnswer: string
+			somethingElse: string
+			somethingElseDesc: string
+			describePlaceholder: string
+			composerHint: RequiredParams<'enter' | 'shiftEnter'>
+			pickHint: RequiredParams<'enter' | 'from' | 'to'>
+			toggleHint: RequiredParams<'from' | 'to'>
+			previewHint: RequiredParams<'down' | 'enter' | 'up'>
+			nextHint: RequiredParams<'enter'>
+			sendPick: string
+			sendCustom: string
+			choose: RequiredParams<'label'>
+			sendAnswers: string
+			skip: string
+			review: string
+			reviewHint: string
+			addedByYou: string
+			addItem: string
+			addPlaceholder: string
+			add: string
+			remove: string
+			notAnswered: string
+			skipped: string
+			joinSeparator: string
 		}
 	}
 	common: {
@@ -283,7 +547,69 @@ type RootTranslation = {
 		}
 	}
 	settings: {
+		title: string
+		close: string
+		back: string
+		escHint: RequiredParams<'esc'>
+		navLabel: string
+		kicker: RequiredParams<'section'>
+		nav: {
+			appearance: string
+			agentModels: string
+			tools: string
+			skills: string
+			mcpServers: string
+			editor: string
+			gitGithub: string
+			terminal: string
+		}
 		appearance: {
+			kicker: string
+			title: string
+			theme: {
+				label: string
+				desc: string
+				apply: RequiredParams<'name'>
+				'delete': RequiredParams<'name'>
+				deleted: RequiredParams<'name'>
+				chipUser: string
+				chipDefault: string
+				'import': string
+				importing: string
+				imported: RequiredParams<'name'>
+				fileFilter: string
+			}
+			view: {
+				label: string
+				desc: string
+				ariaLabel: string
+				agent: string
+				ide: string
+			}
+			density: {
+				label: string
+				desc: string
+				ariaLabel: string
+				compact: string
+				cozy: string
+			}
+			fonts: {
+				label: string
+				desc: string
+				ariaLabel: string
+				'default': string
+				sansOnly: string
+				monoOnly: string
+			}
+			terminalWidth: {
+				label: string
+				desc: string
+				ariaLabel: string
+				centerLeft: string
+				center: string
+				centerRight: string
+				all: string
+			}
 			language: {
 				label: string
 				desc: string
@@ -291,13 +617,402 @@ type RootTranslation = {
 			}
 		}
 		agents: {
+			kicker: string
+			title: string
+			effort: {
+				label: string
+				desc: string
+				ariaLabel: string
+				level: {
+					low: string
+					medium: string
+					high: string
+				}
+			}
+			mode: {
+				label: string
+				desc: string
+				ariaLabel: string
+				ask: {
+					label: string
+					description: string
+				}
+				acceptEdits: {
+					label: string
+					description: string
+				}
+				auto: {
+					label: string
+					description: string
+				}
+				plan: {
+					label: string
+					description: string
+				}
+			}
+			builtIn: {
+				label: string
+				desc: RequiredParams<'path'>
+				add: string
+				empty: string
+			}
+			custom: {
+				label: string
+				desc: RequiredParams<'path'>
+				add: string
+				empty: string
+			}
+			row: {
+				authenticated: string
+				needsKey: string
+				replaceKey: string
+				addKey: string
+				clear: string
+				setKey: string
+			}
 			responseLanguage: {
 				label: string
 				desc: string
 				matchUi: string
 			}
 		}
+		tools: {
+			kicker: string
+			title: string
+			planMode: {
+				label: string
+				desc: string
+				ariaLabel: string
+				approve: {
+					label: string
+					description: string
+				}
+				block: {
+					label: string
+					description: string
+				}
+			}
+			disabled: {
+				label: string
+				desc: string
+			}
+		}
+		editor: {
+			kicker: string
+			title: string
+			lsp: {
+				label: string
+				descWsl: RequiredParams<'distro'>
+				descLocal: string
+				descNoProject: string
+				state: {
+					running: string
+					detected: string
+					notFound: string
+					custom: string
+				}
+				install: RequiredParams<'hint'>
+				edit: string
+				on: string
+				off: string
+				enableServer: RequiredParams<'label'>
+				toggleDesc: string
+				detecting: string
+				redetect: string
+				addServer: string
+			}
+		}
+		terminal: {
+			kicker: string
+			title: string
+			shell: {
+				label: string
+				desc: string
+				ariaLabel: string
+				systemDefault: string
+				systemDefaultNamed: RequiredParams<'name'>
+				option: RequiredParams<'label' | 'path'>
+			}
+			cwd: {
+				label: string
+				desc: string
+				ariaLabel: string
+				session: string
+				lastUsed: string
+			}
+			font: {
+				label: string
+				desc: RequiredParams<'custom' | 'mono'>
+				monoVar: string
+				defaultOption: string
+				custom: string
+				familyAriaLabel: string
+				customAriaLabel: string
+				customPlaceholder: string
+				sizeLabel: string
+			}
+		}
+		errors: {
+			filePickerUnavailable: string
+			folderPickerUnavailable: string
+			installSkill: string
+			removeSkill: string
+			scanRepository: string
+			installSkills: string
+			updateServer: string
+			updateConfig: string
+			saveToken: string
+			reconnect: string
+			removeServer: string
+			registrySearch: string
+			installServer: string
+			importTheme: string
+			deleteTheme: string
+		}
+		git: {
+			kicker: string
+			title: string
+			lineStyle: {
+				label: string
+				desc: string
+				ariaLabel: string
+				bars: {
+					label: string
+					description: string
+				}
+				classic: {
+					label: string
+					description: string
+				}
+				none: {
+					label: string
+					description: string
+				}
+			}
+			layout: {
+				label: string
+				desc: string
+				ariaLabel: string
+				split: {
+					label: string
+					description: string
+				}
+				unified: {
+					label: string
+					description: string
+				}
+			}
+			lineDiff: {
+				label: string
+				desc: string
+				ariaLabel: string
+				wordAlt: {
+					label: string
+					description: string
+				}
+				word: {
+					label: string
+					description: string
+				}
+				char: {
+					label: string
+					description: string
+				}
+				none: {
+					label: string
+					description: string
+				}
+			}
+			display: {
+				label: string
+				desc: string
+				backgrounds: {
+					label: string
+					description: string
+				}
+				lineNumbers: {
+					label: string
+					description: string
+				}
+				wrapping: {
+					label: string
+					description: string
+				}
+			}
+			themes: {
+				label: string
+				desc: string
+				light: string
+				dark: string
+				lightPicker: string
+				darkPicker: string
+			}
+		}
+		mcp: {
+			kicker: string
+			title: string
+			countOn: RequiredParams<'enabled' | 'total'>
+			countOnInProject: RequiredParams<'enabled' | 'project' | 'total'>
+			about: RequiredParams<'adapter' | 'config' | 'proxy'>
+			adapter: {
+				installed: string
+				notDetected: string
+				installWith: RequiredParams<'cmd'>
+			}
+			writesTo: RequiredParams<'path'>
+			revealTitle: string
+			revealAria: string
+			filterPlaceholder: string
+			installServer: string
+			noProject: string
+			list: {
+				installed: string
+				catalogHint: string
+				onIn: RequiredParams<'project'>
+				projectFallback: string
+			}
+			loading: string
+			noMatch: RequiredParams<'query'>
+			empty: string
+			toggleHint: RequiredParams<'path'>
+			projectPicker: {
+				select: string
+				header: string
+			}
+			chip: {
+				projectFile: string
+			}
+			status: {
+				cached: string
+				notConnected: string
+				toolCount: RequiredParams<'count'>
+			}
+			configure: string
+			onByDefault: string
+			off: string
+			config: {
+				lifecycle: string
+				lazy: {
+					label: string
+					hint: string
+				}
+				eager: {
+					label: string
+					hint: string
+				}
+				keepAlive: {
+					label: string
+					hint: string
+				}
+				exposure: string
+				proxy: string
+				direct: string
+				exposeDirectCount: RequiredParams<'count'>
+				exposeDirectCountTokens: RequiredParams<'count' | 'tokens'>
+				exposeDirect: string
+				exposeProxy: string
+				idle: string
+				idleHint: string
+				idle5: string
+				idle10: string
+				idle30: string
+				idleNever: string
+			}
+			token: {
+				placeholder: string
+				save: string
+				clear: string
+				hint: string
+				saved: string
+				cleared: string
+				savedBody: string
+				edit: string
+				set: string
+			}
+			oauth: {
+				rerun: string
+				title: string
+				body: RequiredParams<'name'>
+			}
+			reconnect: string
+			reconnectQueued: string
+			reconnectBody: RequiredParams<'name'>
+			confirmUninstall: string
+			uninstall: string
+			disableServer: RequiredParams<'name'>
+			enableServer: RequiredParams<'name'>
+			install: {
+				kicker: string
+				title: string
+				desc: string
+				searchPlaceholder: string
+				searching: string
+				unreachable: string
+				noMatch: RequiredParams<'query'>
+				loadMore: string
+				loading: string
+				installsTo: RequiredParams<'path'>
+				configFallback: string
+				added: string
+				installed: string
+				installing: string
+				install: string
+				installedTitle: RequiredParams<'name'>
+				installedBody: RequiredParams<'project'>
+				projectFallback: string
+				tag: string
+			}
+		}
 		skills: {
+			kicker: string
+			title: string
+			installedCount: RequiredParams<'count'>
+			about: RequiredParams<'cmd' | 'link' | 'warning'>
+			aboutLink: string
+			aboutWarning: string
+			filterPlaceholder: string
+			installFromRepo: string
+			installing: string
+			fromFolder: string
+			noProject: string
+			scanning: string
+			noMatch: RequiredParams<'query'>
+			empty: string
+			group: {
+				installed: string
+				installedHint: string
+				project: string
+				projectHint: string
+			}
+			manualOnly: string
+			confirmRemove: string
+			installedToast: RequiredParams<'name'>
+			installedUnnamedToast: string
+			install: {
+				kicker: string
+				title: string
+				desc: string
+				urlPlaceholder: string
+				scan: string
+				'try': string
+				invalidUrl: string
+				cloning: string
+				scanningTree: string
+				selectAll: string
+				selectNone: string
+				noManifests: string
+				pointAt: RequiredParams<'file'>
+				pointAtDetail: string
+				selectedCount: RequiredParams<'picked' | 'total'>
+				noRepoScanned: string
+				installSelected: string
+				installNSelected: RequiredParams<'count'>
+				nothingInstalled: string
+				nothingInstalledBody: string
+				skippedNote: RequiredParams<'count'>
+				alreadyInstalled: string
+				tag: string
+			}
 			scanFoundToast: RequiredParams<'count'>
 			installedTitle: RequiredParams<'count'>
 			scanFoundLabel: RequiredParams<'count'>
@@ -417,9 +1132,50 @@ export type TranslationFunctions = {
 				}
 			}
 		}
-		languagePicker: {
-			label: () => LocalizedString
-			matchGlobal: () => LocalizedString
+		composer: {
+			placeholder: () => LocalizedString
+			ariaLabel: () => LocalizedString
+			send: () => LocalizedString
+			sendAria: () => LocalizedString
+			sendTooltip: () => LocalizedString
+			stop: () => LocalizedString
+			stopAria: () => LocalizedString
+			stopTooltip: () => LocalizedString
+			forceStop: () => LocalizedString
+			forceStopTooltip: () => LocalizedString
+			removeAttachment: (arg: { path: string }) => LocalizedString
+			previewImage: (arg: { name: string }) => LocalizedString
+			removeImage: (arg: { name: string }) => LocalizedString
+		}
+		approvalPill: {
+			alwaysAllowTooltip: () => LocalizedString
+			alwaysAllow: (arg: { key: string }) => LocalizedString
+			deny: () => LocalizedString
+			allowOnce: () => LocalizedString
+		}
+		planCard: {
+			header: () => LocalizedString
+			commentsPending: (arg: { count: number }) => LocalizedString
+			approvingHint: () => LocalizedString
+			revise: () => LocalizedString
+			reviseAria: () => LocalizedString
+			approve: () => LocalizedString
+			approveAria: () => LocalizedString
+			targetModeAria: (arg: { mode: string }) => LocalizedString
+			targetMode: {
+				ask: {
+					label: () => LocalizedString
+					blurb: () => LocalizedString
+				}
+				acceptEdits: {
+					label: () => LocalizedString
+					blurb: () => LocalizedString
+				}
+				auto: {
+					label: () => LocalizedString
+					blurb: () => LocalizedString
+				}
+			}
 		}
 		review: {
 			fileCount: (arg: { count: number }) => LocalizedString
@@ -429,19 +1185,242 @@ export type TranslationFunctions = {
 		tools: {
 			moreLines: (arg: { count: number }) => LocalizedString
 			editCount: (arg: { count: number }) => LocalizedString
+			showLess: () => LocalizedString
+			showFullOutput: (arg: { count: number }) => LocalizedString
+			linesTotal: (arg: { count: number }) => LocalizedString
+			showAllEdits: (arg: { count: number }) => LocalizedString
+			stat: {
+				ok: () => LocalizedString
+				error: () => LocalizedString
+			}
+			errorHeading: () => LocalizedString
+			status: {
+				fallbackName: () => LocalizedString
+				queued: (arg: { name: string }) => LocalizedString
+				running: (arg: { name: string }) => LocalizedString
+				completed: (arg: { name: string }) => LocalizedString
+				failed: (arg: { name: string }) => LocalizedString
+				failedWith: (arg: { error: string, name: string }) => LocalizedString
+				cancelled: (arg: { name: string }) => LocalizedString
+			}
+			section: {
+				input: () => LocalizedString
+				result: () => LocalizedString
+				partialResult: () => LocalizedString
+				tool: () => LocalizedString
+				args: () => LocalizedString
+			}
+			read: {
+				offset: (arg: { offset: number }) => LocalizedString
+				limit: (arg: { limit: number }) => LocalizedString
+				contents: () => LocalizedString
+			}
+			write: {
+				contents: () => LocalizedString
+			}
+			bash: {
+				output: () => LocalizedString
+			}
+			grep: {
+				'in': (arg: { path: string }) => LocalizedString
+				glob: (arg: { glob: string }) => LocalizedString
+				caseInsensitive: () => LocalizedString
+				literal: () => LocalizedString
+				matches: () => LocalizedString
+			}
+			find: {
+				'in': (arg: { path: string }) => LocalizedString
+				results: () => LocalizedString
+			}
+			ls: {
+				listing: () => LocalizedString
+			}
 		}
-		planSnapshot: {
-			earlierSteps: (arg: { count: number }) => LocalizedString
-			moreSteps: (arg: { count: number }) => LocalizedString
+		header: {
+			sessionTitle: () => LocalizedString
 		}
-		planCard: {
-			commentsPending: (arg: { count: number }) => LocalizedString
+		modeMenu: {
+			ariaLabel: () => LocalizedString
+			header: () => LocalizedString
+			ask: {
+				label: () => LocalizedString
+				blurb: () => LocalizedString
+			}
+			acceptEdits: {
+				label: () => LocalizedString
+				blurb: () => LocalizedString
+			}
+			auto: {
+				label: () => LocalizedString
+				blurb: () => LocalizedString
+			}
+			plan: {
+				label: () => LocalizedString
+				blurb: () => LocalizedString
+			}
+		}
+		effortPicker: {
+			header: () => LocalizedString
+			ariaLabel: () => LocalizedString
+			adaptive: () => LocalizedString
+			adaptiveTooltip: () => LocalizedString
+			adaptiveChip: () => LocalizedString
+			level: {
+				low: () => LocalizedString
+				medium: () => LocalizedString
+				high: () => LocalizedString
+			}
+		}
+		thinkingPicker: {
+			chip: (arg: { level: string }) => LocalizedString
+			ariaLabel: (arg: { level: string }) => LocalizedString
+			level: {
+				off: () => LocalizedString
+				minimal: () => LocalizedString
+				low: () => LocalizedString
+				medium: () => LocalizedString
+				high: () => LocalizedString
+				xhigh: () => LocalizedString
+			}
+		}
+		modelMenu: {
+			triggerAria: (arg: { label: string }) => LocalizedString
+			selectModel: () => LocalizedString
+			thinkingSuffix: (arg: { level: string }) => LocalizedString
+			thinkingTag: () => LocalizedString
+			loadingModels: () => LocalizedString
+			needsKey: () => LocalizedString
+			noModel: () => LocalizedString
+			openPicker: () => LocalizedString
+		}
+		modelPicker: {
+			ariaLabel: () => LocalizedString
+			searchPlaceholder: () => LocalizedString
+			empty: () => LocalizedString
+			'default': () => LocalizedString
+			fallbackLabel: () => LocalizedString
+		}
+		contextUsage: {
+			buttonAria: (arg: { percent: number }) => LocalizedString
+			title: () => LocalizedString
+			ofTokens: (arg: { total: string, used: string }) => LocalizedString
+			messages: () => LocalizedString
+			systemPrompt: () => LocalizedString
+			projectContext: () => LocalizedString
+			projectContextTitle: () => LocalizedString
+			tools: () => LocalizedString
+			mcp: () => LocalizedString
+			free: () => LocalizedString
+		}
+		slashMenu: {
+			ariaLabel: () => LocalizedString
+			source: {
+				skill: () => LocalizedString
+				prompt: () => LocalizedString
+				extension: () => LocalizedString
+			}
+		}
+		imagePreview: {
+			close: () => LocalizedString
+			untitled: () => LocalizedString
+			altFallback: () => LocalizedString
+			pastedName: () => LocalizedString
+			fileFilter: () => LocalizedString
+		}
+		messageList: {
+			jumpToLatest: () => LocalizedString
+			jumpToLatestAria: () => LocalizedString
+		}
+		streaming: {
+			thinking: () => LocalizedString
+		}
+		messageActions: {
+			copy: () => LocalizedString
+			rewind: () => LocalizedString
+			fork: () => LocalizedString
+			streamingHint: () => LocalizedString
+			noAnchor: () => LocalizedString
+			confirmTitle: () => LocalizedString
+			confirmDescription: () => LocalizedString
+			confirmLabel: () => LocalizedString
+		}
+		contextMenu: {
+			copyText: () => LocalizedString
+			copyMarkdown: () => LocalizedString
+			commentSelection: () => LocalizedString
+			attachSelection: () => LocalizedString
+		}
+		checkbox: {
+			completed: () => LocalizedString
+			inProgress: () => LocalizedString
+			notStarted: () => LocalizedString
 		}
 		planComments: {
 			count: (arg: { count: number }) => LocalizedString
+			placeholder: () => LocalizedString
+			ariaLabel: () => LocalizedString
+			edit: () => LocalizedString
+			'delete': () => LocalizedString
+			submit: () => LocalizedString
+			save: () => LocalizedString
+		}
+		errors: {
+			copy: () => LocalizedString
+			approveTool: () => LocalizedString
+			denyTool: () => LocalizedString
+			approvePlan: () => LocalizedString
+			sendAnswer: () => LocalizedString
+			filePickerUnavailable: () => LocalizedString
+			folderPickerUnavailable: () => LocalizedString
+			changeAgentMode: () => LocalizedString
+			imagePickerUnavailable: () => LocalizedString
+			unsupportedImageType: (arg: { type: string }) => LocalizedString
+			unknownType: () => LocalizedString
+			imageTooLarge: (arg: { mb: string }) => LocalizedString
+			attachImage: (arg: { message: string }) => LocalizedString
+			readImage: () => LocalizedString
+			openFileDialog: () => LocalizedString
+			decodeImage: () => LocalizedString
+			fileReader: () => LocalizedString
+		}
+		planSnapshot: {
+			chip: () => LocalizedString
+			summary: (arg: { done: number, total: number }) => LocalizedString
+			earlierSteps: (arg: { count: number }) => LocalizedString
+			moreSteps: (arg: { count: number }) => LocalizedString
 		}
 		ask: {
 			sendChoices: (arg: { count: number }) => LocalizedString
+			eyebrow: () => LocalizedString
+			eyebrowResolved: () => LocalizedString
+			awaitingPick: () => LocalizedString
+			pickAny: () => LocalizedString
+			answeredCount: (arg: { answered: number, total: number }) => LocalizedString
+			answeredStatus: () => LocalizedString
+			noAnswer: () => LocalizedString
+			somethingElse: () => LocalizedString
+			somethingElseDesc: () => LocalizedString
+			describePlaceholder: () => LocalizedString
+			composerHint: (arg: { enter: string, shiftEnter: string }) => LocalizedString
+			pickHint: (arg: { enter: string, from: string, to: string }) => LocalizedString
+			toggleHint: (arg: { from: string, to: string }) => LocalizedString
+			previewHint: (arg: { down: string, enter: string, up: string }) => LocalizedString
+			nextHint: (arg: { enter: string }) => LocalizedString
+			sendPick: () => LocalizedString
+			sendCustom: () => LocalizedString
+			choose: (arg: { label: string }) => LocalizedString
+			sendAnswers: () => LocalizedString
+			skip: () => LocalizedString
+			review: () => LocalizedString
+			reviewHint: () => LocalizedString
+			addedByYou: () => LocalizedString
+			addItem: () => LocalizedString
+			addPlaceholder: () => LocalizedString
+			add: () => LocalizedString
+			remove: () => LocalizedString
+			notAnswered: () => LocalizedString
+			skipped: () => LocalizedString
+			joinSeparator: () => LocalizedString
 		}
 	}
 	common: {
@@ -653,7 +1632,69 @@ export type TranslationFunctions = {
 		}
 	}
 	settings: {
+		title: () => LocalizedString
+		close: () => LocalizedString
+		back: () => LocalizedString
+		escHint: (arg: { esc: string }) => LocalizedString
+		navLabel: () => LocalizedString
+		kicker: (arg: { section: string }) => LocalizedString
+		nav: {
+			appearance: () => LocalizedString
+			agentModels: () => LocalizedString
+			tools: () => LocalizedString
+			skills: () => LocalizedString
+			mcpServers: () => LocalizedString
+			editor: () => LocalizedString
+			gitGithub: () => LocalizedString
+			terminal: () => LocalizedString
+		}
 		appearance: {
+			kicker: () => LocalizedString
+			title: () => LocalizedString
+			theme: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+				apply: (arg: { name: string }) => LocalizedString
+				'delete': (arg: { name: string }) => LocalizedString
+				deleted: (arg: { name: string }) => LocalizedString
+				chipUser: () => LocalizedString
+				chipDefault: () => LocalizedString
+				'import': () => LocalizedString
+				importing: () => LocalizedString
+				imported: (arg: { name: string }) => LocalizedString
+				fileFilter: () => LocalizedString
+			}
+			view: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+				ariaLabel: () => LocalizedString
+				agent: () => LocalizedString
+				ide: () => LocalizedString
+			}
+			density: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+				ariaLabel: () => LocalizedString
+				compact: () => LocalizedString
+				cozy: () => LocalizedString
+			}
+			fonts: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+				ariaLabel: () => LocalizedString
+				'default': () => LocalizedString
+				sansOnly: () => LocalizedString
+				monoOnly: () => LocalizedString
+			}
+			terminalWidth: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+				ariaLabel: () => LocalizedString
+				centerLeft: () => LocalizedString
+				center: () => LocalizedString
+				centerRight: () => LocalizedString
+				all: () => LocalizedString
+			}
 			language: {
 				label: () => LocalizedString
 				desc: () => LocalizedString
@@ -661,13 +1702,402 @@ export type TranslationFunctions = {
 			}
 		}
 		agents: {
+			kicker: () => LocalizedString
+			title: () => LocalizedString
+			effort: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+				ariaLabel: () => LocalizedString
+				level: {
+					low: () => LocalizedString
+					medium: () => LocalizedString
+					high: () => LocalizedString
+				}
+			}
+			mode: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+				ariaLabel: () => LocalizedString
+				ask: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+				acceptEdits: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+				auto: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+				plan: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+			}
+			builtIn: {
+				label: () => LocalizedString
+				desc: (arg: { path: string }) => LocalizedString
+				add: () => LocalizedString
+				empty: () => LocalizedString
+			}
+			custom: {
+				label: () => LocalizedString
+				desc: (arg: { path: string }) => LocalizedString
+				add: () => LocalizedString
+				empty: () => LocalizedString
+			}
+			row: {
+				authenticated: () => LocalizedString
+				needsKey: () => LocalizedString
+				replaceKey: () => LocalizedString
+				addKey: () => LocalizedString
+				clear: () => LocalizedString
+				setKey: () => LocalizedString
+			}
 			responseLanguage: {
 				label: () => LocalizedString
 				desc: () => LocalizedString
 				matchUi: () => LocalizedString
 			}
 		}
+		tools: {
+			kicker: () => LocalizedString
+			title: () => LocalizedString
+			planMode: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+				ariaLabel: () => LocalizedString
+				approve: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+				block: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+			}
+			disabled: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+			}
+		}
+		editor: {
+			kicker: () => LocalizedString
+			title: () => LocalizedString
+			lsp: {
+				label: () => LocalizedString
+				descWsl: (arg: { distro: string }) => LocalizedString
+				descLocal: () => LocalizedString
+				descNoProject: () => LocalizedString
+				state: {
+					running: () => LocalizedString
+					detected: () => LocalizedString
+					notFound: () => LocalizedString
+					custom: () => LocalizedString
+				}
+				install: (arg: { hint: string }) => LocalizedString
+				edit: () => LocalizedString
+				on: () => LocalizedString
+				off: () => LocalizedString
+				enableServer: (arg: { label: string }) => LocalizedString
+				toggleDesc: () => LocalizedString
+				detecting: () => LocalizedString
+				redetect: () => LocalizedString
+				addServer: () => LocalizedString
+			}
+		}
+		terminal: {
+			kicker: () => LocalizedString
+			title: () => LocalizedString
+			shell: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+				ariaLabel: () => LocalizedString
+				systemDefault: () => LocalizedString
+				systemDefaultNamed: (arg: { name: string }) => LocalizedString
+				option: (arg: { label: string, path: string }) => LocalizedString
+			}
+			cwd: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+				ariaLabel: () => LocalizedString
+				session: () => LocalizedString
+				lastUsed: () => LocalizedString
+			}
+			font: {
+				label: () => LocalizedString
+				desc: (arg: { custom: string, mono: string }) => LocalizedString
+				monoVar: () => LocalizedString
+				defaultOption: () => LocalizedString
+				custom: () => LocalizedString
+				familyAriaLabel: () => LocalizedString
+				customAriaLabel: () => LocalizedString
+				customPlaceholder: () => LocalizedString
+				sizeLabel: () => LocalizedString
+			}
+		}
+		errors: {
+			filePickerUnavailable: () => LocalizedString
+			folderPickerUnavailable: () => LocalizedString
+			installSkill: () => LocalizedString
+			removeSkill: () => LocalizedString
+			scanRepository: () => LocalizedString
+			installSkills: () => LocalizedString
+			updateServer: () => LocalizedString
+			updateConfig: () => LocalizedString
+			saveToken: () => LocalizedString
+			reconnect: () => LocalizedString
+			removeServer: () => LocalizedString
+			registrySearch: () => LocalizedString
+			installServer: () => LocalizedString
+			importTheme: () => LocalizedString
+			deleteTheme: () => LocalizedString
+		}
+		git: {
+			kicker: () => LocalizedString
+			title: () => LocalizedString
+			lineStyle: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+				ariaLabel: () => LocalizedString
+				bars: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+				classic: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+				none: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+			}
+			layout: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+				ariaLabel: () => LocalizedString
+				split: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+				unified: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+			}
+			lineDiff: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+				ariaLabel: () => LocalizedString
+				wordAlt: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+				word: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+				char: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+				none: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+			}
+			display: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+				backgrounds: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+				lineNumbers: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+				wrapping: {
+					label: () => LocalizedString
+					description: () => LocalizedString
+				}
+			}
+			themes: {
+				label: () => LocalizedString
+				desc: () => LocalizedString
+				light: () => LocalizedString
+				dark: () => LocalizedString
+				lightPicker: () => LocalizedString
+				darkPicker: () => LocalizedString
+			}
+		}
+		mcp: {
+			kicker: () => LocalizedString
+			title: () => LocalizedString
+			countOn: (arg: { enabled: string, total: number }) => LocalizedString
+			countOnInProject: (arg: { enabled: string, project: string, total: number }) => LocalizedString
+			about: (arg: { adapter: string, config: string, proxy: string }) => LocalizedString
+			adapter: {
+				installed: () => LocalizedString
+				notDetected: () => LocalizedString
+				installWith: (arg: { cmd: string }) => LocalizedString
+			}
+			writesTo: (arg: { path: string }) => LocalizedString
+			revealTitle: () => LocalizedString
+			revealAria: () => LocalizedString
+			filterPlaceholder: () => LocalizedString
+			installServer: () => LocalizedString
+			noProject: () => LocalizedString
+			list: {
+				installed: () => LocalizedString
+				catalogHint: () => LocalizedString
+				onIn: (arg: { project: string }) => LocalizedString
+				projectFallback: () => LocalizedString
+			}
+			loading: () => LocalizedString
+			noMatch: (arg: { query: string }) => LocalizedString
+			empty: () => LocalizedString
+			toggleHint: (arg: { path: string }) => LocalizedString
+			projectPicker: {
+				select: () => LocalizedString
+				header: () => LocalizedString
+			}
+			chip: {
+				projectFile: () => LocalizedString
+			}
+			status: {
+				cached: () => LocalizedString
+				notConnected: () => LocalizedString
+				toolCount: (arg: { count: number }) => LocalizedString
+			}
+			configure: () => LocalizedString
+			onByDefault: () => LocalizedString
+			off: () => LocalizedString
+			config: {
+				lifecycle: () => LocalizedString
+				lazy: {
+					label: () => LocalizedString
+					hint: () => LocalizedString
+				}
+				eager: {
+					label: () => LocalizedString
+					hint: () => LocalizedString
+				}
+				keepAlive: {
+					label: () => LocalizedString
+					hint: () => LocalizedString
+				}
+				exposure: () => LocalizedString
+				proxy: () => LocalizedString
+				direct: () => LocalizedString
+				exposeDirectCount: (arg: { count: number }) => LocalizedString
+				exposeDirectCountTokens: (arg: { count: number, tokens: string }) => LocalizedString
+				exposeDirect: () => LocalizedString
+				exposeProxy: () => LocalizedString
+				idle: () => LocalizedString
+				idleHint: () => LocalizedString
+				idle5: () => LocalizedString
+				idle10: () => LocalizedString
+				idle30: () => LocalizedString
+				idleNever: () => LocalizedString
+			}
+			token: {
+				placeholder: () => LocalizedString
+				save: () => LocalizedString
+				clear: () => LocalizedString
+				hint: () => LocalizedString
+				saved: () => LocalizedString
+				cleared: () => LocalizedString
+				savedBody: () => LocalizedString
+				edit: () => LocalizedString
+				set: () => LocalizedString
+			}
+			oauth: {
+				rerun: () => LocalizedString
+				title: () => LocalizedString
+				body: (arg: { name: string }) => LocalizedString
+			}
+			reconnect: () => LocalizedString
+			reconnectQueued: () => LocalizedString
+			reconnectBody: (arg: { name: string }) => LocalizedString
+			confirmUninstall: () => LocalizedString
+			uninstall: () => LocalizedString
+			disableServer: (arg: { name: string }) => LocalizedString
+			enableServer: (arg: { name: string }) => LocalizedString
+			install: {
+				kicker: () => LocalizedString
+				title: () => LocalizedString
+				desc: () => LocalizedString
+				searchPlaceholder: () => LocalizedString
+				searching: () => LocalizedString
+				unreachable: () => LocalizedString
+				noMatch: (arg: { query: string }) => LocalizedString
+				loadMore: () => LocalizedString
+				loading: () => LocalizedString
+				installsTo: (arg: { path: string }) => LocalizedString
+				configFallback: () => LocalizedString
+				added: () => LocalizedString
+				installed: () => LocalizedString
+				installing: () => LocalizedString
+				install: () => LocalizedString
+				installedTitle: (arg: { name: string }) => LocalizedString
+				installedBody: (arg: { project: string }) => LocalizedString
+				projectFallback: () => LocalizedString
+				tag: () => LocalizedString
+			}
+		}
 		skills: {
+			kicker: () => LocalizedString
+			title: () => LocalizedString
+			installedCount: (arg: { count: string }) => LocalizedString
+			about: (arg: { cmd: string, link: string, warning: string }) => LocalizedString
+			aboutLink: () => LocalizedString
+			aboutWarning: () => LocalizedString
+			filterPlaceholder: () => LocalizedString
+			installFromRepo: () => LocalizedString
+			installing: () => LocalizedString
+			fromFolder: () => LocalizedString
+			noProject: () => LocalizedString
+			scanning: () => LocalizedString
+			noMatch: (arg: { query: string }) => LocalizedString
+			empty: () => LocalizedString
+			group: {
+				installed: () => LocalizedString
+				installedHint: () => LocalizedString
+				project: () => LocalizedString
+				projectHint: () => LocalizedString
+			}
+			manualOnly: () => LocalizedString
+			confirmRemove: () => LocalizedString
+			installedToast: (arg: { name: string }) => LocalizedString
+			installedUnnamedToast: () => LocalizedString
+			install: {
+				kicker: () => LocalizedString
+				title: () => LocalizedString
+				desc: () => LocalizedString
+				urlPlaceholder: () => LocalizedString
+				scan: () => LocalizedString
+				'try': () => LocalizedString
+				invalidUrl: () => LocalizedString
+				cloning: () => LocalizedString
+				scanningTree: () => LocalizedString
+				selectAll: () => LocalizedString
+				selectNone: () => LocalizedString
+				noManifests: () => LocalizedString
+				pointAt: (arg: { file: string }) => LocalizedString
+				pointAtDetail: () => LocalizedString
+				selectedCount: (arg: { picked: string, total: number }) => LocalizedString
+				noRepoScanned: () => LocalizedString
+				installSelected: () => LocalizedString
+				installNSelected: (arg: { count: number }) => LocalizedString
+				nothingInstalled: () => LocalizedString
+				nothingInstalledBody: () => LocalizedString
+				skippedNote: (arg: { count: number }) => LocalizedString
+				alreadyInstalled: () => LocalizedString
+				tag: () => LocalizedString
+			}
 			scanFoundToast: (arg: { count: number }) => LocalizedString
 			installedTitle: (arg: { count: number }) => LocalizedString
 			scanFoundLabel: (arg: { count: number }) => LocalizedString

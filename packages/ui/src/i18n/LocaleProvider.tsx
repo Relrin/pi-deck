@@ -9,16 +9,15 @@ import { useLocaleStore } from "./useLocaleStore";
  * context's own `setLocale` — that would give the app two places to change language and they
  * would drift.
  *
- * The `key` forces a remount when the pseudo-locale toggles, because that mutates the loaded
- * dictionary in place rather than changing `locale`, and the provider would otherwise have no
- * reason to re-render.
+ * The `key` remounts the tree on a language switch. `TypesafeI18n` does react to a changed
+ * `locale` on its own, but remounting is what guarantees that a component holding a value derived
+ * from `LL` in state rather than recomputing it per render cannot show the previous language.
  */
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const uiLocale = useLocaleStore((s) => s.uiLocale);
-  const pseudo = useLocaleStore((s) => s.pseudo);
 
   return (
-    <TypesafeI18n key={`${uiLocale}:${pseudo}`} locale={uiLocale}>
+    <TypesafeI18n key={uiLocale} locale={uiLocale}>
       {children}
     </TypesafeI18n>
   );

@@ -13,7 +13,7 @@ interface ChatHeaderProps {
 }
 
 export function ChatHeader({ session }: ChatHeaderProps) {
-  const { locale } = useI18nContext();
+  const { LL, locale } = useI18nContext();
   const isInFlight = useMessagesStore(useMemo(() => selectTurnInFlight(session.id), [session.id]));
   const branch = useGitStore((s) => s.currentBranchByProject[session.projectId]);
   const [editing, setEditing] = useState(false);
@@ -44,7 +44,7 @@ export function ChatHeader({ session }: ChatHeaderProps) {
               onCancel={() => setEditing(false)}
               className="pid-chat-header-title-edit"
               inputClassName="pid-chat-header-title-input"
-              ariaLabel="Session title"
+              ariaLabel={LL.chat.header.sessionTitle()}
             />
           ) : (
             <button

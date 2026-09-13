@@ -16,6 +16,7 @@ interface StreamingStatusProps {
  * is in flight.
  */
 export function StreamingStatus({ toolCalls, toolCallIds, hasText }: StreamingStatusProps) {
+  const { LL } = useI18nContext();
   const activeCall = toolCallIds
     .map((id) => toolCalls?.[id])
     .reverse()
@@ -48,7 +49,7 @@ export function StreamingStatus({ toolCalls, toolCallIds, hasText }: StreamingSt
   if (!hasText) {
     return (
       <Row>
-        <span className="text-[var(--color-text-muted)]">Thinking...</span>
+        <span className="text-[var(--color-text-muted)]">{LL.chat.streaming.thinking()}</span>
       </Row>
     );
   }

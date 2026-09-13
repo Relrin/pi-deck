@@ -1,3 +1,4 @@
+import { useI18nContext } from "../../../../i18n/i18n-react.js";
 import { DEFAULT_RENDERER_SECTION_MAX_HEIGHT_REM } from "../../../../lib/ui-constants.js";
 import type { ToolRendererProps } from "../types.js";
 
@@ -10,16 +11,19 @@ function prettyJson(value: unknown): string {
 }
 
 export function DefaultRenderer({ call }: ToolRendererProps) {
+  const { LL } = useI18nContext();
   const partial = call.result === undefined && call.partialResult !== undefined;
   return (
     <div className="space-y-2 font-mono">
-      <Section label="Input">
+      <Section label={LL.chat.tools.section.input()}>
         <pre className="whitespace-pre-wrap break-words text-[var(--color-text)] m-0">
           {prettyJson(call.input)}
         </pre>
       </Section>
       {(call.result !== undefined || call.partialResult !== undefined) && (
-        <Section label={partial ? "Partial result" : "Result"}>
+        <Section
+          label={partial ? LL.chat.tools.section.partialResult() : LL.chat.tools.section.result()}
+        >
           <pre className="whitespace-pre-wrap break-words text-[var(--color-text)] m-0">
             {prettyJson(call.result ?? call.partialResult)}
           </pre>

@@ -14,6 +14,8 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
 import { useI18nContext } from "../../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../../i18n/i18n-types.js";
+import { rich, slot } from "../../../i18n/rich.js";
 import { humanizeError } from "../../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
 import { useProjectsStore } from "../../sessions/useProjectsStore";
@@ -34,18 +36,30 @@ const THIN_CTL = {
   lineHeight: 1,
 } as const;
 
-const LIFECYCLES: { value: Lifecycle; label: string; hint: string }[] = [
-  { value: "lazy", label: "Lazy", hint: "connect on first call" },
-  { value: "eager", label: "Eager", hint: "connect at startup" },
-  { value: "keep-alive", label: "Keep-alive", hint: "always on, auto-reconnect" },
-];
+/**
+ * Built per render rather than held as module constants: a module-level table would capture
+ * whatever locale was loaded at import time. `value` is the protocol value in both cases.
+ */
+export function lifecycleOptions(
+  t: TranslationFunctions,
+): { value: Lifecycle; label: string; hint: string }[] {
+  const copy = t.settings.mcp.config;
+  return [
+    { value: "lazy", label: copy.lazy.label(), hint: copy.lazy.hint() },
+    { value: "eager", label: copy.eager.label(), hint: copy.eager.hint() },
+    { value: "keep-alive", label: copy.keepAlive.label(), hint: copy.keepAlive.hint() },
+  ];
+}
 
-const IDLE_OPTIONS: { value: number; label: string }[] = [
-  { value: 5, label: "5m" },
-  { value: 10, label: "10m" },
-  { value: 30, label: "30m" },
-  { value: 0, label: "Never" },
-];
+export function idleOptions(t: TranslationFunctions): { value: number; label: string }[] {
+  const copy = t.settings.mcp.config;
+  return [
+    { value: 5, label: copy.idle5() },
+    { value: 10, label: copy.idle10() },
+    { value: 30, label: copy.idle30() },
+    { value: 0, label: copy.idleNever() },
+  ];
+}
 
 /**
  * Settings → MCP Servers. Lists pi-deck's catalog of installed MCP servers (plus any added by
@@ -55,6 +69,7 @@ const IDLE_OPTIONS: { value: number; label: string }[] = [
  * tool counts come from the adapter's metadata cache. Install from the registry via the modal.
  */
 export function McpServersSection() {
+  const { LL } = useI18nContext();
   const projects = useProjectsStore((s) => s.projects);
   const activeProjectId = useProjectsStore((s) => s.activeProjectId);
   const [selectedId, setSelectedId] = useState<string | undefined>(activeProjectId);
@@ -119,7 +134,7 @@ export function McpServersSection() {
       });
       await load();
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to update server"));
+      useNotificationStore.getState().error(humanizeError(err, LL.settings.errors.updateServer()));
     }
   };
 
@@ -130,7 +145,7 @@ export function McpServersSection() {
       await client.call("mcp.setConfig", { projectId, name, ...changes });
       await load();
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to update config"));
+      useNotificationStore.getState().error(humanizeError(err, LL.settings.errors.updateConfig()));
     }
   };
 
@@ -139,14 +154,14 @@ export function McpServersSection() {
     if (!client || !projectId) return;
     try {
       await client.call("mcp.setToken", { projectId, name, token });
-      useNotificationStore.getState().success(token ? "Token saved" : "Token cleared", {
-        body: token
-          ? "Stored encrypted. Applies to new agent sessions — restart a running one to pick it up."
-          : undefined,
-      });
+      useNotificationStore
+        .getState()
+        .success(token ? LL.settings.mcp.token.saved() : LL.settings.mcp.token.cleared(), {
+          body: token ? LL.settings.mcp.token.savedBody() : undefined,
+        });
       await load();
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to save token"));
+      useNotificationStore.getState().error(humanizeError(err, LL.settings.errors.saveToken()));
     }
   };
 
@@ -155,12 +170,12 @@ export function McpServersSection() {
     if (!client) return;
     try {
       await client.call("mcp.reconnect", { name });
-      useNotificationStore.getState().success("Reconnect queued", {
-        body: `Cleared cached tools for ${name} — the agent reconnects on next use.`,
+      useNotificationStore.getState().success(LL.settings.mcp.reconnectQueued(), {
+        body: LL.settings.mcp.reconnectBody({ name }),
       });
       await load();
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to reconnect"));
+      useNotificationStore.getState().error(humanizeError(err, LL.settings.errors.reconnect()));
     }
   };
 
@@ -172,7 +187,7 @@ export function McpServersSection() {
       setExpanded((e) => (e === server.name ? null : e));
       await load();
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to remove server"));
+      useNotificationStore.getState().error(humanizeError(err, LL.settings.errors.removeServer()));
     }
   };
 
@@ -197,9 +212,11 @@ export function McpServersSection() {
   return (
     <div className="pid-settings-panel-inner">
       <header>
-        <div className="pid-settings-section-kicker">Settings · MCP Servers</div>
+        <div className="pid-settings-section-kicker">
+          {LL.settings.kicker({ section: LL.settings.mcp.kicker() })}
+        </div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-          <h1 className="pid-settings-section-title">MCP Servers</h1>
+          <h1 className="pid-settings-section-title">{LL.settings.mcp.title()}</h1>
           {projectId && (
             <span
               style={{
@@ -209,8 +226,21 @@ export function McpServersSection() {
                 letterSpacing: "0.08em",
               }}
             >
-              <span style={{ color: "var(--accent)" }}>{enabledCount}</span> of {allServers.length}{" "}
-              on{projectName ? ` in ${projectName}` : ""}
+              {rich(
+                projectName
+                  ? LL.settings.mcp.countOnInProject({
+                      enabled: slot("enabled"),
+                      total: allServers.length,
+                      project: projectName,
+                    })
+                  : LL.settings.mcp.countOn({
+                      enabled: slot("enabled"),
+                      total: allServers.length,
+                    }),
+                {
+                  enabled: <span style={{ color: "var(--accent)" }}>{enabledCount}</span>,
+                },
+              )}
             </span>
           )}
         </div>
@@ -218,9 +248,19 @@ export function McpServersSection() {
 
       <section className="pid-settings-block">
         <div className="pid-settings-block-desc">
-          Connect MCP servers through <code>pi-mcp-adapter</code> — one token-efficient{" "}
-          <code>mcp</code> proxy tool instead of hundreds of definitions. Servers are added to your
-          catalog, then toggled on per project (written to <code>.pi/mcp.json</code>).
+          {/* The package name, the proxy tool name and the config path are all identifiers. */}
+          {rich(
+            LL.settings.mcp.about({
+              adapter: slot("adapter"),
+              proxy: slot("proxy"),
+              config: slot("config"),
+            }),
+            {
+              adapter: <code>pi-mcp-adapter</code>,
+              proxy: <code>mcp</code>,
+              config: <code>.pi/mcp.json</code>,
+            },
+          )}
         </div>
       </section>
 
@@ -247,14 +287,18 @@ export function McpServersSection() {
             }}
           />
           <span style={{ fontSize: "var(--t-13)", color: "var(--ink-0)" }}>
-            {adapter?.installed ? "Adapter installed" : "Adapter not detected"}
+            {adapter?.installed
+              ? LL.settings.mcp.adapter.installed()
+              : LL.settings.mcp.adapter.notDetected()}
           </span>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}>
             npm:pi-mcp-adapter{adapter?.version ? ` · v${adapter.version}` : ""}
           </span>
           {!adapter?.installed && (
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}>
-              · install with <code>pi install npm:pi-mcp-adapter@2.10.0</code>
+              {rich(LL.settings.mcp.adapter.installWith({ cmd: slot("cmd") }), {
+                cmd: <code>pi install npm:pi-mcp-adapter@2.10.0</code>,
+              })}
             </span>
           )}
         </div>
@@ -271,15 +315,17 @@ export function McpServersSection() {
               color: "var(--ink-3)",
             }}
           >
-            writes <span style={{ color: "var(--ink-2)" }}>.pi/mcp.json</span>
+            {rich(LL.settings.mcp.writesTo({ path: slot("path") }), {
+              path: <span style={{ color: "var(--ink-2)" }}>.pi/mcp.json</span>,
+            })}
           </span>
           <PidButton
             variant="ghost"
             style={THIN_CTL}
             icon={<FolderOpen size={12} aria-hidden />}
             disabled={!projectPath}
-            title="Reveal in file manager"
-            aria-label="Reveal config location in file manager"
+            title={LL.settings.mcp.revealTitle()}
+            aria-label={LL.settings.mcp.revealAria()}
             onClick={() => void openLocation()}
           />
           <span style={{ flex: 1 }} />
@@ -315,7 +361,7 @@ export function McpServersSection() {
               }}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Filter servers…"
+              placeholder={LL.settings.mcp.filterPlaceholder()}
               spellCheck={false}
             />
             {query && (
@@ -332,13 +378,13 @@ export function McpServersSection() {
             disabled={!projectId}
             onClick={() => setInstallOpen(true)}
           >
-            Install server
+            {LL.settings.mcp.installServer()}
           </PidButton>
         </div>
 
         {!projectId ? (
           <div className="pid-list-empty" style={{ marginTop: 12 }}>
-            Open a project to configure its MCP servers.
+            {LL.settings.mcp.noProject()}
           </div>
         ) : (
           <div
@@ -364,19 +410,21 @@ export function McpServersSection() {
                 textTransform: "uppercase",
               }}
             >
-              <span style={{ color: "var(--ink-1)" }}>Installed</span>
-              <span style={{ color: "var(--ink-3)" }}>· your catalog</span>
+              <span style={{ color: "var(--ink-1)" }}>{LL.settings.mcp.list.installed()}</span>
+              <span style={{ color: "var(--ink-3)" }}>{LL.settings.mcp.list.catalogHint()}</span>
               <span style={{ marginLeft: "auto", color: "var(--ink-3)" }}>
-                on in {projectName ?? "project"} →
+                {LL.settings.mcp.list.onIn({
+                  project: projectName ?? LL.settings.mcp.list.projectFallback(),
+                })}
               </span>
             </div>
             {filtered.length === 0 ? (
               <div className="pid-list-empty" style={{ padding: "20px 14px" }}>
                 {loading
-                  ? "Loading…"
+                  ? LL.settings.mcp.loading()
                   : query
-                    ? `No servers match “${query}”.`
-                    : "No servers installed yet — install one from the registry."}
+                    ? LL.settings.mcp.noMatch({ query })
+                    : LL.settings.mcp.empty()}
               </div>
             ) : (
               filtered.map((server) => (
@@ -400,7 +448,9 @@ export function McpServersSection() {
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}>
-            Toggling a server writes / removes it in this project's <code>.pi/mcp.json</code>.
+            {rich(LL.settings.mcp.toggleHint({ path: slot("path") }), {
+              path: <code>.pi/mcp.json</code>,
+            })}
           </span>
         </div>
       </section>
@@ -449,6 +499,7 @@ function ProjectPicker({
   value: string | undefined;
   onChange: (id: string) => void;
 }) {
+  const { LL } = useI18nContext();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -472,7 +523,7 @@ function ProjectPicker({
         disabled={projects.length === 0}
         onClick={() => setOpen((o) => !o)}
       >
-        {current?.displayName ?? "Select project"}
+        {current?.displayName ?? LL.settings.mcp.projectPicker.select()}
         <ChevronDown size={9} aria-hidden style={{ marginLeft: 4 }} />
       </PidButton>
       {open && (
@@ -502,7 +553,7 @@ function ProjectPicker({
               color: "var(--ink-3)",
             }}
           >
-            set defaults for
+            {LL.settings.mcp.projectPicker.header()}
           </div>
           {projects.map((p) => (
             <button
@@ -648,7 +699,7 @@ function ServerConfigPanel({
   onSetToken: (token: string | null) => void;
   onUninstall: () => void;
 }) {
-  const { locale } = useI18nContext();
+  const { LL, locale } = useI18nContext();
   const [armed, setArmed] = useState(false);
   const [tokenOpen, setTokenOpen] = useState(false);
   const [tokenValue, setTokenValue] = useState("");
@@ -679,14 +730,16 @@ function ServerConfigPanel({
   const tokenCount =
     server.estimatedTokens != null ? server.estimatedTokens.toLocaleString(locale) : null;
 
+  const cfg = LL.settings.mcp.config;
+  const lifecycles = lifecycleOptions(LL);
   const exposureHint =
     expose === "direct"
       ? server.toolCount != null
-        ? `${server.toolCount} tools registered directly${
-            tokenCount != null ? ` (~${tokenCount} tokens)` : ""
-          }`
-        : "Tools registered directly as first-class tools"
-      : "Routed through the mcp proxy (~200 tokens, shared)";
+        ? tokenCount != null
+          ? cfg.exposeDirectCountTokens({ count: server.toolCount, tokens: tokenCount })
+          : cfg.exposeDirectCount({ count: server.toolCount })
+        : cfg.exposeDirect()
+      : cfg.exposeProxy();
 
   return (
     <div
@@ -698,30 +751,33 @@ function ServerConfigPanel({
         gap: 12,
       }}
     >
-      <ConfigRow label="Lifecycle" hint={LIFECYCLES.find((l) => l.value === lifecycle)?.hint ?? ""}>
+      <ConfigRow
+        label={cfg.lifecycle()}
+        hint={lifecycles.find((l) => l.value === lifecycle)?.hint ?? ""}
+      >
         <Segmented
           value={lifecycle}
-          options={LIFECYCLES}
+          options={lifecycles}
           onChange={(v) => onConfigChange({ lifecycle: v })}
         />
       </ConfigRow>
 
-      <ConfigRow label="Tool exposure" hint={exposureHint}>
+      <ConfigRow label={cfg.exposure()} hint={exposureHint}>
         <Segmented
           value={expose}
           options={[
-            { value: "proxy", label: "Proxy" },
-            { value: "direct", label: "Direct" },
+            { value: "proxy", label: cfg.proxy() },
+            { value: "direct", label: cfg.direct() },
           ]}
           onChange={(v) => onConfigChange({ expose: v })}
         />
       </ConfigRow>
 
       {lifecycle === "lazy" && (
-        <ConfigRow label="Idle timeout" hint="Disconnect after inactivity to free resources.">
+        <ConfigRow label={cfg.idle()} hint={cfg.idleHint()}>
           <Segmented
             value={idle}
-            options={IDLE_OPTIONS}
+            options={idleOptions(LL)}
             onChange={(v) => onConfigChange({ idleTimeout: v })}
           />
         </ConfigRow>
@@ -772,7 +828,7 @@ function ServerConfigPanel({
                 if (e.key === "Enter") saveToken();
                 if (e.key === "Escape") setTokenOpen(false);
               }}
-              placeholder="Paste bearer token"
+              placeholder={LL.settings.mcp.token.placeholder()}
               spellCheck={false}
               style={{
                 flex: 1,
@@ -797,7 +853,7 @@ function ServerConfigPanel({
               disabled={!tokenValue.trim()}
               onClick={saveToken}
             >
-              Save
+              {LL.settings.mcp.token.save()}
             </PidButton>
             {server.hasToken && (
               <PidButton
@@ -806,7 +862,7 @@ function ServerConfigPanel({
                 style={{ ...THIN_CTL, color: "var(--del)" }}
                 onClick={clearToken}
               >
-                Clear
+                {LL.settings.mcp.token.clear()}
               </PidButton>
             )}
             <PidButton
@@ -815,11 +871,11 @@ function ServerConfigPanel({
               style={THIN_CTL}
               onClick={() => setTokenOpen(false)}
             >
-              Cancel
+              {LL.common.cancel()}
             </PidButton>
           </div>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}>
-            Stored encrypted in your OS keychain — never written to mcp.json.
+            {LL.settings.mcp.token.hint()}
           </span>
         </div>
       )}
@@ -832,12 +888,12 @@ function ServerConfigPanel({
             style={THIN_CTL}
             icon={<Shield size={11} aria-hidden />}
             onClick={() =>
-              useNotificationStore.getState().info("OAuth runs in the agent", {
-                body: `Start or resume a pi session — ${server.name} will prompt you to authorize.`,
+              useNotificationStore.getState().info(LL.settings.mcp.oauth.title(), {
+                body: LL.settings.mcp.oauth.body({ name: server.name }),
               })
             }
           >
-            Re-run OAuth
+            {LL.settings.mcp.oauth.rerun()}
           </PidButton>
         ) : server.transport === "http" ? (
           <PidButton
@@ -847,7 +903,7 @@ function ServerConfigPanel({
             icon={<KeyRound size={11} aria-hidden />}
             onClick={() => setTokenOpen((o) => !o)}
           >
-            {server.hasToken ? "Edit token" : "Set token"}
+            {server.hasToken ? LL.settings.mcp.token.edit() : LL.settings.mcp.token.set()}
           </PidButton>
         ) : null}
         <PidButton
@@ -857,7 +913,7 @@ function ServerConfigPanel({
           icon={<RefreshCw size={11} aria-hidden />}
           onClick={onReconnect}
         >
-          Reconnect
+          {LL.settings.mcp.reconnect()}
         </PidButton>
         <span style={{ flex: 1 }} />
         <PidButton
@@ -874,7 +930,7 @@ function ServerConfigPanel({
             onUninstall();
           }}
         >
-          {armed ? "Confirm uninstall" : "Uninstall globally"}
+          {armed ? LL.settings.mcp.confirmUninstall() : LL.settings.mcp.uninstall()}
         </PidButton>
       </div>
     </div>
@@ -900,12 +956,15 @@ function McpServerRow({
   onSetToken: (token: string | null) => void;
   onUninstall: () => void;
 }) {
+  const { LL } = useI18nContext();
   const on = server.enabledInProject;
   const lifecycle: Lifecycle = server.lifecycle ?? "lazy";
   const expose: Expose = (server.expose as Expose) ?? "proxy";
   const target = server.transport === "http" ? server.url : server.command;
   const args = server.transport === "stdio" && server.args ? ` ${server.args.join(" ")}` : "";
-  const statusLabel = server.cached ? "cached" : "not connected yet";
+  const statusLabel = server.cached
+    ? LL.settings.mcp.status.cached()
+    : LL.settings.mcp.status.notConnected();
 
   return (
     <div
@@ -937,7 +996,7 @@ function McpServerRow({
           <Chip>{lifecycle}</Chip>
           {expose === "direct" && <Chip tone="accent">direct</Chip>}
           {server.auth && <Chip>{server.auth}</Chip>}
-          {server.source === "project" && <Chip>project file</Chip>}
+          {server.source === "project" && <Chip>{LL.settings.mcp.chip.projectFile()}</Chip>}
         </div>
         {server.description && (
           <div style={{ color: "var(--ink-2)", fontSize: "var(--t-12)", marginTop: 4 }}>
@@ -964,7 +1023,9 @@ function McpServerRow({
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}>
-            {server.toolCount != null ? `${server.toolCount} tools · ` : ""}
+            {server.toolCount != null
+              ? LL.settings.mcp.status.toolCount({ count: server.toolCount })
+              : ""}
             {statusLabel}
           </span>
           <PidButton
@@ -981,7 +1042,7 @@ function McpServerRow({
               color: expanded ? "var(--accent)" : "var(--ink-3)",
             }}
           >
-            configure
+            {LL.settings.mcp.configure()}
             <ChevronDown
               size={8}
               aria-hidden
@@ -1018,7 +1079,11 @@ function McpServerRow({
           type="button"
           role="switch"
           aria-checked={on}
-          aria-label={on ? `Disable ${server.name}` : `Enable ${server.name}`}
+          aria-label={
+            on
+              ? LL.settings.mcp.disableServer({ name: server.name })
+              : LL.settings.mcp.enableServer({ name: server.name })
+          }
           className="pid-toggle-switch"
           data-on={on || undefined}
           onClick={onToggleEnabled}
@@ -1032,7 +1097,7 @@ function McpServerRow({
             color: on ? "var(--accent)" : "var(--ink-3)",
           }}
         >
-          {on ? "on by default" : "off"}
+          {on ? LL.settings.mcp.onByDefault() : LL.settings.mcp.off()}
         </span>
       </div>
     </div>

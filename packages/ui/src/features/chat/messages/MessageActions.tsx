@@ -3,6 +3,7 @@ import { PidIconButton } from "../../../components/buttons/PidIconButton.js";
 import { ConfirmDialog } from "../../../components/dialogs/ConfirmDialog.js";
 import { Copy, GitBranch, Undo2 } from "../../../components/icons/index.js";
 import { Tooltip } from "../../../components/ui/Tooltip.js";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 import { writeClipboard } from "../../../lib/clipboard.js";
 import { stripMarkdown } from "../../../lib/markdown-strip.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
@@ -28,6 +29,7 @@ interface MessageActionsProps {
  * pi's tree can't move while a turn is in flight.
  */
 export function MessageActions({ sessionId, text, userMessageIndex }: MessageActionsProps) {
+  const { LL } = useI18nContext();
   const notifyError = useNotificationStore((s) => s.error);
   const streaming = useMessagesStore(selectTurnInFlight(sessionId));
   const rewindToMessage = useSessionsStore((s) => s.rewindToMessage);
@@ -36,34 +38,31 @@ export function MessageActions({ sessionId, text, userMessageIndex }: MessageAct
 
   const hasAnchor = userMessageIndex !== undefined;
   const canBranch = hasAnchor && !streaming;
-  const branchHint = streaming
-    ? "Unavailable while streaming"
-    : !hasAnchor
-      ? "No earlier point to branch from"
-      : undefined;
+  const copy = LL.chat.messageActions;
+  const branchHint = streaming ? copy.streamingHint() : !hasAnchor ? copy.noAnchor() : undefined;
 
   const onCopy = () => {
-    writeClipboard(stripMarkdown(text)).catch(() => notifyError("Failed to copy"));
+    writeClipboard(stripMarkdown(text)).catch(() => notifyError(LL.chat.errors.copy()));
   };
 
   return (
     <>
       <div className="pid-msg-actions">
-        <Tooltip content="Copy message">
-          <PidIconButton icon={<Copy size={12} />} label="Copy message" onClick={onCopy} />
+        <Tooltip content={copy.copy()}>
+          <PidIconButton icon={<Copy size={12} />} label={copy.copy()} onClick={onCopy} />
         </Tooltip>
-        <Tooltip content={branchHint ?? "Rewind to here"}>
+        <Tooltip content={branchHint ?? copy.rewind()}>
           <PidIconButton
             icon={<Undo2 size={12} />}
-            label="Rewind to here"
+            label={copy.rewind()}
             disabled={!canBranch}
             onClick={() => setConfirmOpen(true)}
           />
         </Tooltip>
-        <Tooltip content={branchHint ?? "Fork from here"}>
+        <Tooltip content={branchHint ?? copy.fork()}>
           <PidIconButton
             icon={<GitBranch size={12} />}
-            label="Fork from here"
+            label={copy.fork()}
             disabled={!canBranch}
             onClick={() => {
               if (userMessageIndex !== undefined) void forkFromMessage(sessionId, userMessageIndex);
@@ -74,9 +73,9 @@ export function MessageActions({ sessionId, text, userMessageIndex }: MessageAct
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Rewind to here?"
-        description="The conversation and any file changes made after this message will be discarded. Later uncommitted edits can't be recovered."
-        confirmLabel="Rewind"
+        title={copy.confirmTitle()}
+        description={copy.confirmDescription()}
+        confirmLabel={copy.confirmLabel()}
         destructive
         onConfirm={() => {
           if (userMessageIndex !== undefined) return rewindToMessage(sessionId, userMessageIndex);

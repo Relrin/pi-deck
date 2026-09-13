@@ -1,6 +1,7 @@
 import { LOCALES } from "@pi-deck/core";
 import { PidButton } from "../../../components/buttons/PidButton";
 import { useI18nContext } from "../../../i18n/i18n-react";
+import type { TranslationFunctions } from "../../../i18n/i18n-types";
 import { LOCALE_META } from "../../../i18n/locale-meta";
 import { useLocaleStore } from "../../../i18n/useLocaleStore";
 import { useRailState } from "../../../layout/use-rail-state";
@@ -14,42 +15,56 @@ import {
   type ViewMode,
 } from "../../../theme/usePreferencesStore";
 import { useThemeStore } from "../../../theme/useThemeStore";
+import { pushAgentLanguageToAll } from "../../sessions/agent-language";
 import { useSessionsStore } from "../../sessions/useSessionsStore";
 import { ImportThemeButton } from "../ImportThemeButton";
 import { ThemePreviewCard } from "../ThemePreviewCard";
 
-const VIEW_OPTIONS: Array<{ value: ViewMode; label: string }> = [
-  { value: "agent", label: "Agent" },
-  { value: "ide", label: "IDE" },
-];
+/**
+ * Built per render rather than held as module constants: a module-level table would capture
+ * whatever locale was loaded at import time and never update on a language switch. Every `value`
+ * here is persisted preference state and stays an identifier.
+ */
+export function viewOptions(t: TranslationFunctions): Array<{ value: ViewMode; label: string }> {
+  return [
+    { value: "agent", label: t.settings.appearance.view.agent() },
+    { value: "ide", label: t.settings.appearance.view.ide() },
+  ];
+}
 
-const DENSITY_OPTIONS: Array<{ value: Density; label: string }> = [
-  { value: "compact", label: "Compact" },
-  { value: "cozy", label: "Cozy" },
-];
+export function densityOptions(t: TranslationFunctions): Array<{ value: Density; label: string }> {
+  return [
+    { value: "compact", label: t.settings.appearance.density.compact() },
+    { value: "cozy", label: t.settings.appearance.density.cozy() },
+  ];
+}
 
-const FONT_OPTIONS: Array<{ value: FontPair; label: string }> = [
-  { value: "default", label: "Default (serif + sans + mono)" },
-  { value: "sans-only", label: "Sans only" },
-  { value: "mono-only", label: "Mono only" },
-];
+export function fontOptions(t: TranslationFunctions): Array<{ value: FontPair; label: string }> {
+  return [
+    { value: "default", label: t.settings.appearance.fonts.default() },
+    { value: "sans-only", label: t.settings.appearance.fonts.sansOnly() },
+    { value: "mono-only", label: t.settings.appearance.fonts.monoOnly() },
+  ];
+}
 
 // Ordered spatially (left → right → all) so the segmented control reads like the layout it
 // describes. `center` is the default and sits in the middle.
-const TERMINAL_WIDTH_OPTIONS: Array<{ value: TerminalWidth; label: string }> = [
-  { value: "center-left", label: "Center + Left" },
-  { value: "center", label: "Center" },
-  { value: "center-right", label: "Center + Right" },
-  { value: "all", label: "All" },
-];
+export function terminalWidthOptions(
+  t: TranslationFunctions,
+): Array<{ value: TerminalWidth; label: string }> {
+  const copy = t.settings.appearance.terminalWidth;
+  return [
+    { value: "center-left", label: copy.centerLeft() },
+    { value: "center", label: copy.center() },
+    { value: "center-right", label: copy.centerRight() },
+    { value: "all", label: copy.all() },
+  ];
+}
 
 /**
  * Language options come from `LOCALE_META`, not a literal table. Each label is the language's own
  * name, which never gets translated — a picker that says "Russian" is no help to someone who
  * cannot read English. Adding a locale is therefore a `LOCALE_META` change only.
- *
- * The DEV-only pseudo-locale is a separate toggle below, not an option here — it is a rendering
- * mode that applies on top of whichever language is picked, and it never ships.
  */
 const LANGUAGE_OPTIONS = LOCALES.map((value) => ({ value, label: LOCALE_META[value].nativeName }));
 
@@ -57,10 +72,9 @@ export function AppearanceSection() {
   const { LL } = useI18nContext();
   const uiLocale = useLocaleStore((s) => s.uiLocale);
   const setUiLocale = useLocaleStore((s) => s.setUiLocale);
-  const pseudo = useLocaleStore((s) => s.pseudo);
-  const setPseudo = useLocaleStore((s) => s.setPseudo);
 
   const client = useSessionsStore((s) => s.client);
+  const sessions = useSessionsStore((s) => s.sessions);
   const available = useThemeStore((s) => s.available);
   const activeName = useThemeStore((s) => s.activeName);
   const setActiveTheme = useThemeStore((s) => s.setActive);
@@ -102,15 +116,15 @@ export function AppearanceSection() {
   return (
     <div className="pid-settings-panel-inner">
       <header>
-        <div className="pid-settings-section-kicker">Settings · Appearance</div>
-        <h1 className="pid-settings-section-title">Appearance</h1>
+        <div className="pid-settings-section-kicker">
+          {LL.settings.kicker({ section: LL.settings.appearance.kicker() })}
+        </div>
+        <h1 className="pid-settings-section-title">{LL.settings.appearance.title()}</h1>
       </header>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Theme</div>
-        <div className="pid-settings-block-desc">
-          Pick a bundled theme or drop a VS Code theme JSON into your themes folder.
-        </div>
+        <div className="pid-settings-block-label">{LL.settings.appearance.theme.label()}</div>
+        <div className="pid-settings-block-desc">{LL.settings.appearance.theme.desc()}</div>
         <div className="pid-theme-grid">
           {available.map((listing) => (
             <ThemePreviewCard
@@ -128,13 +142,14 @@ export function AppearanceSection() {
       </section>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">View</div>
-        <div className="pid-settings-block-desc">
-          Agent keeps the linear session - editor - diff flow. IDE docks the chat beside the editor
-          as a right-pane tab.
-        </div>
-        <div className="pid-segmented" role="radiogroup" aria-label="View mode">
-          {VIEW_OPTIONS.map((option) => (
+        <div className="pid-settings-block-label">{LL.settings.appearance.view.label()}</div>
+        <div className="pid-settings-block-desc">{LL.settings.appearance.view.desc()}</div>
+        <div
+          className="pid-segmented"
+          role="radiogroup"
+          aria-label={LL.settings.appearance.view.ariaLabel()}
+        >
+          {viewOptions(LL).map((option) => (
             <PidButton
               key={option.value}
               role="radio"
@@ -162,35 +177,30 @@ export function AppearanceSection() {
               role="radio"
               aria-checked={uiLocale === option.value}
               active={uiLocale === option.value}
-              onClick={() => void setUiLocale(option.value)}
+              onClick={() => {
+                // With the agent language left at "Match interface", this is what changes it —
+                // the host resolves `match-ui` against the `uiLocale` it was last handed.
+                void setUiLocale(option.value).then(() => {
+                  if (client) return pushAgentLanguageToAll(client, sessions);
+                });
+              }}
             >
               {option.label}
             </PidButton>
           ))}
         </div>
-
-        {import.meta.env?.DEV ? (
-          <div className="pid-segmented">
-            <PidButton
-              aria-pressed={pseudo}
-              active={pseudo}
-              title="Dev only: accents and pads every catalog string so unlocalized text and tight layouts stand out."
-              onClick={() => setPseudo(!pseudo)}
-            >
-              Pseudo
-            </PidButton>
-          </div>
-        ) : null}
         <div className="pid-settings-block-desc">{LL.settings.appearance.language.hint()}</div>
       </section>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Density</div>
-        <div className="pid-settings-block-desc">
-          Affects row heights, topbar/footer height, and base type size.
-        </div>
-        <div className="pid-segmented" role="radiogroup" aria-label="Density">
-          {DENSITY_OPTIONS.map((option) => (
+        <div className="pid-settings-block-label">{LL.settings.appearance.density.label()}</div>
+        <div className="pid-settings-block-desc">{LL.settings.appearance.density.desc()}</div>
+        <div
+          className="pid-segmented"
+          role="radiogroup"
+          aria-label={LL.settings.appearance.density.ariaLabel()}
+        >
+          {densityOptions(LL).map((option) => (
             <PidButton
               key={option.value}
               role="radio"
@@ -205,12 +215,14 @@ export function AppearanceSection() {
       </section>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Fonts</div>
-        <div className="pid-settings-block-desc">
-          Swap the display/UI/mono triad for a single-family aesthetic.
-        </div>
-        <div className="pid-segmented" role="radiogroup" aria-label="Fonts">
-          {FONT_OPTIONS.map((option) => (
+        <div className="pid-settings-block-label">{LL.settings.appearance.fonts.label()}</div>
+        <div className="pid-settings-block-desc">{LL.settings.appearance.fonts.desc()}</div>
+        <div
+          className="pid-segmented"
+          role="radiogroup"
+          aria-label={LL.settings.appearance.fonts.ariaLabel()}
+        >
+          {fontOptions(LL).map((option) => (
             <PidButton
               key={option.value}
               role="radio"
@@ -225,13 +237,16 @@ export function AppearanceSection() {
       </section>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Terminal width</div>
-        <div className="pid-settings-block-desc">
-          How much horizontal space the integrated terminal takes when open — keep it in the center,
-          or let it span over the left rail, right pane, or both.
+        <div className="pid-settings-block-label">
+          {LL.settings.appearance.terminalWidth.label()}
         </div>
-        <div className="pid-segmented" role="radiogroup" aria-label="Terminal width">
-          {TERMINAL_WIDTH_OPTIONS.map((option) => (
+        <div className="pid-settings-block-desc">{LL.settings.appearance.terminalWidth.desc()}</div>
+        <div
+          className="pid-segmented"
+          role="radiogroup"
+          aria-label={LL.settings.appearance.terminalWidth.ariaLabel()}
+        >
+          {terminalWidthOptions(LL).map((option) => (
             <PidButton
               key={option.value}
               role="radio"

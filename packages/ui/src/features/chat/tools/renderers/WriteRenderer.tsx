@@ -1,3 +1,4 @@
+import { useI18nContext } from "../../../../i18n/i18n-react.js";
 import { truncateMiddle } from "../../../../lib/format/truncate.js";
 import { DiffView } from "../../../diff/DiffView.js";
 import { deriveToolFileDiff } from "../toolFileDiff.js";
@@ -10,6 +11,7 @@ interface WriteInput {
 }
 
 export function WriteRenderer({ call }: ToolRendererProps) {
+  const { LL } = useI18nContext();
   const fileDiff = deriveToolFileDiff(call);
   if (fileDiff) return <DiffView fileDiff={fileDiff.fileDiff} />;
 
@@ -17,7 +19,9 @@ export function WriteRenderer({ call }: ToolRendererProps) {
   // The header already shows "WRITE · <path>" so we don't repeat the path/operation here.
   return (
     <div className="space-y-2">
-      {input.content && <CodeBlock text={input.content} ariaLabel="File contents to write" />}
+      {input.content && (
+        <CodeBlock text={input.content} ariaLabel={LL.chat.tools.write.contents()} />
+      )}
     </div>
   );
 }

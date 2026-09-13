@@ -1,5 +1,6 @@
 import * as RadixTooltip from "@radix-ui/react-tooltip";
 import { useMemo } from "react";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 import {
   type ContextBreakdown,
   computeContextBreakdown,
@@ -25,6 +26,7 @@ interface ContextUsageIndicatorProps {
  * always sum to `used`.
  */
 export function ContextUsageIndicator({ sessionId }: ContextUsageIndicatorProps) {
+  const { LL } = useI18nContext();
   const usage = useUsageStore(selectSessionUsage(sessionId));
   const cost = useUsageStore(selectSessionCost(sessionId));
   const messages = useMessagesStore(selectMessages(sessionId));
@@ -46,7 +48,7 @@ export function ContextUsageIndicator({ sessionId }: ContextUsageIndicatorProps)
       <RadixTooltip.Trigger asChild>
         <button
           type="button"
-          aria-label={`Context usage: ${percent}%`}
+          aria-label={LL.chat.contextUsage.buttonAria({ percent })}
           className="pid-context-usage"
         >
           <Ring percent={percent} active={!!usage?.context} />
@@ -107,40 +109,52 @@ function Ring({ percent, active }: { percent: number; active: boolean }) {
 }
 
 function BreakdownCard({ breakdown, percent }: { breakdown: ContextBreakdown; percent: number }) {
+  const { LL } = useI18nContext();
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between">
-        <span className="font-semibold">Context usage</span>
+        <span className="font-semibold">{LL.chat.contextUsage.title()}</span>
         <span className="font-mono tabular-nums text-[var(--color-text-muted)]">{percent}%</span>
       </div>
       <div className="text-[var(--color-text-muted)]">
-        {formatTokens(breakdown.used)} of {formatTokens(breakdown.contextWindow)} tokens used.
+        {LL.chat.contextUsage.ofTokens({
+          used: formatTokens(breakdown.used),
+          total: formatTokens(breakdown.contextWindow),
+        })}
       </div>
       <div className="flex flex-col gap-1 border-t border-[var(--color-border)] pt-2">
-        <Row label="Messages" tokens={breakdown.messages} total={breakdown.contextWindow} />
         <Row
-          label="System prompt"
+          label={LL.chat.contextUsage.messages()}
+          tokens={breakdown.messages}
+          total={breakdown.contextWindow}
+        />
+        <Row
+          label={LL.chat.contextUsage.systemPrompt()}
           tokens={breakdown.systemPrompt - breakdown.projectContext}
           total={breakdown.contextWindow}
         />
         {breakdown.projectContext > 0 && (
           <Row
-            label="Project context"
+            label={LL.chat.contextUsage.projectContext()}
             tokens={breakdown.projectContext}
             total={breakdown.contextWindow}
-            title="Project context files (AGENTS.md, CLAUDE.md, etc.) pi injects into the system prompt"
+            title={LL.chat.contextUsage.projectContextTitle()}
           />
         )}
         <Row
-          label="Skills / tool definitions"
+          label={LL.chat.contextUsage.tools()}
           tokens={breakdown.tools}
           total={breakdown.contextWindow}
         />
         {breakdown.mcp > 0 && (
-          <Row label="MCP tools" tokens={breakdown.mcp} total={breakdown.contextWindow} />
+          <Row
+            label={LL.chat.contextUsage.mcp()}
+            tokens={breakdown.mcp}
+            total={breakdown.contextWindow}
+          />
         )}
         <Row
-          label="Free space remaining"
+          label={LL.chat.contextUsage.free()}
           tokens={breakdown.free}
           total={breakdown.contextWindow}
           muted

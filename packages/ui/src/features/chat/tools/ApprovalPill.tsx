@@ -2,6 +2,8 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Check, X } from "../../../components/icons/index.js";
 import { PidKbd } from "../../../components/kbd/PidKbd.js";
 import { Tooltip } from "../../../components/ui/Tooltip.js";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
+import { rich, slot } from "../../../i18n/rich.js";
 import { humanizeError } from "../../../lib/format/humanize-error.js";
 import type { ToolApprovalDecision } from "../../../lib/transport/protocol-client.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
@@ -39,6 +41,7 @@ export function ApprovalPill({
   approvalId,
   allowKey,
 }: ApprovalPillProps) {
+  const { LL } = useI18nContext();
   const client = useSessionsStore((s) => s.client);
   const notify = useNotificationStore((s) => s.error);
   const addAutoAllow = useAutoAllowStore((s) => s.add);
@@ -63,11 +66,18 @@ export function ApprovalPill({
           addAutoAllow(sessionId, allowKey);
         }
       } catch (err) {
-        notify(humanizeError(err, `Failed to ${decision === "allow" ? "approve" : "deny"} tool`));
+        // Two whole keys rather than one with an interpolated verb: the clause order is not
+        // portable across languages.
+        notify(
+          humanizeError(
+            err,
+            decision === "allow" ? LL.chat.errors.approveTool() : LL.chat.errors.denyTool(),
+          ),
+        );
         setBusy(null);
       }
     },
-    [client, busy, alwaysAllow, addAutoAllow, sessionId, allowKey, approvalId, notify],
+    [client, busy, alwaysAllow, addAutoAllow, sessionId, allowKey, approvalId, notify, LL],
   );
 
   // Auto-allow: if the user has already ticked "always allow <key>" on a previous pill in
@@ -105,7 +115,7 @@ export function ApprovalPill({
 
   return (
     <div className="pid-approval-pill" data-busy={busy ?? undefined}>
-      <Tooltip content="Allow this command for the rest of the session" side="bottom">
+      <Tooltip content={LL.chat.approvalPill.alwaysAllowTooltip()} side="bottom">
         <label
           className="pid-approval-pill-always"
           htmlFor={checkboxId}
@@ -123,7 +133,9 @@ export function ApprovalPill({
             {alwaysAllow && <Check size={9} />}
           </span>
           <span>
-            always allow <code className="pid-approval-pill-key">{allowKey}</code>
+            {rich(LL.chat.approvalPill.alwaysAllow({ key: slot("key") }), {
+              key: <code className="pid-approval-pill-key">{allowKey}</code>,
+            })}
           </span>
         </label>
       </Tooltip>
@@ -137,7 +149,7 @@ export function ApprovalPill({
         disabled={busy !== null}
       >
         <X size={12} aria-hidden />
-        <span>Deny</span>
+        <span>{LL.chat.approvalPill.deny()}</span>
         <PidKbd keys={["Esc"]} aria-hidden />
       </button>
       <button
@@ -150,7 +162,7 @@ export function ApprovalPill({
         disabled={busy !== null}
       >
         <Check size={12} aria-hidden />
-        <span>Allow once</span>
+        <span>{LL.chat.approvalPill.allowOnce()}</span>
         <PidKbd keys={["Enter"]} aria-hidden />
       </button>
     </div>

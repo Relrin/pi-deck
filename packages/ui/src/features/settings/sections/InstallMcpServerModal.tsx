@@ -4,6 +4,8 @@ import { Check, Plus, Search, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
 import { PidChip } from "../../../components/chip/PidChip";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
+import { rich, slot } from "../../../i18n/rich.js";
 import { humanizeError } from "../../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore";
@@ -49,37 +51,45 @@ export function InstallMcpServerModal({
   installedNames,
   onInstalled,
 }: Props) {
+  const { LL } = useI18nContext();
   const [query, setQuery] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [results, setResults] = useState<RegistryServer[]>([]);
   const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
   const [installing, setInstalling] = useState<Record<string, InstallState>>({});
 
-  const runSearch = useCallback(async (q: string, cursor?: string) => {
-    const client = useSessionsStore.getState().client;
-    if (!client) {
-      setPhase("error");
-      return;
-    }
-    setPhase("searching");
-    try {
-      const res = await client.call("mcp.registrySearch", {
-        query: q.trim() || undefined,
-        cursor,
-      });
-      setResults((prev) => {
-        if (!cursor) return res.servers;
-        // Guard against the same server arriving on a later page.
-        const seen = new Set(prev.map((s) => s.id));
-        return [...prev, ...res.servers.filter((s) => !seen.has(s.id))];
-      });
-      setNextCursor(res.nextCursor);
-      setPhase("loaded");
-    } catch (err) {
-      setPhase("error");
-      useNotificationStore.getState().error(humanizeError(err, "Registry search failed"));
-    }
-  }, []);
+  const runSearch = useCallback(
+    async (q: string, cursor?: string) => {
+      const client = useSessionsStore.getState().client;
+      if (!client) {
+        setPhase("error");
+        return;
+      }
+      setPhase("searching");
+      try {
+        const res = await client.call("mcp.registrySearch", {
+          query: q.trim() || undefined,
+          cursor,
+        });
+        setResults((prev) => {
+          if (!cursor) return res.servers;
+          // Guard against the same server arriving on a later page.
+          const seen = new Set(prev.map((s) => s.id));
+          return [...prev, ...res.servers.filter((s) => !seen.has(s.id))];
+        });
+        setNextCursor(res.nextCursor);
+        setPhase("loaded");
+      } catch (err) {
+        setPhase("error");
+        useNotificationStore
+          .getState()
+          .error(humanizeError(err, LL.settings.errors.registrySearch()));
+      }
+      // `LL` is a dependency now that the fallback comes from the catalog: the identity changes on a
+      // language switch, so the callback has to be rebuilt or it would toast the previous language.
+    },
+    [LL],
+  );
 
   // Reset and prime the list each time the modal opens.
   useEffect(() => {
@@ -106,9 +116,11 @@ export function InstallMcpServerModal({
       setInstalling((prev) => ({ ...prev, [s.id]: "done" }));
       useNotificationStore.getState().push({
         kind: "success",
-        tag: "MCP",
-        title: `Installed ${s.name}`,
-        body: `Enabled in ${projectName ?? "this project"} · added to your MCP catalog`,
+        tag: LL.settings.mcp.install.tag(),
+        title: LL.settings.mcp.install.installedTitle({ name: s.name }),
+        body: LL.settings.mcp.install.installedBody({
+          project: projectName ?? LL.settings.mcp.install.projectFallback(),
+        }),
         meta: `${s.packageId || s.transport} · ${s.transport}`,
         durationMs: 6000,
       });
@@ -119,7 +131,7 @@ export function InstallMcpServerModal({
         delete next[s.id];
         return next;
       });
-      useNotificationStore.getState().error(humanizeError(err, "Failed to install server"));
+      useNotificationStore.getState().error(humanizeError(err, LL.settings.errors.installServer()));
     }
   };
 
@@ -134,16 +146,13 @@ export function InstallMcpServerModal({
           {/* Header */}
           <div className="pid-modal-header">
             <div>
-              <div className="pid-settings-section-kicker">
-                mcp registry · registry.modelcontextprotocol.io
-              </div>
+              <div className="pid-settings-section-kicker">{LL.settings.mcp.install.kicker()}</div>
               <RadixDialog.Title className="pid-modal-title" style={{ fontStyle: "normal" }}>
-                Install MCP server
+                {LL.settings.mcp.install.title()}
               </RadixDialog.Title>
             </div>
             <RadixDialog.Description className="pid-modal-description">
-              Search the official registry and install a server into your catalog — it's enabled for
-              the current project right away.
+              {LL.settings.mcp.install.desc()}
             </RadixDialog.Description>
             <PidButton
               variant="ghost"
@@ -194,7 +203,7 @@ export function InstallMcpServerModal({
                 }}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search the registry — name, capability, publisher…"
+                placeholder={LL.settings.mcp.install.searchPlaceholder()}
                 spellCheck={false}
               />
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}>
@@ -207,19 +216,21 @@ export function InstallMcpServerModal({
           <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
             {phase === "searching" && results.length === 0 ? (
               <div className="pid-list-empty" style={{ padding: "32px 16px" }}>
-                Searching the registry…
+                {LL.settings.mcp.install.searching()}
               </div>
             ) : phase === "error" ? (
               <div className="pid-list-empty" style={{ padding: "32px 16px", color: "var(--del)" }}>
-                Couldn't reach the registry. Check your connection and try again.
+                {LL.settings.mcp.install.unreachable()}
               </div>
             ) : results.length === 0 ? (
               <div className="pid-list-empty" style={{ padding: "32px 16px" }}>
-                No servers match{" "}
-                <span style={{ fontFamily: "var(--font-mono)", color: "var(--ink-1)" }}>
-                  “{query}”
-                </span>
-                .
+                {rich(LL.settings.mcp.install.noMatch({ query: slot("query") }), {
+                  query: (
+                    <span style={{ fontFamily: "var(--font-mono)", color: "var(--ink-1)" }}>
+                      “{query}”
+                    </span>
+                  ),
+                })}
               </div>
             ) : (
               <>
@@ -242,7 +253,9 @@ export function InstallMcpServerModal({
                       disabled={phase === "searching"}
                       onClick={() => void runSearch(query, nextCursor)}
                     >
-                      {phase === "searching" ? "Loading…" : "Load more"}
+                      {phase === "searching"
+                        ? LL.settings.mcp.install.loading()
+                        : LL.settings.mcp.install.loadMore()}
                     </PidButton>
                   </div>
                 )}
@@ -276,8 +289,13 @@ export function InstallMcpServerModal({
               }}
               title={configPath}
             >
-              installs to{" "}
-              <span style={{ color: "var(--accent)" }}>{configPath ?? ".pi/mcp.json"}</span>
+              {rich(LL.settings.mcp.install.installsTo({ path: slot("path") }), {
+                path: (
+                  <span style={{ color: "var(--accent)" }}>
+                    {configPath ?? LL.settings.mcp.install.configFallback()}
+                  </span>
+                ),
+              })}
             </span>
           </div>
         </RadixDialog.Content>
@@ -299,6 +317,7 @@ function RegistryRow({
   disabled: boolean;
   onInstall: () => void;
 }) {
+  const { LL } = useI18nContext();
   return (
     <div
       style={{
@@ -359,12 +378,14 @@ function RegistryRow({
             style={THIN_CTL}
             icon={<Check size={12} aria-hidden />}
           >
-            {state === "done" ? "Added" : "Installed"}
+            {state === "done"
+              ? LL.settings.mcp.install.added()
+              : LL.settings.mcp.install.installed()}
           </PidButton>
         ) : state === "installing" ? (
           <PidButton variant="ghost" disabled style={THIN_CTL}>
             <span className="pid-mcp-installing-dot" style={{ marginRight: 7 }} aria-hidden />
-            Installing…
+            {LL.settings.mcp.install.installing()}
           </PidButton>
         ) : (
           <PidButton
@@ -375,7 +396,7 @@ function RegistryRow({
             disabled={disabled}
             onClick={onInstall}
           >
-            Install
+            {LL.settings.mcp.install.install()}
           </PidButton>
         )}
       </div>

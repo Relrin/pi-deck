@@ -3,6 +3,7 @@ import type { CSSProperties, MouseEvent } from "react";
 import { useEffect, useState } from "react";
 import { PidChip } from "../../components/chip/PidChip";
 import { Check, Trash2 } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react";
 import type { ProtocolClient } from "../../lib/transport/protocol-client";
 import { useThemeStore } from "../../theme/useThemeStore";
 import { useNotificationStore } from "../_status/useNotificationStore";
@@ -45,6 +46,7 @@ export interface ThemePreviewCardProps {
 }
 
 export function ThemePreviewCard({ listing, client, active, onSelect }: ThemePreviewCardProps) {
+  const { LL } = useI18nContext();
   const [spec, setSpec] = useState<ThemeSpec | undefined>(() => specCache.get(listing.name));
   const [deleting, setDeleting] = useState(false);
   const deleteTheme = useThemeStore((s) => s.deleteTheme);
@@ -97,7 +99,9 @@ export function ThemePreviewCard({ listing, client, active, onSelect }: ThemePre
   // come from disk and can be removed. The chip variant tracks the source so users can scan
   // the grid for things they've added themselves.
   const isUser = listing.source === "user";
-  const chipLabel = isUser ? "User" : "Default";
+  const chipLabel = isUser
+    ? LL.settings.appearance.theme.chipUser()
+    : LL.settings.appearance.theme.chipDefault();
   const chipVariant = isUser ? "accent" : "info";
 
   // Delete is one-click intentionally — the theme file lives in the user themes dir and can
@@ -110,9 +114,11 @@ export function ThemePreviewCard({ listing, client, active, onSelect }: ThemePre
     try {
       await deleteTheme(client, listing.name);
       invalidateSpecCache(listing.name);
-      useNotificationStore.getState().success(`Deleted theme ${listing.name}`);
+      useNotificationStore
+        .getState()
+        .success(LL.settings.appearance.theme.deleted({ name: listing.name }));
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to delete theme";
+      const message = err instanceof Error ? err.message : LL.settings.errors.deleteTheme();
       useNotificationStore.getState().error(message);
       setDeleting(false);
     }
@@ -129,7 +135,7 @@ export function ThemePreviewCard({ listing, client, active, onSelect }: ThemePre
         data-source={listing.source ?? undefined}
         onClick={() => onSelect(listing.name)}
         style={wrapperStyle}
-        aria-label={`Apply theme ${listing.name}`}
+        aria-label={LL.settings.appearance.theme.apply({ name: listing.name })}
       >
         {active ? (
           <span className="pid-theme-card-check" aria-hidden>
@@ -159,8 +165,8 @@ export function ThemePreviewCard({ listing, client, active, onSelect }: ThemePre
           type="button"
           className="pid-theme-card-delete"
           onClick={handleDeleteClick}
-          aria-label={`Delete theme ${listing.name}`}
-          title={`Delete theme ${listing.name}`}
+          aria-label={LL.settings.appearance.theme.delete({ name: listing.name })}
+          title={LL.settings.appearance.theme.delete({ name: listing.name })}
           disabled={!client || deleting}
         >
           <Trash2 size={12} />

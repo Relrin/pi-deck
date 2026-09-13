@@ -44,7 +44,7 @@ export function PlanSnapshot({ title, rows }: PlanSnapshotProps) {
   return (
     <div className="pid-plan-snapshot">
       <div className="pid-plan-snapshot-header">
-        <span className="pid-plan-snapshot-chip">Plan</span>
+        <span className="pid-plan-snapshot-chip">{LL.chat.planSnapshot.chip()}</span>
         {title && <span className="pid-plan-snapshot-title">{title}</span>}
       </div>
       <div className="pid-plan-snapshot-steps" data-labeled={hasLabels || undefined}>
@@ -63,7 +63,7 @@ export function PlanSnapshot({ title, rows }: PlanSnapshotProps) {
         )}
       </div>
       <div className="pid-plan-snapshot-summary">
-        {done} of {total} done
+        {LL.chat.planSnapshot.summary({ done, total })}
       </div>
     </div>
   );

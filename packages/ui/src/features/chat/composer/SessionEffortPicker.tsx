@@ -5,6 +5,8 @@ import {
   PidChipPicker,
   type PidChipPickerOption,
 } from "../../../components/picker/PidChipPicker.js";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../../i18n/i18n-types.js";
 import { useProvidersStore } from "../../models/useProvidersStore.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore.js";
 
@@ -13,11 +15,15 @@ interface EffortLevel {
   label: string;
 }
 
-const LEVELS: EffortLevel[] = [
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
-];
+/** Built per render — a module constant would freeze the launch locale. */
+export function effortLevels(t: TranslationFunctions): EffortLevel[] {
+  const copy = t.chat.effortPicker.level;
+  return [
+    { value: "low", label: copy.low() },
+    { value: "medium", label: copy.medium() },
+    { value: "high", label: copy.high() },
+  ];
+}
 
 const DEFAULT_LEVEL: ThinkingLevel = "medium";
 
@@ -26,6 +32,8 @@ interface SessionEffortPickerProps {
 }
 
 export function SessionEffortPicker({ sessionId }: SessionEffortPickerProps) {
+  const { LL } = useI18nContext();
+  const levels = effortLevels(LL);
   const session = useSessionsStore((s) => s.sessions.find((x) => x.id === sessionId));
   const modelsByProvider = useProvidersStore((s) => s.modelsByProvider);
   const sessionSelection = useProvidersStore((s) => s.sessionSelection[sessionId]);
@@ -38,11 +46,11 @@ export function SessionEffortPicker({ sessionId }: SessionEffortPickerProps) {
   }, [modelRef, modelsByProvider]);
 
   const allowedLevels = useMemo<Set<ThinkingLevel>>(() => {
-    if (!activeModel) return new Set(LEVELS.map((l) => l.value));
+    if (!activeModel) return new Set(levels.map((l) => l.value));
     if (!activeModel.supportsThinking) return new Set();
     const supplied = new Set(activeModel.thinkingLevels ?? []);
-    return new Set(LEVELS.filter((l) => supplied.has(l.value)).map((l) => l.value));
-  }, [activeModel]);
+    return new Set(levels.filter((l) => supplied.has(l.value)).map((l) => l.value));
+  }, [activeModel, levels]);
 
   if (activeModel && !activeModel.supportsThinking) return null;
 
@@ -52,28 +60,28 @@ export function SessionEffortPicker({ sessionId }: SessionEffortPickerProps) {
       <span
         className="pid-picker-trigger"
         data-static
-        title="Adaptive thinking — managed by the model"
+        title={LL.chat.effortPicker.adaptiveTooltip()}
       >
         <Brain size={12} className="pid-picker-trigger-icon" aria-hidden />
-        <span className="pid-picker-trigger-label">Adaptive</span>
+        <span className="pid-picker-trigger-label">{LL.chat.effortPicker.adaptive()}</span>
       </span>
     );
   }
 
   const activeValue = sessionSelection?.thinkingLevel ?? session?.thinkingLevel ?? DEFAULT_LEVEL;
-  const options: PidChipPickerOption[] = LEVELS.map((l) => ({
+  const options: PidChipPickerOption[] = levels.map((l) => ({
     value: l.value,
     label: l.label,
     disabled: !allowedLevels.has(l.value),
   }));
 
-  const activeLabel = LEVELS.find((l) => l.value === activeValue)?.label ?? activeValue;
+  const activeLabel = levels.find((l) => l.value === activeValue)?.label ?? activeValue;
 
   return (
     <PidChipPicker
       triggerLeading={<Brain size={12} className="pid-picker-trigger-icon" aria-hidden />}
-      header="Effort"
-      ariaLabel="Select thinking effort"
+      header={LL.chat.effortPicker.header()}
+      ariaLabel={LL.chat.effortPicker.ariaLabel()}
       value={activeValue}
       options={options}
       onChange={(v) => void setSessionThinkingLevel(sessionId, v as ThinkingLevel)}

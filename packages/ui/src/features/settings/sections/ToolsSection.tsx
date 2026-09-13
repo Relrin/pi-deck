@@ -3,25 +3,35 @@ import {
   PidSegmentedPill,
   type PidSegmentedPillOption,
 } from "../../../components/segmented/PidSegmentedPill.js";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../../i18n/i18n-types.js";
 import { ToolsAllOffWarning } from "../../tools/ToolsAllOffWarning.js";
 import { ToolsList } from "../../tools/ToolsList.js";
 import { BUILT_IN_TOOLS } from "../../tools/toolCatalog.js";
 import { useToolsStore } from "../../tools/useToolsStore.js";
 
-const PLAN_GATE_OPTIONS: PidSegmentedPillOption<PlanGatePolicy>[] = [
-  {
-    value: "approve",
-    label: "Ask for approval",
-    description: "Prompt to allow or deny each non-read-only operation while planning.",
-  },
-  {
-    value: "block",
-    label: "Always block",
-    description: "Refuse every non-read-only operation while planning (strict plan-only).",
-  },
-];
+/**
+ * Built per render from the catalog — a module constant would freeze the launch locale. `value` is
+ * the `PlanGatePolicy` protocol value and stays an identifier.
+ */
+export function planGateOptions(t: TranslationFunctions): PidSegmentedPillOption<PlanGatePolicy>[] {
+  const copy = t.settings.tools.planMode;
+  return [
+    {
+      value: "approve",
+      label: copy.approve.label(),
+      description: copy.approve.description(),
+    },
+    {
+      value: "block",
+      label: copy.block.label(),
+      description: copy.block.description(),
+    },
+  ];
+}
 
 export function ToolsSection() {
+  const { LL } = useI18nContext();
   const defaultExcludedTools = useToolsStore((s) => s.defaultExcludedTools);
   const setDefaultExcludedTools = useToolsStore((s) => s.setDefaultExcludedTools);
   const planGatePolicy = useToolsStore((s) => s.planGatePolicy);
@@ -32,30 +42,27 @@ export function ToolsSection() {
   return (
     <div className="pid-settings-panel-inner">
       <header>
-        <div className="pid-settings-section-kicker">Settings · Tools</div>
-        <h1 className="pid-settings-section-title">Tools</h1>
+        <div className="pid-settings-section-kicker">
+          {LL.settings.kicker({ section: LL.settings.tools.kicker() })}
+        </div>
+        <h1 className="pid-settings-section-title">{LL.settings.tools.title()}</h1>
       </header>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Plan mode</div>
-        <p className="pid-settings-block-desc">
-          What plan mode does when the agent reaches for something that isn't a read-only inspection
-          - an edit, an MCP or network call, or a workspace-changing shell command. Read-only
-          commands (ls, cat, grep, find, git log, etc) always run. Applies to new conversations.
-        </p>
+        <div className="pid-settings-block-label">{LL.settings.tools.planMode.label()}</div>
+        <p className="pid-settings-block-desc">{LL.settings.tools.planMode.desc()}</p>
         <PidSegmentedPill
-          ariaLabel="Plan mode policy"
+          ariaLabel={LL.settings.tools.planMode.ariaLabel()}
           value={planGatePolicy}
-          options={PLAN_GATE_OPTIONS}
+          options={planGateOptions(LL)}
           onChange={setPlanGatePolicy}
         />
       </section>
 
       <section className="pid-settings-block pid-tools-settings-block">
-        <div className="pid-settings-block-label">Disabled tools</div>
+        <div className="pid-settings-block-label">{LL.settings.tools.disabled.label()}</div>
         <p className="pid-settings-block-desc pid-tools-settings-blurb">
-          Disable tools you don't want the agent to use. This applies to new sessions; existing
-          sessions keep their own setting.
+          {LL.settings.tools.disabled.desc()}
         </p>
         <ToolsList excludedTools={defaultExcludedTools} onChange={setDefaultExcludedTools} />
         {allOff && <ToolsAllOffWarning />}

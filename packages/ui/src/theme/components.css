@@ -396,15 +396,6 @@
   width: 2px;
   background: var(--accent);
 }
-.pid-settings-nav-item[data-stub="true"]::after {
-  content: "stub";
-  margin-left: auto;
-  padding: 1px 5px;
-  font-size: 9px;
-  color: var(--ink-3);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-}
 .pid-settings-panel {
   overflow-y: auto;
   padding: 28px 32px;
@@ -855,18 +846,6 @@
 .pid-theme-card-delete:disabled {
   cursor: not-allowed;
   opacity: 0;
-}
-
-.pid-section-stub {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.pid-section-stub p {
-  font-family: var(--font-ui);
-  font-size: var(--t-13);
-  color: var(--ink-2);
-  margin: 0;
 }
 
 /* ---------- Italic-serif display utility ---------- */

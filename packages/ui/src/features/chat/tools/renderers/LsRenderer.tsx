@@ -1,3 +1,4 @@
+import { useI18nContext } from "../../../../i18n/i18n-react.js";
 import { truncateMiddle } from "../../../../lib/format/truncate.js";
 import type { ToolRendererProps, ToolSummarizer } from "../types.js";
 import { CodeBlock, extractTextContent } from "./common.js";
@@ -7,11 +8,12 @@ interface LsInput {
 }
 
 export function LsRenderer({ call }: ToolRendererProps) {
+  const { LL } = useI18nContext();
   const output = extractTextContent(call.result) || extractTextContent(call.partialResult);
   // Header already shows "LS · <path>" — no need to repeat the path here.
   return (
     <div className="space-y-2">
-      {output && <CodeBlock text={output} ariaLabel="Directory listing" />}
+      {output && <CodeBlock text={output} ariaLabel={LL.chat.tools.ls.listing()} />}
     </div>
   );
 }

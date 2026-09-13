@@ -4,6 +4,7 @@ import { Check, GitBranch, Plus, Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
 import { useI18nContext } from "../../../i18n/i18n-react.js";
+import { rich, slot } from "../../../i18n/rich.js";
 import { humanizeError } from "../../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore";
@@ -86,8 +87,8 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
     clearTimers();
     setLog([`$ git clone --depth 1 ${target}`]);
     logTimers.current.push(
-      setTimeout(() => setLog((l) => [...l, "Cloning repository…"]), 220),
-      setTimeout(() => setLog((l) => [...l, "Scanning tree for SKILL.md manifests…"]), 560),
+      setTimeout(() => setLog((l) => [...l, LL.settings.skills.install.cloning()]), 220),
+      setTimeout(() => setLog((l) => [...l, LL.settings.skills.install.scanningTree()]), 560),
     );
     try {
       const result = await client.call("skills.scan", { url: target });
@@ -105,7 +106,9 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
       clearTimers();
       setLog([]);
       setPhase("error");
-      useNotificationStore.getState().error(humanizeError(err, "Failed to scan repository"));
+      useNotificationStore
+        .getState()
+        .error(humanizeError(err, LL.settings.errors.scanRepository()));
     }
   };
 
@@ -129,15 +132,17 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
         source: { kind: "scan", scanId: scan.scanId, skillIds: [...picked] },
       });
       if (res.installed.length === 0) {
-        useNotificationStore.getState().info("Nothing installed", {
-          body: "Every selected skill was already installed.",
+        useNotificationStore.getState().info(LL.settings.skills.install.nothingInstalled(), {
+          body: LL.settings.skills.install.nothingInstalledBody(),
         });
       } else {
         const skippedNote =
-          res.skipped.length > 0 ? ` · ${res.skipped.length} already installed` : "";
+          res.skipped.length > 0
+            ? LL.settings.skills.install.skippedNote({ count: res.skipped.length })
+            : "";
         useNotificationStore.getState().push({
           kind: "success",
-          tag: "SKILLS",
+          tag: LL.settings.skills.install.tag(),
           title: LL.settings.skills.installedTitle({ count: res.installed.length }),
           body: res.installed.map((s) => s.name).join(" · "),
           meta: `${scan.repo.slug} @ ${scan.repo.commit || "—"}${skippedNote}`,
@@ -148,7 +153,7 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
       onOpenChange(false);
     } catch (err) {
       setPhase("scanned");
-      useNotificationStore.getState().error(humanizeError(err, "Failed to install skills"));
+      useNotificationStore.getState().error(humanizeError(err, LL.settings.errors.installSkills()));
     }
   };
 
@@ -165,13 +170,15 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
           {/* Header */}
           <div className="pid-modal-header">
             <div>
-              <div className="pid-settings-section-kicker">skills · install from git</div>
+              <div className="pid-settings-section-kicker">
+                {LL.settings.skills.install.kicker()}
+              </div>
               <RadixDialog.Title className="pid-modal-title">
-                Install from repository
+                {LL.settings.skills.install.title()}
               </RadixDialog.Title>
             </div>
             <RadixDialog.Description className="pid-modal-description">
-              Clone a repository, review the skills it contains, and install the ones you pick.
+              {LL.settings.skills.install.desc()}
             </RadixDialog.Description>
             <PidButton
               variant="ghost"
@@ -230,7 +237,7 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") void scanRepo();
                   }}
-                  placeholder="github.com/owner/repo  ·  or  git@github.com:owner/repo.git"
+                  placeholder={LL.settings.skills.install.urlPlaceholder()}
                   spellCheck={false}
                 />
               </div>
@@ -242,7 +249,9 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
                 disabled={phase === "scanning" || !url.trim()}
                 onClick={() => void scanRepo()}
               >
-                {phase === "scanning" ? "Scanning…" : "Scan"}
+                {phase === "scanning"
+                  ? LL.settings.skills.scanning()
+                  : LL.settings.skills.install.scan()}
               </PidButton>
             </div>
 
@@ -259,7 +268,7 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
                 <span
                   style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}
                 >
-                  try:
+                  {LL.settings.skills.install.try()}
                 </span>
                 {SAMPLE_REPOS.map((r) => (
                   <button
@@ -283,7 +292,7 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
             )}
             {phase === "error" && (
               <div className="pid-form-hint" style={{ marginTop: 10, color: "var(--del)" }}>
-                Enter a valid git repository URL (owner/repo).
+                {LL.settings.skills.install.invalidUrl()}
               </div>
             )}
           </div>
@@ -348,13 +357,15 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
                     disabled={installable.length === 0}
                     onClick={() => setAll(!allPicked)}
                   >
-                    {allPicked ? "Select none" : "Select all"}
+                    {allPicked
+                      ? LL.settings.skills.install.selectNone()
+                      : LL.settings.skills.install.selectAll()}
                   </PidButton>
                 </div>
 
                 {scan.skills.length === 0 ? (
                   <div className="pid-list-empty" style={{ padding: "24px 16px" }}>
-                    No SKILL.md manifests found in this repository.
+                    {LL.settings.skills.install.noManifests()}
                   </div>
                 ) : (
                   scan.skills.map((skill) => (
@@ -379,12 +390,12 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
                 }}
               >
                 <div style={{ marginBottom: 6, color: "var(--ink-2)" }}>
-                  Point pi at any repository that contains{" "}
-                  <code style={{ color: "var(--ink-1)" }}>SKILL.md</code> manifests.
+                  {rich(LL.settings.skills.install.pointAt({ file: slot("file") }), {
+                    file: <code style={{ color: "var(--ink-1)" }}>SKILL.md</code>,
+                  })}
                 </div>
                 <div style={{ fontSize: "var(--t-12)" }}>
-                  It clones shallowly, lists the skills it finds, and installs just the ones you
-                  want.
+                  {LL.settings.skills.install.pointAtDetail()}
                 </div>
               </div>
             )}
@@ -402,16 +413,21 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
             }}
           >
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-3)" }}>
-              {phase === "scanned" ? (
-                <>
-                  <span style={{ color: picked.size ? "var(--accent)" : "var(--ink-3)" }}>
-                    {picked.size}
-                  </span>{" "}
-                  of {installable.length} selected
-                </>
-              ) : (
-                "No repository scanned yet"
-              )}
+              {phase === "scanned"
+                ? rich(
+                    LL.settings.skills.install.selectedCount({
+                      picked: slot("picked"),
+                      total: installable.length,
+                    }),
+                    {
+                      picked: (
+                        <span style={{ color: picked.size ? "var(--accent)" : "var(--ink-3)" }}>
+                          {picked.size}
+                        </span>
+                      ),
+                    },
+                  )
+                : LL.settings.skills.install.noRepoScanned()}
             </span>
             <span style={{ flex: 1 }} />
             <PidButton
@@ -420,7 +436,7 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
               style={THIN_CTL}
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {LL.common.cancel()}
             </PidButton>
             <PidButton
               variant="primary"
@@ -431,8 +447,10 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
               onClick={() => void install()}
             >
               {installing
-                ? "Installing…"
-                : `Install${picked.size > 0 ? ` ${picked.size}` : ""} selected`}
+                ? LL.settings.skills.installing()
+                : picked.size > 0
+                  ? LL.settings.skills.install.installNSelected({ count: picked.size })
+                  : LL.settings.skills.install.installSelected()}
             </PidButton>
           </div>
         </RadixDialog.Content>
@@ -450,6 +468,7 @@ function SkillRow({
   checked: boolean;
   onToggle: () => void;
 }) {
+  const { LL } = useI18nContext();
   const already = skill.alreadyInstalled;
   return (
     <button
@@ -497,7 +516,7 @@ function SkillRow({
           </span>
           {already && (
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}>
-              · already installed
+              {LL.settings.skills.install.alreadyInstalled()}
             </span>
           )}
         </span>

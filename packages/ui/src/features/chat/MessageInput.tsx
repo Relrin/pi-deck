@@ -10,6 +10,7 @@ import {
 } from "react";
 import { Folder, Send, Square, X } from "../../components/icons/index.js";
 import { Tooltip } from "../../components/ui/Tooltip.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { useAutoGrowTextarea } from "../../lib/useAutoGrowTextarea.js";
 import { useNotificationStore } from "../_status/useNotificationStore.js";
 import { PIDECK_PATHS_MIME } from "../files/dragDrop.js";
@@ -25,7 +26,6 @@ import { ContextUsageIndicator } from "./composer/ContextUsageIndicator.js";
 import { ImagePreviewDialog } from "./composer/ImagePreviewDialog.js";
 import { SessionAgentModePicker } from "./composer/SessionAgentModePicker.js";
 import { SessionEffortPicker } from "./composer/SessionEffortPicker.js";
-import { SessionLanguagePicker } from "./composer/SessionLanguagePicker.js";
 import { SessionModelPicker } from "./composer/SessionModelPicker.js";
 import { SlashCommandMenu } from "./composer/SlashCommandMenu.js";
 import { useComposerStore } from "./composer/useComposerStore.js";
@@ -36,9 +36,8 @@ import type { UserMessageImage } from "./types.js";
 import { useDraftStore } from "./useDraftStore.js";
 import { selectTurnInFlight, useMessagesStore } from "./useMessagesStore.js";
 
-const PLACEHOLDER = "Send a message…  @ files · / commands · ! shell";
-
 export function MessageInput({ sessionId }: { sessionId: string }) {
+  const { LL } = useI18nContext();
   const [text, setText] = useState("");
   const isInFlight = useMessagesStore(useMemo(() => selectTurnInFlight(sessionId), [sessionId]));
   const sendPrompt = useSessionsStore((s) => s.sendPrompt);
@@ -173,24 +172,26 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
   const chooseFiles = useCallback(async () => {
     const picker = window.bridge?.openFiles;
     if (!picker) {
-      useNotificationStore.getState().error("File picker unavailable in this build");
+      useNotificationStore.getState().error(LL.chat.errors.filePickerUnavailable());
       return;
     }
     const paths = await picker();
     if (paths.length === 0) return;
     attachAndRemember(paths.map((path) => ({ kind: "file" as const, path })));
-  }, [attachAndRemember]);
+    // `LL` is a dependency now that the fallback comes from the catalog — its identity changes on
+    // a language switch, so the callback has to be rebuilt or the toast would go stale.
+  }, [attachAndRemember, LL]);
 
   const chooseFolder = useCallback(async () => {
     const picker = window.bridge?.openDirectory;
     if (!picker) {
-      useNotificationStore.getState().error("Folder picker unavailable in this build");
+      useNotificationStore.getState().error(LL.chat.errors.folderPickerUnavailable());
       return;
     }
     const path = await picker();
     if (!path) return;
     attachAndRemember([{ kind: "folder", path }]);
-  }, [attachAndRemember]);
+  }, [attachAndRemember, LL]);
 
   const openRepoSearch = useCallback(() => setRepoSearchOpen(true), []);
 
@@ -324,7 +325,7 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
                   type="button"
                   className="pid-composer-attachment-remove"
                   onClick={() => removeAttachment(a.path)}
-                  aria-label={`Remove ${a.path}`}
+                  aria-label={LL.chat.composer.removeAttachment({ path: a.path })}
                 >
                   <X size={10} />
                 </button>
@@ -339,7 +340,7 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
                 <button
                   type="button"
                   className="pid-composer-attachment-image-trigger"
-                  aria-label={`Preview ${img.name}`}
+                  aria-label={LL.chat.composer.previewImage({ name: img.name })}
                   onClick={() => setPreviewImage(img)}
                 >
                   <img src={img.thumbnailDataUrl} alt={img.name} draggable={false} />
@@ -347,7 +348,7 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
                 <button
                   type="button"
                   className="pid-composer-attachment-image-remove"
-                  aria-label={`Remove ${img.name}`}
+                  aria-label={LL.chat.composer.removeImage({ name: img.name })}
                   onClick={() => removeImage(img.id)}
                 >
                   <X size={10} aria-hidden />
@@ -380,8 +381,8 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
             onPaste={onPaste}
             onScroll={slash.syncMirrorScroll}
             onSelect={slash.onSelect}
-            placeholder={PLACEHOLDER}
-            aria-label="Message"
+            placeholder={LL.chat.composer.placeholder()}
+            aria-label={LL.chat.composer.ariaLabel()}
             aria-keyshortcuts="Enter"
             className="pid-composer-input"
           />
@@ -400,47 +401,46 @@ export function MessageInput({ sessionId }: { sessionId: string }) {
           <ContextUsageIndicator sessionId={sessionId} />
           <SessionModelPicker sessionId={sessionId} />
           <SessionEffortPicker sessionId={sessionId} />
-          <SessionLanguagePicker sessionId={sessionId} />
           {isInFlight ? (
             cancelRequested ? (
-              <Tooltip content="Agent is still running — kill it and end the turn" side="top">
+              <Tooltip content={LL.chat.composer.forceStopTooltip()} side="top">
                 <button
                   type="button"
                   onClick={forceStop}
                   className="pid-composer-stop"
                   data-force="true"
-                  aria-label="Force stop"
+                  aria-label={LL.chat.composer.forceStop()}
                 >
                   <Square size={12} aria-hidden />
-                  <span>Force stop</span>
+                  <span>{LL.chat.composer.forceStop()}</span>
                 </button>
               </Tooltip>
             ) : (
-              <Tooltip content="Stop generating · Esc" side="top">
+              <Tooltip content={LL.chat.composer.stopTooltip()} side="top">
                 <button
                   type="button"
                   onClick={cancel}
                   className="pid-composer-stop"
-                  aria-label="Stop generating"
+                  aria-label={LL.chat.composer.stopAria()}
                   aria-keyshortcuts="Escape"
                 >
                   <Square size={12} aria-hidden />
-                  <span>Stop</span>
+                  <span>{LL.chat.composer.stop()}</span>
                 </button>
               </Tooltip>
             )
           ) : (
-            <Tooltip content="Send message · Enter" side="top">
+            <Tooltip content={LL.chat.composer.sendTooltip()} side="top">
               <button
                 type="button"
                 onClick={() => void submit()}
                 disabled={isEmpty}
                 className="pid-composer-send"
-                aria-label="Send message"
+                aria-label={LL.chat.composer.sendAria()}
                 aria-keyshortcuts="Enter"
               >
                 <Send size={12} aria-hidden />
-                <span>Send</span>
+                <span>{LL.chat.composer.send()}</span>
               </button>
             </Tooltip>
           )}

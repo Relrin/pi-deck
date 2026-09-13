@@ -11,6 +11,8 @@ import {
 } from "../../../../components/icons/index.js";
 import { PidKbd } from "../../../../components/kbd/PidKbd.js";
 import { useI18nContext } from "../../../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../../../i18n/i18n-types.js";
+import { rich, slot } from "../../../../i18n/rich.js";
 import { cn } from "../../../../lib/cn.js";
 import { humanizeError } from "../../../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../../../_status/useNotificationStore.js";
@@ -58,6 +60,7 @@ function AskInteractive({
   askId: string;
   questions: AskUserQuestion[];
 }) {
+  const { LL } = useI18nContext();
   const client = useSessionsStore((s) => s.client);
   const notify = useNotificationStore((s) => s.error);
   const layout = useMemo(() => pickLayout(questions), [questions]);
@@ -154,10 +157,12 @@ function AskInteractive({
       // Leave `busy` set: the matching tool.call.end clears `pendingAsk` and swaps this card for
       // the resolved summary. If the worker is already gone the card simply stays disabled.
     } catch (err) {
-      notify(humanizeError(err, "Failed to send your answer"));
+      notify(humanizeError(err, LL.chat.errors.sendAnswer()));
       setBusy(false);
     }
-  }, [client, busy, sessionId, askId, questions, draft, notify]);
+    // `LL` is a dependency now that the fallback comes from the catalog — its identity changes on
+    // a language switch, so the callback has to be rebuilt or the toast would go stale.
+  }, [client, busy, sessionId, askId, questions, draft, notify, LL]);
 
   // Keyboard affordances, scoped to this card and guarded against editable targets (so typing a
   // custom answer doesn't trigger picks). Number keys pick/toggle the active question's options;
@@ -291,11 +296,12 @@ function AskFrame({
   children: ReactNode;
   footer: ReactNode;
 }) {
+  const { LL } = useI18nContext();
   return (
     <div className="pid-ask">
       <div className="pid-ask-head">
         <span className="pid-ask-eyebrow">
-          <span className="pid-ask-qmark">?</span> pi is asking
+          <span className="pid-ask-qmark">?</span> {LL.chat.ask.eyebrow()}
           {header ? (
             <>
               {" · "}
@@ -378,6 +384,7 @@ function CustomAnswer({
   onBack: () => void;
   onEnter?: () => void;
 }) {
+  const { LL } = useI18nContext();
   return (
     <div className="pid-ask-custom" data-on>
       <div className="pid-ask-custom-top">
@@ -396,11 +403,17 @@ function CustomAnswer({
             onEnter?.();
           }
         }}
-        placeholder="Describe what you want…"
+        placeholder={LL.chat.ask.describePlaceholder()}
       />
       <div className="pid-ask-custom-foot">
         <span className="pid-ask-hint">
-          <PidKbd keys={["Enter"]} /> send · <PidKbd keys={["Shift", "Enter"]} /> new line
+          {rich(
+            LL.chat.ask.composerHint({ enter: slot("enter"), shiftEnter: slot("shiftEnter") }),
+            {
+              enter: <PidKbd keys={["Enter"]} />,
+              shiftEnter: <PidKbd keys={["Shift", "Enter"]} />,
+            },
+          )}
         </span>
         <button type="button" className="pid-ask-link" onClick={onBack}>
           back to options
@@ -419,6 +432,7 @@ function OtherRow({
   onClick: () => void;
   compact?: boolean;
 }) {
+  const { LL } = useI18nContext();
   return (
     <button
       type="button"
@@ -429,9 +443,9 @@ function OtherRow({
       <Marker kind="radio" on={on} />
       <span className="pid-ask-opt-main">
         <span className="pid-ask-opt-row1">
-          <span className="pid-ask-opt-label">Something else…</span>
+          <span className="pid-ask-opt-label">{LL.chat.ask.somethingElse()}</span>
         </span>
-        <span className="pid-ask-opt-desc">None of these fit - write a custom answer.</span>
+        <span className="pid-ask-opt-desc">{LL.chat.ask.somethingElseDesc()}</span>
       </span>
     </button>
   );
@@ -454,18 +468,29 @@ function CardsLayout({
   h: Handlers;
   canSend: boolean;
 }) {
+  const { LL } = useI18nContext();
   const item = draft[0];
   const custom = item?.customActive;
   return (
     <AskFrame
       header={q.header}
-      status="awaiting your pick"
+      status={LL.chat.ask.awaitingPick()}
       question={q.question}
       footer={
         <>
           <span className="pid-ask-hint">
-            <kbd className="pid-kbd">1</kbd>–<kbd className="pid-kbd">{q.options.length}</kbd> pick
-            · <PidKbd keys={["Enter"]} /> send
+            {rich(
+              LL.chat.ask.pickHint({
+                from: slot("from"),
+                to: slot("to"),
+                enter: slot("enter"),
+              }),
+              {
+                from: <kbd className="pid-kbd">1</kbd>,
+                to: <kbd className="pid-kbd">{q.options.length}</kbd>,
+                enter: <PidKbd keys={["Enter"]} />,
+              },
+            )}
           </span>
           <Spacer />
           <PidButton
@@ -475,7 +500,7 @@ function CardsLayout({
             disabled={!canSend}
             onClick={() => void h.submit()}
           >
-            Send pick
+            {LL.chat.ask.sendPick()}
           </PidButton>
         </>
       }
@@ -539,13 +564,15 @@ function MultiLayout({
   return (
     <AskFrame
       header={q.header}
-      status="pick any"
+      status={LL.chat.ask.pickAny()}
       question={q.question}
       footer={
         <>
           <span className="pid-ask-hint">
-            <kbd className="pid-kbd">1</kbd>–<kbd className="pid-kbd">{q.options.length}</kbd>{" "}
-            toggle
+            {rich(LL.chat.ask.toggleHint({ from: slot("from"), to: slot("to") }), {
+              from: <kbd className="pid-kbd">1</kbd>,
+              to: <kbd className="pid-kbd">{q.options.length}</kbd>,
+            })}
           </span>
           <Spacer />
           <PidButton
@@ -580,12 +607,12 @@ function MultiLayout({
               <span className="pid-ask-opt-row1">
                 <span className="pid-ask-opt-label mono">{p}</span>
               </span>
-              <span className="pid-ask-opt-desc">added by you</span>
+              <span className="pid-ask-opt-desc">{LL.chat.ask.addedByYou()}</span>
             </span>
             <button
               type="button"
               className="pid-ask-x"
-              aria-label="Remove"
+              aria-label={LL.chat.ask.remove()}
               onClick={() => h.removeAdded(0, j)}
             >
               <X size={10} />
@@ -596,7 +623,7 @@ function MultiLayout({
           (addOpen ? (
             <div className="pid-ask-custom" data-on>
               <div className="pid-ask-custom-top">
-                <Plus size={11} /> add an item
+                <Plus size={11} /> {LL.chat.ask.addItem()}
               </div>
               <div className="pid-ask-inline-input">
                 <input
@@ -604,7 +631,7 @@ function MultiLayout({
                   // biome-ignore lint/a11y/noAutofocus: focus follows the user's explicit "add" action
                   autoFocus
                   value={addDraft}
-                  placeholder="Type a value…"
+                  placeholder={LL.chat.ask.addPlaceholder()}
                   onChange={(e) => setAddDraft(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") commitAdd();
@@ -617,7 +644,7 @@ function MultiLayout({
                   disabled={!addDraft.trim()}
                   onClick={commitAdd}
                 >
-                  Add
+                  {LL.chat.ask.add()}
                 </PidButton>
               </div>
             </div>
@@ -656,6 +683,7 @@ function PreviewLayout({
   h: Handlers;
   canSend: boolean;
 }) {
+  const { LL } = useI18nContext();
   const item = draft[0];
   const custom = item?.customActive === true;
   const sel = item?.optionIndices[0] ?? 0;
@@ -666,13 +694,23 @@ function PreviewLayout({
   return (
     <AskFrame
       header={q.header}
-      status="awaiting your pick"
+      status={LL.chat.ask.awaitingPick()}
       question={q.question}
       footer={
         <>
           <span className="pid-ask-hint">
-            <PidKbd keys={["ArrowUp"]} />
-            <PidKbd keys={["ArrowDown"]} /> preview · <PidKbd keys={["Enter"]} /> choose
+            {rich(
+              LL.chat.ask.previewHint({
+                up: slot("up"),
+                down: slot("down"),
+                enter: slot("enter"),
+              }),
+              {
+                up: <PidKbd keys={["ArrowUp"]} />,
+                down: <PidKbd keys={["ArrowDown"]} />,
+                enter: <PidKbd keys={["Enter"]} />,
+              },
+            )}
           </span>
           <Spacer />
           <PidButton
@@ -682,7 +720,7 @@ function PreviewLayout({
             disabled={!canSend}
             onClick={() => void h.submit()}
           >
-            {custom ? "Send custom answer" : `Choose “${selectedLabel}”`}
+            {custom ? LL.chat.ask.sendCustom() : LL.chat.ask.choose({ label: selectedLabel })}
           </PidButton>
         </>
       }
@@ -749,6 +787,7 @@ function TabsLayout({
   h: Handlers;
   canSend: boolean;
 }) {
+  const { LL } = useI18nContext();
   const review = activeTab >= questions.length;
   const answeredCount = questions.filter((q, i) => isQuestionComplete(q, draft[i])).length;
   const q = questions[activeTab];
@@ -756,7 +795,10 @@ function TabsLayout({
 
   return (
     <AskFrame
-      status={`${answeredCount}/${questions.length} answered`}
+      status={LL.chat.ask.answeredCount({
+        answered: answeredCount,
+        total: questions.length,
+      })}
       headSlot={
         <div className="pid-ask-tabs">
           {questions.map((qq, i) => {
@@ -782,14 +824,14 @@ function TabsLayout({
             data-on={review || undefined}
             onClick={() => h.setActiveTab(questions.length)}
           >
-            Review
+            {LL.chat.ask.review()}
           </button>
         </div>
       }
       footer={
         review ? (
           <>
-            <span className="pid-ask-hint">review your answers, then send</span>
+            <span className="pid-ask-hint">{LL.chat.ask.reviewHint()}</span>
             <Spacer />
             <PidButton
               variant="primary"
@@ -798,7 +840,7 @@ function TabsLayout({
               disabled={!canSend}
               onClick={() => void h.submit()}
             >
-              Send answers
+              {LL.chat.ask.sendAnswers()}
             </PidButton>
           </>
         ) : (
@@ -806,11 +848,13 @@ function TabsLayout({
             <span className="pid-ask-hint">
               <kbd className="pid-kbd">1</kbd>–
               <kbd className="pid-kbd">{q?.options.length ?? 0}</kbd> pick ·{" "}
-              <PidKbd keys={["Enter"]} /> next
+              {rich(LL.chat.ask.nextHint({ enter: slot("enter") }), {
+                enter: <PidKbd keys={["Enter"]} />,
+              })}
             </span>
             <Spacer />
             <PidButton longLabel onClick={() => h.skip(activeTab)}>
-              Skip <ChevronRight size={11} />
+              {LL.chat.ask.skip()} <ChevronRight size={11} />
             </PidButton>
           </>
         )
@@ -821,7 +865,7 @@ function TabsLayout({
           {questions.map((qq, i) => {
             const it = draft[i];
             const answered = isQuestionComplete(qq, it) && !it?.skipped;
-            const label = answeredLabel(qq, it);
+            const label = answeredLabel(LL, qq, it);
             return (
               <button
                 // biome-ignore lint/suspicious/noArrayIndexKey: question order is stable for the dialog's life
@@ -873,33 +917,40 @@ function TabsLayout({
   );
 }
 
-function answeredLabel(q: AskUserQuestion, item: AskDraft[number] | undefined): string {
-  if (!item) return "not answered";
-  if (item.skipped) return "skipped";
-  if (item.customActive) return item.custom?.trim() ? item.custom.trim() : "not answered";
+/** Takes `t` because it runs during render — see `tools/StatusIcon.tsx`'s `describe`. */
+function answeredLabel(
+  t: TranslationFunctions,
+  q: AskUserQuestion,
+  item: AskDraft[number] | undefined,
+): string {
+  const copy = t.chat.ask;
+  if (!item) return copy.notAnswered();
+  if (item.skipped) return copy.skipped();
+  if (item.customActive) return item.custom?.trim() ? item.custom.trim() : copy.notAnswered();
   const picks = item.optionIndices.map((i) => q.options[i]?.label).filter(Boolean) as string[];
   if (item.added?.length) picks.push(...item.added);
-  return picks.length ? picks.join(", ") : "not answered";
+  return picks.length ? picks.join(copy.joinSeparator()) : copy.notAnswered();
 }
 
 /* ──────────────────────────── resolved ──────────────────────────── */
 
 function AskResolved({ call }: { call: ToolCallEntry }) {
+  const { LL } = useI18nContext();
   const text = extractResultText(call.result);
   return (
     <div className="pid-ask pid-ask-resolved">
       <div className="pid-ask-head">
         <span className="pid-ask-eyebrow">
-          <span className="pid-ask-qmark">?</span> pi asked
+          <span className="pid-ask-qmark">?</span> {LL.chat.ask.eyebrowResolved()}
         </span>
         <span className="pid-ask-status" data-tone="done">
-          <Send size={10} /> answered
+          <Send size={10} /> {LL.chat.ask.answeredStatus()}
         </span>
       </div>
       {text ? (
         <pre className="pid-ask-resolved-body">{text}</pre>
       ) : (
-        <div className="pid-ask-resolved-body pid-ask-muted">No answer recorded.</div>
+        <div className="pid-ask-resolved-body pid-ask-muted">{LL.chat.ask.noAnswer()}</div>
       )}
     </div>
   );

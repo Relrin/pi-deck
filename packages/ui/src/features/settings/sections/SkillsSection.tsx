@@ -3,6 +3,8 @@ import { FolderOpen, GitBranch, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
 import { PidChip } from "../../../components/chip/PidChip";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
+import { rich, slot } from "../../../i18n/rich.js";
 import { humanizeError } from "../../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
 import { useProjectsStore } from "../../sessions/useProjectsStore";
@@ -26,6 +28,7 @@ const THIN_CTL = {
  * are advertised to the model via the system prompt.
  */
 export function SkillsSection() {
+  const { LL } = useI18nContext();
   const projectId = useProjectsStore((s) => s.activeProjectId);
   const [data, setData] = useState<SkillsData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -56,7 +59,7 @@ export function SkillsSection() {
   const installFromFolder = async () => {
     const picker = window.bridge?.openDirectory;
     if (!picker) {
-      useNotificationStore.getState().error("Folder picker unavailable in this build");
+      useNotificationStore.getState().error(LL.settings.errors.folderPickerUnavailable());
       return;
     }
     const path = await picker();
@@ -67,10 +70,16 @@ export function SkillsSection() {
     try {
       const res = await client.call("skills.install", { source: { kind: "folder", path } });
       const name = res.installed[0]?.name;
-      useNotificationStore.getState().success(name ? `Installed ${name}` : "Installed skill");
+      useNotificationStore
+        .getState()
+        .success(
+          name
+            ? LL.settings.skills.installedToast({ name })
+            : LL.settings.skills.installedUnnamedToast(),
+        );
       await load();
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to install skill"));
+      useNotificationStore.getState().error(humanizeError(err, LL.settings.errors.installSkill()));
     } finally {
       setInstalling(false);
     }
@@ -87,7 +96,7 @@ export function SkillsSection() {
       });
       await load();
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to remove skill"));
+      useNotificationStore.getState().error(humanizeError(err, LL.settings.errors.removeSkill()));
     }
   };
 
@@ -103,17 +112,18 @@ export function SkillsSection() {
     [allSkills, q],
   );
 
+  // `key` and the `scope` comparison are identifiers; only `label` and `hint` are copy.
   const groups = [
     {
       key: "installed",
-      label: "Installed",
-      hint: "global",
+      label: LL.settings.skills.group.installed(),
+      hint: LL.settings.skills.group.installedHint(),
       rows: filtered.filter((s) => s.scope !== "project"),
     },
     {
       key: "project",
-      label: "Project",
-      hint: "this repo",
+      label: LL.settings.skills.group.project(),
+      hint: LL.settings.skills.group.projectHint(),
       rows: filtered.filter((s) => s.scope === "project"),
     },
   ].filter((g) => g.rows.length > 0);
@@ -121,9 +131,11 @@ export function SkillsSection() {
   return (
     <div className="pid-settings-panel-inner">
       <header>
-        <div className="pid-settings-section-kicker">Settings · Skills</div>
+        <div className="pid-settings-section-kicker">
+          {LL.settings.kicker({ section: LL.settings.skills.kicker() })}
+        </div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-          <h1 className="pid-settings-section-title">Agent Skills</h1>
+          <h1 className="pid-settings-section-title">{LL.settings.skills.title()}</h1>
           <span
             style={{
               fontFamily: "var(--font-mono)",
@@ -132,21 +144,32 @@ export function SkillsSection() {
               letterSpacing: "0.08em",
             }}
           >
-            <span style={{ color: "var(--accent)" }}>{allSkills.length}</span> installed
+            {rich(LL.settings.skills.installedCount({ count: slot("count") }), {
+              count: <span style={{ color: "var(--accent)" }}>{allSkills.length}</span>,
+            })}
           </span>
         </div>
       </header>
 
       <section className="pid-settings-block">
         <div className="pid-settings-block-desc">
-          Skills are capability packages the agent loads on demand (
-          <a href="https://agentskills.io" target="_blank" rel="noreferrer">
-            Agent Skills standard
-          </a>
-          ). Their descriptions ride along in the system prompt, and each one is invocable directly
-          by typing <code>/skill:name</code> in the composer.{" "}
-          <strong>Review skill content before installing</strong> — a skill can instruct the agent
-          to run arbitrary code.
+          {/* `/skill:name` is the command syntax, an identifier - it stays in the component. */}
+          {rich(
+            LL.settings.skills.about({
+              link: slot("link"),
+              cmd: slot("cmd"),
+              warning: slot("warning"),
+            }),
+            {
+              link: (
+                <a href="https://agentskills.io" target="_blank" rel="noreferrer">
+                  {LL.settings.skills.aboutLink()}
+                </a>
+              ),
+              cmd: <code>/skill:name</code>,
+              warning: <strong>{LL.settings.skills.aboutWarning()}</strong>,
+            },
+          )}
         </div>
       </section>
 
@@ -182,7 +205,7 @@ export function SkillsSection() {
               }}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Filter skills…"
+              placeholder={LL.settings.skills.filterPlaceholder()}
               spellCheck={false}
             />
             {query && (
@@ -198,7 +221,7 @@ export function SkillsSection() {
             icon={<GitBranch size={12} aria-hidden />}
             onClick={() => setInstallOpen(true)}
           >
-            Install from repo
+            {LL.settings.skills.installFromRepo()}
           </PidButton>
           <PidButton
             longLabel
@@ -207,13 +230,13 @@ export function SkillsSection() {
             disabled={installing}
             onClick={() => void installFromFolder()}
           >
-            {installing ? "Installing…" : "From folder…"}
+            {installing ? LL.settings.skills.installing() : LL.settings.skills.fromFolder()}
           </PidButton>
         </div>
 
         {!projectId ? (
           <div className="pid-list-empty" style={{ marginTop: 12 }}>
-            Open a project to list its skills.
+            {LL.settings.skills.noProject()}
           </div>
         ) : (
           <div
@@ -228,10 +251,10 @@ export function SkillsSection() {
             {groups.length === 0 ? (
               <div className="pid-list-empty" style={{ padding: "20px 14px" }}>
                 {loading
-                  ? "Scanning…"
+                  ? LL.settings.skills.scanning()
                   : query
-                    ? `No skills match “${query}”.`
-                    : "No skills installed yet — install from a repo or a local folder."}
+                    ? LL.settings.skills.noMatch({ query })
+                    : LL.settings.skills.empty()}
               </div>
             ) : (
               groups.map((g, gi) => (
@@ -298,6 +321,7 @@ function SkillRow({
   skill: SkillInfo;
   onUninstall: (skill: SkillInfo) => Promise<void>;
 }) {
+  const { LL } = useI18nContext();
   // Deleting files off disk deserves a second click; the arm state resets after a beat.
   const [armed, setArmed] = useState(false);
   useEffect(() => {
@@ -322,7 +346,9 @@ function SkillRow({
           <code style={{ color: "var(--ink-0)", fontSize: "var(--t-13)" }}>
             /skill:{skill.name}
           </code>
-          {skill.disableModelInvocation ? <PidChip variant="info">manual only</PidChip> : null}
+          {skill.disableModelInvocation ? (
+            <PidChip variant="info">{LL.settings.skills.manualOnly()}</PidChip>
+          ) : null}
         </div>
         <div style={{ color: "var(--ink-2)", fontSize: "var(--t-12)", marginTop: 3 }}>
           {skill.description}
@@ -357,7 +383,7 @@ function SkillRow({
             void onUninstall(skill);
           }}
         >
-          {armed ? "Confirm remove" : "Remove"}
+          {armed ? LL.settings.skills.confirmRemove() : LL.common.remove()}
         </PidButton>
       ) : null}
     </div>

@@ -1,5 +1,7 @@
 import { Check, Square, X } from "../../../components/icons/index.js";
 import { Spinner } from "../../../components/ui/Spinner.js";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../../i18n/i18n-types.js";
 import type { ToolCallStatus } from "../types.js";
 
 interface StatusIconProps {
@@ -9,7 +11,8 @@ interface StatusIconProps {
 }
 
 export function StatusIcon({ status, toolName, errorText }: StatusIconProps) {
-  const label = describe(status, toolName, errorText);
+  const { LL } = useI18nContext();
+  const label = describe(LL, status, toolName, errorText);
   switch (status) {
     case "pending":
     case "running":
@@ -32,18 +35,29 @@ export function StatusIcon({ status, toolName, errorText }: StatusIconProps) {
   }
 }
 
-function describe(status: ToolCallStatus, toolName?: string, errorText?: string): string {
-  const name = toolName ?? "Tool";
+/**
+ * Takes `t` rather than reaching for the imperative `ll()`: it is called during render, so the
+ * strings must come from the same context the component subscribes to. `toolName` is pi's own
+ * tool name and is interpolated, never translated.
+ */
+function describe(
+  t: TranslationFunctions,
+  status: ToolCallStatus,
+  toolName?: string,
+  errorText?: string,
+): string {
+  const copy = t.chat.tools.status;
+  const name = toolName ?? copy.fallbackName();
   switch (status) {
     case "pending":
-      return `${name} is queued`;
+      return copy.queued({ name });
     case "running":
-      return `${name} is running`;
+      return copy.running({ name });
     case "done":
-      return `${name} completed`;
+      return copy.completed({ name });
     case "error":
-      return errorText ? `${name} failed: ${errorText}` : `${name} failed`;
+      return errorText ? copy.failedWith({ name, error: errorText }) : copy.failed({ name });
     case "cancelled":
-      return `${name} cancelled`;
+      return copy.cancelled({ name });
   }
 }

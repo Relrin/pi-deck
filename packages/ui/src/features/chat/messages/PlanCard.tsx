@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from "../../../components/icons/index.js";
 import { useI18nContext } from "../../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../../i18n/i18n-types.js";
 import { humanizeError } from "../../../lib/format/humanize-error.js";
 import type { ApprovePlanTargetMode } from "../../../lib/transport/protocol-client.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
@@ -27,31 +28,40 @@ import { selectTurnInFlight, useMessagesStore } from "../useMessagesStore.js";
 import { Markdown } from "./Markdown.js";
 import { PlanCommentLayer } from "./PlanCommentLayer.js";
 
-const TARGET_MODES: {
+interface TargetMode {
   value: ApprovePlanTargetMode;
   label: string;
   blurb: string;
   Icon: typeof ShieldCheck;
-}[] = [
-  {
-    value: "ask",
-    label: "Ask permissions",
-    blurb: "Confirm each mutating tool call.",
-    Icon: ShieldCheck,
-  },
-  {
-    value: "accept-edits",
-    label: "Accept edits",
-    blurb: "Auto-approve edits in this project.",
-    Icon: CheckCheck,
-  },
-  {
-    value: "auto",
-    label: "Auto",
-    blurb: "Auto-run; risky actions pause for approval.",
-    Icon: Sparkles,
-  },
-];
+}
+
+/**
+ * Built per render — a module constant would freeze the launch locale. `value` is the
+ * `ApprovePlanTargetMode` protocol value and stays an identifier.
+ */
+export function targetModes(t: TranslationFunctions): TargetMode[] {
+  const copy = t.chat.planCard.targetMode;
+  return [
+    {
+      value: "ask",
+      label: copy.ask.label(),
+      blurb: copy.ask.blurb(),
+      Icon: ShieldCheck,
+    },
+    {
+      value: "accept-edits",
+      label: copy.acceptEdits.label(),
+      blurb: copy.acceptEdits.blurb(),
+      Icon: CheckCheck,
+    },
+    {
+      value: "auto",
+      label: copy.auto.label(),
+      blurb: copy.auto.blurb(),
+      Icon: Sparkles,
+    },
+  ];
+}
 
 const DEFAULT_TARGET: ApprovePlanTargetMode = "accept-edits";
 
@@ -116,7 +126,7 @@ export function PlanCard({ message, sessionId, isLatest, planMarkdown }: PlanCar
       // sticks even when the user accepted the default and never opened the picker.
       setLastApproval(sessionId, selectedTarget);
     } catch (err) {
-      notify(humanizeError(err, "Failed to approve plan"));
+      notify(humanizeError(err, LL.chat.errors.approvePlan()));
     } finally {
       setBusy(false);
     }
@@ -126,7 +136,7 @@ export function PlanCard({ message, sessionId, isLatest, planMarkdown }: PlanCar
     <div className="pid-plan-card" data-plan-card>
       <div className="pid-plan-card-header">
         <MapIcon size={12} aria-hidden />
-        <span>Plan</span>
+        <span>{LL.chat.planCard.header()}</span>
       </div>
       <div className="pid-plan-card-body" data-plan-card-body ref={bodyRef}>
         <Markdown text={planMarkdown ?? message.text} isComplete={message.isComplete} />
@@ -140,20 +150,20 @@ export function PlanCard({ message, sessionId, isLatest, planMarkdown }: PlanCar
             <button
               type="button"
               className="pid-plan-request-changes"
-              aria-label="Send pending comments to revise the plan"
+              aria-label={LL.chat.planCard.reviseAria()}
               onClick={() => {
                 void requestChanges();
               }}
               disabled={busy || isInFlight || !client}
             >
               <MessageSquare size={12} aria-hidden />
-              <span>Revise</span>
+              <span>{LL.chat.planCard.revise()}</span>
             </button>
           )}
           <span className="pid-plan-card-footer-hint">
             {pendingCount > 0
               ? LL.chat.planCard.commentsPending({ count: pendingCount })
-              : "Approving switches the session out of plan mode and sends a continuation prompt."}
+              : LL.chat.planCard.approvingHint()}
           </span>
           <ModeTargetPicker
             selected={selectedTarget}
@@ -163,14 +173,14 @@ export function PlanCard({ message, sessionId, isLatest, planMarkdown }: PlanCar
           <button
             type="button"
             className="pid-plan-approve"
-            aria-label="Approve and execute plan"
+            aria-label={LL.chat.planCard.approveAria()}
             onClick={() => {
               void approve();
             }}
             disabled={busy || !client}
           >
             <Check size={12} aria-hidden />
-            <span>Approve & execute</span>
+            <span>{LL.chat.planCard.approve()}</span>
           </button>
         </div>
       )}
@@ -190,9 +200,11 @@ interface ModeTargetPickerProps {
  * "this is a setting, not an action" — the Approve button next to it is the action.
  */
 function ModeTargetPicker({ selected, disabled, onPick }: ModeTargetPickerProps) {
-  const active = TARGET_MODES.find((m) => m.value === selected) ?? TARGET_MODES[1];
-  // TARGET_MODES is a non-empty literal, but TypeScript's narrowing can't see that across the
-  // .find() boundary, so we assert with a defensive fallback.
+  const { LL } = useI18nContext();
+  const modes = targetModes(LL);
+  const active = modes.find((m) => m.value === selected) ?? modes[1];
+  // `targetModes` returns a non-empty literal, but TypeScript's narrowing can't see that across
+  // the .find() boundary, so we assert with a defensive fallback.
   if (!active) return null;
   const ActiveIcon = active.Icon;
   return (
@@ -201,7 +213,7 @@ function ModeTargetPicker({ selected, disabled, onPick }: ModeTargetPickerProps)
         <button
           type="button"
           className="pid-plan-mode-pill"
-          aria-label={`Approval target mode: ${active.label}`}
+          aria-label={LL.chat.planCard.targetModeAria({ mode: active.label })}
           disabled={disabled}
         >
           <ActiveIcon size={12} aria-hidden />
@@ -216,7 +228,7 @@ function ModeTargetPicker({ selected, disabled, onPick }: ModeTargetPickerProps)
           sideOffset={6}
           className="pid-plan-approve-popover"
         >
-          {TARGET_MODES.map((m) => {
+          {modes.map((m) => {
             const Icon = m.Icon;
             const isActive = m.value === selected;
             return (

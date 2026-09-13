@@ -74,11 +74,13 @@ export function CodeBlock({
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          title={`${lines.length} lines total`}
+          title={LL.chat.tools.linesTotal({ count: lines.length })}
           aria-expanded={expanded}
           className="block w-full text-center text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors py-1 border-t border-[var(--color-border)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded-b-[var(--radius-sm)]"
         >
-          {expanded ? "Show less" : `Show full output (${lines.length} lines)`}
+          {expanded
+            ? LL.chat.tools.showLess()
+            : LL.chat.tools.showFullOutput({ count: lines.length })}
         </button>
       )}
     </>

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { applyLocale, LOCALE_STORAGE_KEY, useLocaleStore } from "../../src/i18n/useLocaleStore";
 
-const DEFAULTS = { uiLocale: "en", agentLanguage: "match-ui", pseudo: false } as const;
+const DEFAULTS = { uiLocale: "en", agentLanguage: "match-ui" } as const;
 
 function resetStore(): void {
   useLocaleStore.setState({ ...DEFAULTS });

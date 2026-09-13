@@ -18,7 +18,7 @@ loadLocale("ru");
 const PROJECT = "proj-1";
 
 afterEach(() => {
-  useLocaleStore.setState({ uiLocale: "en", agentLanguage: "match-ui", pseudo: false });
+  useLocaleStore.setState({ uiLocale: "en", agentLanguage: "match-ui" });
 });
 
 /**

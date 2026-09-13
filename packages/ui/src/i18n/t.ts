@@ -14,9 +14,9 @@ import { useLocaleStore } from "./useLocaleStore";
 
 /**
  * One-entry memo. Keyed on the dictionary *reference* as well as the locale, so it invalidates
- * itself when the dev pseudo-locale swaps the loaded dictionary in place. That is deliberately not
- * an explicit `reset()` the store has to call: this module must stay a dependency leaf, and having
- * `useLocaleStore` import from here would close an import cycle.
+ * itself if a locale's dictionary is ever swapped in place rather than merely re-selected. That is
+ * deliberately not an explicit `reset()` the store has to call: this module must stay a dependency
+ * leaf, and having `useLocaleStore` import from here would close an import cycle.
  */
 let memo: { locale: Locale; dict: unknown; ll: TranslationFunctions } | undefined;
 

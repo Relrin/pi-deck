@@ -1,3 +1,4 @@
+import { useI18nContext } from "../../../../i18n/i18n-react.js";
 import { truncateMiddle } from "../../../../lib/format/truncate.js";
 import type { ToolRendererProps, ToolSummarizer } from "../types.js";
 import { CodeBlock, extractTextContent } from "./common.js";
@@ -9,6 +10,7 @@ interface ReadInput {
 }
 
 export function ReadRenderer({ call }: ToolRendererProps) {
+  const { LL } = useI18nContext();
   const input = (call.input ?? {}) as ReadInput;
   const text = extractTextContent(call.result) || extractTextContent(call.partialResult);
   const hasRange = input.offset !== undefined || input.limit !== undefined;
@@ -16,11 +18,15 @@ export function ReadRenderer({ call }: ToolRendererProps) {
     <div className="space-y-2">
       {hasRange && (
         <div className="flex flex-wrap items-center gap-2 text-[var(--color-text-muted)] text-xs">
-          {input.offset !== undefined && <span>offset {input.offset}</span>}
-          {input.limit !== undefined && <span>limit {input.limit}</span>}
+          {input.offset !== undefined && (
+            <span>{LL.chat.tools.read.offset({ offset: input.offset })}</span>
+          )}
+          {input.limit !== undefined && (
+            <span>{LL.chat.tools.read.limit({ limit: input.limit })}</span>
+          )}
         </div>
       )}
-      {text && <CodeBlock text={text} ariaLabel="File contents" />}
+      {text && <CodeBlock text={text} ariaLabel={LL.chat.tools.read.contents()} />}
     </div>
   );
 }

@@ -8,10 +8,7 @@ export type SettingsSectionId =
   | "git-github"
   | "mcp-servers"
   | "editor"
-  | "terminal"
-  | "keybinds"
-  | "privacy"
-  | "advanced";
+  | "terminal";
 
 export interface SettingsState {
   open: boolean;

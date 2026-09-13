@@ -1,3 +1,4 @@
+import { useI18nContext } from "../../../../i18n/i18n-react.js";
 import { truncateEnd } from "../../../../lib/format/truncate.js";
 import type { ToolRendererProps, ToolSummarizer } from "../types.js";
 import { CodeBlock, extractTextContent } from "./common.js";
@@ -13,6 +14,7 @@ interface GrepInput {
 }
 
 export function GrepRenderer({ call }: ToolRendererProps) {
+  const { LL } = useI18nContext();
   const input = (call.input ?? {}) as GrepInput;
   const output = extractTextContent(call.result) || extractTextContent(call.partialResult);
   // Header already shows GREP + "pattern"; repeat only the secondary options.
@@ -21,13 +23,13 @@ export function GrepRenderer({ call }: ToolRendererProps) {
     <div className="space-y-2">
       {hasOptions && (
         <div className="flex flex-wrap items-center gap-2 text-[var(--color-text-muted)] text-xs">
-          {input.path && <span>in {input.path}</span>}
-          {input.glob && <span>glob {input.glob}</span>}
-          {input.ignoreCase && <span>case-insensitive</span>}
-          {input.literal && <span>literal</span>}
+          {input.path && <span>{LL.chat.tools.grep.in({ path: input.path })}</span>}
+          {input.glob && <span>{LL.chat.tools.grep.glob({ glob: input.glob })}</span>}
+          {input.ignoreCase && <span>{LL.chat.tools.grep.caseInsensitive()}</span>}
+          {input.literal && <span>{LL.chat.tools.grep.literal()}</span>}
         </div>
       )}
-      {output && <CodeBlock text={output} ariaLabel="Grep matches" />}
+      {output && <CodeBlock text={output} ariaLabel={LL.chat.tools.grep.matches()} />}
     </div>
   );
 }

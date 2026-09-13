@@ -18,22 +18,30 @@ import {
   type PidSegmentedPillOption,
 } from "../../../components/segmented/PidSegmentedPill.js";
 import { useI18nContext } from "../../../i18n/i18n-react";
+import type { TranslationFunctions } from "../../../i18n/i18n-types";
 import { LOCALE_META } from "../../../i18n/locale-meta";
+import { rich, slot } from "../../../i18n/rich";
 import { useLocaleStore } from "../../../i18n/useLocaleStore";
 import { AddCustomProviderDialog } from "../../models/AddCustomProviderDialog.js";
 import { AddProviderDialog } from "../../models/AddProviderDialog.js";
 import { AuthenticateProviderDialog } from "../../models/AuthenticateProviderDialog.js";
 import { ProviderAvatar } from "../../models/icons";
 import { useProvidersStore } from "../../models/useProvidersStore.js";
+import { pushAgentLanguageToAll } from "../../sessions/agent-language.js";
+import { useSessionsStore } from "../../sessions/useSessionsStore.js";
 import { useSessionDefaultsStore } from "../useSessionDefaultsStore.js";
 
 // UI exposes the three effort levels the composer pickers support (low/medium/high); the
-// wider ThinkingLevel enum (off/minimal/xhigh) isn't surfaced here.
-const EFFORT_OPTIONS: PidSegmentedPillOption<ThinkingLevel>[] = [
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
-];
+// wider ThinkingLevel enum (off/minimal/xhigh) isn't surfaced here. Built per render so a language
+// switch reaches it - a module constant would freeze the launch locale.
+export function effortOptions(t: TranslationFunctions): PidSegmentedPillOption<ThinkingLevel>[] {
+  const level = t.settings.agents.effort.level;
+  return [
+    { value: "low", label: level.low() },
+    { value: "medium", label: level.medium() },
+    { value: "high", label: level.high() },
+  ];
+}
 
 // Compact header-action button — matches the "Install server" button in McpServersSection.
 // flexShrink/nowrap keep the label on one line even when the section description shares the row.
@@ -58,32 +66,42 @@ function agentLanguageOptions(matchUiLabel: string): PidSegmentedPillOption<Agen
   ];
 }
 
-const AGENT_MODE_OPTIONS: PidSegmentedPillOption<AgentMode>[] = [
-  {
-    value: "ask",
-    label: "Ask",
-    icon: <ShieldCheck size={13} />,
-    description: "Confirm before each write or shell command.",
-  },
-  {
-    value: "accept-edits",
-    label: "Accept edits",
-    icon: <CheckCheck size={13} />,
-    description: "Auto-accept edits to listed files & paths.",
-  },
-  {
-    value: "auto",
-    label: "Auto",
-    icon: <Sparkles size={13} />,
-    description: "Auto-run; risky actions pause for approval.",
-  },
-  {
-    value: "plan",
-    label: "Plan",
-    icon: <MapIcon size={13} />,
-    description: "Plan-only - no writes, no commands.",
-  },
-];
+/**
+ * The four agent modes. `value` is the `AgentMode` protocol value and never translates.
+ *
+ * The composer's own picker and the plan card's post-approval picker keep their own copies of this
+ * vocabulary rather than sharing one: they word some entries differently, and collapsing them would
+ * mean choosing one wording for all three surfaces. Revisit once the Russian catalog lands.
+ */
+export function agentModeOptions(t: TranslationFunctions): PidSegmentedPillOption<AgentMode>[] {
+  const mode = t.settings.agents.mode;
+  return [
+    {
+      value: "ask",
+      label: mode.ask.label(),
+      icon: <ShieldCheck size={13} />,
+      description: mode.ask.description(),
+    },
+    {
+      value: "accept-edits",
+      label: mode.acceptEdits.label(),
+      icon: <CheckCheck size={13} />,
+      description: mode.acceptEdits.description(),
+    },
+    {
+      value: "auto",
+      label: mode.auto.label(),
+      icon: <Sparkles size={13} />,
+      description: mode.auto.description(),
+    },
+    {
+      value: "plan",
+      label: mode.plan.label(),
+      icon: <MapIcon size={13} />,
+      description: mode.plan.description(),
+    },
+  ];
+}
 
 /**
  * Settings → Providers. Lists built-in providers with auth status and "Set / replace API
@@ -95,6 +113,8 @@ export function ProvidersSection() {
   const agentLanguage = useLocaleStore((s) => s.agentLanguage);
   const setAgentLanguage = useLocaleStore((s) => s.setAgentLanguage);
 
+  const client = useSessionsStore((s) => s.client);
+  const sessions = useSessionsStore((s) => s.sessions);
   const providers = useProvidersStore((s) => s.providers);
   const refresh = useProvidersStore((s) => s.refreshProviders);
   const clearApiKey = useProvidersStore((s) => s.clearApiKey);
@@ -124,8 +144,10 @@ export function ProvidersSection() {
   return (
     <div className="pid-settings-panel-inner">
       <header>
-        <div className="pid-settings-section-kicker">Settings · Agents</div>
-        <h1 className="pid-settings-section-title">Agents & Models</h1>
+        <div className="pid-settings-section-kicker">
+          {LL.settings.kicker({ section: LL.settings.agents.kicker() })}
+        </div>
+        <h1 className="pid-settings-section-title">{LL.settings.agents.title()}</h1>
       </header>
 
       <DefaultBlock
@@ -136,30 +158,32 @@ export function ProvidersSection() {
           ariaLabel={LL.settings.agents.responseLanguage.label()}
           value={agentLanguage}
           options={languageOptions}
-          onChange={setAgentLanguage}
+          onChange={(next) => {
+            setAgentLanguage(next);
+            // The preference lives in the renderer but the agent runs host-side, so every open
+            // session has to be told — this is the only path that changes the agent's language.
+            if (client) void pushAgentLanguageToAll(client, sessions);
+          }}
         />
       </DefaultBlock>
 
       <DefaultBlock
-        label="Default effort"
-        desc="How deeply agent thinks. Higher effort means more thorought responses at cost of longer processing time and consuming more tokens. Applies to new conversations."
+        label={LL.settings.agents.effort.label()}
+        desc={LL.settings.agents.effort.desc()}
       >
         <PidSegmentedPill
-          ariaLabel="Default thinking effort"
+          ariaLabel={LL.settings.agents.effort.ariaLabel()}
           value={defaultThinkingLevel}
-          options={EFFORT_OPTIONS}
+          options={effortOptions(LL)}
           onChange={setDefaultThinkingLevel}
         />
       </DefaultBlock>
 
-      <DefaultBlock
-        label="Default agent mode"
-        desc="How the agent handles writes & shell commands in new conversations."
-      >
+      <DefaultBlock label={LL.settings.agents.mode.label()} desc={LL.settings.agents.mode.desc()}>
         <PidSegmentedPill
-          ariaLabel="Default agent mode"
+          ariaLabel={LL.settings.agents.mode.ariaLabel()}
           value={defaultAgentMode}
-          options={AGENT_MODE_OPTIONS}
+          options={agentModeOptions(LL)}
           onChange={setDefaultAgentMode}
         />
       </DefaultBlock>
@@ -174,10 +198,12 @@ export function ProvidersSection() {
           }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="pid-settings-block-label">Built-in providers</div>
+            <div className="pid-settings-block-label">{LL.settings.agents.builtIn.label()}</div>
             <p className="pid-settings-block-desc">
-              Add an API key to enable a provider's models. Keys are stored in pi's{" "}
-              <code>~/.pi/agent/auth.json</code> (0600 perms) and never sent to the renderer.
+              {/* The path is an identifier, so it stays in the component and is spliced in. */}
+              {rich(LL.settings.agents.builtIn.desc({ path: slot("path") }), {
+                path: <code>~/.pi/agent/auth.json</code>,
+              })}
             </p>
           </div>
           <PidButton
@@ -187,14 +213,12 @@ export function ProvidersSection() {
             disabled={availableBuiltIns.length === 0}
             onClick={() => setAddProviderOpen(true)}
           >
-            Add provider
+            {LL.settings.agents.builtIn.add()}
           </PidButton>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {configuredBuiltIns.length === 0 ? (
-            <div className="pid-list-empty">
-              No providers configured yet. Use “Add provider” to enable one with an API key.
-            </div>
+            <div className="pid-list-empty">{LL.settings.agents.builtIn.empty()}</div>
           ) : (
             configuredBuiltIns.map((p) => (
               <ProviderRow
@@ -218,10 +242,11 @@ export function ProvidersSection() {
           }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="pid-settings-block-label">Custom providers</div>
+            <div className="pid-settings-block-label">{LL.settings.agents.custom.label()}</div>
             <p className="pid-settings-block-desc">
-              OpenAI-compatible endpoints (LM Studio, Ollama, vLLM, self-hosted gateways). pi-deck
-              writes these to <code>~/.pi/agent/models.json</code>.
+              {rich(LL.settings.agents.custom.desc({ path: slot("path") }), {
+                path: <code>~/.pi/agent/models.json</code>,
+              })}
             </p>
           </div>
           <PidButton
@@ -230,12 +255,12 @@ export function ProvidersSection() {
             style={HEADER_BTN}
             onClick={() => setAddOpen(true)}
           >
-            Add custom
+            {LL.settings.agents.custom.add()}
           </PidButton>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {customs.length === 0 ? (
-            <div className="pid-list-empty">No custom providers yet.</div>
+            <div className="pid-list-empty">{LL.settings.agents.custom.empty()}</div>
           ) : (
             customs.map((p) => (
               <CustomProviderRow
@@ -297,6 +322,7 @@ function ProviderRow({
   onAuthenticate: () => void;
   onClear: () => void;
 }) {
+  const { LL } = useI18nContext();
   const authenticated = provider.authState === "authenticated";
   return (
     <div
@@ -326,14 +352,14 @@ function ProviderRow({
         </div>
       </div>
       <PidChip variant={authenticated ? "add" : "info"}>
-        {authenticated ? "Authenticated" : "Needs key"}
+        {authenticated ? LL.settings.agents.row.authenticated() : LL.settings.agents.row.needsKey()}
       </PidChip>
       <PidButton variant="ghost" longLabel onClick={onAuthenticate}>
-        {authenticated ? "Replace key" : "Add key"}
+        {authenticated ? LL.settings.agents.row.replaceKey() : LL.settings.agents.row.addKey()}
       </PidButton>
       {authenticated && (
         <PidButton variant="ghost" longLabel onClick={onClear}>
-          Clear
+          {LL.settings.agents.row.clear()}
         </PidButton>
       )}
     </div>
@@ -349,6 +375,7 @@ function CustomProviderRow({
   onAuthenticate: () => void;
   onRemove: () => void;
 }) {
+  const { LL } = useI18nContext();
   return (
     <div
       style={{
@@ -376,10 +403,10 @@ function CustomProviderRow({
         </div>
       </div>
       <PidButton variant="ghost" longLabel onClick={onAuthenticate}>
-        Set key
+        {LL.settings.agents.row.setKey()}
       </PidButton>
       <PidButton variant="danger" longLabel onClick={onRemove}>
-        Remove
+        {LL.common.remove()}
       </PidButton>
     </div>
   );

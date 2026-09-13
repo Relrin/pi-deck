@@ -1,10 +1,23 @@
 import { type ClipboardEvent, type DragEvent, useCallback } from "react";
+import { ll } from "../../../i18n/t.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
 import type { PromptImageDraft } from "../../intro/useIntroComposerStore.js";
 
-const IMAGE_FILTER = {
-  filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "webp", "gif"] }],
-};
+/**
+ * Built per call rather than held as a module constant: `name` is rendered by the OS file dialog
+ * and a constant would freeze whatever locale was loaded at import time. The extensions are
+ * identifiers.
+ */
+function imageFilter() {
+  return {
+    filters: [
+      {
+        name: ll().chat.imagePreview.fileFilter(),
+        extensions: ["png", "jpg", "jpeg", "webp", "gif"],
+      },
+    ],
+  };
+}
 
 export interface UseImagePasteOptions {
   onImages: (images: PromptImageDraft[]) => void;
@@ -40,23 +53,26 @@ export function useImagePaste(opts: UseImagePasteOptions): UseImagePasteResult {
     async (files: File[]) => {
       const images: PromptImageDraft[] = [];
       for (const file of files) {
+        // `ll()` is read inside the handler, never hoisted: this runs outside render, so reading
+        // at call time is what keeps a toast in the language the user is currently in.
+        const t = ll().chat.errors;
         if (!ALLOWED_MIMES.has(file.type)) {
           useNotificationStore
             .getState()
-            .error(`Unsupported image type: ${file.type || "unknown"}`);
+            .error(t.unsupportedImageType({ type: file.type || t.unknownType() }));
           continue;
         }
         if (file.size > maxBytes) {
           const mb = (maxBytes / (1024 * 1024)).toFixed(0);
-          useNotificationStore.getState().error(`Image too large — max ${mb} MB`);
+          useNotificationStore.getState().error(t.imageTooLarge({ mb }));
           continue;
         }
         try {
           const draft = await fileToDraft(file);
           images.push(draft);
         } catch (err) {
-          const message = err instanceof Error ? err.message : "Failed to read image";
-          useNotificationStore.getState().error(`Couldn't attach image: ${message}`);
+          const message = err instanceof Error ? err.message : t.readImage();
+          useNotificationStore.getState().error(t.attachImage({ message }));
         }
       }
       if (images.length > 0) opts.onImages(images);
@@ -107,17 +123,18 @@ export function useImagePaste(opts: UseImagePasteOptions): UseImagePasteResult {
   );
 
   const chooseImage = useCallback(async () => {
+    const t = ll().chat.errors;
     const picker = window.bridge?.openFile;
     const reader = window.bridge?.readImage;
     if (!picker || !reader) {
-      useNotificationStore.getState().error("Image picker unavailable in this build");
+      useNotificationStore.getState().error(t.imagePickerUnavailable());
       return;
     }
     let selected: string | undefined;
     try {
-      selected = await picker(IMAGE_FILTER);
+      selected = await picker(imageFilter());
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to open file dialog";
+      const message = err instanceof Error ? err.message : t.openFileDialog();
       useNotificationStore.getState().error(message);
       return;
     }
@@ -126,7 +143,7 @@ export function useImagePaste(opts: UseImagePasteOptions): UseImagePasteResult {
       const result = await reader(selected);
       if (result.byteSize > maxBytes) {
         const mb = (maxBytes / (1024 * 1024)).toFixed(0);
-        useNotificationStore.getState().error(`Image too large — max ${mb} MB`);
+        useNotificationStore.getState().error(t.imageTooLarge({ mb }));
         return;
       }
       const thumbnailDataUrl = await thumbnailFromBase64(result.data, result.mimeType);
@@ -141,8 +158,8 @@ export function useImagePaste(opts: UseImagePasteOptions): UseImagePasteResult {
         },
       ]);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to read image";
-      useNotificationStore.getState().error(`Couldn't attach image: ${message}`);
+      const message = err instanceof Error ? err.message : t.readImage();
+      useNotificationStore.getState().error(t.attachImage({ message }));
     }
   }, [maxBytes, opts.onImages]);
 
@@ -159,7 +176,7 @@ async function fileToDraft(file: File): Promise<PromptImageDraft> {
     mimeType,
     data,
     thumbnailDataUrl,
-    name: file.name || "Pasted image",
+    name: file.name || ll().chat.imagePreview.pastedName(),
     byteSize: file.size,
   };
 }
@@ -238,7 +255,7 @@ async function loadBitmap(file: File): Promise<ImageBitmap | HTMLImageElement> {
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error("Failed to decode image"));
+      reject(new Error(ll().chat.errors.decodeImage()));
     };
     img.src = url;
   });
@@ -248,7 +265,7 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error ?? new Error("FileReader failed"));
+    reader.onerror = () => reject(reader.error ?? new Error(ll().chat.errors.fileReader()));
     reader.readAsDataURL(blob);
   });
 }

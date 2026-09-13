@@ -1,5 +1,7 @@
 import { Children, type CSSProperties, isValidElement, type ReactNode } from "react";
 import { Square, SquareCheck, SquareMinus } from "../../../components/icons/index.js";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../../i18n/i18n-types.js";
 import { cn } from "../../../lib/cn.js";
 
 /**
@@ -16,6 +18,7 @@ export interface CheckboxItemProps {
 }
 
 export function CheckboxItem({ checked }: CheckboxItemProps) {
+  const { LL } = useI18nContext();
   const state: "checked" | "indeterminate" | "unchecked" =
     checked === true ? "checked" : checked === "indeterminate" ? "indeterminate" : "unchecked";
 
@@ -31,7 +34,7 @@ export function CheckboxItem({ checked }: CheckboxItemProps) {
   const Icon = state === "checked" ? SquareCheck : state === "indeterminate" ? SquareMinus : Square;
 
   return (
-    <span className={className} role="img" aria-label={iconLabel(state)}>
+    <span className={className} role="img" aria-label={iconLabel(LL, state)}>
       <Icon size={14} aria-hidden />
     </span>
   );
@@ -76,10 +79,14 @@ export function TaskListItem({ children, className }: TaskListItemProps) {
   );
 }
 
-function iconLabel(state: "checked" | "indeterminate" | "unchecked"): string {
-  if (state === "checked") return "Completed";
-  if (state === "indeterminate") return "In progress";
-  return "Not started";
+/** Takes `t` because it runs during render — see `tools/StatusIcon.tsx`'s `describe`. */
+function iconLabel(
+  t: TranslationFunctions,
+  state: "checked" | "indeterminate" | "unchecked",
+): string {
+  if (state === "checked") return t.chat.checkbox.completed();
+  if (state === "indeterminate") return t.chat.checkbox.inProgress();
+  return t.chat.checkbox.notStarted();
 }
 
 interface PossibleNode {

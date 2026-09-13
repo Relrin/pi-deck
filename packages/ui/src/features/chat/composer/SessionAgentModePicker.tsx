@@ -8,6 +8,8 @@ import {
   ShieldCheck,
   Sparkles,
 } from "../../../components/icons/index.js";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../../i18n/i18n-types.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore.js";
 import { type ExecutionMode, useComposerStore } from "./useComposerStore.js";
 
@@ -18,40 +20,47 @@ interface ModeEntry {
   Icon: ComponentType<{ size?: number; className?: string }>;
 }
 
-const MODES: ModeEntry[] = [
-  {
-    value: "ask",
-    label: "Ask",
-    blurb: "Confirm before each write or shell command.",
-    Icon: ShieldCheck,
-  },
-  {
-    value: "accept-edits",
-    label: "Accept edits",
-    blurb: "Auto-accept edits to listed files & paths.",
-    Icon: CheckCheck,
-  },
-  {
-    value: "auto",
-    label: "Auto",
-    blurb: "Auto-run; risky actions pause for approval.",
-    Icon: Sparkles,
-  },
-  {
-    value: "plan",
-    label: "Plan",
-    blurb: "Plan-only - no writes, no commands.",
-    Icon: MapIcon,
-  },
-];
-
-const FALLBACK: ModeEntry = MODES[0] as ModeEntry;
+/**
+ * Built per render — a module constant would freeze the launch locale. `value` is the
+ * `ExecutionMode` protocol value and stays an identifier.
+ */
+export function modeEntries(t: TranslationFunctions): ModeEntry[] {
+  const copy = t.chat.modeMenu;
+  return [
+    {
+      value: "ask",
+      label: copy.ask.label(),
+      blurb: copy.ask.blurb(),
+      Icon: ShieldCheck,
+    },
+    {
+      value: "accept-edits",
+      label: copy.acceptEdits.label(),
+      blurb: copy.acceptEdits.blurb(),
+      Icon: CheckCheck,
+    },
+    {
+      value: "auto",
+      label: copy.auto.label(),
+      blurb: copy.auto.blurb(),
+      Icon: Sparkles,
+    },
+    {
+      value: "plan",
+      label: copy.plan.label(),
+      blurb: copy.plan.blurb(),
+      Icon: MapIcon,
+    },
+  ];
+}
 
 export function SessionAgentModePicker() {
+  const { LL } = useI18nContext();
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
   const mode = useComposerStore((s) => s.getMode(activeSessionId));
   const setMode = useComposerStore((s) => s.setMode);
-  const active = MODES.find((m) => m.value === mode) ?? FALLBACK;
+  const modes = modeEntries(LL);
+  const active = modes.find((m) => m.value === mode) ?? (modes[0] as ModeEntry);
   const ActiveIcon = active.Icon;
 
   // No active session = nothing to gate. Render disabled so the button doesn't dangle as a
@@ -64,7 +73,7 @@ export function SessionAgentModePicker() {
         <button
           type="button"
           className="pid-picker-trigger"
-          aria-label="Agent mode"
+          aria-label={LL.chat.modeMenu.ariaLabel()}
           disabled={disabled}
         >
           <ActiveIcon size={12} className="pid-picker-trigger-icon" />
@@ -80,8 +89,8 @@ export function SessionAgentModePicker() {
           className="pid-picker-menu"
           style={{ minWidth: 280 }}
         >
-          <div className="pid-picker-menu-header">Agent mode</div>
-          {MODES.map((m) => {
+          <div className="pid-picker-menu-header">{LL.chat.modeMenu.header()}</div>
+          {modes.map((m) => {
             const isActive = m.value === mode;
             const ModeIcon = m.Icon;
             return (

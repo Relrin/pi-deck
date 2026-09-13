@@ -648,6 +648,11 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
    *
    * The *preference* is what gets persisted (`match-ui` and all), while the worker is handed a
    * concrete locale — `resolveAgentLocale` is the single place that collapses one into the other.
+   *
+   * The early-out compares `uiLocale` as well as the language, because the two together decide the
+   * resolved locale: with the preference left at `match-ui`, switching the *interface* language is
+   * the only thing that changes, and a language-only comparison would drop that update on the
+   * floor and leave the worker writing the previous language.
    */
   async setAgentLanguage(
     sessionId: string,
@@ -656,7 +661,7 @@ export class SessionManager extends EventEmitter<SessionManagerEvents> {
   ): Promise<void> {
     const record = this.sessions.get(sessionId);
     if (!record) throw new Error(`Unknown session ${sessionId}`);
-    if (record.agentLanguage === language) return;
+    if (record.agentLanguage === language && record.uiLocale === uiLocale) return;
     record.agentLanguage = language;
     record.uiLocale = uiLocale;
     if (record.worker?.isAlive) {

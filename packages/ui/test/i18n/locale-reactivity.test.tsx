@@ -46,7 +46,7 @@ function switchTo(locale: "en" | "ru") {
 
 describe("locale reactivity", () => {
   afterEach(() => {
-    useLocaleStore.setState({ uiLocale: "en", agentLanguage: "match-ui", pseudo: false });
+    useLocaleStore.setState({ uiLocale: "en", agentLanguage: "match-ui" });
   });
 
   test("a component using useI18nContext re-renders with the new catalog", () => {

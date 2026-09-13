@@ -15,7 +15,7 @@ export { baseLocale, isLocale as isKnownLocale, locales } from "./i18n-util";
 export { loadLocaleAsync } from "./i18n-util.async";
 export { LocaleProvider } from "./LocaleProvider";
 export { LOCALE_META, type LocaleMeta } from "./locale-meta";
-export { applyPseudoLocale } from "./pseudo";
+export { rich, slot } from "./rich";
 export { currentLocale, ll, llFor } from "./t";
 export {
   applyLocale,

@@ -1,5 +1,6 @@
 import * as RadixContextMenu from "@radix-ui/react-context-menu";
 import { type ReactNode, useRef, useState } from "react";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 import { getSelectionText, writeClipboard } from "../../../lib/clipboard.js";
 import { cn } from "../../../lib/cn.js";
 import { stripMarkdown } from "../../../lib/markdown-strip.js";
@@ -40,6 +41,7 @@ interface MessageContextMenuProps {
  *   it's disabled when no selection exists at the moment the menu opens.
  */
 export function MessageContextMenu({ rawText, commentTarget, children }: MessageContextMenuProps) {
+  const { LL } = useI18nContext();
   const [selectionAtOpen, setSelectionAtOpen] = useState("");
   // The selection's live Range, cloned at menu-open (Radix closing the menu would clear the
   // live selection). Used by "Comment the selection" to derive offsets relative to the card.
@@ -50,11 +52,11 @@ export function MessageContextMenu({ rawText, commentTarget, children }: Message
   const hasSelection = selectionAtOpen.trim().length > 0;
 
   const onCopyText = () => {
-    writeClipboard(stripMarkdown(rawText)).catch(() => notifyError("Failed to copy"));
+    writeClipboard(stripMarkdown(rawText)).catch(() => notifyError(LL.chat.errors.copy()));
   };
 
   const onCopyAsMarkdown = () => {
-    writeClipboard(rawText).catch(() => notifyError("Failed to copy"));
+    writeClipboard(rawText).catch(() => notifyError(LL.chat.errors.copy()));
   };
 
   const onAttach = () => {
@@ -107,10 +109,10 @@ export function MessageContextMenu({ rawText, commentTarget, children }: Message
       <RadixContextMenu.Portal>
         <RadixContextMenu.Content className={CONTENT_CLASSES}>
           <RadixContextMenu.Item className={cn(ITEM_CLASSES)} onSelect={onCopyText}>
-            Copy text
+            {LL.chat.contextMenu.copyText()}
           </RadixContextMenu.Item>
           <RadixContextMenu.Item className={cn(ITEM_CLASSES)} onSelect={onCopyAsMarkdown}>
-            Copy as Markdown
+            {LL.chat.contextMenu.copyMarkdown()}
           </RadixContextMenu.Item>
           {commentTarget && (
             <RadixContextMenu.Item
@@ -118,7 +120,7 @@ export function MessageContextMenu({ rawText, commentTarget, children }: Message
               disabled={!canComment}
               onSelect={onComment}
             >
-              Comment the selection
+              {LL.chat.contextMenu.commentSelection()}
             </RadixContextMenu.Item>
           )}
           <RadixContextMenu.Item
@@ -126,7 +128,7 @@ export function MessageContextMenu({ rawText, commentTarget, children }: Message
             disabled={!hasSelection}
             onSelect={onAttach}
           >
-            Attach selection to next prompt
+            {LL.chat.contextMenu.attachSelection()}
           </RadixContextMenu.Item>
         </RadixContextMenu.Content>
       </RadixContextMenu.Portal>

@@ -1,6 +1,9 @@
 import { type ReactNode, useEffect } from "react";
 import { ArrowLeft } from "../../components/icons";
 import { PidKbd } from "../../components/kbd/PidKbd";
+import { useI18nContext } from "../../i18n/i18n-react";
+import type { TranslationFunctions } from "../../i18n/i18n-types";
+import { rich, slot } from "../../i18n/rich";
 import { WindowControls } from "../../layout/WindowControls";
 import { usesCustomWindowControls } from "../../lib/platform";
 import { AppearanceSection } from "./sections/AppearanceSection";
@@ -9,7 +12,6 @@ import { GitGitHubSection } from "./sections/GitGitHubSection";
 import { McpServersSection } from "./sections/McpServersSection";
 import { ProvidersSection } from "./sections/ProvidersSection";
 import { SkillsSection } from "./sections/SkillsSection";
-import { AdvancedSection, KeybindsSection, PrivacySection } from "./sections/stubs";
 import { TerminalSection } from "./sections/TerminalSection";
 import { ToolsSection } from "./sections/ToolsSection";
 import { type SettingsSectionId, useSettingsStore } from "./useSettingsStore";
@@ -17,22 +19,28 @@ import { type SettingsSectionId, useSettingsStore } from "./useSettingsStore";
 interface NavItem {
   id: SettingsSectionId;
   label: string;
-  stub: boolean;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { id: "appearance", label: "Appearance", stub: false },
-  { id: "agent-models", label: "Agents & Models", stub: false },
-  { id: "tools", label: "Tools", stub: false },
-  { id: "skills", label: "Skills", stub: false },
-  { id: "mcp-servers", label: "MCP Servers", stub: false },
-  { id: "editor", label: "Editor", stub: false },
-  { id: "git-github", label: "Git & GitHub", stub: false },
-  { id: "terminal", label: "Terminal", stub: false },
-  { id: "keybinds", label: "Keybinds", stub: true },
-  { id: "privacy", label: "Privacy", stub: true },
-  { id: "advanced", label: "Advanced", stub: true },
-];
+/**
+ * Built per render from the catalog rather than held as a module constant: a module-level table
+ * would capture whatever locale was loaded at import time and never update on a language switch.
+ * `id` stays an identifier — only `label` is copy.
+ *
+ * Exported for `test/i18n/option-tables.test.ts`, which calls it with a sentinel translations
+ * object so a label that comes back as a literal fails there.
+ */
+export function navItems(t: TranslationFunctions): readonly NavItem[] {
+  return [
+    { id: "appearance", label: t.settings.nav.appearance() },
+    { id: "agent-models", label: t.settings.nav.agentModels() },
+    { id: "tools", label: t.settings.nav.tools() },
+    { id: "skills", label: t.settings.nav.skills() },
+    { id: "mcp-servers", label: t.settings.nav.mcpServers() },
+    { id: "editor", label: t.settings.nav.editor() },
+    { id: "git-github", label: t.settings.nav.gitGithub() },
+    { id: "terminal", label: t.settings.nav.terminal() },
+  ];
+}
 
 const SECTION_RENDERERS: Record<SettingsSectionId, () => ReactNode> = {
   appearance: () => <AppearanceSection />,
@@ -43,12 +51,10 @@ const SECTION_RENDERERS: Record<SettingsSectionId, () => ReactNode> = {
   "mcp-servers": () => <McpServersSection />,
   editor: () => <EditorSection />,
   terminal: () => <TerminalSection />,
-  keybinds: () => <KeybindsSection />,
-  privacy: () => <PrivacySection />,
-  advanced: () => <AdvancedSection />,
 };
 
 export function PidSettingsView() {
+  const { LL } = useI18nContext();
   const open = useSettingsStore((s) => s.open);
   const section = useSettingsStore((s) => s.section);
   const setOpen = useSettingsStore((s) => s.setOpen);
@@ -74,7 +80,7 @@ export function PidSettingsView() {
   const showWindowControls = usesCustomWindowControls();
 
   return (
-    <div className="pid-settings-root" role="dialog" aria-modal aria-label="Settings">
+    <div className="pid-settings-root" role="dialog" aria-modal aria-label={LL.settings.title()}>
       <header
         className="pid-settings-header"
         data-window-controls={showWindowControls || undefined}
@@ -83,30 +89,29 @@ export function PidSettingsView() {
           <button
             type="button"
             className="pid-settings-back-btn"
-            aria-label="Close settings"
-            title="Back (Esc)"
+            aria-label={LL.settings.close()}
+            title={LL.settings.back()}
             onClick={() => setOpen(false)}
           >
             <ArrowLeft size={14} aria-hidden />
           </button>
-          <span className="pid-settings-header-title">Settings</span>
+          <span className="pid-settings-header-title">{LL.settings.title()}</span>
         </span>
         <span className="pid-settings-header-right">
           <span className="pid-settings-header-hint">
-            <PidKbd keys={["Esc"]} /> to close
+            {rich(LL.settings.escHint({ esc: slot("esc") }), { esc: <PidKbd keys={["Esc"]} /> })}
           </span>
           {showWindowControls && <WindowControls />}
         </span>
       </header>
       <div className="pid-settings-grid">
-        <nav className="pid-settings-nav" aria-label="Settings sections">
-          {NAV_ITEMS.map((item) => (
+        <nav className="pid-settings-nav" aria-label={LL.settings.navLabel()}>
+          {navItems(LL).map((item) => (
             <button
               key={item.id}
               type="button"
               className="pid-settings-nav-item"
               data-active={section === item.id || undefined}
-              data-stub={item.stub || undefined}
               onClick={() => setSection(item.id)}
             >
               {item.label}

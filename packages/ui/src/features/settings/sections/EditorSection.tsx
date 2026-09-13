@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
 import { Plus } from "../../../components/icons/index.js";
 import { PidTogglePill } from "../../../components/segmented/PidTogglePill";
+import { useI18nContext } from "../../../i18n/i18n-react";
+import { rich, slot } from "../../../i18n/rich";
 import { AddCustomLspServerDialog } from "../../editor/lsp/AddCustomLspServerDialog";
 import { useLspCustomServersStore } from "../../editor/lsp/useLspCustomServersStore";
 import { useLspSettingsStore } from "../../editor/lsp/useLspSettingsStore";
@@ -20,6 +22,7 @@ type LspStatusData = CommandResponse<"lsp.status">;
  * User-defined servers live in the same list (flagged "custom") with edit / remove actions.
  */
 export function EditorSection() {
+  const { LL } = useI18nContext();
   const projectId = useProjectsStore((s) => s.activeProjectId);
   const disabledServers = useLspSettingsStore((s) => s.disabledServers);
   const setServerEnabled = useLspStore((s) => s.setServerEnabled);
@@ -61,24 +64,27 @@ export function EditorSection() {
     void load(false);
   };
 
+  // Two whole sentences rather than a shared tail glued onto the environment clause: gluing
+  // byte-preserves the English and freezes its clause order, which the trailing sentence may not
+  // want in another language.
   const envDesc =
     data?.mapping.kind === "wsl"
-      ? `This project lives in WSL — servers are detected and run inside the ${data.mapping.distro} distro.`
-      : "Servers are detected on this machine's PATH and start automatically when you open a matching file.";
+      ? LL.settings.editor.lsp.descWsl({ distro: data.mapping.distro })
+      : LL.settings.editor.lsp.descLocal();
 
   return (
     <div className="pid-settings-panel-inner">
       <header>
-        <div className="pid-settings-section-kicker">Settings · Editor</div>
-        <h1 className="pid-settings-section-title">Editor</h1>
+        <div className="pid-settings-section-kicker">
+          {LL.settings.kicker({ section: LL.settings.editor.kicker() })}
+        </div>
+        <h1 className="pid-settings-section-title">{LL.settings.editor.title()}</h1>
       </header>
 
       <section className="pid-settings-block">
-        <div className="pid-settings-block-label">Language servers</div>
+        <div className="pid-settings-block-label">{LL.settings.editor.lsp.label()}</div>
         <div className="pid-settings-block-desc">
-          {projectId
-            ? `${envDesc} Nothing is bundled — missing servers just fall back to basic completion.`
-            : "Open a project to see which language servers are available for it."}
+          {projectId ? envDesc : LL.settings.editor.lsp.descNoProject()}
         </div>
 
         {data ? (
@@ -94,12 +100,16 @@ export function EditorSection() {
                   <div>
                     <div className="pid-settings-lsp-name">
                       {server.label}
+                      {/* `state` stays the raw identifier for `data-state` — the stylesheet keys
+                          off it; only the badge text is copy. */}
                       <span className="pid-settings-lsp-state" data-state={state}>
-                        {state === "missing" ? "not found" : state}
+                        {state === "missing"
+                          ? LL.settings.editor.lsp.state.notFound()
+                          : LL.settings.editor.lsp.state[state]()}
                       </span>
                       {server.custom ? (
                         <span className="pid-settings-lsp-state" data-state="custom">
-                          custom
+                          {LL.settings.editor.lsp.state.custom()}
                         </span>
                       ) : null}
                     </div>
@@ -107,9 +117,9 @@ export function EditorSection() {
                       {server.available ? (
                         <code>{server.command}</code>
                       ) : server.installHint ? (
-                        <>
-                          install: <code>{server.installHint}</code>
-                        </>
+                        rich(LL.settings.editor.lsp.install({ hint: slot("hint") }), {
+                          hint: <code>{server.installHint}</code>,
+                        })
                       ) : (
                         <code>{server.command}</code>
                       )}
@@ -125,22 +135,22 @@ export function EditorSection() {
                           setDialogOpen(true);
                         }}
                       >
-                        Edit
+                        {LL.settings.editor.lsp.edit()}
                       </PidButton>
                       <PidButton
                         variant="danger"
                         longLabel
                         onClick={() => void onRemoveCustom(custom.id)}
                       >
-                        Remove
+                        {LL.common.remove()}
                       </PidButton>
                     </>
                   ) : null}
                   <PidTogglePill
-                    label={enabled ? "On" : "Off"}
+                    label={enabled ? LL.settings.editor.lsp.on() : LL.settings.editor.lsp.off()}
                     checked={enabled}
-                    ariaLabel={`Enable ${server.label} language server`}
-                    description="Off stops the server and falls back to basic completion."
+                    ariaLabel={LL.settings.editor.lsp.enableServer({ label: server.label })}
+                    description={LL.settings.editor.lsp.toggleDesc()}
                     onChange={(checked) => {
                       if (projectId) setServerEnabled(projectId, server.serverId, checked);
                     }}
@@ -154,7 +164,7 @@ export function EditorSection() {
         {projectId ? (
           <div style={{ display: "flex", gap: 8 }}>
             <PidButton onClick={() => void load(true)} disabled={loading}>
-              {loading ? "Detecting..." : "Re-detect servers"}
+              {loading ? LL.settings.editor.lsp.detecting() : LL.settings.editor.lsp.redetect()}
             </PidButton>
             <PidButton
               icon={<Plus size={14} />}
@@ -164,7 +174,7 @@ export function EditorSection() {
                 setDialogOpen(true);
               }}
             >
-              Add server
+              {LL.settings.editor.lsp.addServer()}
             </PidButton>
           </div>
         ) : null}

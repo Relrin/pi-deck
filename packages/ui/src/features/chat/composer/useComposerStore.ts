@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { ll } from "../../../i18n/t.js";
 import { humanizeError } from "../../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore.js";
@@ -58,7 +59,11 @@ export const useComposerStore = create<ComposerStoreState>()(
           set((state) => ({
             bySession: { ...state.bySession, [sessionId]: prev ?? DEFAULT_MODE },
           }));
-          useNotificationStore.getState().error(humanizeError(err, "Failed to change agent mode"));
+          // `ll()` read here, not hoisted: this runs outside render, so reading at call time is
+          // what keeps the toast in the language the user is currently in.
+          useNotificationStore
+            .getState()
+            .error(humanizeError(err, ll().chat.errors.changeAgentMode()));
         }
       },
     }),

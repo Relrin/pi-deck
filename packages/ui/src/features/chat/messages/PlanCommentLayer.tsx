@@ -155,6 +155,7 @@ function DraftComposer({
   onSubmit: (reply: string) => void;
   onCancel: () => void;
 }) {
+  const { LL } = useI18nContext();
   const [text, setText] = useState("");
   const ref = useRef<HTMLTextAreaElement | null>(null);
   useEffect(() => {
@@ -184,13 +185,13 @@ function DraftComposer({
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={onKeyDown}
-        placeholder="Add a comment…  Enter to add · Esc to cancel"
-        aria-label="Comment on the selected plan text"
+        placeholder={LL.chat.planComments.placeholder()}
+        aria-label={LL.chat.planComments.ariaLabel()}
         rows={2}
       />
       <div className="pid-plan-comment-actions">
         <button type="button" className="pid-plan-comment-btn" onClick={onCancel}>
-          Cancel
+          {LL.common.cancel()}
         </button>
         <button
           type="button"
@@ -198,7 +199,7 @@ function DraftComposer({
           onClick={submit}
           disabled={!text.trim()}
         >
-          Comment
+          {LL.chat.planComments.submit()}
         </button>
       </div>
     </div>
@@ -215,6 +216,7 @@ function PendingComment({
   onUpdate: (reply: string) => void;
   onRemove: () => void;
 }) {
+  const { LL } = useI18nContext();
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(comment.reply);
   const ref = useRef<HTMLTextAreaElement | null>(null);
@@ -253,12 +255,12 @@ function PendingComment({
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={onKeyDown}
-            aria-label="Edit comment"
+            aria-label={LL.chat.planComments.edit()}
             rows={2}
           />
           <div className="pid-plan-comment-actions">
             <button type="button" className="pid-plan-comment-btn" onClick={cancel}>
-              Cancel
+              {LL.common.cancel()}
             </button>
             <button
               type="button"
@@ -266,7 +268,7 @@ function PendingComment({
               onClick={save}
               disabled={!text.trim()}
             >
-              Save
+              {LL.chat.planComments.save()}
             </button>
           </div>
         </>
@@ -277,7 +279,7 @@ function PendingComment({
             <button
               type="button"
               className="pid-plan-comment-icon"
-              aria-label="Edit comment"
+              aria-label={LL.chat.planComments.edit()}
               onClick={() => setEditing(true)}
             >
               <Pencil size={12} aria-hidden />
@@ -285,7 +287,7 @@ function PendingComment({
             <button
               type="button"
               className="pid-plan-comment-icon"
-              aria-label="Delete comment"
+              aria-label={LL.chat.planComments.delete()}
               onClick={onRemove}
             >
               <Trash2 size={12} aria-hidden />

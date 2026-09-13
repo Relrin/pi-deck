@@ -35,11 +35,11 @@ expect.extend(matchers as any);
 // Linux/CI) — a leak here would pass locally and fail only in CI. Locale-specific tests use
 // `useLocaleStore.setState()` and rely on the reset below.
 loadLocale("en");
-useLocaleStore.setState({ uiLocale: "en", agentLanguage: "match-ui", pseudo: false });
+useLocaleStore.setState({ uiLocale: "en", agentLanguage: "match-ui" });
 
 afterEach(() => {
   cleanup();
   // Pin the locale back after every test so one that switches to Russian cannot silently
   // invalidate every English assertion in whatever file happens to run next.
-  useLocaleStore.setState({ uiLocale: "en", agentLanguage: "match-ui", pseudo: false });
+  useLocaleStore.setState({ uiLocale: "en", agentLanguage: "match-ui" });
 });

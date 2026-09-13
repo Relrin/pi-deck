@@ -1,5 +1,6 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import {
   MESSAGE_LIST_ESTIMATE_PX,
   MESSAGE_LIST_STICKY_THRESHOLD_PX,
@@ -26,6 +27,7 @@ export function isRenderableMessage(m: MessageEntry): boolean {
 }
 
 export function MessageList({ sessionId }: { sessionId: string }) {
+  const { LL } = useI18nContext();
   const allMessages = useMessagesStore(useMemo(() => selectMessages(sessionId), [sessionId]));
   const messages = useMemo(() => allMessages.filter(isRenderableMessage), [allMessages]);
   const userIndexById = useMemo(() => {
@@ -235,10 +237,10 @@ export function MessageList({ sessionId }: { sessionId: string }) {
             }
           }}
           className="pid-jump-latest"
-          aria-label="Jump to latest message"
+          aria-label={LL.chat.messageList.jumpToLatestAria()}
         >
           <span aria-hidden>↓</span>
-          <span>Jump to latest</span>
+          <span>{LL.chat.messageList.jumpToLatest()}</span>
         </button>
       )}
     </div>

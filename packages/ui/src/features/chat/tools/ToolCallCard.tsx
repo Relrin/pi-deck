@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "../../../components/icons/index.js";
 import { localizeApprovalReason } from "../../../i18n/approval-reasons.js";
 import { useI18nContext } from "../../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../../i18n/i18n-types.js";
 import { cn } from "../../../lib/cn.js";
 import { formatDuration } from "../../../lib/format/format-duration.js";
 import { TOOL_CARD_HIGHLIGHT_MS } from "../../../lib/ui-constants.js";
@@ -15,14 +16,16 @@ import { getRenderer, getSummarizer } from "./ToolRendererRegistry.js";
 import { deriveToolFileDiff, isFileDiffTool } from "./toolFileDiff.js";
 import { useToolCardExpansionStore } from "./useToolCardExpansionStore.js";
 
+/** Takes `t` because it runs during render — see `StatusIcon`'s `describe`. */
 function statusStat(
+  t: TranslationFunctions,
   call: ToolCallEntry,
 ): { text: string; tone: "ok" | "error"; title?: string } | undefined {
-  if (call.status === "done") return { text: "ok", tone: "ok" };
+  if (call.status === "done") return { text: t.chat.tools.stat.ok(), tone: "ok" };
   if (call.status === "error") {
     // Keep the header to one line - error strings are often far too long to fit. Show a short
     // red "error" marker (full text on hover) and surface the detail in the expanded body.
-    return { text: "error", tone: "error", title: call.errorText };
+    return { text: t.chat.tools.stat.error(), tone: "error", title: call.errorText };
   }
   return undefined;
 }
@@ -30,10 +33,11 @@ function statusStat(
 /** Full error text shown in the expanded body - wrapped in a styled block so long, multi-line
  *  errors are readable at once instead of overflowing the header. */
 function ToolErrorDetail({ text }: { text: string }) {
+  const { LL } = useI18nContext();
   return (
     <div className="mb-2">
       <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-[var(--color-danger)]">
-        Error
+        {LL.chat.tools.errorHeading()}
       </div>
       <pre className="m-0 max-h-[20rem] overflow-auto whitespace-pre-wrap break-words rounded-[var(--radius-sm)] border border-[color-mix(in_oklab,var(--color-danger)_35%,transparent)] bg-[var(--color-panel-2)] p-2 font-mono text-xs text-[var(--color-text)]">
         {text}
@@ -135,7 +139,7 @@ export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; session
     return () => clearTimeout(timer);
   }, [call.startedAt, highlight]);
 
-  const stat = statusStat(call);
+  const stat = statusStat(LL, call);
   const summaryText = summary?.text;
   const summaryTitle = summary?.title ?? summaryText ?? call.name;
 

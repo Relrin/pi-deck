@@ -5,6 +5,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import Fuse from "fuse.js";
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Search } from "../../../components/icons/index.js";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 import { ProviderIcon } from "../../models/icons/index.js";
 import { useProvidersStore } from "../../models/useProvidersStore.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore.js";
@@ -54,6 +55,7 @@ interface SessionModelPickerProps {
 }
 
 export function SessionModelPicker({ sessionId }: SessionModelPickerProps) {
+  const { LL } = useI18nContext();
   const session = useSessionsStore((s) => s.sessions.find((x) => x.id === sessionId));
   const providers = useProvidersStore((s) => s.providers);
   const modelsByProvider = useProvidersStore((s) => s.modelsByProvider);
@@ -115,7 +117,8 @@ export function SessionModelPicker({ sessionId }: SessionModelPickerProps) {
     return undefined;
   }, [activeRef, groups]);
 
-  const activeLabel = activeModel?.label ?? activeRef?.modelId ?? "model";
+  const activeLabel =
+    activeModel?.label ?? activeRef?.modelId ?? LL.chat.modelPicker.fallbackLabel();
 
   const searchable = useMemo(
     () =>
@@ -252,7 +255,11 @@ export function SessionModelPicker({ sessionId }: SessionModelPickerProps) {
   return (
     <RadixDropdown.Root open={open} onOpenChange={setOpen}>
       <RadixDropdown.Trigger asChild disabled={groups.length === 0}>
-        <button type="button" className="pid-picker-trigger" aria-label="Select model">
+        <button
+          type="button"
+          className="pid-picker-trigger"
+          aria-label={LL.chat.modelPicker.ariaLabel()}
+        >
           {activeIconKey ? (
             <ProviderIcon iconKey={activeIconKey} size={14} className="pid-picker-trigger-icon" />
           ) : (
@@ -280,14 +287,14 @@ export function SessionModelPicker({ sessionId }: SessionModelPickerProps) {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search models…"
+              placeholder={LL.chat.modelPicker.searchPlaceholder()}
               className="pid-model-menu-search-input"
               onKeyDown={onInputKeyDown}
             />
           </div>
           <div ref={setScrollParent} className="pid-model-menu-list">
             {rows.length === 0 ? (
-              <div className="pid-model-menu-empty">No models match</div>
+              <div className="pid-model-menu-empty">{LL.chat.modelPicker.empty()}</div>
             ) : (
               <div
                 style={{
@@ -316,7 +323,9 @@ export function SessionModelPicker({ sessionId }: SessionModelPickerProps) {
                         <div className="pid-model-menu-section-head">
                           <span>{row.groupName}</span>
                           {row.isDefault && (
-                            <span className="pid-model-menu-section-default">default</span>
+                            <span className="pid-model-menu-section-default">
+                              {LL.chat.modelPicker.default()}
+                            </span>
                           )}
                         </div>
                       ) : (

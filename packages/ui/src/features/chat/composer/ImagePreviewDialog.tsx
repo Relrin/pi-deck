@@ -1,5 +1,6 @@
 import * as RadixDialog from "@radix-ui/react-dialog";
 import { X } from "../../../components/icons/index.js";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 
 export interface ImagePreviewDialogProps {
   open: boolean;
@@ -16,6 +17,7 @@ export interface ImagePreviewDialogProps {
  * us Esc-to-close + focus management for free.
  */
 export function ImagePreviewDialog({ open, onOpenChange, src, name }: ImagePreviewDialogProps) {
+  const { LL } = useI18nContext();
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>
@@ -30,16 +32,20 @@ export function ImagePreviewDialog({ open, onOpenChange, src, name }: ImagePrevi
         >
           <div className="pid-image-preview-header">
             <RadixDialog.Title className="pid-modal-title" title={name}>
-              {name ?? "Image"}
+              {name ?? LL.chat.imagePreview.untitled()}
             </RadixDialog.Title>
             <RadixDialog.Close asChild>
-              <button type="button" className="pid-image-preview-close" aria-label="Close preview">
+              <button
+                type="button"
+                className="pid-image-preview-close"
+                aria-label={LL.chat.imagePreview.close()}
+              >
                 <X size={14} aria-hidden />
               </button>
             </RadixDialog.Close>
           </div>
           <div className="pid-image-preview-body">
-            <img src={src} alt={name ?? "Attached image"} draggable={false} />
+            <img src={src} alt={name ?? LL.chat.imagePreview.altFallback()} draggable={false} />
           </div>
         </RadixDialog.Content>
       </RadixDialog.Portal>

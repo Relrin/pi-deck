@@ -19,6 +19,7 @@ import { useMessagesStore } from "../chat/useMessagesStore.js";
 import { useLspCustomServersStore } from "../editor/lsp/useLspCustomServersStore.js";
 import { useProvidersStore } from "../models/useProvidersStore.js";
 import { useToolsStore } from "../tools/useToolsStore.js";
+import { pushAgentLanguage } from "./agent-language.js";
 import { warmMostRecentSession } from "./sessionWarmup.js";
 import { useProjectsStore } from "./useProjectsStore.js";
 
@@ -314,6 +315,9 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
       // Pre-seed an empty transcript so the session view shows the intro immediately instead
       // of the cold-load placeholder. The host re-emits the same empty history on activate.
       useMessagesStore.getState().loadHistory(session.id, { messages: [], toolCalls: {} });
+      // A fresh record carries no agent language, so the host would resolve it to the default
+      // locale. Hand it the user's preference before the first prompt goes out.
+      void pushAgentLanguage(client, [session.id]);
     } catch (err) {
       useNotificationStore.getState().error(humanizeError(err, "Failed to create session"));
       throw err;
@@ -436,6 +440,9 @@ export const useSessionsStore = create<SessionsStoreState>((set, get) => ({
     // Opening a session counts as viewing it: clear any unviewed done/failed outcome so its rail
     // dot settles to neutral idle instead of lingering green/red.
     useMessagesStore.getState().markViewed(id);
+    // Reconcile the agent language: a session created before the preference existed, or while the
+    // host was unreachable, would otherwise keep answering in whatever it was spawned with.
+    void pushAgentLanguage(client, [id]);
 
     if (targetProjectId && targetProjectId !== previousProjectId) {
       projectsStore.setActive(targetProjectId);
