@@ -1,3 +1,4 @@
+import { comparePaths } from "@pi-deck/core/fs/collation.js";
 import type { GitChange, GitHunk } from "@pi-deck/core/git/types.js";
 import { type MouseEvent, useCallback, useMemo, useState } from "react";
 import { Folder } from "../../components/icons/index.js";
@@ -20,12 +21,6 @@ interface Props {
   hunksByPath: Record<string, GitHunk[]> | undefined;
 }
 
-/* Locale-aware natural-order collator. */
-const PATH_COLLATOR = new Intl.Collator(undefined, {
-  numeric: true,
-  sensitivity: "base",
-});
-
 /**
  * Sort the change rows like GitHub's PR file list:
  *   1. tracked changes first, untracked (`?`) sink to the bottom — untracked rows are
@@ -36,7 +31,7 @@ const PATH_COLLATOR = new Intl.Collator(undefined, {
 function sortChanges(changes: GitChange[]): GitChange[] {
   return [...changes].sort((a, b) => {
     if (a.untracked !== b.untracked) return a.untracked ? 1 : -1;
-    return PATH_COLLATOR.compare(a.path, b.path);
+    return comparePaths(a.path, b.path);
   });
 }
 
@@ -455,7 +450,7 @@ function groupByFolder(changes: GitChange[]): FolderGroup[] {
       // Root files ("") sink below nested folders, matching how IDE explorers render
       // a "root" pseudo-group after the named ones.
       if ((a === "") !== (b === "")) return a === "" ? 1 : -1;
-      return PATH_COLLATOR.compare(a, b);
+      return comparePaths(a, b);
     })
     .map(([dir, list]) => ({ dir, changes: list, totals: sumTotals(list) }));
 }

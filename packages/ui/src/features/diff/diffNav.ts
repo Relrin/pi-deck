@@ -1,7 +1,5 @@
+import { comparePaths } from "@pi-deck/core/fs/collation.js";
 import type { GitChange } from "@pi-deck/core/git/types.js";
-
-/** Natural path order, matching the git sidebar's within-group sort. */
-const PATH_COLLATOR = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
 /**
  * Tracked changed files (those with a HEAD diff) in natural path order — the set the diff
@@ -12,7 +10,7 @@ export function orderedDiffFiles(changes: readonly GitChange[] | undefined): str
   return (changes ?? [])
     .filter((c) => c.status !== "?")
     .map((c) => c.path)
-    .sort((a, b) => PATH_COLLATOR.compare(a, b));
+    .sort(comparePaths);
 }
 
 /**

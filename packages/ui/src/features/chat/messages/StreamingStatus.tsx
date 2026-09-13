@@ -1,4 +1,5 @@
 import { RandomSpinner } from "../../../components/ui/RandomSpinner.js";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 import { formatDuration } from "../../../lib/format/format-duration.js";
 import { useElapsed } from "../../../lib/useElapsed.js";
 import { getSummarizer } from "../tools/ToolRendererRegistry.js";
@@ -56,12 +57,13 @@ export function StreamingStatus({ toolCalls, toolCallIds, hasText }: StreamingSt
 }
 
 function Row({ children, elapsed }: { children: React.ReactNode; elapsed?: number }) {
+  const { locale } = useI18nContext();
   return (
     <div className="flex items-center gap-2 my-1 text-xs text-[var(--color-accent)]">
       <RandomSpinner />
       {children}
       {elapsed !== undefined && (
-        <span className="pid-stream-status-elapsed">{formatDuration(elapsed)}</span>
+        <span className="pid-stream-status-elapsed">{formatDuration(elapsed, locale)}</span>
       )}
     </div>
   );

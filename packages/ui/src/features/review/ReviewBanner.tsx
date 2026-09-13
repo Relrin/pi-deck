@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { selectPendingFileCount, useReviewStore } from "./useReviewStore.js";
 
 interface ReviewBannerProps {
@@ -16,6 +17,7 @@ interface ReviewBannerProps {
  * in sync afterwards.
  */
 export function ReviewBanner({ sessionId }: ReviewBannerProps) {
+  const { LL } = useI18nContext();
   const fileCount = useReviewStore(selectPendingFileCount(sessionId));
   const turnCount = useReviewStore((s) => s.bySession[sessionId]?.turns.length ?? 0);
   const primeFor = useReviewStore((s) => s.primeFor);
@@ -27,13 +29,16 @@ export function ReviewBanner({ sessionId }: ReviewBannerProps) {
 
   if (fileCount === 0) return null;
 
-  const turnSuffix = turnCount > 1 ? ` · ${turnCount} turns` : "";
+  // Rendered as two siblings rather than one interpolated string: typesafe-i18n trims interpolated
+  // argument values, so the suffix's leading " · " would be eaten if it were passed as a parameter.
+  const turnSuffix = turnCount > 1 ? LL.chat.review.turnSuffix({ count: turnCount }) : "";
 
   return (
     <button type="button" className="pid-review-banner" onClick={() => openLatestTurn(sessionId)}>
       <span className="pid-review-banner-count">{fileCount}</span>
       <span className="pid-review-banner-label">
-        file{fileCount === 1 ? "" : "s"} changed{turnSuffix}
+        {LL.chat.review.filesChanged({ count: fileCount })}
+        {turnSuffix}
       </span>
       <span className="pid-review-banner-cta">Review changes →</span>
     </button>

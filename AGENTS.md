@@ -302,6 +302,52 @@ Append new entry points under the matching sub-heading. Keep entries to one line
 - **React binding** — `LocaleProvider` wraps `TypesafeI18n` and reads the store one-way. Never call
   the context's own `setLocale`. `packages/ui/test/utils.tsx` mirrors the provider and also wraps
   `renderHook`, which the blanket `export *` would otherwise leak unwrapped.
+- **Two ways to translate, and the wrong one fails silently.** Inside a component:
+  `const { LL, locale } = useI18nContext()` — it re-renders on a language switch, through
+  `LocaleProvider`'s keyed remount. Outside React (store actions, `features/git/git-notify.ts`,
+  `lib/transport/event-router.ts`): `const t = ll()`, **read inside the function body, never
+  hoisted**. A `.tsx` that reaches for `ll()` renders correctly once and then goes stale forever,
+  because reading the store creates no subscription; phase 08 adds a Biome rule forbidding that
+  import in `.tsx`. The same trap exists in `.ts`, where no lint rule can help: `git-notify.ts`'s
+  push/pull reason tables are **functions** rather than the module-level `Record` constants they
+  used to be, precisely because a constant would freeze the launch locale.
+  `packages/ui/test/i18n/locale-reactivity.test.tsx` is the regression guard.
+- **`useNotificationStore` takes pre-formatted strings** and is deliberately not locale-aware.
+  Callers translate before pushing; the store is a dumb transport. `features/git/git-notify.ts` is
+  the reference example of imperative `ll()`.
+- **The `shell` namespace** covers `layout/` and `components/`, which mirror no feature directory.
+  `common` stays shared *vocabulary* (Cancel / Close / the host-error table), not a catch-all.
+- **Key names and identifiers are not copy.** `components/kbd/PidKbd.tsx`'s `"ArrowDown"` /
+  `"Shift"` / `"Escape"` are matched against `KeyboardEvent.key`; `lib/platform.ts`'s `metaSymbol()`
+  and `shiftSymbol()` are the glyphs printed on physical keyboards (they are *interpolated* into
+  translated tooltips such as `shell.settings.shortcutTooltip`); `components/glyph/kinds.tsx` holds
+  icon identifiers and SVG data and contains no labels at all. Git's own vocabulary is likewise
+  exempt: the commands embedded in `git.notify.push.reason.*` and the `pull --rebase` action label
+  must survive translation verbatim.
+- **Formatting** — all dates, durations, relative times and plurals go through `Intl`
+  (`DateTimeFormat`, `RelativeTimeFormat`, `NumberFormat`, `PluralRules`) with per-locale formatter
+  caches in `lib/format/` and `features/chat/messages/time.ts`. No date library, and deliberately
+  **not** typesafe-i18n formatters — `i18n/formatters.ts` stays empty so the option choices remain
+  visible and unit-testable beside the code that depends on them. Four options are load-bearing and
+  must not be "tidied": `hourCycle:"h23"` (a 12/24h preference would be its own setting in
+  `usePreferencesStore`, not a locale side effect), **no `timeZone`** (the formatters stay on local
+  time, which is what makes `time.test.ts` timezone-independent — nothing in the repo pins `TZ`),
+  `numeric:"always"` on `RelativeTimeFormat` (`"auto"` yields "yesterday" and changes English
+  output), and `useGrouping:false` on `NumberFormat` (otherwise a long turn renders `1,234m 4s`).
+  Relative-time *style* is per-locale data in `i18n/locale-meta.ts` — `en` needs `narrow` to read
+  `5m ago`, `ru` needs `short` because `narrow` degrades to a bare `-5 мин`.
+- **The format helpers take an optional trailing `locale`**, defaulting to the store via
+  `currentLocale()`. That default is for tests and imperative callers only: **a React component must
+  pass its own `locale`** (from `useI18nContext()`) or it will not re-render on a language switch.
+- **Collation deliberately does not follow the locale.** Every surface that sorts file or directory
+  names shares `PATH_COLLATOR` / `comparePaths` from `packages/core/src/fs/collation.ts`, pinned to
+  `"en"`. Path order is a stable-sort concern, not a presentation one: an ambient-locale comparator
+  reshuffles the diff and git-changes lists mid-review on a language switch, and lets the host-side
+  `fs/walker.ts` disagree with the renderer's `useFileTreeStore` re-sort so a watch-inserted node
+  lands in a different slot than a full re-walk. `packages/core/test/fs/collation.test.ts` ratchets
+  the five call sites.
+- **`humanize-error.ts`'s prefix regexes stay English** — they strip Node's, git's and our own
+  transport's English output, not ours. Translating the patterns would stop them matching.
 - **Never `mock.module` the i18n modules** — process-global and unrevertable, and `bun test` file
   order is OS-dependent, so a leak fails CI-only. `test/setup.ts` sync-loads the `en` catalog
   before any test file evaluates (which is what lets hundreds of English assertions pass
@@ -343,8 +389,6 @@ Append new entry points under the matching sub-heading. Keep entries to one line
   `i18n-exempt` because `agent-bridge.ts`'s `stripAttachmentsBlock()` is anchored to its literal
   tags.
 - **Plurals are positional** — `{{zero|one|two|few|many|other}}`; typesafe-i18n has no named form.
-  It also routes `0` to the `zero` slot rather than CLDR's category, so Russian must repeat its
-  `many` text in the `zero` slot.
 - **Model compliance is best-effort.** Weak or local models drift back to English mid-plan. Because
   the checkbox syntax is a stated invariant in the plan prompt itself, drift degrades gracefully.
   The directive is one sentence (`Respond in …`) and costs ~10 tokens a turn — deliberately not a

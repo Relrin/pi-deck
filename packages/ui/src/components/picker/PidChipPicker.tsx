@@ -1,5 +1,6 @@
 import * as RadixDropdown from "@radix-ui/react-dropdown-menu";
 import type { ReactNode } from "react";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { Check, ChevronDown } from "../icons/index.js";
 
 export interface PidChipPickerOption {
@@ -25,7 +26,7 @@ export interface PidChipPickerProps {
   triggerLeading?: ReactNode;
   /** Override the chip's visible label; defaults to the active option's label/value. */
   triggerLabel?: string;
-  /** Header text shown above the option list (e.g. "SELECT"). Defaults to "SELECT". */
+  /** Header text shown above the option list. Defaults to the localized "Select". */
   header?: string;
   value: string;
   options: PidChipPickerOption[];
@@ -41,7 +42,7 @@ export function PidChipPicker({
   icon,
   triggerLeading,
   triggerLabel,
-  header = "Select",
+  header,
   value,
   options,
   onChange,
@@ -50,6 +51,7 @@ export function PidChipPicker({
   ariaLabel,
   minPopoverWidth = 260,
 }: PidChipPickerProps) {
+  const { LL } = useI18nContext();
   const active = options.find((o) => o.value === value);
   const labelText = triggerLabel ?? active?.label ?? active?.value ?? value;
 
@@ -70,7 +72,9 @@ export function PidChipPicker({
           className="pid-picker-menu"
           style={{ minWidth: minPopoverWidth }}
         >
-          <div className="pid-picker-menu-header">{header}</div>
+          <div className="pid-picker-menu-header">
+            {header ?? LL.shell.components.chipPicker.header()}
+          </div>
           {options.map((opt) => {
             const isActive = opt.value === value;
             return (

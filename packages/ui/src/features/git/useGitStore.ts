@@ -2,6 +2,7 @@ import type { GitCommit, GitHunk, GitStatus } from "@pi-deck/core/git/types.js";
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { createElement } from "react";
 import { create } from "zustand";
+import { ll } from "../../i18n/t.js";
 import { writeClipboard } from "../../lib/clipboard.js";
 import { humanizeError } from "../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../_status/useNotificationStore.js";
@@ -127,7 +128,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
           errorByProject: { ...state.errorByProject, [projectId]: undefined },
         }));
       } catch (err) {
-        const message = humanizeError(err, "Failed to load branches");
+        const message = humanizeError(err, ll().git.errors.loadBranches());
         set((state) => ({
           errorByProject: { ...state.errorByProject, [projectId]: message },
         }));
@@ -160,7 +161,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       void get().refresh(projectId);
       void get().refreshStatus(projectId);
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to checkout branch"));
+      useNotificationStore.getState().error(humanizeError(err, ll().git.errors.checkoutBranch()));
       throw err;
     }
   },
@@ -177,7 +178,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       }));
       void get().refresh(projectId);
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to create branch"));
+      useNotificationStore.getState().error(humanizeError(err, ll().git.errors.createBranch()));
       throw err;
     }
   },
@@ -208,7 +209,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
           void get().refreshCommits(projectId);
         }
       } catch (err) {
-        const message = humanizeError(err, "Failed to read git status");
+        const message = humanizeError(err, ll().git.errors.readStatus());
         set((state) => ({
           errorByProject: { ...state.errorByProject, [projectId]: message },
         }));
@@ -300,7 +301,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       await client.call("git.init", { projectId });
       await Promise.all([get().refreshStatus(projectId), get().refresh(projectId)]);
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to initialise repository"));
+      useNotificationStore.getState().error(humanizeError(err, ll().git.errors.initRepo()));
     }
   },
 
@@ -336,19 +337,19 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
           actions: [
             {
               id: "view",
-              label: "view",
+              label: ll().git.actions.view(),
               variant: "secondary",
               onSelect: () => void get().viewCommitOnRemote(projectId, result.sha),
             },
             {
               id: "undo",
-              label: "undo",
+              label: ll().git.actions.undo(),
               variant: "secondary",
               onSelect: () => void get().undoLastCommit(projectId),
             },
             {
               id: "push",
-              label: "push",
+              label: ll().git.actions.push(),
               variant: "primary",
               leadingIcon: createElement(ArrowUpFromLine, { size: 11 }),
               onSelect: () => void get().push(projectId),
@@ -360,7 +361,12 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       void get().refreshStatus(projectId);
       return result;
     } catch (err) {
-      notify.push(commitFailureNotification(projectId, humanizeError(err, "Commit failed")));
+      notify.push(
+        commitFailureNotification(
+          projectId,
+          humanizeError(err, ll().git.notify.commit.failedTitle()),
+        ),
+      );
       return undefined;
     }
   },
@@ -458,7 +464,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       // http(s) URLs via setWindowOpenHandler — see packages/desktop/src/main/window.ts.
       window.open(url, "_blank", "noopener");
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to open PR URL"));
+      useNotificationStore.getState().error(humanizeError(err, ll().git.errors.openPrUrl()));
     }
   },
 
@@ -470,7 +476,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       void get().refreshStatus(projectId);
       void get().refreshCommits(projectId);
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Undo failed"));
+      useNotificationStore.getState().error(humanizeError(err, ll().git.errors.undo()));
     }
   },
 
@@ -481,7 +487,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       const { url } = await client.call("git.commitUrl", { projectId, sha });
       window.open(url, "_blank", "noopener");
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Failed to resolve commit URL"));
+      useNotificationStore.getState().error(humanizeError(err, ll().git.errors.resolveCommitUrl()));
     }
   },
 
@@ -502,7 +508,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
     const notify = useNotificationStore.getState();
     const total = paths.tracked.length + paths.untracked.length;
     if (total === 0) {
-      notify.push(rollbackFailureNotification(projectId, "No files selected."));
+      notify.push(rollbackFailureNotification(projectId, ll().git.store.noFilesSelected()));
       return false;
     }
     try {
@@ -514,7 +520,12 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       notify.push(rollbackSuccessNotification(projectId, { fileCount: total }));
       return true;
     } catch (err) {
-      notify.push(rollbackFailureNotification(projectId, humanizeError(err, "Rollback failed")));
+      notify.push(
+        rollbackFailureNotification(
+          projectId,
+          humanizeError(err, ll().git.notify.rollback.failedTitle()),
+        ),
+      );
       return false;
     }
   },
@@ -539,7 +550,7 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
       void get().refreshStatus(projectId);
       const popAction = {
         id: "pop",
-        label: "apply",
+        label: ll().git.actions.apply(),
         variant: "secondary" as const,
         onSelect: () => void get().stashPop(projectId),
       };
@@ -574,9 +585,9 @@ export const useGitStore = create<GitStoreState>((set, get) => ({
     if (!name) return;
     try {
       await writeClipboard(name);
-      useNotificationStore.getState().info(`Copied "${name}" to clipboard`);
+      useNotificationStore.getState().info(ll().git.store.copiedToClipboard({ name }));
     } catch (err) {
-      useNotificationStore.getState().error(humanizeError(err, "Copy failed"));
+      useNotificationStore.getState().error(humanizeError(err, ll().git.errors.copy()));
     }
   },
 }));
@@ -596,7 +607,9 @@ function buildPushFailureActions(
   return [
     {
       id: "pull-rebase",
-      label: "pull --rebase",
+      // A literal git command — what the user would type. Held in the catalog so it sits beside
+      // its siblings, but every translation must keep it verbatim.
+      label: ll().git.actions.pullRebase(),
       variant: "secondary" as const,
       leadingIcon: createElement(ArrowDownToLine, { size: 11 }),
       dismissAfter: false,
@@ -604,7 +617,7 @@ function buildPushFailureActions(
     },
     {
       id: "force-push",
-      label: "force push",
+      label: ll().git.actions.forcePush(),
       variant: "danger" as const,
       leadingIcon: createElement(ArrowUpFromLine, { size: 11 }),
       dismissAfter: false,

@@ -29,6 +29,7 @@ describe("catalogs", () => {
       "plan",
       "sessions",
       "settings",
+      "shell",
       "terminal",
     ]);
   });

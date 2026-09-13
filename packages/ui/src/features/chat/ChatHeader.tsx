@@ -2,6 +2,7 @@ import type { SessionSummary } from "@pi-deck/core/domain/session.js";
 import { useEffect, useMemo, useState } from "react";
 import { InlineRename } from "../../components/InlineRename.js";
 import { GitBranch } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { relativeTime } from "../../lib/format/relative-time.js";
 import { useGitStore } from "../git/useGitStore.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
@@ -12,6 +13,7 @@ interface ChatHeaderProps {
 }
 
 export function ChatHeader({ session }: ChatHeaderProps) {
+  const { locale } = useI18nContext();
   const isInFlight = useMessagesStore(useMemo(() => selectTurnInFlight(session.id), [session.id]));
   const branch = useGitStore((s) => s.currentBranchByProject[session.projectId]);
   const [editing, setEditing] = useState(false);
@@ -62,7 +64,7 @@ export function ChatHeader({ session }: ChatHeaderProps) {
             </span>
           )}
           {branch && <span aria-hidden>·</span>}
-          <span>{relativeTime(session.lastActivityAt)}</span>
+          <span>{relativeTime(session.lastActivityAt, undefined, locale)}</span>
         </div>
       </div>
     </header>

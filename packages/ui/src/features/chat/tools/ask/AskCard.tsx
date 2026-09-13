@@ -10,6 +10,7 @@ import {
   X,
 } from "../../../../components/icons/index.js";
 import { PidKbd } from "../../../../components/kbd/PidKbd.js";
+import { useI18nContext } from "../../../../i18n/i18n-react.js";
 import { cn } from "../../../../lib/cn.js";
 import { humanizeError } from "../../../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../../../_status/useNotificationStore.js";
@@ -524,6 +525,7 @@ function MultiLayout({
   h: Handlers;
   canSend: boolean;
 }) {
+  const { LL } = useI18nContext();
   const item = draft[0];
   const added = item?.added ?? [];
   const count = (item?.optionIndices.length ?? 0) + added.length;
@@ -553,7 +555,7 @@ function MultiLayout({
             disabled={!canSend}
             onClick={() => void h.submit()}
           >
-            Send {count} {count === 1 ? "choice" : "choices"}
+            {LL.chat.ask.sendChoices({ count })}
           </PidButton>
         </>
       }

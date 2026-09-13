@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Check, Info, X } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { type Notification, useNotificationStore } from "./useNotificationStore.js";
 
 /**
@@ -29,6 +30,7 @@ interface CardProps {
 }
 
 function NotificationCard({ notification, onDismiss }: CardProps) {
+  const { LL } = useI18nContext();
   const { kind, title, tag, body, meta, actions, footnote, durationMs, createdAt } = notification;
 
   useEffect(() => {
@@ -104,7 +106,7 @@ function NotificationCard({ notification, onDismiss }: CardProps) {
       <button
         type="button"
         className="pid-notification-close"
-        aria-label="Dismiss"
+        aria-label={LL.common.dismiss()}
         onClick={onDismiss}
       >
         <X size={12} />

@@ -1,5 +1,7 @@
 import { type ReactNode, useMemo, useState } from "react";
 import { Check, ChevronDown, ChevronRight, Search } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
+import type { TranslationFunctions } from "../../i18n/i18n-types.js";
 import { useProjectsStore } from "./useProjectsStore";
 import {
   dirtyCount,
@@ -44,6 +46,7 @@ const GROUP_OPTIONS: { id: SessionsGroup; label: string }[] = [
  * so the click-outside dismissal can compare against the same DOM subtree.
  */
 export function SessionsFilterPopover({ onClose }: { onClose: () => void }) {
+  const { LL } = useI18nContext();
   const state = useSessionsFilterStore();
   const dirty = dirtyCount(state);
   const projects = useProjectsStore((s) => s.projects);
@@ -65,7 +68,7 @@ export function SessionsFilterPopover({ onClose }: { onClose: () => void }) {
         <AccordionSection
           id="project"
           label="project"
-          summary={summariseProject(state.project, allProjectIds.length)}
+          summary={summariseProject(LL, state.project, allProjectIds.length)}
           dirty={isSectionDirty(state, "project")}
           open={openSections.has("project")}
           onToggle={() => toggleSection("project")}
@@ -321,10 +324,18 @@ function ProjectPicker() {
   );
 }
 
-function summariseProject(selection: ProjectSelection, total: number): string {
+/**
+ * Takes `t` as a parameter rather than reaching for the imperative `ll()`: it is called during a
+ * component's render, so the translations must come from the same context the component subscribes
+ * to or the summary would go stale on a language switch.
+ */
+function summariseProject(
+  t: TranslationFunctions,
+  selection: ProjectSelection,
+  total: number,
+): string {
   if (selection.kind === "all") return "all";
   if (selection.ids.length === 0) return "none";
   if (selection.ids.length === total) return "all";
-  if (selection.ids.length === 1) return "1 selected";
-  return `${selection.ids.length} selected`;
+  return t.sessions.filter.selectedCount({ count: selection.ids.length });
 }

@@ -29,7 +29,20 @@ export function llFor(locale: Locale): TranslationFunctions {
   return ll;
 }
 
+/**
+ * The active UI locale, read at call time.
+ *
+ * This is the default for the `locale` parameter on the `lib/format/` helpers, which is what lets
+ * them stay ordinary functions for tests and for imperative callers. A React component must still
+ * pass its own locale (from `useI18nContext()`) — reading the store here creates no subscription,
+ * so a component that relies on the default renders correctly once and then goes stale on a
+ * language switch.
+ */
+export function currentLocale(): Locale {
+  return useLocaleStore.getState().uiLocale;
+}
+
 /** Translations for the current UI locale. Read it at call time — never hoist to module scope. */
 export function ll(): TranslationFunctions {
-  return llFor(useLocaleStore.getState().uiLocale);
+  return llFor(currentLocale());
 }

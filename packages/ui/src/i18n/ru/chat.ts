@@ -61,6 +61,38 @@ const chat = {
     label: "Язык агента",
     matchGlobal: "По умолчанию",
   },
+
+  review: {
+    fileCount: "{count} {{файлов|файл|файла|файла|файлов|файлов}}",
+    // The count renders as a separate badge, so this selects on it without printing it. The verb
+    // agrees with the noun's number, which is why "изменён" appears only in the `one` slot.
+    filesChanged:
+      "{{count:файлов изменено|файл изменён|файла изменено|файла изменено|файлов изменено|файлов изменено}}",
+    turnSuffix: " · {count} {{ходов|ход|хода|хода|ходов|ходов}}",
+  },
+
+  tools: {
+    moreLines: "⋯ ещё {count} {{строк|строка|строки|строки|строк|строк}}",
+    editCount: "{count} {{правок|правка|правки|правки|правок|правок}}",
+  },
+
+  planSnapshot: {
+    earlierSteps: "+{count} {{шагов|шаг|шага|шага|шагов|шагов}} ранее",
+    moreSteps: "+{count} {{шагов|шаг|шага|шага|шагов|шагов}} далее",
+  },
+
+  planCard: {
+    commentsPending:
+      "{count} {{комментариев|комментарий|комментария|комментария|комментариев|комментариев}} в ожидании — запросите изменения, чтобы отправить их, или утвердите план как есть.",
+  },
+
+  planComments: {
+    count: "{count} {{комментариев|комментарий|комментария|комментария|комментариев|комментариев}}",
+  },
+
+  ask: {
+    sendChoices: "Отправить {count} {{вариантов|вариант|варианта|варианта|вариантов|вариантов}}",
+  },
 } as const satisfies DeepPartial<Translation["chat"]>;
 
 export default chat;

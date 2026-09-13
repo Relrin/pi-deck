@@ -4,6 +4,7 @@ import { ConfirmDialog } from "../../components/dialogs/ConfirmDialog.js";
 import { InlineRename } from "../../components/InlineRename.js";
 import { CheckCheck, Package, Pencil, Trash2 } from "../../components/icons/index.js";
 import { ContextMenu, type ContextMenuItem } from "../../components/ui/ContextMenu.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { relativeTime } from "../../lib/format/relative-time";
 import { useNavStore } from "../../lib/useNavStore";
 import type { RailStatus } from "../chat/types.js";
@@ -32,6 +33,7 @@ export interface PidSessionRowProps {
 }
 
 export function PidSessionRow({ session, active }: PidSessionRowProps) {
+  const { locale } = useI18nContext();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   // Coarse lifecycle for the status dot: working / waiting / done / failed / idle. Keyed by
@@ -161,7 +163,9 @@ export function PidSessionRow({ session, active }: PidSessionRowProps) {
             )}
             {session.branch ? <span className="pid-rail-row-branch">{session.branch}</span> : null}
           </span>
-          <span className="pid-rail-row-meta">{relativeTime(session.lastActivityAt)}</span>
+          <span className="pid-rail-row-meta">
+            {relativeTime(session.lastActivityAt, undefined, locale)}
+          </span>
         </button>
       </ContextMenu>
       <ConfirmDialog

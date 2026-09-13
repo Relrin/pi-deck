@@ -1,3 +1,5 @@
+import { ll } from "../../i18n/t.js";
+import { relativeTime } from "../../lib/format/relative-time.js";
 import type { NotificationAction, NotificationInput } from "../_status/useNotificationStore.js";
 
 /**
@@ -17,6 +19,20 @@ export const notifyIds = {
 
 const DURATION = 8000;
 
+/**
+ * These builders are the reference example of *imperative* translation.
+ *
+ * They are plain functions called from `useGitStore` actions, not components, so they take their
+ * strings from the module-level `ll()` — read inside each function body, never hoisted. A
+ * module-level `const` holding a translated string would freeze whatever catalog happened to be
+ * loaded at import time and would never update when the user switches language; that is exactly
+ * why `pushReasonBody` and `pullReasonBody` below are functions rather than the `Record` constants
+ * they used to be.
+ *
+ * `useNotificationStore` takes pre-formatted strings and is deliberately not locale-aware — the
+ * caller translates, the store just transports.
+ */
+
 export interface CommitNotifyInput {
   branch?: string;
   shortSha: string;
@@ -31,24 +47,32 @@ export function commitSuccessNotification(
   projectId: string,
   input: CommitNotifyInput,
 ): NotificationInput {
+  const n = ll().git.notify.commit;
   return {
     id: notifyIds.commit(projectId),
     kind: "success",
-    title: input.branch ? `Committed to ${input.branch}` : "Commit created",
-    tag: "Commit",
+    title: input.branch ? n.title({ branch: input.branch }) : n.titleNoBranch(),
+    tag: n.tag(),
     body: input.subject,
-    meta: `${input.shortSha} · ${input.fileCount} file${input.fileCount === 1 ? "" : "s"} · +${input.add} -${input.del} · just now`,
+    meta: n.meta({
+      sha: input.shortSha,
+      count: input.fileCount,
+      add: input.add,
+      del: input.del,
+      when: relativeTime(Date.now()),
+    }),
     actions: input.actions,
     durationMs: DURATION,
   };
 }
 
 export function commitFailureNotification(projectId: string, message: string): NotificationInput {
+  const n = ll().git.notify.commit;
   return {
     id: notifyIds.commit(projectId),
     kind: "error",
-    title: "Commit failed",
-    tag: "Commit",
+    title: n.failedTitle(),
+    tag: n.tag(),
     body: message,
     durationMs: DURATION,
   };
@@ -65,16 +89,14 @@ export function pushSuccessNotification(
   projectId: string,
   input: PushSuccessInput,
 ): NotificationInput {
+  const n = ll().git.notify.push;
   const count = input.ahead;
   return {
     id: notifyIds.push(projectId),
     kind: "success",
-    title: `Pushed to ${input.remote}/${input.branch}`,
-    tag: "Push",
-    body:
-      count > 0
-        ? `${count} commit${count === 1 ? "" : "s"} sent upstream.`
-        : "Branch is up to date with origin.",
+    title: n.title({ remote: input.remote, branch: input.branch }),
+    tag: n.tag(),
+    body: count > 0 ? n.sentUpstream({ count }) : n.upToDate(),
     actions: input.actions,
     durationMs: DURATION,
   };
@@ -88,29 +110,84 @@ export interface PushFailureInput {
   actions: NotificationAction[];
 }
 
-const PUSH_REASON_BODY: Record<PushFailureInput["reason"], string> = {
-  non_fast_forward: "Remote has commits you don't have locally. Fast-forward refused.",
-  no_upstream: "No upstream branch configured. Set one with `git push -u <remote> <branch>` first.",
-  auth_failed: "Authentication failed. Check your credentials or SSH key for this remote.",
-  rejected: "Remote rejected the push (likely a pre-receive hook).",
-  unknown: "Push failed. Open the log for details.",
-};
+/**
+ * A function, not a `Record` constant: see the note at the top of this file. The git commands
+ * embedded in these strings are what the user would type, and must survive translation verbatim.
+ */
+function pushReasonBody(reason: PushFailureInput["reason"]): string {
+  const r = ll().git.notify.push.reason;
+  switch (reason) {
+    case "non_fast_forward":
+      return r.nonFastForward();
+    case "no_upstream":
+      return r.noUpstream();
+    case "auth_failed":
+      return r.authFailed();
+    case "rejected":
+      return r.rejected();
+    default:
+      return r.unknown();
+  }
+}
+
+/** A function, not a `Record` constant — see the note at the top of this file. */
+function pullReasonBody(reason: PullFailureInput["reason"]): string {
+  const r = ll().git.notify.pull.reason;
+  switch (reason) {
+    case "conflict":
+      return r.conflict();
+    case "no_upstream":
+      return r.noUpstream();
+    case "auth_failed":
+      return r.authFailed();
+    default:
+      return r.unknown();
+  }
+}
+
+/**
+ * Short label for a failure's metadata line, replacing the old `reason.replace(/_/g, "-")`. The
+ * English values reproduce that slug byte for byte; nothing matches on them, so a translation is
+ * free to use the local term.
+ */
+function reasonLabel(reason: PushFailureInput["reason"] | PullFailureInput["reason"]): string {
+  const r = ll().git.reason;
+  switch (reason) {
+    case "non_fast_forward":
+      return r.nonFastForward();
+    case "no_upstream":
+      return r.noUpstream();
+    case "auth_failed":
+      return r.authFailed();
+    case "rejected":
+      return r.rejected();
+    case "conflict":
+      return r.conflict();
+    default:
+      return r.unknown();
+  }
+}
 
 export function pushFailureNotification(
   projectId: string,
   input: PushFailureInput,
 ): NotificationInput {
-  const reasonTag = input.reason === "non_fast_forward" ? "Push rejected" : "Push failed";
+  const t = ll();
+  const n = t.git.notify.push;
   return {
     id: notifyIds.push(projectId),
     kind: "error",
-    title: `Push to ${input.remote} failed`,
-    tag: reasonTag,
-    body: PUSH_REASON_BODY[input.reason],
-    meta: `${input.remote}/${input.branch} · ${input.reason.replace(/_/g, "-")}`,
+    title: n.failedTitle({ remote: input.remote }),
+    tag: input.reason === "non_fast_forward" ? n.tagRejected() : n.tagFailed(),
+    body: pushReasonBody(input.reason),
+    meta: t.git.notify.remoteBranchMeta({
+      remote: input.remote,
+      branch: input.branch,
+      reason: reasonLabel(input.reason),
+    }),
     actions: input.actions,
     footnote: input.stderr
-      ? { label: "view log", onSelect: () => openLogWindow(input.stderr) }
+      ? { label: t.git.notify.viewLog(), onSelect: () => openLogWindow(input.stderr) }
       : undefined,
     durationMs: DURATION,
   };
@@ -126,12 +203,13 @@ export function pullSuccessNotification(
   projectId: string,
   input: PullSuccessInput,
 ): NotificationInput {
+  const n = ll().git.notify.pull;
   return {
     id: notifyIds.pull(projectId),
     kind: "success",
-    title: `Pulled from ${input.remote}/${input.branch}`,
-    tag: "Pull",
-    body: input.rebased ? "Rebased local commits on top." : "Fast-forwarded local branch.",
+    title: n.title({ remote: input.remote, branch: input.branch }),
+    tag: n.tag(),
+    body: input.rebased ? n.rebased() : n.fastForwarded(),
     durationMs: DURATION,
   };
 }
@@ -144,28 +222,26 @@ export interface PullFailureInput {
   actions?: NotificationAction[];
 }
 
-const PULL_REASON_BODY: Record<PullFailureInput["reason"], string> = {
-  conflict: "Merge conflict — resolve in your editor, then commit to finish the pull.",
-  no_upstream:
-    "No upstream tracking branch. Set one with `git branch --set-upstream-to=<remote>/<branch>`.",
-  auth_failed: "Authentication failed. Check your credentials or SSH key.",
-  unknown: "Pull failed. Open the log for details.",
-};
-
 export function pullFailureNotification(
   projectId: string,
   input: PullFailureInput,
 ): NotificationInput {
+  const t = ll();
+  const n = t.git.notify.pull;
   return {
     id: notifyIds.pull(projectId),
     kind: "error",
-    title: `Pull from ${input.remote} failed`,
-    tag: "Pull failed",
-    body: PULL_REASON_BODY[input.reason],
-    meta: `${input.remote}/${input.branch} · ${input.reason.replace(/_/g, "-")}`,
+    title: n.failedTitle({ remote: input.remote }),
+    tag: n.tagFailed(),
+    body: pullReasonBody(input.reason),
+    meta: t.git.notify.remoteBranchMeta({
+      remote: input.remote,
+      branch: input.branch,
+      reason: reasonLabel(input.reason),
+    }),
     actions: input.actions,
     footnote: input.stderr
-      ? { label: "view log", onSelect: () => openLogWindow(input.stderr) }
+      ? { label: t.git.notify.viewLog(), onSelect: () => openLogWindow(input.stderr) }
       : undefined,
     durationMs: DURATION,
   };
@@ -179,23 +255,24 @@ export function rollbackSuccessNotification(
   projectId: string,
   input: RollbackInput,
 ): NotificationInput {
-  const n = input.fileCount;
+  const n = ll().git.notify.rollback;
   return {
     id: notifyIds.rollback(projectId),
     kind: "success",
-    title: "Files rolled back",
-    tag: "Rollback",
-    body: `${n} file${n === 1 ? "" : "s"} restored to HEAD.`,
+    title: n.title(),
+    tag: n.tag(),
+    body: n.body({ count: input.fileCount }),
     durationMs: DURATION,
   };
 }
 
 export function rollbackFailureNotification(projectId: string, message: string): NotificationInput {
+  const n = ll().git.notify.rollback;
   return {
     id: notifyIds.rollback(projectId),
     kind: "error",
-    title: "Rollback failed",
-    tag: "Rollback",
+    title: n.failedTitle(),
+    tag: n.tag(),
     body: message,
     durationMs: DURATION,
   };
@@ -211,16 +288,16 @@ export function stashSuccessNotification(
   input: StashSuccessInput,
   popAction: NotificationAction,
 ): NotificationInput {
-  const body =
-    input.selectedCount !== undefined
-      ? `${input.selectedCount} file${input.selectedCount === 1 ? "" : "s"} moved to the stash.`
-      : "Working tree stashed.";
+  const n = ll().git.notify.stash;
   return {
     id: notifyIds.stash(projectId),
     kind: "success",
-    title: "Changes stashed",
-    tag: "Stash",
-    body,
+    title: n.title(),
+    tag: n.tag(),
+    body:
+      input.selectedCount !== undefined
+        ? n.bodySelected({ count: input.selectedCount })
+        : n.bodyAll(),
     actions: [popAction],
     durationMs: DURATION,
   };
@@ -231,28 +308,29 @@ export function stashFailureNotification(
   reason: "no_changes" | "unknown",
   stderr: string,
 ): NotificationInput {
-  const body =
-    reason === "no_changes"
-      ? "Nothing to stash — working tree matches HEAD."
-      : "Stash failed. Open the log for details.";
+  const t = ll();
+  const n = t.git.notify.stash;
   return {
     id: notifyIds.stash(projectId),
     kind: "error",
-    title: "Stash failed",
-    tag: "Stash",
-    body,
-    footnote: stderr ? { label: "view log", onSelect: () => openLogWindow(stderr) } : undefined,
+    title: n.failedTitle(),
+    tag: n.tag(),
+    body: reason === "no_changes" ? n.reason.noChanges() : n.reason.unknown(),
+    footnote: stderr
+      ? { label: t.git.notify.viewLog(), onSelect: () => openLogWindow(stderr) }
+      : undefined,
     durationMs: DURATION,
   };
 }
 
 export function stashPopSuccessNotification(projectId: string): NotificationInput {
+  const n = ll().git.notify.stashPop;
   return {
     id: notifyIds.stashPop(projectId),
     kind: "success",
-    title: "Stash applied",
-    tag: "Apply",
-    body: "Latest stash entry restored and dropped.",
+    title: n.title(),
+    tag: n.tag(),
+    body: n.body(),
     durationMs: DURATION,
   };
 }
@@ -262,29 +340,34 @@ export function stashPopFailureNotification(
   reason: "empty_stack" | "conflict" | "unknown",
   stderr: string,
 ): NotificationInput {
+  const t = ll();
+  const n = t.git.notify.stashPop;
   const body =
     reason === "empty_stack"
-      ? "No stash entries to apply."
+      ? n.reason.emptyStack()
       : reason === "conflict"
-        ? "Merge conflict while applying the stash — resolve in your editor, then commit."
-        : "Stash pop failed. Open the log for details.";
+        ? n.reason.conflict()
+        : n.reason.unknown();
   return {
     id: notifyIds.stashPop(projectId),
     kind: "error",
-    title: "Apply stash failed",
-    tag: "Apply",
+    title: n.failedTitle(),
+    tag: n.tag(),
     body,
-    footnote: stderr ? { label: "view log", onSelect: () => openLogWindow(stderr) } : undefined,
+    footnote: stderr
+      ? { label: t.git.notify.viewLog(), onSelect: () => openLogWindow(stderr) }
+      : undefined,
     durationMs: DURATION,
   };
 }
 
 export function refreshSuccessNotification(projectId: string): NotificationInput {
+  const n = ll().git.notify.refresh;
   return {
     id: notifyIds.refresh(projectId),
     kind: "info",
-    title: "Git state refreshed",
-    body: "Working tree, branches, and recent commits re-read from disk.",
+    title: n.title(),
+    body: n.body(),
     durationMs: 3000,
   };
 }
@@ -298,9 +381,14 @@ function openLogWindow(stderr: string): void {
   if (typeof window === "undefined") return;
   const win = window.open("", "_blank", "width=720,height=420,noopener");
   if (!win) return;
-  const html = `<!doctype html><html><head><title>git log</title><style>
+  const title = escapeHtml(ll().git.logWindowTitle());
+  const html = `<!doctype html><html><head><title>${title}</title><style>
     body { background: #111; color: #eee; font-family: ui-monospace, Menlo, monospace; font-size: 12px; padding: 16px; white-space: pre-wrap; }
-  </style></head><body>${stderr.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c] ?? c)}</body></html>`;
+  </style></head><body>${escapeHtml(stderr)}</body></html>`;
   win.document.write(html);
   win.document.close();
+}
+
+function escapeHtml(raw: string): string {
+  return raw.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c] ?? c);
 }

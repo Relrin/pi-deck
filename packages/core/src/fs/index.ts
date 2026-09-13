@@ -1,3 +1,4 @@
+export * from "./collation.js";
 export * from "./ignore-loader.js";
 export * from "./ops.js";
 export * from "./types.js";

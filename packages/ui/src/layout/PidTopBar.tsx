@@ -3,7 +3,8 @@ import { ArrowLeft, PanelBottom, PanelLeft, PanelRight, Settings } from "../comp
 import { Tooltip } from "../components/ui/Tooltip";
 import { useSettingsStore } from "../features/settings/useSettingsStore";
 import { useTerminalStore } from "../features/terminal/useTerminalStore";
-import { getPlatformOs, isMacOs, usesCustomWindowControls } from "../lib/platform";
+import { useI18nContext } from "../i18n/i18n-react";
+import { getPlatformOs, metaSymbol, usesCustomWindowControls } from "../lib/platform";
 import { useNavStore } from "../lib/useNavStore";
 import { useRailState } from "./use-rail-state";
 import { WindowControls } from "./WindowControls";
@@ -34,12 +35,14 @@ function ToggleButton({ pressed, onToggle, showLabel, hideLabel, icon }: ToggleB
 }
 
 function BackToStartButton() {
+  const { LL } = useI18nContext();
+  const label = LL.shell.topBar.backToStart();
   return (
-    <Tooltip content="Back to start">
+    <Tooltip content={label}>
       <button
         type="button"
         className="pid-topbar-btn"
-        aria-label="Back to start"
+        aria-label={label}
         onClick={() => useNavStore.getState().goToBlank()}
       >
         <ArrowLeft size={14} />
@@ -49,13 +52,15 @@ function BackToStartButton() {
 }
 
 function TopBarSettingsButton() {
-  const tooltip = `Settings (${isMacOs() ? "⌘" : "Ctrl"}+,)`;
+  const { LL } = useI18nContext();
+  // `metaSymbol()` is a key glyph (⌘ / Ctrl), not copy — it is interpolated, never translated.
+  const tooltip = LL.shell.settings.shortcutTooltip({ mod: metaSymbol() });
   return (
     <Tooltip content={tooltip}>
       <button
         type="button"
         className="pid-topbar-btn"
-        aria-label="Open settings"
+        aria-label={LL.shell.settings.open()}
         onClick={() => useSettingsStore.getState().setOpen(true)}
       >
         <Settings size={14} />
@@ -65,6 +70,7 @@ function TopBarSettingsButton() {
 }
 
 export function PidTopBar() {
+  const { LL } = useI18nContext();
   const platformOs = getPlatformOs();
   const isMac = platformOs === "darwin";
   const screen = useNavStore((s) => s.screen);
@@ -108,8 +114,8 @@ export function PidTopBar() {
         <ToggleButton
           pressed={leftVisible}
           onToggle={toggleLeft}
-          showLabel="Show left panel"
-          hideLabel="Hide left panel"
+          showLabel={LL.shell.topBar.leftPanel.show()}
+          hideLabel={LL.shell.topBar.leftPanel.hide()}
           icon={<PanelLeft size={14} />}
         />
         <ToggleButton
@@ -118,15 +124,15 @@ export function PidTopBar() {
             useTerminalStore.getState().togglePanel();
             event.currentTarget.blur();
           }}
-          showLabel="Show bottom panel"
-          hideLabel="Hide bottom panel"
+          showLabel={LL.shell.topBar.bottomPanel.show()}
+          hideLabel={LL.shell.topBar.bottomPanel.hide()}
           icon={<PanelBottom size={14} />}
         />
         <ToggleButton
           pressed={rightVisible}
           onToggle={toggleRight}
-          showLabel="Show right panel"
-          hideLabel="Hide right panel"
+          showLabel={LL.shell.topBar.rightPanel.show()}
+          hideLabel={LL.shell.topBar.rightPanel.hide()}
           icon={<PanelRight size={14} />}
         />
         {showWindowControls && <WindowControls />}

@@ -1,5 +1,11 @@
 import { EventEmitter } from "node:events";
-import { type FsNode, type FsWatchHandle, walkProject, watchProject } from "../fs/index.js";
+import {
+  comparePaths,
+  type FsNode,
+  type FsWatchHandle,
+  walkProject,
+  watchProject,
+} from "../fs/index.js";
 import { EVENT_FS_TREE_CHANGED, type EventTopic } from "../protocol/events.js";
 import type { MetadataStore } from "./metadata-store.js";
 
@@ -200,6 +206,6 @@ function insertNode(rootChildren: FsNode[], rootPath: string, node: FsNode): voi
   bucket.push(node);
   bucket.sort((a, b) => {
     if (a.type !== b.type) return a.type === "dir" ? -1 : 1;
-    return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+    return comparePaths(a.name, b.name);
   });
 }

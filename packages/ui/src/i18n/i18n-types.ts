@@ -18,396 +18,364 @@ type RootTranslation = {
 		approval: {
 			reason: {
 				plan: {
-					/**
-					 * P​l​a​n​ ​m​o​d​e​:​ ​t​h​i​s​ ​s​h​e​l​l​ ​c​o​m​m​a​n​d​ ​i​s​n​'​t​ ​r​e​a​d​-​o​n​l​y​ ​—​ ​a​l​l​o​w​ ​i​t​ ​t​o​ ​r​u​n​,​ ​o​r​ ​d​e​n​y​ ​t​o​ ​k​e​e​p​ ​p​l​a​n​n​i​n​g​.
-					 */
 					shellNotReadOnly: string
-					/**
-					 * P​l​a​n​ ​m​o​d​e​:​ ​t​h​i​s​ ​o​p​e​r​a​t​i​o​n​ ​c​a​n​ ​c​h​a​n​g​e​ ​f​i​l​e​s​ ​o​r​ ​r​e​a​c​h​ ​o​u​t​s​i​d​e​ ​t​h​e​ ​w​o​r​k​s​p​a​c​e​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​ ​t​o​ ​k​e​e​p​ ​p​l​a​n​n​i​n​g​.
-					 */
 					mutatingOperation: string
 				}
 				acceptEdits: {
-					/**
-					 * E​d​i​t​ ​t​a​r​g​e​t​ ​o​u​t​s​i​d​e​ ​t​h​e​ ​a​u​t​o​-​a​p​p​r​o​v​e​ ​a​l​l​o​w​l​i​s​t​.
-					 */
 					outsideAllowlist: string
 				}
 				auto: {
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​r​u​n​ ​M​C​P​ ​t​o​o​l​ ​{​t​o​o​l​}​?​ ​I​t​ ​r​u​n​s​ ​o​u​t​s​i​d​e​ ​t​h​e​ ​w​o​r​k​s​p​a​c​e​ ​a​n​d​ ​c​a​n​'​t​ ​b​e​ ​s​a​f​e​t​y​-​c​h​e​c​k​e​d​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​ ​t​o​ ​s​k​i​p​.
-					 * @param {string} tool
-					 */
 					mcpTool: RequiredParams<'tool'>
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​l​o​o​k​s​ ​l​i​k​e​ ​a​ ​f​o​r​k​ ​b​o​m​b​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​ ​t​o​ ​s​t​o​p​.
-					 */
 					forkBomb: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​r​e​d​i​r​e​c​t​s​ ​o​u​t​p​u​t​ ​o​n​t​o​ ​a​ ​b​l​o​c​k​ ​d​e​v​i​c​e​,​ ​w​h​i​c​h​ ​c​a​n​ ​d​e​s​t​r​o​y​ ​a​ ​d​i​s​k​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​.
-					 */
 					blockDeviceRedirect: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​d​e​l​e​t​e​s​ ​f​i​l​e​s​ ​r​e​c​u​r​s​i​v​e​l​y​ ​o​r​ ​t​a​r​g​e​t​s​ ​a​ ​b​r​o​a​d​ ​p​a​t​h​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​ ​t​o​ ​s​t​o​p​.
-					 */
 					recursiveDelete: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​r​e​c​u​r​s​i​v​e​l​y​ ​d​e​l​e​t​e​s​ ​o​r​ ​f​o​r​m​a​t​s​ ​f​i​l​e​s​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​ ​t​o​ ​s​t​o​p​.
-					 */
 					windowsDelete: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​c​a​n​ ​d​e​s​t​r​o​y​ ​a​ ​f​i​l​e​s​y​s​t​e​m​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​ ​t​o​ ​s​t​o​p​.
-					 */
 					filesystemDestroy: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​`​d​d​`​ ​i​s​ ​w​r​i​t​i​n​g​ ​t​o​ ​a​ ​d​e​v​i​c​e​/​f​i​l​e​,​ ​w​h​i​c​h​ ​c​a​n​ ​b​e​ ​d​e​s​t​r​u​c​t​i​v​e​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​.
-					 */
 					deviceWrite: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​r​e​c​u​r​s​i​v​e​l​y​ ​c​h​a​n​g​e​s​ ​p​e​r​m​i​s​s​i​o​n​s​/​o​w​n​e​r​s​h​i​p​ ​o​v​e​r​ ​a​ ​b​r​o​a​d​ ​p​a​t​h​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​.
-					 */
 					permissionSweep: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​r​u​n​s​ ​w​i​t​h​ ​e​l​e​v​a​t​e​d​ ​p​r​i​v​i​l​e​g​e​s​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​ ​t​o​ ​s​t​o​p​.
-					 */
 					privilegeEscalation: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​p​o​w​e​r​s​ ​o​f​f​ ​o​r​ ​r​e​b​o​o​t​s​ ​t​h​e​ ​m​a​c​h​i​n​e​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​.
-					 */
 					powerControl: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​s​i​g​n​a​l​s​ ​e​v​e​r​y​ ​p​r​o​c​e​s​s​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​ ​t​o​ ​s​t​o​p​.
-					 */
 					killAll: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​o​p​e​n​s​ ​a​ ​r​a​w​ ​n​e​t​w​o​r​k​ ​c​o​n​n​e​c​t​i​o​n​ ​t​h​a​t​ ​c​o​u​l​d​ ​e​x​f​i​l​t​r​a​t​e​ ​d​a​t​a​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​.
-					 */
 					rawNetwork: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​u​p​l​o​a​d​s​ ​d​a​t​a​ ​t​o​ ​a​ ​r​e​m​o​t​e​ ​s​e​r​v​e​r​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​ ​t​o​ ​s​t​o​p​.
-					 */
 					upload: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​c​o​p​i​e​s​ ​f​i​l​e​s​ ​t​o​ ​a​ ​r​e​m​o​t​e​ ​h​o​s​t​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​ ​t​o​ ​s​t​o​p​.
-					 */
 					remoteCopy: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​s​e​n​d​s​ ​a​ ​s​e​c​r​e​t​/​c​r​e​d​e​n​t​i​a​l​ ​f​i​l​e​ ​o​v​e​r​ ​t​h​e​ ​n​e​t​w​o​r​k​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​.
-					 */
 					secretOverNetwork: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​p​i​p​e​s​ ​d​o​w​n​l​o​a​d​e​d​ ​c​o​n​t​e​n​t​ ​i​n​t​o​ ​a​ ​s​h​e​l​l​/​i​n​t​e​r​p​r​e​t​e​r​ ​(​r​e​m​o​t​e​ ​c​o​d​e​ ​e​x​e​c​u​t​i​o​n​)​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​.
-					 */
 					pipeToShell: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​w​r​i​t​e​s​ ​t​o​ ​a​ ​s​e​c​r​e​t​/​c​r​e​d​e​n​t​i​a​l​ ​f​i​l​e​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​ ​t​o​ ​s​t​o​p​.
-					 */
 					writeSecret: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​w​r​i​t​e​s​ ​i​n​s​i​d​e​ ​t​h​e​ ​`​.​g​i​t​`​ ​d​i​r​e​c​t​o​r​y​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​ ​t​o​ ​s​t​o​p​.
-					 */
 					writeGitDir: string
-					/**
-					 * A​u​t​o​ ​m​o​d​e​:​ ​t​h​i​s​ ​w​r​i​t​e​s​ ​t​o​ ​a​ ​p​a​t​h​ ​o​u​t​s​i​d​e​ ​t​h​e​ ​p​r​o​j​e​c​t​ ​—​ ​a​l​l​o​w​ ​i​t​,​ ​o​r​ ​d​e​n​y​ ​t​o​ ​s​t​o​p​.
-					 */
 					writeOutsideProject: string
 				}
 			}
 		}
 		languagePicker: {
-			/**
-			 * A​g​e​n​t​ ​l​a​n​g​u​a​g​e
-			 */
 			label: string
-			/**
-			 * U​s​e​ ​d​e​f​a​u​l​t
-			 */
 			matchGlobal: string
+		}
+		review: {
+			fileCount: RequiredParams<'count'>
+			filesChanged: string
+			turnSuffix: RequiredParams<'count'>
+		}
+		tools: {
+			moreLines: RequiredParams<'count'>
+			editCount: RequiredParams<'count'>
+		}
+		planSnapshot: {
+			earlierSteps: RequiredParams<'count'>
+			moreSteps: RequiredParams<'count'>
+		}
+		planCard: {
+			commentsPending: RequiredParams<'count'>
+		}
+		planComments: {
+			count: RequiredParams<'count'>
+		}
+		ask: {
+			sendChoices: RequiredParams<'count'>
 		}
 	}
 	common: {
-		/**
-		 * C​a​n​c​e​l
-		 */
 		cancel: string
-		/**
-		 * C​l​o​s​e
-		 */
 		close: string
-		/**
-		 * S​a​v​e
-		 */
 		save: string
-		/**
-		 * R​e​m​o​v​e
-		 */
 		remove: string
-		/**
-		 * R​e​t​r​y
-		 */
 		retry: string
+		dismiss: string
 		error: {
-			/**
-			 * S​o​m​e​t​h​i​n​g​ ​w​e​n​t​ ​w​r​o​n​g
-			 */
 			generic: string
 			host: {
-				/**
-				 * T​h​a​t​ ​i​t​e​m​ ​n​o​ ​l​o​n​g​e​r​ ​e​x​i​s​t​s​.
-				 */
 				notFound: string
-				/**
-				 * T​h​e​ ​a​p​p​ ​s​e​n​t​ ​a​ ​r​e​q​u​e​s​t​ ​t​h​e​ ​b​a​c​k​e​n​d​ ​c​o​u​l​d​ ​n​o​t​ ​a​c​c​e​p​t​.
-				 */
 				invalidRequest: string
-				/**
-				 * T​h​e​ ​a​p​p​ ​a​s​k​e​d​ ​f​o​r​ ​s​o​m​e​t​h​i​n​g​ ​t​h​i​s​ ​b​a​c​k​e​n​d​ ​v​e​r​s​i​o​n​ ​d​o​e​s​ ​n​o​t​ ​s​u​p​p​o​r​t​.
-				 */
 				unknownCommand: string
-				/**
-				 * C​o​u​l​d​ ​n​o​t​ ​r​e​a​c​h​ ​t​h​e​ ​p​r​o​v​i​d​e​r​ ​r​e​g​i​s​t​r​y​.
-				 */
 				registryFailed: string
-				/**
-				 * T​h​a​t​ ​p​a​t​h​ ​i​s​ ​o​u​t​s​i​d​e​ ​t​h​e​ ​p​r​o​j​e​c​t​ ​f​o​l​d​e​r​.
-				 */
 				pathEscape: string
-				/**
-				 * T​h​i​s​ ​f​o​l​d​e​r​ ​i​s​ ​n​o​t​ ​a​ ​g​i​t​ ​r​e​p​o​s​i​t​o​r​y​.
-				 */
 				notARepo: string
-				/**
-				 * T​h​e​ ​l​a​n​g​u​a​g​e​ ​s​e​r​v​e​r​ ​c​o​u​l​d​ ​n​o​t​ ​c​o​m​p​l​e​t​e​ ​t​h​e​ ​r​e​q​u​e​s​t​.
-				 */
 				lspFailed: string
-				/**
-				 * T​h​a​t​ ​l​a​n​g​u​a​g​e​ ​s​e​r​v​e​r​ ​i​s​ ​n​o​t​ ​c​o​n​f​i​g​u​r​e​d​.
-				 */
 				lspUnknownKey: string
-				/**
-				 * T​h​e​ ​l​a​n​g​u​a​g​e​ ​s​e​r​v​e​r​ ​d​o​e​s​ ​n​o​t​ ​a​l​l​o​w​ ​t​h​a​t​ ​r​e​q​u​e​s​t​.
-				 */
 				lspMethodNotAllowed: string
-				/**
-				 * T​h​a​t​ ​n​a​m​e​ ​i​s​ ​n​o​t​ ​a​l​l​o​w​e​d​.
-				 */
 				illegalName: string
-				/**
-				 * G​i​t​ ​i​s​ ​n​o​t​ ​i​n​s​t​a​l​l​e​d​,​ ​o​r​ ​i​s​ ​n​o​t​ ​o​n​ ​y​o​u​r​ ​P​A​T​H​.
-				 */
 				gitNotFound: string
-				/**
-				 * T​h​e​ ​g​i​t​ ​c​o​m​m​a​n​d​ ​f​a​i​l​e​d​.
-				 */
 				gitFailed: string
-				/**
-				 * T​h​e​ ​f​i​l​e​ ​o​p​e​r​a​t​i​o​n​ ​f​a​i​l​e​d​.
-				 */
 				fsFailed: string
-				/**
-				 * S​o​m​e​t​h​i​n​g​ ​w​i​t​h​ ​t​h​a​t​ ​n​a​m​e​ ​a​l​r​e​a​d​y​ ​e​x​i​s​t​s​.
-				 */
 				fsExists: string
-				/**
-				 * T​h​a​t​ ​a​c​t​i​o​n​ ​i​s​ ​n​o​t​ ​a​l​l​o​w​e​d​.
-				 */
 				forbidden: string
 			}
+			hostEvent: string
+			promptError: string
 			transport: {
-				/**
-				 * C​o​u​l​d​ ​n​o​t​ ​a​u​t​h​e​n​t​i​c​a​t​e​ ​w​i​t​h​ ​t​h​e​ ​b​a​c​k​e​n​d​.
-				 */
 				authFailed: string
-				/**
-				 * L​o​s​t​ ​t​h​e​ ​c​o​n​n​e​c​t​i​o​n​ ​t​o​ ​t​h​e​ ​b​a​c​k​e​n​d​.
-				 */
 				disconnected: string
-				/**
-				 * T​h​e​ ​b​a​c​k​e​n​d​ ​d​i​d​ ​n​o​t​ ​r​e​s​p​o​n​d​ ​i​n​ ​t​i​m​e​.
-				 */
 				timedOut: string
 			}
+		}
+		diff: {
+			commitFiles: RequiredParams<'count'>
+			revertAllConfirm: RequiredParams<'count'>
+		}
+		files: {
+			confirmDeleteTitle: RequiredParams<'count'>
+			moreItems: RequiredParams<'count'>
 		}
 	}
 	editor: {
 	}
 	format: {
+		justNow: string
+		duration: {
+			seconds: RequiredParams<'value'>
+			minutesSeconds: RequiredParams<'minutes' | 'seconds'>
+		}
 	}
 	git: {
+		notify: {
+			remoteBranchMeta: RequiredParams<'branch' | 'reason' | 'remote'>
+			viewLog: string
+			commit: {
+				tag: string
+				title: RequiredParams<'branch'>
+				titleNoBranch: string
+				meta: RequiredParams<'add' | 'count' | 'del' | 'sha' | 'when'>
+				failedTitle: string
+			}
+			push: {
+				tag: string
+				tagRejected: string
+				tagFailed: string
+				title: RequiredParams<'branch' | 'remote'>
+				sentUpstream: RequiredParams<'count'>
+				upToDate: string
+				failedTitle: RequiredParams<'remote'>
+				reason: {
+					nonFastForward: string
+					noUpstream: string
+					authFailed: string
+					rejected: string
+					unknown: string
+				}
+			}
+			pull: {
+				tag: string
+				tagFailed: string
+				title: RequiredParams<'branch' | 'remote'>
+				rebased: string
+				fastForwarded: string
+				failedTitle: RequiredParams<'remote'>
+				reason: {
+					conflict: string
+					noUpstream: string
+					authFailed: string
+					unknown: string
+				}
+			}
+			rollback: {
+				tag: string
+				title: string
+				body: RequiredParams<'count'>
+				failedTitle: string
+			}
+			stash: {
+				tag: string
+				title: string
+				bodySelected: RequiredParams<'count'>
+				bodyAll: string
+				failedTitle: string
+				reason: {
+					noChanges: string
+					unknown: string
+				}
+			}
+			stashPop: {
+				tag: string
+				title: string
+				body: string
+				failedTitle: string
+				reason: {
+					emptyStack: string
+					conflict: string
+					unknown: string
+				}
+			}
+			refresh: {
+				title: string
+				body: string
+			}
+		}
+		reason: {
+			nonFastForward: string
+			noUpstream: string
+			authFailed: string
+			rejected: string
+			unknown: string
+			conflict: string
+		}
+		logWindowTitle: string
+		actions: {
+			view: string
+			undo: string
+			push: string
+			apply: string
+			pullRebase: string
+			forcePush: string
+		}
+		errors: {
+			loadBranches: string
+			checkoutBranch: string
+			createBranch: string
+			readStatus: string
+			initRepo: string
+			openPrUrl: string
+			undo: string
+			resolveCommitUrl: string
+			copy: string
+		}
+		store: {
+			noFilesSelected: string
+			copiedToClipboard: RequiredParams<'name'>
+		}
 	}
 	intro: {
 		templates: {
 			'fix-failing-test': {
-				/**
-				 * F​i​x​ ​a​ ​f​a​i​l​i​n​g​ ​t​e​s​t
-				 */
 				title: string
-				/**
-				 * P​a​s​t​e​ ​a​ ​s​t​a​c​k​ ​t​r​a​c​e​,​ ​g​e​t​ ​a​ ​p​a​t​c​h​e​d​ ​t​e​s​t​ ​+​ ​f​i​x​.
-				 */
 				blurb: string
-				/**
-				 * H​e​r​e​'​s​ ​a​ ​f​a​i​l​i​n​g​ ​t​e​s​t​:​
-			​
-			​`​`​`​
-			​<​p​a​s​t​e​ ​t​h​e​ ​t​e​s​t​ ​n​a​m​e​ ​+​ ​f​u​l​l​ ​s​t​a​c​k​ ​t​r​a​c​e​ ​/​ ​a​s​s​e​r​t​i​o​n​ ​o​u​t​p​u​t​>​
-			​`​`​`​
-			​
-			​R​e​p​r​o​d​u​c​e​ ​i​t​ ​f​i​r​s​t​,​ ​t​h​e​n​ ​f​i​n​d​ ​t​h​e​ ​r​o​o​t​ ​c​a​u​s​e​ ​—​ ​e​x​p​l​a​i​n​ ​i​n​ ​a​ ​s​e​n​t​e​n​c​e​ ​o​r​ ​t​w​o​ ​w​h​a​t​'​s​ ​a​c​t​u​a​l​l​y​ ​b​r​o​k​e​n​ ​b​e​f​o​r​e​ ​y​o​u​ ​c​h​a​n​g​e​ ​a​n​y​ ​c​o​d​e​.​ ​A​p​p​l​y​ ​t​h​e​ ​s​m​a​l​l​e​s​t​ ​f​i​x​ ​t​h​a​t​ ​m​a​k​e​s​ ​i​t​ ​p​a​s​s​ ​w​i​t​h​o​u​t​ ​w​e​a​k​e​n​i​n​g​ ​t​h​e​ ​t​e​s​t​;​ ​i​f​ ​t​h​e​ ​t​e​s​t​'​s​ ​e​x​p​e​c​t​a​t​i​o​n​ ​w​a​s​ ​w​r​o​n​g​,​ ​f​i​x​ ​t​h​e​ ​t​e​s​t​ ​i​n​s​t​e​a​d​ ​a​n​d​ ​t​e​l​l​ ​m​e​ ​w​h​y​.​ ​R​e​-​r​u​n​ ​t​h​e​ ​a​f​f​e​c​t​e​d​ ​t​e​s​t​s​ ​t​o​ ​c​o​n​f​i​r​m​ ​t​h​e​y​'​r​e​ ​g​r​e​e​n​ ​a​n​d​ ​t​h​a​t​ ​n​o​t​h​i​n​g​ ​n​e​a​r​b​y​ ​b​r​o​k​e​.
-				 */
 				body: string
 			}
 			'implement-a-spec': {
-				/**
-				 * I​m​p​l​e​m​e​n​t​ ​a​ ​s​p​e​c
-				 */
 				title: string
-				/**
-				 * D​r​o​p​ ​a​ ​M​a​r​k​d​o​w​n​ ​s​p​e​c​,​ ​p​i​ ​p​l​a​n​s​ ​+​ ​w​r​i​t​e​s​ ​a​g​a​i​n​s​t​ ​i​t​.
-				 */
 				blurb: string
-				/**
-				 * I​m​p​l​e​m​e​n​t​ ​t​h​e​ ​s​p​e​c​ ​b​e​l​o​w​.​
-			​
-			​`​`​`​m​a​r​k​d​o​w​n​
-			​<​p​a​s​t​e​ ​t​h​e​ ​s​p​e​c​ ​h​e​r​e​>​
-			​`​`​`​
-			​
-			​F​i​r​s​t​ ​r​e​a​d​ ​t​h​e​ ​r​e​l​e​v​a​n​t​ ​c​o​d​e​ ​a​n​d​ ​o​u​t​l​i​n​e​ ​a​ ​s​h​o​r​t​ ​p​l​a​n​:​ ​t​h​e​ ​f​i​l​e​s​ ​y​o​u​'​l​l​ ​t​o​u​c​h​,​ ​t​h​e​ ​o​r​d​e​r​ ​y​o​u​'​l​l​ ​d​o​ ​t​h​e​m​ ​i​n​,​ ​a​n​d​ ​a​n​y​ ​a​m​b​i​g​u​i​t​i​e​s​ ​y​o​u​ ​n​e​e​d​ ​m​e​ ​t​o​ ​r​e​s​o​l​v​e​.​ ​W​a​i​t​ ​f​o​r​ ​m​y​ ​g​o​-​a​h​e​a​d​,​ ​t​h​e​n​ ​b​u​i​l​d​ ​i​t​ ​i​n​ ​s​m​a​l​l​,​ ​r​e​v​i​e​w​a​b​l​e​ ​s​t​e​p​s​ ​t​h​a​t​ ​f​o​l​l​o​w​ ​t​h​e​ ​e​x​i​s​t​i​n​g​ ​p​a​t​t​e​r​n​s​ ​a​n​d​ ​c​o​n​v​e​n​t​i​o​n​s​.​ ​A​d​d​ ​o​r​ ​u​p​d​a​t​e​ ​t​e​s​t​s​ ​f​o​r​ ​t​h​e​ ​n​e​w​ ​b​e​h​a​v​i​o​u​r​ ​a​n​d​ ​r​u​n​ ​t​h​e​m​,​ ​a​n​d​ ​f​l​a​g​ ​a​n​y​t​h​i​n​g​ ​i​n​ ​t​h​e​ ​s​p​e​c​ ​t​h​a​t​ ​w​a​s​ ​u​n​c​l​e​a​r​ ​o​r​ ​t​h​a​t​ ​y​o​u​ ​h​a​d​ ​t​o​ ​d​e​v​i​a​t​e​ ​f​r​o​m​.
-				 */
 				body: string
 			}
 			'refactor-in-place': {
-				/**
-				 * R​e​f​a​c​t​o​r​ ​i​n​ ​p​l​a​c​e
-				 */
 				title: string
-				/**
-				 * P​i​c​k​ ​a​ ​f​i​l​e​,​ ​d​e​s​c​r​i​b​e​ ​t​h​e​ ​s​h​a​p​e​ ​y​o​u​ ​w​a​n​t​.
-				 */
 				blurb: string
-				/**
-				 * R​e​f​a​c​t​o​r​ ​<​p​a​t​h​/​t​o​/​f​i​l​e​>​ ​i​n​t​o​ ​<​d​e​s​c​r​i​b​e​ ​t​h​e​ ​s​h​a​p​e​ ​y​o​u​ ​w​a​n​t​>​.​
-			​
-			​K​e​e​p​ ​t​h​i​s​ ​b​e​h​a​v​i​o​u​r​-​p​r​e​s​e​r​v​i​n​g​:​ ​t​h​e​ ​p​u​b​l​i​c​ ​A​P​I​ ​a​n​d​ ​o​b​s​e​r​v​a​b​l​e​ ​b​e​h​a​v​i​o​u​r​ ​s​t​a​y​ ​i​d​e​n​t​i​c​a​l​ ​u​n​l​e​s​s​ ​I​ ​s​a​y​ ​o​t​h​e​r​w​i​s​e​.​ ​W​o​r​k​ ​i​n​ ​s​m​a​l​l​ ​s​t​e​p​s​ ​a​n​d​ ​k​e​e​p​ ​t​h​e​ ​b​u​i​l​d​ ​a​n​d​ ​e​x​i​s​t​i​n​g​ ​t​e​s​t​s​ ​g​r​e​e​n​ ​a​f​t​e​r​ ​e​a​c​h​ ​o​n​e​ ​—​ ​d​o​n​'​t​ ​r​e​w​r​i​t​e​ ​e​v​e​r​y​t​h​i​n​g​ ​a​t​ ​o​n​c​e​.​ ​A​v​o​i​d​ ​u​n​r​e​l​a​t​e​d​ ​d​r​i​v​e​-​b​y​ ​c​h​a​n​g​e​s​,​ ​a​n​d​ ​w​h​e​n​ ​y​o​u​'​r​e​ ​d​o​n​e​,​ ​s​u​m​m​a​r​i​s​e​ ​w​h​a​t​ ​m​o​v​e​d​ ​a​n​d​ ​w​h​y​.
-				 */
 				body: string
 			}
 			'write-the-docs': {
-				/**
-				 * W​r​i​t​e​ ​t​h​e​ ​d​o​c​s
-				 */
 				title: string
-				/**
-				 * G​e​n​e​r​a​t​e​ ​d​o​c​s​ ​f​r​o​m​ ​a​ ​m​o​d​u​l​e​ ​+​ ​c​o​m​m​i​t​.
-				 */
 				blurb: string
-				/**
-				 * W​r​i​t​e​ ​d​e​v​e​l​o​p​e​r​-​f​a​c​i​n​g​ ​d​o​c​u​m​e​n​t​a​t​i​o​n​ ​f​o​r​ ​<​m​o​d​u​l​e​ ​/​ ​p​a​t​h​>​.​
-			​
-			​R​e​a​d​ ​t​h​e​ ​a​c​t​u​a​l​ ​c​o​d​e​ ​f​i​r​s​t​ ​s​o​ ​t​h​e​ ​d​o​c​s​ ​m​a​t​c​h​ ​r​e​a​l​i​t​y​ ​-​ ​d​o​n​'​t​ ​i​n​v​e​n​t​ ​b​e​h​a​v​i​o​u​r​.​ ​C​o​v​e​r​ ​w​h​a​t​ ​i​t​'​s​ ​f​o​r​,​ ​t​h​e​ ​p​u​b​l​i​c​ ​A​P​I​ ​(​s​i​g​n​a​t​u​r​e​s​ ​a​n​d​ ​k​e​y​ ​p​a​r​a​m​e​t​e​r​s​)​,​ ​a​t​ ​l​e​a​s​t​ ​o​n​e​ ​r​u​n​n​a​b​l​e​ ​u​s​a​g​e​ ​e​x​a​m​p​l​e​,​ ​a​n​d​ ​t​h​e​ ​c​o​m​m​o​n​ ​g​o​t​c​h​a​s​ ​o​r​ ​e​d​g​e​ ​c​a​s​e​s​.​ ​M​a​t​c​h​ ​t​h​e​ ​p​r​o​j​e​c​t​'​s​ ​e​x​i​s​t​i​n​g​ ​d​o​c​s​ ​s​t​y​l​e​ ​a​n​d​ ​l​o​c​a​t​i​o​n​.​ ​S​h​o​w​ ​m​e​ ​t​h​e​ ​d​r​a​f​t​,​ ​t​h​e​n​ ​c​o​m​m​i​t​ ​i​t​ ​w​i​t​h​ ​a​ ​c​l​e​a​r​ ​m​e​s​s​a​g​e​ ​o​n​c​e​ ​i​t​ ​r​e​a​d​s​ ​w​e​l​l​.
-				 */
 				body: string
 			}
 			'review-a-pr': {
-				/**
-				 * R​e​v​i​e​w​ ​a​ ​P​R
-				 */
 				title: string
-				/**
-				 * O​p​e​n​ ​a​ ​P​R​ ​b​y​ ​n​u​m​b​e​r​,​ ​g​e​t​ ​a​ ​s​t​r​u​c​t​u​r​e​d​ ​r​e​v​i​e​w​.
-				 */
 				blurb: string
-				/**
-				 * R​e​v​i​e​w​ ​P​R​ ​#​<​n​u​m​b​e​r​>​ ​(​o​r​ ​t​h​i​s​ ​b​r​a​n​c​h​'​s​ ​d​i​f​f​ ​a​g​a​i​n​s​t​ ​<​b​a​s​e​ ​b​r​a​n​c​h​>​)​.​
-			​
-			​W​o​r​k​ ​f​r​o​m​ ​t​h​e​ ​a​c​t​u​a​l​ ​d​i​f​f​ ​a​n​d​ ​g​i​v​e​ ​a​ ​s​t​r​u​c​t​u​r​e​d​ ​r​e​v​i​e​w​:​
-			​-​ ​C​o​r​r​e​c​t​n​e​s​s​ ​-​ ​b​u​g​s​,​ ​e​d​g​e​ ​c​a​s​e​s​,​ ​e​r​r​o​r​ ​h​a​n​d​l​i​n​g​.​
-			​-​ ​D​e​s​i​g​n​ ​-​ ​d​o​e​s​ ​i​t​ ​f​i​t​ ​t​h​e​ ​c​o​d​e​b​a​s​e​;​ ​i​s​ ​t​h​e​r​e​ ​a​ ​s​i​m​p​l​e​r​ ​a​p​p​r​o​a​c​h​?​
-			​-​ ​T​e​s​t​s​ ​-​ ​i​s​ ​t​h​e​ ​n​e​w​ ​b​e​h​a​v​i​o​u​r​ ​c​o​v​e​r​e​d​;​ ​w​h​a​t​'​s​ ​m​i​s​s​i​n​g​?​
-			​-​ ​R​i​s​k​ ​-​ ​s​e​c​u​r​i​t​y​,​ ​p​e​r​f​o​r​m​a​n​c​e​,​ ​m​i​g​r​a​t​i​o​n​s​,​ ​b​a​c​k​w​a​r​d​ ​c​o​m​p​a​t​i​b​i​l​i​t​y​.​
-			​
-			​C​i​t​e​ ​s​p​e​c​i​f​i​c​ ​f​i​l​e​s​ ​a​n​d​ ​l​i​n​e​s​,​ ​s​e​p​a​r​a​t​e​ ​m​u​s​t​-​f​i​x​ ​b​l​o​c​k​e​r​s​ ​f​r​o​m​ ​n​i​t​s​,​ ​a​n​d​ ​f​i​n​i​s​h​ ​w​i​t​h​ ​a​ ​c​l​e​a​r​ ​v​e​r​d​i​c​t​ ​(​a​p​p​r​o​v​e​ ​/​ ​r​e​q​u​e​s​t​ ​c​h​a​n​g​e​s​)​.​ ​D​o​n​'​t​ ​c​h​a​n​g​e​ ​a​n​y​ ​c​o​d​e​ ​u​n​l​e​s​s​ ​I​ ​a​s​k​.
-				 */
 				body: string
 			}
 			'bisect-a-regression': {
-				/**
-				 * B​i​s​e​c​t​ ​a​ ​r​e​g​r​e​s​s​i​o​n
-				 */
 				title: string
-				/**
-				 * F​i​n​d​ ​t​h​e​ ​c​o​m​m​i​t​ ​t​h​a​t​ ​b​r​o​k​e​ ​a​ ​b​e​h​a​v​i​o​u​r​.
-				 */
 				blurb: string
-				/**
-				 * H​e​l​p​ ​m​e​ ​t​r​a​c​k​ ​d​o​w​n​ ​a​ ​r​e​g​r​e​s​s​i​o​n​.​
-			​
-			​-​ ​E​x​p​e​c​t​e​d​:​ ​<​w​h​a​t​ ​u​s​e​d​ ​t​o​ ​h​a​p​p​e​n​>​
-			​-​ ​B​r​o​k​e​n​:​ ​<​w​h​a​t​ ​h​a​p​p​e​n​s​ ​n​o​w​>​
-			​-​ ​L​a​s​t​ ​k​n​o​w​n​-​g​o​o​d​:​ ​<​c​o​m​m​i​t​ ​/​ ​t​a​g​ ​/​ ​v​e​r​s​i​o​n​,​ ​i​f​ ​k​n​o​w​n​>​
-			​
-			​R​e​p​r​o​d​u​c​e​ ​t​h​e​ ​b​r​o​k​e​n​ ​b​e​h​a​v​i​o​u​r​ ​f​i​r​s​t​,​ ​t​h​e​n​ ​n​a​r​r​o​w​ ​d​o​w​n​ ​t​h​e​ ​o​f​f​e​n​d​i​n​g​ ​c​h​a​n​g​e​ ​a​g​a​i​n​s​t​ ​t​h​a​t​ ​r​e​p​r​o​d​u​c​t​i​o​n​ ​(​g​i​t​ ​h​i​s​t​o​r​y​ ​/​ ​g​i​t​ ​b​i​s​e​c​t​)​.​ ​I​d​e​n​t​i​f​y​ ​t​h​e​ ​e​x​a​c​t​ ​c​o​m​m​i​t​ ​t​h​a​t​ ​i​n​t​r​o​d​u​c​e​d​ ​i​t​ ​a​n​d​ ​e​x​p​l​a​i​n​ ​w​h​y​ ​t​h​a​t​ ​c​h​a​n​g​e​ ​c​a​u​s​e​d​ ​t​h​e​ ​b​r​e​a​k​,​ ​t​h​e​n​ ​p​r​o​p​o​s​e​ ​t​h​e​ ​l​o​w​e​r​-​r​i​s​k​ ​f​i​x​ ​—​ ​a​ ​t​a​r​g​e​t​e​d​ ​f​o​r​w​a​r​d​ ​f​i​x​ ​o​r​ ​a​ ​r​e​v​e​r​t​ ​—​ ​p​l​u​s​ ​t​h​e​ ​t​e​s​t​ ​t​h​a​t​ ​s​h​o​u​l​d​ ​h​a​v​e​ ​c​a​u​g​h​t​ ​i​t​.
-				 */
 				body: string
 			}
 		}
 	}
 	plan: {
-		/**
-		 * T​h​e​ ​p​l​a​n​ ​a​b​o​v​e​ ​i​s​ ​a​p​p​r​o​v​e​d​ ​-​ ​p​r​o​c​e​e​d​ ​w​i​t​h​ ​e​x​e​c​u​t​i​o​n​.​ ​A​s​ ​y​o​u​ ​w​o​r​k​,​ ​e​d​i​t​ ​t​h​e​ ​p​l​a​n​ ​f​i​l​e​ ​t​o​ ​u​p​d​a​t​e​ ​e​a​c​h​ ​s​t​e​p​'​s​ ​c​h​e​c​k​b​o​x​ ​(​`​[​ ​]​`​→​`​[​~​]​`​→​`​[​x​]​`​)​ ​t​o​ ​s​h​o​w​ ​t​h​e​ ​p​r​o​g​r​e​s​s​.
-		 */
 		continuation: string
 		comments: {
-			/**
-			 * I​ ​h​a​v​e​ ​s​o​m​e​ ​f​e​e​d​b​a​c​k​ ​o​n​ ​t​h​e​ ​p​l​a​n​ ​b​e​f​o​r​e​ ​a​p​p​r​o​v​i​n​g​:
-			 */
 			leadIn: string
-			/**
-			 * P​l​e​a​s​e​ ​r​e​v​i​s​e​ ​t​h​e​ ​p​l​a​n​ ​a​c​c​o​r​d​i​n​g​l​y​ ​a​n​d​ ​k​e​e​p​ ​i​t​ ​i​n​ ​p​l​a​n​ ​m​o​d​e​.
-			 */
 			closing: string
 		}
 		panel: {
-			/**
-			 * i​n​ ​p​r​o​g​r​e​s​s
-			 */
 			inProgressFallback: string
 		}
 	}
 	sessions: {
+		filter: {
+			selectedCount: RequiredParams<'count'>
+		}
 	}
 	settings: {
 		appearance: {
 			language: {
-				/**
-				 * L​a​n​g​u​a​g​e
-				 */
 				label: string
-				/**
-				 * I​n​t​e​r​f​a​c​e​ ​l​a​n​g​u​a​g​e​.
-				 */
 				desc: string
-				/**
-				 * A​g​e​n​t​ ​r​e​p​l​i​e​s​ ​f​o​l​l​o​w​ ​t​h​i​s​ ​t​o​o​.​ ​O​v​e​r​r​i​d​e​ ​p​e​r​ ​s​e​s​s​i​o​n​ ​f​r​o​m​ ​t​h​e​ ​c​o​m​p​o​s​e​r​,​ ​o​r​ ​g​l​o​b​a​l​l​y​ ​u​n​d​e​r​ ​A​g​e​n​t​s​ ​&​ ​M​o​d​e​l​s​.
-				 */
 				hint: string
 			}
 		}
 		agents: {
 			responseLanguage: {
-				/**
-				 * A​g​e​n​t​ ​r​e​s​p​o​n​s​e​ ​l​a​n​g​u​a​g​e
-				 */
 				label: string
-				/**
-				 * T​h​e​ ​l​a​n​g​u​a​g​e​ ​t​h​e​ ​a​g​e​n​t​ ​w​r​i​t​e​s​ ​i​n​ ​—​ ​i​t​s​ ​r​e​p​l​i​e​s​,​ ​i​t​s​ ​p​l​a​n​s​,​ ​a​n​d​ ​t​h​e​ ​p​l​a​n​ ​f​i​l​e​.​ ​S​t​a​r​t​e​r​ ​p​r​o​m​p​t​s​ ​a​r​e​ ​s​e​n​t​ ​a​s​ ​w​r​i​t​t​e​n​,​ ​s​o​ ​a​ ​t​e​m​p​l​a​t​e​ ​i​n​ ​a​n​o​t​h​e​r​ ​l​a​n​g​u​a​g​e​ ​s​t​a​y​s​ ​i​n​ ​t​h​a​t​ ​l​a​n​g​u​a​g​e​.
-				 */
 				desc: string
-				/**
-				 * M​a​t​c​h​ ​i​n​t​e​r​f​a​c​e
-				 */
 				matchUi: string
+			}
+		}
+		skills: {
+			scanFoundToast: RequiredParams<'count'>
+			installedTitle: RequiredParams<'count'>
+			scanFoundLabel: RequiredParams<'count'>
+		}
+	}
+	shell: {
+		topBar: {
+			backToStart: string
+			leftPanel: {
+				show: string
+				hide: string
+			}
+			bottomPanel: {
+				show: string
+				hide: string
+			}
+			rightPanel: {
+				show: string
+				hide: string
+			}
+		}
+		settings: {
+			open: string
+			shortcutTooltip: RequiredParams<'mod'>
+		}
+		terminal: {
+			toggle: string
+			shortcutTooltip: RequiredParams<'mod'>
+		}
+		leftRail: {
+			label: string
+			tabs: string
+			sessions: string
+			files: string
+		}
+		rightPane: {
+			label: string
+			tabs: string
+			session: string
+			git: string
+			context: string
+		}
+		screenSwitcher: {
+			label: string
+			sessionGate: string
+			session: string
+			editor: string
+			diff: string
+			blank: string
+		}
+		resize: {
+			leftRail: string
+			rightPane: string
+			terminalPanel: string
+		}
+		windowControls: {
+			minimize: string
+			maximize: string
+			restore: string
+		}
+		footer: {
+			screen: string
+		}
+		sessionPane: {
+			loading: string
+		}
+		components: {
+			confirmDialog: {
+				confirm: string
+			}
+			stepper: {
+				increase: RequiredParams<'label'>
+				decrease: RequiredParams<'label'>
+				increaseBare: string
+				decreaseBare: string
+			}
+			chipPicker: {
+				header: string
 			}
 		}
 	}
@@ -420,395 +388,364 @@ export type TranslationFunctions = {
 		approval: {
 			reason: {
 				plan: {
-					/**
-					 * Plan mode: this shell command isn't read-only — allow it to run, or deny to keep planning.
-					 */
 					shellNotReadOnly: () => LocalizedString
-					/**
-					 * Plan mode: this operation can change files or reach outside the workspace — allow it, or deny to keep planning.
-					 */
 					mutatingOperation: () => LocalizedString
 				}
 				acceptEdits: {
-					/**
-					 * Edit target outside the auto-approve allowlist.
-					 */
 					outsideAllowlist: () => LocalizedString
 				}
 				auto: {
-					/**
-					 * Auto mode: run MCP tool {tool}? It runs outside the workspace and can't be safety-checked — allow it, or deny to skip.
-					 */
 					mcpTool: (arg: { tool: string }) => LocalizedString
-					/**
-					 * Auto mode: this looks like a fork bomb — allow it, or deny to stop.
-					 */
 					forkBomb: () => LocalizedString
-					/**
-					 * Auto mode: this redirects output onto a block device, which can destroy a disk — allow it, or deny.
-					 */
 					blockDeviceRedirect: () => LocalizedString
-					/**
-					 * Auto mode: this deletes files recursively or targets a broad path — allow it, or deny to stop.
-					 */
 					recursiveDelete: () => LocalizedString
-					/**
-					 * Auto mode: this recursively deletes or formats files — allow it, or deny to stop.
-					 */
 					windowsDelete: () => LocalizedString
-					/**
-					 * Auto mode: this can destroy a filesystem — allow it, or deny to stop.
-					 */
 					filesystemDestroy: () => LocalizedString
-					/**
-					 * Auto mode: `dd` is writing to a device/file, which can be destructive — allow it, or deny.
-					 */
 					deviceWrite: () => LocalizedString
-					/**
-					 * Auto mode: this recursively changes permissions/ownership over a broad path — allow it, or deny.
-					 */
 					permissionSweep: () => LocalizedString
-					/**
-					 * Auto mode: this runs with elevated privileges — allow it, or deny to stop.
-					 */
 					privilegeEscalation: () => LocalizedString
-					/**
-					 * Auto mode: this powers off or reboots the machine — allow it, or deny.
-					 */
 					powerControl: () => LocalizedString
-					/**
-					 * Auto mode: this signals every process — allow it, or deny to stop.
-					 */
 					killAll: () => LocalizedString
-					/**
-					 * Auto mode: this opens a raw network connection that could exfiltrate data — allow it, or deny.
-					 */
 					rawNetwork: () => LocalizedString
-					/**
-					 * Auto mode: this uploads data to a remote server — allow it, or deny to stop.
-					 */
 					upload: () => LocalizedString
-					/**
-					 * Auto mode: this copies files to a remote host — allow it, or deny to stop.
-					 */
 					remoteCopy: () => LocalizedString
-					/**
-					 * Auto mode: this sends a secret/credential file over the network — allow it, or deny.
-					 */
 					secretOverNetwork: () => LocalizedString
-					/**
-					 * Auto mode: this pipes downloaded content into a shell/interpreter (remote code execution) — allow it, or deny.
-					 */
 					pipeToShell: () => LocalizedString
-					/**
-					 * Auto mode: this writes to a secret/credential file — allow it, or deny to stop.
-					 */
 					writeSecret: () => LocalizedString
-					/**
-					 * Auto mode: this writes inside the `.git` directory — allow it, or deny to stop.
-					 */
 					writeGitDir: () => LocalizedString
-					/**
-					 * Auto mode: this writes to a path outside the project — allow it, or deny to stop.
-					 */
 					writeOutsideProject: () => LocalizedString
 				}
 			}
 		}
 		languagePicker: {
-			/**
-			 * Agent language
-			 */
 			label: () => LocalizedString
-			/**
-			 * Use default
-			 */
 			matchGlobal: () => LocalizedString
+		}
+		review: {
+			fileCount: (arg: { count: number }) => LocalizedString
+			filesChanged: (arg: { count: number | string | boolean }) => LocalizedString
+			turnSuffix: (arg: { count: number }) => LocalizedString
+		}
+		tools: {
+			moreLines: (arg: { count: number }) => LocalizedString
+			editCount: (arg: { count: number }) => LocalizedString
+		}
+		planSnapshot: {
+			earlierSteps: (arg: { count: number }) => LocalizedString
+			moreSteps: (arg: { count: number }) => LocalizedString
+		}
+		planCard: {
+			commentsPending: (arg: { count: number }) => LocalizedString
+		}
+		planComments: {
+			count: (arg: { count: number }) => LocalizedString
+		}
+		ask: {
+			sendChoices: (arg: { count: number }) => LocalizedString
 		}
 	}
 	common: {
-		/**
-		 * Cancel
-		 */
 		cancel: () => LocalizedString
-		/**
-		 * Close
-		 */
 		close: () => LocalizedString
-		/**
-		 * Save
-		 */
 		save: () => LocalizedString
-		/**
-		 * Remove
-		 */
 		remove: () => LocalizedString
-		/**
-		 * Retry
-		 */
 		retry: () => LocalizedString
+		dismiss: () => LocalizedString
 		error: {
-			/**
-			 * Something went wrong
-			 */
 			generic: () => LocalizedString
 			host: {
-				/**
-				 * That item no longer exists.
-				 */
 				notFound: () => LocalizedString
-				/**
-				 * The app sent a request the backend could not accept.
-				 */
 				invalidRequest: () => LocalizedString
-				/**
-				 * The app asked for something this backend version does not support.
-				 */
 				unknownCommand: () => LocalizedString
-				/**
-				 * Could not reach the provider registry.
-				 */
 				registryFailed: () => LocalizedString
-				/**
-				 * That path is outside the project folder.
-				 */
 				pathEscape: () => LocalizedString
-				/**
-				 * This folder is not a git repository.
-				 */
 				notARepo: () => LocalizedString
-				/**
-				 * The language server could not complete the request.
-				 */
 				lspFailed: () => LocalizedString
-				/**
-				 * That language server is not configured.
-				 */
 				lspUnknownKey: () => LocalizedString
-				/**
-				 * The language server does not allow that request.
-				 */
 				lspMethodNotAllowed: () => LocalizedString
-				/**
-				 * That name is not allowed.
-				 */
 				illegalName: () => LocalizedString
-				/**
-				 * Git is not installed, or is not on your PATH.
-				 */
 				gitNotFound: () => LocalizedString
-				/**
-				 * The git command failed.
-				 */
 				gitFailed: () => LocalizedString
-				/**
-				 * The file operation failed.
-				 */
 				fsFailed: () => LocalizedString
-				/**
-				 * Something with that name already exists.
-				 */
 				fsExists: () => LocalizedString
-				/**
-				 * That action is not allowed.
-				 */
 				forbidden: () => LocalizedString
 			}
+			hostEvent: () => LocalizedString
+			promptError: () => LocalizedString
 			transport: {
-				/**
-				 * Could not authenticate with the backend.
-				 */
 				authFailed: () => LocalizedString
-				/**
-				 * Lost the connection to the backend.
-				 */
 				disconnected: () => LocalizedString
-				/**
-				 * The backend did not respond in time.
-				 */
 				timedOut: () => LocalizedString
 			}
+		}
+		diff: {
+			commitFiles: (arg: { count: number }) => LocalizedString
+			revertAllConfirm: (arg: { count: number }) => LocalizedString
+		}
+		files: {
+			confirmDeleteTitle: (arg: { count: number }) => LocalizedString
+			moreItems: (arg: { count: number }) => LocalizedString
 		}
 	}
 	editor: {
 	}
 	format: {
+		justNow: () => LocalizedString
+		duration: {
+			seconds: (arg: { value: string }) => LocalizedString
+			minutesSeconds: (arg: { minutes: string, seconds: string }) => LocalizedString
+		}
 	}
 	git: {
+		notify: {
+			remoteBranchMeta: (arg: { branch: string, reason: string, remote: string }) => LocalizedString
+			viewLog: () => LocalizedString
+			commit: {
+				tag: () => LocalizedString
+				title: (arg: { branch: string }) => LocalizedString
+				titleNoBranch: () => LocalizedString
+				meta: (arg: { add: number, count: number, del: number, sha: string, when: string }) => LocalizedString
+				failedTitle: () => LocalizedString
+			}
+			push: {
+				tag: () => LocalizedString
+				tagRejected: () => LocalizedString
+				tagFailed: () => LocalizedString
+				title: (arg: { branch: string, remote: string }) => LocalizedString
+				sentUpstream: (arg: { count: number }) => LocalizedString
+				upToDate: () => LocalizedString
+				failedTitle: (arg: { remote: string }) => LocalizedString
+				reason: {
+					nonFastForward: () => LocalizedString
+					noUpstream: () => LocalizedString
+					authFailed: () => LocalizedString
+					rejected: () => LocalizedString
+					unknown: () => LocalizedString
+				}
+			}
+			pull: {
+				tag: () => LocalizedString
+				tagFailed: () => LocalizedString
+				title: (arg: { branch: string, remote: string }) => LocalizedString
+				rebased: () => LocalizedString
+				fastForwarded: () => LocalizedString
+				failedTitle: (arg: { remote: string }) => LocalizedString
+				reason: {
+					conflict: () => LocalizedString
+					noUpstream: () => LocalizedString
+					authFailed: () => LocalizedString
+					unknown: () => LocalizedString
+				}
+			}
+			rollback: {
+				tag: () => LocalizedString
+				title: () => LocalizedString
+				body: (arg: { count: number }) => LocalizedString
+				failedTitle: () => LocalizedString
+			}
+			stash: {
+				tag: () => LocalizedString
+				title: () => LocalizedString
+				bodySelected: (arg: { count: number }) => LocalizedString
+				bodyAll: () => LocalizedString
+				failedTitle: () => LocalizedString
+				reason: {
+					noChanges: () => LocalizedString
+					unknown: () => LocalizedString
+				}
+			}
+			stashPop: {
+				tag: () => LocalizedString
+				title: () => LocalizedString
+				body: () => LocalizedString
+				failedTitle: () => LocalizedString
+				reason: {
+					emptyStack: () => LocalizedString
+					conflict: () => LocalizedString
+					unknown: () => LocalizedString
+				}
+			}
+			refresh: {
+				title: () => LocalizedString
+				body: () => LocalizedString
+			}
+		}
+		reason: {
+			nonFastForward: () => LocalizedString
+			noUpstream: () => LocalizedString
+			authFailed: () => LocalizedString
+			rejected: () => LocalizedString
+			unknown: () => LocalizedString
+			conflict: () => LocalizedString
+		}
+		logWindowTitle: () => LocalizedString
+		actions: {
+			view: () => LocalizedString
+			undo: () => LocalizedString
+			push: () => LocalizedString
+			apply: () => LocalizedString
+			pullRebase: () => LocalizedString
+			forcePush: () => LocalizedString
+		}
+		errors: {
+			loadBranches: () => LocalizedString
+			checkoutBranch: () => LocalizedString
+			createBranch: () => LocalizedString
+			readStatus: () => LocalizedString
+			initRepo: () => LocalizedString
+			openPrUrl: () => LocalizedString
+			undo: () => LocalizedString
+			resolveCommitUrl: () => LocalizedString
+			copy: () => LocalizedString
+		}
+		store: {
+			noFilesSelected: () => LocalizedString
+			copiedToClipboard: (arg: { name: string }) => LocalizedString
+		}
 	}
 	intro: {
 		templates: {
 			'fix-failing-test': {
-				/**
-				 * Fix a failing test
-				 */
 				title: () => LocalizedString
-				/**
-				 * Paste a stack trace, get a patched test + fix.
-				 */
 				blurb: () => LocalizedString
-				/**
-				 * Here's a failing test:
-		
-			```
-			<paste the test name + full stack trace / assertion output>
-			```
-		
-			Reproduce it first, then find the root cause — explain in a sentence or two what's actually broken before you change any code. Apply the smallest fix that makes it pass without weakening the test; if the test's expectation was wrong, fix the test instead and tell me why. Re-run the affected tests to confirm they're green and that nothing nearby broke.
-				 */
 				body: () => LocalizedString
 			}
 			'implement-a-spec': {
-				/**
-				 * Implement a spec
-				 */
 				title: () => LocalizedString
-				/**
-				 * Drop a Markdown spec, pi plans + writes against it.
-				 */
 				blurb: () => LocalizedString
-				/**
-				 * Implement the spec below.
-		
-			```markdown
-			<paste the spec here>
-			```
-		
-			First read the relevant code and outline a short plan: the files you'll touch, the order you'll do them in, and any ambiguities you need me to resolve. Wait for my go-ahead, then build it in small, reviewable steps that follow the existing patterns and conventions. Add or update tests for the new behaviour and run them, and flag anything in the spec that was unclear or that you had to deviate from.
-				 */
 				body: () => LocalizedString
 			}
 			'refactor-in-place': {
-				/**
-				 * Refactor in place
-				 */
 				title: () => LocalizedString
-				/**
-				 * Pick a file, describe the shape you want.
-				 */
 				blurb: () => LocalizedString
-				/**
-				 * Refactor <path/to/file> into <describe the shape you want>.
-		
-			Keep this behaviour-preserving: the public API and observable behaviour stay identical unless I say otherwise. Work in small steps and keep the build and existing tests green after each one — don't rewrite everything at once. Avoid unrelated drive-by changes, and when you're done, summarise what moved and why.
-				 */
 				body: () => LocalizedString
 			}
 			'write-the-docs': {
-				/**
-				 * Write the docs
-				 */
 				title: () => LocalizedString
-				/**
-				 * Generate docs from a module + commit.
-				 */
 				blurb: () => LocalizedString
-				/**
-				 * Write developer-facing documentation for <module / path>.
-		
-			Read the actual code first so the docs match reality - don't invent behaviour. Cover what it's for, the public API (signatures and key parameters), at least one runnable usage example, and the common gotchas or edge cases. Match the project's existing docs style and location. Show me the draft, then commit it with a clear message once it reads well.
-				 */
 				body: () => LocalizedString
 			}
 			'review-a-pr': {
-				/**
-				 * Review a PR
-				 */
 				title: () => LocalizedString
-				/**
-				 * Open a PR by number, get a structured review.
-				 */
 				blurb: () => LocalizedString
-				/**
-				 * Review PR #<number> (or this branch's diff against <base branch>).
-		
-			Work from the actual diff and give a structured review:
-			- Correctness - bugs, edge cases, error handling.
-			- Design - does it fit the codebase; is there a simpler approach?
-			- Tests - is the new behaviour covered; what's missing?
-			- Risk - security, performance, migrations, backward compatibility.
-		
-			Cite specific files and lines, separate must-fix blockers from nits, and finish with a clear verdict (approve / request changes). Don't change any code unless I ask.
-				 */
 				body: () => LocalizedString
 			}
 			'bisect-a-regression': {
-				/**
-				 * Bisect a regression
-				 */
 				title: () => LocalizedString
-				/**
-				 * Find the commit that broke a behaviour.
-				 */
 				blurb: () => LocalizedString
-				/**
-				 * Help me track down a regression.
-		
-			- Expected: <what used to happen>
-			- Broken: <what happens now>
-			- Last known-good: <commit / tag / version, if known>
-		
-			Reproduce the broken behaviour first, then narrow down the offending change against that reproduction (git history / git bisect). Identify the exact commit that introduced it and explain why that change caused the break, then propose the lower-risk fix — a targeted forward fix or a revert — plus the test that should have caught it.
-				 */
 				body: () => LocalizedString
 			}
 		}
 	}
 	plan: {
-		/**
-		 * The plan above is approved - proceed with execution. As you work, edit the plan file to update each step's checkbox (`[ ]`→`[~]`→`[x]`) to show the progress.
-		 */
 		continuation: () => LocalizedString
 		comments: {
-			/**
-			 * I have some feedback on the plan before approving:
-			 */
 			leadIn: () => LocalizedString
-			/**
-			 * Please revise the plan accordingly and keep it in plan mode.
-			 */
 			closing: () => LocalizedString
 		}
 		panel: {
-			/**
-			 * in progress
-			 */
 			inProgressFallback: () => LocalizedString
 		}
 	}
 	sessions: {
+		filter: {
+			selectedCount: (arg: { count: number }) => LocalizedString
+		}
 	}
 	settings: {
 		appearance: {
 			language: {
-				/**
-				 * Language
-				 */
 				label: () => LocalizedString
-				/**
-				 * Interface language.
-				 */
 				desc: () => LocalizedString
-				/**
-				 * Agent replies follow this too. Override per session from the composer, or globally under Agents & Models.
-				 */
 				hint: () => LocalizedString
 			}
 		}
 		agents: {
 			responseLanguage: {
-				/**
-				 * Agent response language
-				 */
 				label: () => LocalizedString
-				/**
-				 * The language the agent writes in — its replies, its plans, and the plan file. Starter prompts are sent as written, so a template in another language stays in that language.
-				 */
 				desc: () => LocalizedString
-				/**
-				 * Match interface
-				 */
 				matchUi: () => LocalizedString
+			}
+		}
+		skills: {
+			scanFoundToast: (arg: { count: number }) => LocalizedString
+			installedTitle: (arg: { count: number }) => LocalizedString
+			scanFoundLabel: (arg: { count: number }) => LocalizedString
+		}
+	}
+	shell: {
+		topBar: {
+			backToStart: () => LocalizedString
+			leftPanel: {
+				show: () => LocalizedString
+				hide: () => LocalizedString
+			}
+			bottomPanel: {
+				show: () => LocalizedString
+				hide: () => LocalizedString
+			}
+			rightPanel: {
+				show: () => LocalizedString
+				hide: () => LocalizedString
+			}
+		}
+		settings: {
+			open: () => LocalizedString
+			shortcutTooltip: (arg: { mod: string }) => LocalizedString
+		}
+		terminal: {
+			toggle: () => LocalizedString
+			shortcutTooltip: (arg: { mod: string }) => LocalizedString
+		}
+		leftRail: {
+			label: () => LocalizedString
+			tabs: () => LocalizedString
+			sessions: () => LocalizedString
+			files: () => LocalizedString
+		}
+		rightPane: {
+			label: () => LocalizedString
+			tabs: () => LocalizedString
+			session: () => LocalizedString
+			git: () => LocalizedString
+			context: () => LocalizedString
+		}
+		screenSwitcher: {
+			label: () => LocalizedString
+			sessionGate: () => LocalizedString
+			session: () => LocalizedString
+			editor: () => LocalizedString
+			diff: () => LocalizedString
+			blank: () => LocalizedString
+		}
+		resize: {
+			leftRail: () => LocalizedString
+			rightPane: () => LocalizedString
+			terminalPanel: () => LocalizedString
+		}
+		windowControls: {
+			minimize: () => LocalizedString
+			maximize: () => LocalizedString
+			restore: () => LocalizedString
+		}
+		footer: {
+			screen: () => LocalizedString
+		}
+		sessionPane: {
+			loading: () => LocalizedString
+		}
+		components: {
+			confirmDialog: {
+				confirm: () => LocalizedString
+			}
+			stepper: {
+				increase: (arg: { label: string }) => LocalizedString
+				decrease: (arg: { label: string }) => LocalizedString
+				increaseBare: () => LocalizedString
+				decreaseBare: () => LocalizedString
+			}
+			chipPicker: {
+				header: () => LocalizedString
 			}
 		}
 	}

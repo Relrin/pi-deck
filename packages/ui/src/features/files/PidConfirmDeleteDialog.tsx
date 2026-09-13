@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PidButton } from "../../components/buttons/PidButton.js";
 import { Dialog } from "../../components/ui/Dialog.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 
 interface PidConfirmDeleteDialogProps {
   open: boolean;
@@ -20,6 +21,7 @@ export function PidConfirmDeleteDialog({
   projectRoot,
   onConfirm,
 }: PidConfirmDeleteDialogProps) {
+  const { LL } = useI18nContext();
   const [busy, setBusy] = useState(false);
 
   const handleConfirm = async () => {
@@ -35,8 +37,7 @@ export function PidConfirmDeleteDialog({
 
   const visible = paths.slice(0, MAX_VISIBLE_PATHS);
   const overflow = paths.length - visible.length;
-  const title =
-    paths.length === 1 ? "Move 1 item to Trash?" : `Move ${paths.length} items to Trash?`;
+  const title = LL.common.files.confirmDeleteTitle({ count: paths.length });
 
   return (
     <Dialog
@@ -53,7 +54,7 @@ export function PidConfirmDeleteDialog({
         ))}
         {overflow > 0 && (
           <li className="pid-tree-delete-overflow">
-            + {overflow} more {overflow === 1 ? "item" : "items"}
+            {LL.common.files.moreItems({ count: overflow })}
           </li>
         )}
       </ul>

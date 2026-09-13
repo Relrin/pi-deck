@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18nContext } from "../../../../i18n/i18n-react.js";
 import { cn } from "../../../../lib/cn.js";
 import {
   CODE_BLOCK_COLLAPSED_LINES,
@@ -44,6 +45,7 @@ export function CodeBlock({
   preserveLines = true,
   ariaLabel,
 }: CodeBlockProps) {
+  const { LL } = useI18nContext();
   const [expanded, setExpanded] = useState(false);
   const lines = text.split("\n");
   const overflow = lines.length > collapsedLines;
@@ -63,7 +65,7 @@ export function CodeBlock({
           <>
             {"\n"}
             <span className="text-[var(--color-text-subtle)]">
-              ⋯ {hiddenCount} more line{hiddenCount === 1 ? "" : "s"}
+              {LL.chat.tools.moreLines({ count: hiddenCount })}
             </span>
           </>
         )}

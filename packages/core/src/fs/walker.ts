@@ -2,6 +2,7 @@ import type { Dirent } from "node:fs";
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 import ignore, { type Ignore } from "ignore";
+import { comparePaths } from "./collation.js";
 import type { FsNode } from "./types.js";
 
 /**
@@ -117,7 +118,7 @@ async function walkDir(
   // Folders before files, alphabetical within each section — the conventional explorer layout.
   nodes.sort((a, b) => {
     if (a.type !== b.type) return a.type === "dir" ? -1 : 1;
-    return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+    return comparePaths(a.name, b.name);
   });
   return nodes;
 }

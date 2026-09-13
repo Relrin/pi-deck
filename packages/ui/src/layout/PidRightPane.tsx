@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useRef } from "react";
 import { GitBranch, Layers, MessageSquare } from "../components/icons";
 import { useSessionsStore } from "../features/sessions/useSessionsStore";
+import { useI18nContext } from "../i18n/i18n-react";
 import { usePreferencesStore } from "../theme/usePreferencesStore";
 import { type RightPaneTab, useRightPaneStore } from "./use-right-pane";
 
@@ -14,6 +15,7 @@ export interface PidRightPaneProps {
 }
 
 export function PidRightPane({ git, context, chat, gitCount, contextCount }: PidRightPaneProps) {
+  const { LL } = useI18nContext();
   const tab = useRightPaneStore((s) => s.tab);
   const setTab = useRightPaneStore((s) => s.setTab);
   const ide = usePreferencesStore((s) => s.viewMode) === "ide";
@@ -39,8 +41,8 @@ export function PidRightPane({ git, context, chat, gitCount, contextCount }: Pid
   const effectiveTab: RightPaneTab = !ide && tab === "chat" ? "git" : tab;
 
   return (
-    <aside className="pid-rightpane" aria-label="Right pane">
-      <div className="pid-right-tabs" role="tablist" aria-label="Right pane tabs">
+    <aside className="pid-rightpane" aria-label={LL.shell.rightPane.label()}>
+      <div className="pid-right-tabs" role="tablist" aria-label={LL.shell.rightPane.tabs()}>
         {ide && (
           <button
             type="button"
@@ -50,7 +52,7 @@ export function PidRightPane({ git, context, chat, gitCount, contextCount }: Pid
             onClick={() => setTab("chat")}
           >
             <MessageSquare size={14} aria-hidden />
-            Session
+            {LL.shell.rightPane.session()}
           </button>
         )}
         <button
@@ -61,7 +63,7 @@ export function PidRightPane({ git, context, chat, gitCount, contextCount }: Pid
           onClick={() => setTab("git")}
         >
           <GitBranch size={14} aria-hidden />
-          Git
+          {LL.shell.rightPane.git()}
           {gitCount !== undefined && <span className="count">{gitCount}</span>}
         </button>
         <button
@@ -72,7 +74,7 @@ export function PidRightPane({ git, context, chat, gitCount, contextCount }: Pid
           onClick={() => setTab("context")}
         >
           <Layers size={14} aria-hidden />
-          Context
+          {LL.shell.rightPane.context()}
           {contextCount !== undefined && <span className="count">{contextCount}</span>}
         </button>
       </div>

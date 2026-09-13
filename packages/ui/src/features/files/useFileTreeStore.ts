@@ -1,3 +1,4 @@
+import { comparePaths } from "@pi-deck/core/fs/collation.js";
 import type { FsNode } from "@pi-deck/core/fs/types.js";
 import { create } from "zustand";
 import { humanizeError } from "../../lib/format/humanize-error.js";
@@ -202,6 +203,6 @@ function insertOne(nodes: FsNode[], rootPath: string, node: FsNode): FsNode[] {
 function sorted(nodes: FsNode[]): FsNode[] {
   return [...nodes].sort((a, b) => {
     if (a.type !== b.type) return a.type === "dir" ? -1 : 1;
-    return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+    return comparePaths(a.name, b.name);
   });
 }

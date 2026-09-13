@@ -10,6 +10,7 @@ import intro from "./intro.js";
 import plan from "./plan.js";
 import sessions from "./sessions.js";
 import settings from "./settings.js";
+import shell from "./shell.js";
 import terminal from "./terminal.js";
 
 /**
@@ -40,6 +41,7 @@ const ru = deepMerge(en, {
   plan,
   sessions,
   settings,
+  shell,
   terminal,
 }) as unknown as Translation;
 

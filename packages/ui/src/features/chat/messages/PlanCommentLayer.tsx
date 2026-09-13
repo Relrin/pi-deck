@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { MessageSquare, Pencil, Trash2 } from "../../../components/icons/index.js";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 import { offsetsToRange } from "../../plan-panel/planCommentAnchor.js";
 import {
   type PlanComment,
@@ -47,6 +48,7 @@ export interface PlanCommentLayerProps {
  * submission lives in the footer's "Request changes" button (`PlanCard`).
  */
 export function PlanCommentLayer({ sessionId, messageId, bodyRef }: PlanCommentLayerProps) {
+  const { LL } = useI18nContext();
   const session = usePlanCommentsStore(selectPlanComments(sessionId));
   const addComment = usePlanCommentsStore((s) => s.addComment);
   const cancelDraft = usePlanCommentsStore((s) => s.cancelDraft);
@@ -125,7 +127,7 @@ export function PlanCommentLayer({ sessionId, messageId, bodyRef }: PlanCommentL
         <div className="pid-plan-comments">
           <div className="pid-plan-comments-header">
             <MessageSquare size={11} aria-hidden />
-            <span>{comments.length === 1 ? "1 comment" : `${comments.length} comments`}</span>
+            <span>{LL.chat.planComments.count({ count: comments.length })}</span>
           </div>
           {comments.map((c) => (
             <PendingComment

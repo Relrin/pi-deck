@@ -60,7 +60,9 @@ import { useProjectsStore } from "../../features/sessions/useProjectsStore.js";
 import { useSessionsStore } from "../../features/sessions/useSessionsStore.js";
 import { dispatchTerminalOutput } from "../../features/terminal/terminalOutput.js";
 import { useTerminalStore } from "../../features/terminal/useTerminalStore.js";
+import { ll } from "../../i18n/t.js";
 import { useThemeStore } from "../../theme/useThemeStore.js";
+import { humanizeError } from "../format/humanize-error.js";
 
 type Payload = Record<string, unknown>;
 
@@ -314,7 +316,7 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
       // the user sees auth/model/config failures instead of a silent "Stop" button.
       const event = payload.event as { type?: string; message?: string } | undefined;
       if (event?.type === "prompt_error") {
-        useNotificationStore.getState().error(event.message ?? "pi reported a prompt error");
+        useNotificationStore.getState().error(event.message ?? ll().common.error.promptError());
         // Turn-level error: clear the in-flight flag and record a failed outcome for the rail dot.
         useMessagesStore.getState().markTurnFailed(sessionId);
       }
@@ -360,8 +362,7 @@ export function routeEvent(topic: string, rawPayload: unknown): void {
       return;
     }
     case EVENT_HOST_ERROR: {
-      const msg = typeof payload.message === "string" ? payload.message : "Host error";
-      useNotificationStore.getState().error(msg);
+      useNotificationStore.getState().error(humanizeError(payload, ll().common.error.hostEvent()));
       return;
     }
     default:

@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { TerminalDock } from "../features/terminal/TerminalDock";
 import { TERMINAL_DEFAULT_HEIGHT, useTerminalStore } from "../features/terminal/useTerminalStore";
+import { useI18nContext } from "../i18n/i18n-react";
 import { usePreferencesStore } from "../theme/usePreferencesStore";
 import { PidPanelHandle } from "./PidPanelHandle";
 import { useRailState } from "./use-rail-state";
@@ -12,6 +13,7 @@ export interface PidBodyProps {
 }
 
 export function PidBody({ left, center, right }: PidBodyProps) {
+  const { LL } = useI18nContext();
   const leftWidth = useRailState((s) => s.leftWidth);
   const rightWidth = useRailState((s) => s.rightWidth);
   const leftVisible = useRailState((s) => s.leftVisible);
@@ -58,7 +60,7 @@ export function PidBody({ left, center, right }: PidBodyProps) {
       {!leftRailOff && (
         <PidPanelHandle
           side="left"
-          ariaLabel="Resize left rail"
+          ariaLabel={LL.shell.resize.leftRail()}
           currentWidth={leftWidth}
           onResize={(delta) => setLeftWidth(leftWidth + delta)}
         />
@@ -66,7 +68,7 @@ export function PidBody({ left, center, right }: PidBodyProps) {
       {!rightPaneOff && (
         <PidPanelHandle
           side="right"
-          ariaLabel="Resize right pane"
+          ariaLabel={LL.shell.resize.rightPane()}
           currentWidth={rightWidth}
           onResize={(delta) => setRightWidth(rightWidth - delta)}
         />

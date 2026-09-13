@@ -11,6 +11,7 @@ import {
   Search,
   Star,
 } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { relativeTime } from "../../lib/format/relative-time.js";
 import { useGitStore } from "./useGitStore.js";
 
@@ -261,6 +262,7 @@ interface BranchRowProps {
 }
 
 function BranchRow({ branch, isCurrent, onSelect }: BranchRowProps) {
+  const { locale } = useI18nContext();
   // Icon precedence: current > merged > plain. Mirrors the screenshot — `★` for the active
   // branch, `✓` (in the merged tone) for branches reachable from default, hollow `○` for
   // everything else.
@@ -283,7 +285,9 @@ function BranchRow({ branch, isCurrent, onSelect }: BranchRowProps) {
       <span className="pid-branch-row-name">{branch.name}</span>
       {branch.merged && !isCurrent ? <span className="pid-branch-row-merged">merged</span> : null}
       {branch.lastActivityAt ? (
-        <span className="pid-branch-row-time">{relativeTime(branch.lastActivityAt)}</span>
+        <span className="pid-branch-row-time">
+          {relativeTime(branch.lastActivityAt, undefined, locale)}
+        </span>
       ) : null}
     </RadixDropdown.Item>
   );

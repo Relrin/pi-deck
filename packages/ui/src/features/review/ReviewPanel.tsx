@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { PidButton } from "../../components/buttons/PidButton.js";
 import { PidIconButton } from "../../components/buttons/PidIconButton.js";
 import { PidChip } from "../../components/chip/PidChip.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { DiffToolbar } from "../diff/DiffToolbar.js";
 import { DiffView } from "../diff/DiffView.js";
 import { useSessionsStore } from "../sessions/useSessionsStore.js";
@@ -90,6 +91,7 @@ function ReviewPanelBody({
   onRejectFile,
   onClose,
 }: ReviewPanelBodyProps) {
+  const { LL } = useI18nContext();
   const client = useSessionsStore((s) => s.client);
 
   const [diff, setDiff] = useState<DiffPayload | null>(null);
@@ -129,9 +131,7 @@ function ReviewPanelBody({
     <>
       <div className="pid-modal-header pid-review-panel-header">
         <RadixDialog.Title className="pid-modal-title">Review changes</RadixDialog.Title>
-        <PidChip>
-          {turn.files.length} file{turn.files.length === 1 ? "" : "s"}
-        </PidChip>
+        <PidChip>{LL.chat.review.fileCount({ count: turn.files.length })}</PidChip>
         <span className="pid-review-panel-header-spacer" />
         <PidButton variant="ghost" icon={<X size={12} />} onClick={onRejectTurn}>
           Reject all

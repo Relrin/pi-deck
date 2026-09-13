@@ -38,6 +38,12 @@ function readCode(err: unknown): string | undefined {
   return typeof code === "string" && code.length > 0 ? code : undefined;
 }
 
+/**
+ * These prefixes are NOT localized, and must not be. They match the English text that Node, git and
+ * our own transport put at the front of their own messages — that output is English regardless of
+ * the UI locale, so translating the patterns would simply stop them matching and leak "Error: " into
+ * every toast. The same goes for `COMMAND_FAILED_PREAMBLE` below.
+ */
 const NOISE_PREFIXES = [/^Error:\s+/i, /^TypeError:\s+/i, /^ProtocolError:\s+/i, /^RpcError:\s+/i];
 
 /**

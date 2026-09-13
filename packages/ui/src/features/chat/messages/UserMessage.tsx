@@ -1,6 +1,7 @@
 import type { PromptAttachment } from "@pi-deck/core/protocol/commands.js";
 import { useState } from "react";
 import { Folder } from "../../../components/icons/index.js";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 import { ImagePreviewDialog } from "../composer/ImagePreviewDialog.js";
 import type { UserMessageEntry, UserMessageImage } from "../types.js";
 import { MessageActions } from "./MessageActions.js";
@@ -17,13 +18,14 @@ export function UserMessage({
   sessionId: string;
   userMessageIndex?: number;
 }) {
+  const { locale } = useI18nContext();
   const attachments = message.attachments ?? [];
   const images = message.images ?? [];
   return (
     <MessageSurface
       kind="user"
-      timestamp={formatMessageTime(message.createdAt)}
-      timestampTitle={formatMessageTimestampFull(message.createdAt)}
+      timestamp={formatMessageTime(message.createdAt, locale)}
+      timestampTitle={formatMessageTimestampFull(message.createdAt, locale)}
       actions={
         <MessageActions
           sessionId={sessionId}

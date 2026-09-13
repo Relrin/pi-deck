@@ -8,6 +8,7 @@ import {
 import { PidComposerScreen } from "../features/intro/PidComposerScreen";
 import { PidIntroScreen } from "../features/intro/PidIntroScreen";
 import { useSessionsStore } from "../features/sessions/useSessionsStore";
+import { useI18nContext } from "../i18n/i18n-react";
 
 /**
  * The chat/session surface. Rendered in the center for the `session` screen
@@ -23,6 +24,7 @@ export function PidSessionPane() {
 }
 
 function SessionRoute({ sessionId }: { sessionId: string }) {
+  const { LL } = useI18nContext();
   const messages = useMessagesStore(selectMessages(sessionId));
   const loaded = useMessagesStore(selectSessionLoaded(sessionId));
   const timedOut = useHistoryLoadTimeout(sessionId, !loaded);
@@ -30,7 +32,7 @@ function SessionRoute({ sessionId }: { sessionId: string }) {
   if (!loaded && !timedOut) {
     return (
       <div className="pid-route-placeholder">
-        <span>Loading session…</span>
+        <span>{LL.shell.sessionPane.loading()}</span>
       </div>
     );
   }

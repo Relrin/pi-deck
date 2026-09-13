@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { PidButton } from "../buttons/PidButton.js";
 import { Dialog } from "../ui/Dialog.js";
 
@@ -19,12 +20,16 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel,
+  cancelLabel,
   destructive = false,
   onConfirm,
 }: ConfirmDialogProps) {
+  const { LL } = useI18nContext();
   const [busy, setBusy] = useState(false);
+
+  const confirmText = confirmLabel ?? LL.shell.components.confirmDialog.confirm();
+  const cancelText = cancelLabel ?? LL.common.cancel();
 
   const handleConfirm = async () => {
     if (busy) return;
@@ -41,7 +46,7 @@ export function ConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange} title={title} description={description}>
       <div className="flex justify-end gap-2">
         <PidButton variant="ghost" longLabel onClick={() => onOpenChange(false)} disabled={busy}>
-          {cancelLabel}
+          {cancelText}
         </PidButton>
         <PidButton
           variant={destructive ? "danger" : "primary"}
@@ -49,7 +54,7 @@ export function ConfirmDialog({
           onClick={handleConfirm}
           disabled={busy}
         >
-          {confirmLabel}
+          {confirmText}
         </PidButton>
       </div>
     </Dialog>

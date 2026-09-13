@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { Minus, Plus } from "../icons/index.js";
 
 export interface PidStepperProps {
@@ -29,6 +30,7 @@ export function PidStepper({
   onChange,
   ariaLabel,
 }: PidStepperProps) {
+  const { LL } = useI18nContext();
   const [draft, setDraft] = useState(String(value));
 
   // Keep the field in sync when the value changes from elsewhere (e.g. the +/- buttons).
@@ -54,7 +56,11 @@ export function PidStepper({
       <button
         type="button"
         className="pid-stepper-btn"
-        aria-label={ariaLabel ? `Decrease ${ariaLabel}` : "Decrease"}
+        aria-label={
+          ariaLabel
+            ? LL.shell.components.stepper.decrease({ label: ariaLabel })
+            : LL.shell.components.stepper.decreaseBare()
+        }
         disabled={value <= min}
         onClick={() => stepBy(-step)}
       >
@@ -78,7 +84,11 @@ export function PidStepper({
       <button
         type="button"
         className="pid-stepper-btn"
-        aria-label={ariaLabel ? `Increase ${ariaLabel}` : "Increase"}
+        aria-label={
+          ariaLabel
+            ? LL.shell.components.stepper.increase({ label: ariaLabel })
+            : LL.shell.components.stepper.increaseBare()
+        }
         disabled={value >= max}
         onClick={() => stepBy(step)}
       >

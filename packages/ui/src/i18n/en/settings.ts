@@ -14,6 +14,12 @@ const settings = {
       matchUi: "Match interface",
     },
   },
+
+  skills: {
+    scanFoundToast: "found {count:number} SKILL.md {{manifest|manifests}}",
+    installedTitle: "Installed {count:number} {{skill|skills}}",
+    scanFoundLabel: "{count:number} {{skill|skills}} found",
+  },
 } as const;
 
 export default settings;

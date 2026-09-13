@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ConfirmDialog } from "../../components/dialogs/ConfirmDialog.js";
 import { Check, GitCommitHorizontal, X } from "../../components/icons/index.js";
+import { useI18nContext } from "../../i18n/i18n-react.js";
 import { useRailState } from "../../layout/use-rail-state.js";
 import { useRightPaneStore } from "../../layout/use-right-pane.js";
 import { useGitStore } from "../git/useGitStore.js";
@@ -29,6 +30,7 @@ import { useSessionsStore } from "../sessions/useSessionsStore.js";
  * meaningful to commit or revert in that state.
  */
 export function DiffChangesetHeader() {
+  const { LL } = useI18nContext();
   const projectId = useProjectsStore((s) => s.activeProjectId);
   const activeSessionId = useSessionsStore((s) => s.activeSessionId);
   const changes = useGitStore((s) =>
@@ -125,9 +127,7 @@ export function DiffChangesetHeader() {
             title={disabled ? "No changes to commit" : "Jump to the commit composer"}
           >
             <Check size={12} aria-hidden />{" "}
-            {selectedCount > 0
-              ? `commit · ${selectedCount} ${selectedCount === 1 ? "file" : "files"}`
-              : "commit"}
+            {selectedCount > 0 ? LL.common.diff.commitFiles({ count: selectedCount }) : "commit"}
           </button>
         </div>
       </div>
@@ -135,11 +135,7 @@ export function DiffChangesetHeader() {
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title="Discard all working-tree changes?"
-        description={
-          count === 1
-            ? "This reverts 1 file to HEAD (untracked files are removed). This can't be undone."
-            : `This reverts ${count} files to HEAD (untracked files are removed). This can't be undone.`
-        }
+        description={LL.common.diff.revertAllConfirm({ count })}
         confirmLabel="Discard all"
         destructive
         onConfirm={confirmRevertAll}

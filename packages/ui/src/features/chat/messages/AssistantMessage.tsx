@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 import { useProvidersStore } from "../../models/useProvidersStore.js";
 import { selectPlanSession, usePlanStore } from "../../plan-panel/usePlanStore.js";
 import { useComposerStore } from "../composer/useComposerStore.js";
@@ -22,6 +23,7 @@ interface AssistantMessageProps {
 }
 
 export function AssistantMessage({ message, sessionId, userMessageIndex }: AssistantMessageProps) {
+  const { locale } = useI18nContext();
   const toolCalls = useMessagesStore((s) => s.bySession[sessionId]?.toolCalls);
   // Resolve pi's raw model id (e.g. "claude-opus-4-5") into the friendly label from the
   // provider registry (e.g. "Claude Opus 4.5") so the header tag stays readable. Falls
@@ -76,8 +78,8 @@ export function AssistantMessage({ message, sessionId, userMessageIndex }: Assis
   return (
     <MessageSurface
       kind="agent"
-      timestamp={formatMessageTime(message.createdAt)}
-      timestampTitle={formatMessageTimestampFull(message.createdAt)}
+      timestamp={formatMessageTime(message.createdAt, locale)}
+      timestampTitle={formatMessageTimestampFull(message.createdAt, locale)}
       agentLabel={modelLabel}
       agentTitle={message.model}
       actions={

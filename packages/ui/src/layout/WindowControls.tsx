@@ -1,9 +1,11 @@
 import { type ReactNode, useEffect, useState } from "react";
+import { useI18nContext } from "../i18n/i18n-react";
 
 /**
  * Custom min/max/close cluster for the frameless Win/Linux chrome.
  */
 export function WindowControls() {
+  const { LL } = useI18nContext();
   const controls = typeof window !== "undefined" ? window.windowControls : undefined;
   const [maximized, setMaximized] = useState(false);
 
@@ -20,13 +22,20 @@ export function WindowControls() {
     };
   }, [controls]);
 
+  // Each control uses one string for both the accessible name and the native tooltip.
+  const minimize = LL.shell.windowControls.minimize();
+  const maximize = maximized
+    ? LL.shell.windowControls.restore()
+    : LL.shell.windowControls.maximize();
+  const close = LL.common.close();
+
   return (
     <div className="pid-window-controls">
       <button
         type="button"
         className="pid-window-btn"
-        aria-label="Minimize"
-        title="Minimize"
+        aria-label={minimize}
+        title={minimize}
         onClick={() => void controls?.minimize?.()}
       >
         <Glyph>
@@ -36,8 +45,8 @@ export function WindowControls() {
       <button
         type="button"
         className="pid-window-btn"
-        aria-label={maximized ? "Restore" : "Maximize"}
-        title={maximized ? "Restore" : "Maximize"}
+        aria-label={maximize}
+        title={maximize}
         onClick={() => void controls?.toggleMaximize?.()}
       >
         {maximized ? (
@@ -54,8 +63,8 @@ export function WindowControls() {
       <button
         type="button"
         className="pid-window-btn close"
-        aria-label="Close"
-        title="Close"
+        aria-label={close}
+        title={close}
         onClick={() => void controls?.close?.()}
       >
         <Glyph>

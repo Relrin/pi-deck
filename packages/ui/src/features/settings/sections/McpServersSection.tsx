@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 import { humanizeError } from "../../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
 import { useProjectsStore } from "../../sessions/useProjectsStore";
@@ -647,6 +648,7 @@ function ServerConfigPanel({
   onSetToken: (token: string | null) => void;
   onUninstall: () => void;
 }) {
+  const { locale } = useI18nContext();
   const [armed, setArmed] = useState(false);
   const [tokenOpen, setTokenOpen] = useState(false);
   const [tokenValue, setTokenValue] = useState("");
@@ -672,14 +674,16 @@ function ServerConfigPanel({
   const lifecycle: Lifecycle = server.lifecycle ?? "lazy";
   const expose: Expose = (server.expose as Expose) ?? "proxy";
   const idle = server.idleTimeout ?? 10;
+  // Explicit locale: a bare `toLocaleString()` follows the *host* locale, so this figure could be
+  // grouped differently from every other number in the app. The surrounding copy is phase 05.
+  const tokenCount =
+    server.estimatedTokens != null ? server.estimatedTokens.toLocaleString(locale) : null;
 
   const exposureHint =
     expose === "direct"
       ? server.toolCount != null
         ? `${server.toolCount} tools registered directly${
-            server.estimatedTokens != null
-              ? ` (~${server.estimatedTokens.toLocaleString()} tokens)`
-              : ""
+            tokenCount != null ? ` (~${tokenCount} tokens)` : ""
           }`
         : "Tools registered directly as first-class tools"
       : "Routed through the mcp proxy (~200 tokens, shared)";

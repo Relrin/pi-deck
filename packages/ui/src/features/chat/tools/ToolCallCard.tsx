@@ -61,7 +61,7 @@ export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; session
     [sessionId, call.id],
   );
   const hasPendingApproval = !!call.pendingApproval;
-  const { LL } = useI18nContext();
+  const { LL, locale } = useI18nContext();
   const approvalReasonText =
     localizeApprovalReason(
       LL,
@@ -190,7 +190,7 @@ export function ToolCallCard({ call, sessionId }: { call: ToolCallEntry; session
             </span>
           )}
           {showDuration && durationMs !== undefined && (
-            <span className="pid-tool-row-elapsed">{formatDuration(durationMs)}</span>
+            <span className="pid-tool-row-elapsed">{formatDuration(durationMs, locale)}</span>
           )}
           {stat && (
             <span

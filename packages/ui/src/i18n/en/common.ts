@@ -8,6 +8,7 @@ const common = {
   save: "Save",
   remove: "Remove",
   retry: "Retry",
+  dismiss: "Dismiss",
 
   error: {
     /** Last-resort text when an error carries nothing usable. Matches the old hardcoded default. */
@@ -36,12 +37,41 @@ const common = {
       forbidden: "That action is not allowed.",
     },
 
+    /**
+     * Last-resort text for the broadcast `host.error` event and for pi's own prompt errors.
+     *
+     * Neither can be localized by code. `HostErrorPayload` (protocol `host.error`) carries only a
+     * `message`, with no `code` field — unlike a rejected *command*, which travels as a `HostError`
+     * and is translated by `host-errors.ts`. Adding a code to the event payload is a protocol
+     * change, so for now the host's own English message wins whenever it sent one and these are
+     * only reached when it did not. `prompt_error` messages come from pi and are always English.
+     */
+    hostEvent: "Host error",
+    promptError: "pi reported a prompt error",
+
     /** Transport-level failures raised by `lib/transport/ws-client.ts` before a code exists. */
     transport: {
       authFailed: "Could not authenticate with the backend.",
       disconnected: "Lost the connection to the backend.",
       timedOut: "The backend did not respond in time.",
     },
+  },
+
+  /**
+   * `features/diff/` and `features/files/` have no namespace of their own — the ten namespaces
+   * mirror `features/*` only where a feature is large enough to warrant a file. Until phase 07
+   * decides otherwise, their few strings live here.
+   */
+  diff: {
+    /** Commit button label once files are selected. */
+    commitFiles: "commit · {count:number} {{file|files}}",
+    revertAllConfirm:
+      "This reverts {count:number} {{file|files}} to HEAD (untracked files are removed). This can't be undone.",
+  },
+
+  files: {
+    confirmDeleteTitle: "Move {count:number} {{item|items}} to Trash?",
+    moreItems: "+ {count:number} more {{item|items}}",
   },
 } as const;
 

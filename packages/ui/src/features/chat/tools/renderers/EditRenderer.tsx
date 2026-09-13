@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18nContext } from "../../../../i18n/i18n-react.js";
 import { cn } from "../../../../lib/cn.js";
 import { EDIT_RENDERER_COLLAPSED_EDITS } from "../../../../lib/ui-constants.js";
 import { DiffView } from "../../../diff/DiffView.js";
@@ -28,6 +29,7 @@ export function EditRenderer({ call }: ToolRendererProps) {
 }
 
 function EditFragments({ call }: ToolRendererProps) {
+  const { LL } = useI18nContext();
   const input = (call.input ?? {}) as EditInput;
   const edits = Array.isArray(input.edits) ? input.edits : [];
   const [showAll, setShowAll] = useState(false);
@@ -39,7 +41,7 @@ function EditFragments({ call }: ToolRendererProps) {
   return (
     <div className="space-y-2">
       <div className="text-[var(--color-text-muted)] text-xs">
-        {edits.length} edit{edits.length === 1 ? "" : "s"}
+        {LL.chat.tools.editCount({ count: edits.length })}
       </div>
       <div className="space-y-2">
         {visible.map((edit, idx) => (

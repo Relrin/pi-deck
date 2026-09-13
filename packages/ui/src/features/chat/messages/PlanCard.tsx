@@ -152,7 +152,7 @@ export function PlanCard({ message, sessionId, isLatest, planMarkdown }: PlanCar
           )}
           <span className="pid-plan-card-footer-hint">
             {pendingCount > 0
-              ? `${pendingCount === 1 ? "1 comment" : `${pendingCount} comments`} pending - request changes to send them, or approve to execute as-is.`
+              ? LL.chat.planCard.commentsPending({ count: pendingCount })
               : "Approving switches the session out of plan mode and sends a continuation prompt."}
           </span>
           <ModeTargetPicker

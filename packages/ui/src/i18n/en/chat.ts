@@ -61,6 +61,52 @@ const chat = {
     label: "Agent language",
     matchGlobal: "Use default",
   },
+
+  /**
+   * Count phrases. typesafe-i18n plurals are **positional** — `{{zero|one|two|few|many|other}}` —
+   * and there is no named form. English only distinguishes one/other, so two slots say everything;
+   * Russian needs all six, and because the library routes `0` to the `zero` slot rather than to
+   * CLDR's category (which for `ru` is `many`), the Russian `zero` slot repeats its `many` text.
+   *
+   * `{{count:a|b}}` selects on `count` without printing it — used where the number is rendered
+   * separately, as in the review banner's badge.
+   */
+  review: {
+    /** Per-turn file count inside the review panel's turn list. */
+    fileCount: "{count:number} {{file|files}}",
+    /** Banner label. The count itself is rendered separately as a badge, hence `{{count:…}}`. */
+    filesChanged: "{{count:file|files}} changed",
+    /**
+     * Rendered as a JSX sibling of `filesChanged`, not interpolated into it: typesafe-i18n **trims
+     * interpolated argument values**, so a leading separator passed as `{turns}` would arrive as
+     * "· 3 turns" and collide with the preceding word. Whitespace inside a *template* survives,
+     * which is why the leading space here is safe.
+     */
+    turnSuffix: " · {count:number} {{turn|turns}}",
+  },
+
+  tools: {
+    moreLines: "⋯ {count:number} more {{line|lines}}",
+    editCount: "{count:number} {{edit|edits}}",
+  },
+
+  planSnapshot: {
+    earlierSteps: "+{count:number} earlier {{step|steps}}",
+    moreSteps: "+{count:number} more {{step|steps}}",
+  },
+
+  planCard: {
+    commentsPending:
+      "{count:number} {{comment|comments}} pending - request changes to send them, or approve to execute as-is.",
+  },
+
+  planComments: {
+    count: "{count:number} {{comment|comments}}",
+  },
+
+  ask: {
+    sendChoices: "Send {count:number} {{choice|choices}}",
+  },
 } as const;
 
 export default chat;

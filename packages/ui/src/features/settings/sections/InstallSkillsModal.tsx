@@ -3,6 +3,7 @@ import * as RadixDialog from "@radix-ui/react-dialog";
 import { Check, GitBranch, Plus, Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PidButton } from "../../../components/buttons/PidButton";
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 import { humanizeError } from "../../../lib/format/humanize-error.js";
 import { useNotificationStore } from "../../_status/useNotificationStore.js";
 import { useSessionsStore } from "../../sessions/useSessionsStore";
@@ -37,6 +38,7 @@ interface Props {
  * (`skills.install` with `kind:"scan"`). The clone is cleaned up host-side after install.
  */
 export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
+  const { LL } = useI18nContext();
   const [url, setUrl] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [scan, setScan] = useState<ScanData | null>(null);
@@ -93,7 +95,7 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
       setScan(result);
       setLog((l) => [
         ...l,
-        `found ${result.skills.length} SKILL.md manifest${result.skills.length === 1 ? "" : "s"}`,
+        LL.settings.skills.scanFoundToast({ count: result.skills.length }),
         `${result.repo.branch || "HEAD"} · ${result.repo.commit || "—"}`,
       ]);
       // Default to every installable skill selected; the user can pare it down.
@@ -136,7 +138,7 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
         useNotificationStore.getState().push({
           kind: "success",
           tag: "SKILLS",
-          title: `Installed ${res.installed.length} skill${res.installed.length === 1 ? "" : "s"}`,
+          title: LL.settings.skills.installedTitle({ count: res.installed.length }),
           body: res.installed.map((s) => s.name).join(" · "),
           meta: `${scan.repo.slug} @ ${scan.repo.commit || "—"}${skippedNote}`,
           durationMs: 6000,
@@ -337,7 +339,7 @@ export function InstallSkillsModal({ open, onOpenChange, onInstalled }: Props) {
                   <span
                     style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ink-3)" }}
                   >
-                    {scan.skills.length} skill{scan.skills.length === 1 ? "" : "s"} found
+                    {LL.settings.skills.scanFoundLabel({ count: scan.skills.length })}
                   </span>
                   <span style={{ flex: 1 }} />
                   <PidButton

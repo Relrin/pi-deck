@@ -1,3 +1,4 @@
+import { useI18nContext } from "../../../i18n/i18n-react.js";
 import { cn } from "../../../lib/cn.js";
 import { formatDuration } from "../../../lib/format/format-duration.js";
 import { useElapsed } from "../../../lib/useElapsed.js";
@@ -34,6 +35,7 @@ const WINDOW_AFTER = 3;
  * counts for what's hidden.
  */
 export function PlanSnapshot({ title, rows }: PlanSnapshotProps) {
+  const { LL } = useI18nContext();
   if (rows.length === 0) return null;
   const total = rows.length;
   const done = rows.filter((r) => r.status === "done").length;
@@ -48,7 +50,7 @@ export function PlanSnapshot({ title, rows }: PlanSnapshotProps) {
       <div className="pid-plan-snapshot-steps" data-labeled={hasLabels || undefined}>
         {hiddenBefore > 0 && (
           <div className="pid-plan-snapshot-more">
-            +{hiddenBefore} earlier {hiddenBefore === 1 ? "step" : "steps"}
+            {LL.chat.planSnapshot.earlierSteps({ count: hiddenBefore })}
           </div>
         )}
         {visible.map((row) => (
@@ -56,7 +58,7 @@ export function PlanSnapshot({ title, rows }: PlanSnapshotProps) {
         ))}
         {hiddenAfter > 0 && (
           <div className="pid-plan-snapshot-more">
-            +{hiddenAfter} more {hiddenAfter === 1 ? "step" : "steps"}
+            {LL.chat.planSnapshot.moreSteps({ count: hiddenAfter })}
           </div>
         )}
       </div>
@@ -89,6 +91,7 @@ function windowRows(rows: PlanSnapshotRow[]): {
  * in-progress row (`startedAt` set) actually ticks.
  */
 function SnapshotRow({ row, hasLabels }: { row: PlanSnapshotRow; hasLabels: boolean }) {
+  const { locale } = useI18nContext();
   const live = row.status === "in-progress" && row.startedAt !== undefined;
   const elapsed = useElapsed(row.startedAt, live);
   const timeMs = live ? elapsed : row.durationMs;
@@ -115,7 +118,7 @@ function SnapshotRow({ row, hasLabels }: { row: PlanSnapshotRow; hasLabels: bool
         {row.description}
       </span>
       <span className="pid-plan-snapshot-time">
-        {timeMs !== undefined ? formatDuration(timeMs) : ""}
+        {timeMs !== undefined ? formatDuration(timeMs, locale) : ""}
       </span>
     </div>
   );

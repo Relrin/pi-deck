@@ -1,5 +1,6 @@
 import { type PointerEvent, useRef } from "react";
 import { TERMINAL_MAX_HEIGHT, TERMINAL_MIN_HEIGHT } from "../features/terminal/useTerminalStore";
+import { useI18nContext } from "../i18n/i18n-react";
 
 export interface PidBottomHandleProps {
   currentHeight: number;
@@ -13,6 +14,7 @@ export interface PidBottomHandleProps {
  * `PidPanelHandle` but on the vertical axis.
  */
 export function PidBottomHandle({ currentHeight, onResize }: PidBottomHandleProps) {
+  const { LL } = useI18nContext();
   const startYRef = useRef<number | null>(null);
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
@@ -41,7 +43,7 @@ export function PidBottomHandle({ currentHeight, onResize }: PidBottomHandleProp
     <div
       role="separator"
       aria-orientation="horizontal"
-      aria-label="Resize terminal panel"
+      aria-label={LL.shell.resize.terminalPanel()}
       aria-valuenow={currentHeight}
       aria-valuemin={TERMINAL_MIN_HEIGHT}
       aria-valuemax={TERMINAL_MAX_HEIGHT}
